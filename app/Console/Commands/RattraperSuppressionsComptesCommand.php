@@ -72,6 +72,9 @@ class RattraperSuppressionsComptesCommand extends Command
                     $bilan['courses'] += $courses;
 
                     if ($appliquer && ($identite || $complements || $courses || $roue)) {
+                        // [S19-001] Jeton Apple encore présent sur un ancien compte : révoqué chez Apple après l'effacement.
+                        $jetonApple = null;
+                        try { $jetonApple = $identite ? $compte->apple_refresh_token : null; } catch (\Throwable) { $jetonApple = null; }
                         DB::transaction(function () use ($anonymisation, $compte, $identite) {
                             if ($identite) {
                                 $anonymisation->anonymiserIdentite($compte);
@@ -79,6 +82,9 @@ class RattraperSuppressionsComptesCommand extends Command
                             }
                             $anonymisation->effacerResidus((int) $compte->id);
                         });
+                        if (filled($jetonApple)) {
+                            app(\App\Services\Auth\AppleTokenRevoker::class)->revoquer((string) $jetonApple);
+                        }
                     }
                 }
             });

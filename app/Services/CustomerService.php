@@ -163,7 +163,22 @@ class CustomerService
                 // [S18-001] Rôle PRINCIPAL reconnu par son NOM (« Customer »), comme DeactivateController : comparer l'identifiant
                 //   (EnumRole::CUSTOMER = 2) casse dès que les rôles n'ont pas été semés dans l'ordre d'origine.
                 $premierRole = $customer->roles->first();
-                if (($premierRole && $premierRole->name === 'Customer') || $customer->hasRole(EnumRole::CUSTOMER)) {
+                // [test-e2e stores P19-001 · 2026-11-13] Un compte qui porte AUSSI un rôle d'exploitation (Admin + Customer…) n'est pas
+                //   anonymisé par cette porte : l'effacement est irréversible. Seul un compte dont TOUS les rôles sont « Customer ».
+                $seulementClient = $premierRole && $premierRole->name === 'Customer'
+                    && $customer->roles->every(fn ($r) => $r->name === 'Customer');
+                if ($seulementClient) {
+                    // [P19-003] Même règle que la suppression faite par le client : une commande encore en cours (livraison en route,
+                    //   cuisine…) bloque — sinon le code d'entrée et le téléphone disparaissaient pendant la livraison.
+                    $enCours = \App\Models\Order::withoutGlobalScopes()->where('user_id', $customer->id)
+                        ->whereNotIn('status', [\App\Enums\OrderStatus::DELIVERED, \App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED, \App\Enums\OrderStatus::RETURNED])
+                        ->exists();
+                    if ($enCours) {
+                        throw new Exception(trans('all.message.account_not_delete_kitchen'), 422);
+                    }
+                    // [P19-002 / S19-001] Jeton Apple lu AVANT la transaction, révoqué chez Apple APRÈS — comme DeactivateController.
+                    $jetonApple = null;
+                    try { $jetonApple = $customer->apple_refresh_token; } catch (\Throwable) { $jetonApple = null; }
                     // [test-e2e stores S18-001 · 2026-11-13] Supprimer un client depuis l'administration (demande d'effacement reçue à
                     //   rgpd@…) EFFACE réellement ses données, comme la suppression faite par le client lui-même : avant, une simple
                     //   suppression douce laissait nom, e-mail, téléphone, identifiants Apple/Google et abonnement aux offres — et la
@@ -176,6 +191,9 @@ class CustomerService
                         $customer->tokens()->delete();
                         $customer->delete();
                     });
+                    if (filled($jetonApple)) {
+                        app(\App\Services\Auth\AppleTokenRevoker::class)->revoquer((string) $jetonApple);
+                    }
                 } else {
                     throw new Exception(trans('all.message.permission_denied'), 422);
                 }

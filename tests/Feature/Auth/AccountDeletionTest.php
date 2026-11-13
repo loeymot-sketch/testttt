@@ -273,6 +273,41 @@ class AccountDeletionTest extends TestCase
         $this->assertNull(DB::table('order_addresses')->find($adresse)->apartment);
     }
 
+    /** @test [P19-001/002/003] Suppression depuis l'admin : refusée pour un compte qui a aussi un rôle d'exploitation ou une
+     *  commande en cours ; le jeton Apple est révoqué chez Apple après l'effacement. */
+    public function la_suppression_admin_refuse_les_cas_dangereux_et_revoque_le_jeton_apple(): void
+    {
+        $espion = new class {
+            public array $appels = [];
+            public function revoquer(string $jeton): bool { $this->appels[] = $jeton; return true; }
+        };
+        $this->app->instance(\App\Services\Auth\AppleTokenRevoker::class, $espion);
+
+        // Admin + Customer : refusé, rien n'est effacé.
+        $mixte = $this->client(['email' => 'mixte@example.test', 'phone' => '0666666666']);
+        $mixte->assignRole('Admin');
+        $mixte->forceFill(['apple_sub' => null, 'google_sub' => null, 'loyalty_code' => null])->save();   // identifiants uniques du gabarit
+        try { app(\App\Services\CustomerService::class)->destroy($mixte); $this->fail('Admin + Customer ne doit pas être anonymisé.'); }
+        catch (\Exception $e) { $this->assertSame(422, $e->getCode()); }
+        $this->assertSame('mixte@example.test', User::withTrashed()->find($mixte->id)->email);
+
+        // Commande en cours : refusé.
+        $enLivraison = $this->client(['email' => 'route@example.test', 'phone' => '0677777777']);
+        $enLivraison->forceFill(['apple_sub' => null, 'google_sub' => null, 'loyalty_code' => null])->save();
+        Order::factory()->create(['user_id' => $enLivraison->id, 'branch_id' => $this->branch->id, 'status' => OrderStatus::ACCEPT]);
+        try { app(\App\Services\CustomerService::class)->destroy($enLivraison); $this->fail('Commande en cours : refus attendu.'); }
+        catch (\Exception $e) { $this->assertSame(422, $e->getCode()); }
+        $this->assertSame('route@example.test', User::withTrashed()->find($enLivraison->id)->email);
+
+        // Client simple avec jeton Apple : effacé et révoqué.
+        $apple = $this->client(['email' => 'apple@example.test', 'phone' => '0688888888']);
+        $apple->apple_refresh_token = 'jeton-apple-test';
+        $apple->save();
+        app(\App\Services\CustomerService::class)->destroy($apple);
+        $this->assertNull(User::withTrashed()->find($apple->id)->email);
+        $this->assertSame(['jeton-apple-test'], $espion->appels, 'Le jeton Apple est révoqué chez Apple.');
+    }
+
     /** @test [P18-002] Les tours de roue crédités au compte perdent nom, e-mail et téléphone à la suppression (et au rattrapage). */
     public function les_tours_de_roue_du_compte_perdent_leur_identite(): void
     {
