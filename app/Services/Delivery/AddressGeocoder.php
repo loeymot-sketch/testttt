@@ -137,7 +137,11 @@ class AddressGeocoder
 
         if (! $response->successful()) {
             Log::warning('delivery.geocoder.http_error', ['status' => $response->status()]);
-            throw new GeocodeUnavailableException(null, true);
+            // [SUPERVISION 2026-11-13] Un 4xx (hors 429) = la BAN refuse la SAISIE (« q: must contain between 3 and 200
+            // chars and start with a number or a letter », mesuré) : adresse invalide, que le client doit corriger — pas
+            // une panne. 5xx, 429 et erreurs réseau restent une panne.
+            $saisieRefusee = $response->clientError() && $response->status() !== 429;
+            throw new GeocodeUnavailableException(null, ! $saisieRefusee);
         }
         // [test-e2e stores F6-002 · 2026-11-12] Une page de maintenance en 200 (HTML, ou redirection suivie vers une page 200) n'est
         // pas « aucune adresse » : sans corps JSON portant `features`, c'est une panne du service.
