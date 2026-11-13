@@ -173,12 +173,13 @@ return [
         'fanta-citron' => 'fanta-citron.png',
         // [2026-07-05] Repli DISTINCT en attendant les vrais visuels owner
         // (fuze-tea.png / hawai.png / perrier.png). Swap 1 ligne à réception.
-        'fuze-tea'    => 'lipton-framboise.png', // thé framboise ≠ ice-tea (pêche)
+        // [test-e2e stores B-045 · 2026-11-13] Les VRAIS visuels sont arrivés (site : assets/menu/*.png) : plus de replis.
+        'fuze-tea'    => 'fuze-tea.png',
         // [OWNER8 2026-07-06] renommage « Fanta Hawai 33cl » → « Hawaï 33cl » (slug hawai) ;
         // clé legacy conservée pour un VPS pas encore migré par le seeder.
-        'hawai'       => 'fanta-fraise.png',     // Hawaï rose ≠ orange/citron
-        'fanta-hawai' => 'fanta-fraise.png',     // legacy slug (pré-migration)
-        'perrier'     => 'eau.png',              // eau gazeuse (repli eau)
+        'hawai'       => 'hawai.png',
+        'fanta-hawai' => 'hawai.png',            // legacy slug (pré-migration)
+        'perrier'     => 'perrier.png',
 
         // ── Menu enfant (cat 11)
         'menu-nuggets' => 'nuggets.png',

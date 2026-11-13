@@ -71,15 +71,20 @@ class DrinkNamingTest extends TestCase
 
     public function test_hawai_thumb_fallback_still_resolves_via_menu_images_config(): void
     {
+        // [test-e2e stores B-045 · 2026-11-13] Le vrai visuel Hawaï remplace le repli fanta-fraise.
         $items = config('menu_images.items', []);
-        $this->assertSame('fanta-fraise.png', $items['hawai'] ?? null, 'clé hawai câblée');
-        $this->assertFileExists(public_path('images/menu/fanta-fraise.png'), 'asset repli présent');
+        $this->assertSame('hawai.png', $items['hawai'] ?? null, 'clé hawai câblée');
+        $this->assertFileExists(public_path('images/menu/hawai.png'), 'visuel présent');
 
         $this->seedBoissonsCategory();
         $this->seed(DrinksUpdate20260705Seeder::class);
         $thumb = Item::where('slug', 'hawai')->first()->thumb;
-        // extension-agnostique : le resolver peut servir la variante optimisée
-        // (images/menu/thumbs/fanta-fraise.webp) du même visuel.
-        $this->assertStringContainsString('fanta-fraise', $thumb, 'Item::thumb repli fonctionne pour hawai');
+        // extension-agnostique : le resolver peut servir la variante optimisée (images/menu/thumbs/hawai.webp).
+        $this->assertStringContainsString('hawai', $thumb, 'Item::thumb sert le visuel Hawaï');
+        $this->assertStringNotContainsString('fanta-fraise', $thumb);
+        foreach (['fuze-tea' => 'fuze-tea.png', 'perrier' => 'perrier.png'] as $slug => $fichier) {
+            $this->assertSame($fichier, $items[$slug] ?? null, $slug . ' : vrai visuel');
+            $this->assertFileExists(public_path('images/menu/' . $fichier));
+        }
     }
 }
