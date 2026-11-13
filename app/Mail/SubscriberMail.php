@@ -34,6 +34,17 @@ class SubscriberMail extends Mailable
         // Subject header must carry what the admin actually typed — it was
         // hardcoded to a generic English string (ADR-007 FR-lock violation)
         // while the entered title only ever appeared as body text.
-        return $this->subject($this->title)->markdown('emails.subscriber');
+        $mail = $this->subject($this->title)->markdown('emails.subscriber');
+        // [S14-04] En-têtes standard de désinscription (RFC 2369 + RFC 8058 « un clic ») : les messageries affichent leur
+        // propre bouton « Se désinscrire », qui appelle le même lien signé en POST.
+        if ($this->lienDesinscription) {
+            $lien = $this->lienDesinscription;
+            $mail->withSymfonyMessage(function ($message) use ($lien) {
+                $message->getHeaders()->addTextHeader('List-Unsubscribe', '<' . $lien . '>');
+                $message->getHeaders()->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
+            });
+        }
+
+        return $mail;
     }
 }

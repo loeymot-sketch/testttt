@@ -277,7 +277,9 @@ Route::middleware(['installed', 'wheel.access'])->group(function () {
 // classe de l'incident paiement borne 2026-07-07 ; les fichiers EXISTANTS sont
 // servis par le serveur web avant Laravel, seuls les manquants arrivent ici).
 // [S13-04] Désinscription des offres par e-mail (lien signé de chaque e-mail ; avant la route attrape-tout).
-Route::get('/desinscription-offres', \App\Http\Controllers\Frontend\DesinscriptionOffresController::class)
+// [S14-04] GET = page de confirmation (un lien OUVERT par l'antivirus d'une messagerie ne désinscrit personne) ;
+// POST = désinscription (bouton de la page, ou « un clic » RFC 8058 des messageries). Même signature dans les deux cas.
+Route::match(['get', 'post'], '/desinscription-offres', \App\Http\Controllers\Frontend\DesinscriptionOffresController::class)
     ->middleware(['signed', 'throttle:30,1'])->name('newsletter.desinscription');
 
 Route::get('/{any}', [RootController::class, 'index'])

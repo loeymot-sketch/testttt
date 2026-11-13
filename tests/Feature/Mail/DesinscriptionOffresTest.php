@@ -45,6 +45,7 @@ class DesinscriptionOffresTest extends TestCase
         Mail::assertSent(SubscriberMail::class, 2);
         foreach (['a@example.test', 'b@example.test'] as $email) {
             Mail::assertSent(SubscriberMail::class, function (SubscriberMail $m) use ($email) {
+                $m->build();
                 return $m->hasTo($email) && is_string($m->lienDesinscription)
                     && str_contains($m->lienDesinscription, 'signature=') && str_contains($m->lienDesinscription, urlencode($email));
             });
@@ -56,8 +57,23 @@ class DesinscriptionOffresTest extends TestCase
         Subscriber::query()->create(['email' => 'client@example.test']);
         $lien = URL::signedRoute('newsletter.desinscription', ['email' => 'client@example.test']);
 
-        $this->get($lien)->assertOk()->assertSee('Vous êtes désinscrit', false);
+        // [S14-04] Ouvrir le lien (antivirus, aperçu) ne désinscrit PAS : page de confirmation avec un bouton.
+        $this->get($lien)->assertOk()->assertSee('Me désinscrire', false);
+        $this->assertSame(1, Subscriber::query()->where('email', 'client@example.test')->count());
+        // Le bouton (ou le « un clic » de la messagerie) désinscrit.
+        $this->post($lien)->assertOk()->assertSee('Vous êtes désinscrit', false);
         $this->assertSame(0, Subscriber::query()->where('email', 'client@example.test')->count());
+    }
+
+    /** [S14-04] Mise en page : titre et paragraphes, jamais un bloc de code (indentation Markdown) ; lien présent. */
+    public function test_l_email_d_offre_est_mis_en_page_et_porte_le_lien(): void
+    {
+        $this->seedMinimalSettings();
+        $html = (new SubscriberMail('Menu de Noël', 'Découvrez la carte.', 'https://exemple.test/desinscription-offres?signature=x'))->render();
+        $this->assertStringNotContainsString('<code>', $html);
+        $this->assertStringNotContainsString('<pre>', $html);
+        $this->assertStringContainsString('Découvrez la carte.', $html);
+        $this->assertStringContainsString('Se désinscrire', $html);
     }
 
     public function test_une_url_forgee_ne_desinscrit_personne(): void
@@ -66,6 +82,7 @@ class DesinscriptionOffresTest extends TestCase
 
         $this->get('/desinscription-offres?email=client@example.test')->assertStatus(403);
         $this->get('/desinscription-offres?email=client@example.test&signature=faux')->assertStatus(403);
+        $this->post('/desinscription-offres?email=client@example.test&signature=faux')->assertStatus(403);
         $this->assertSame(1, Subscriber::query()->where('email', 'client@example.test')->count());
     }
 }
