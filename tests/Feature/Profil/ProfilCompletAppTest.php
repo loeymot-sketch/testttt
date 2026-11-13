@@ -211,7 +211,28 @@ class ProfilCompletAppTest extends TestCase
         $this->assertSame(1, Address::where('user_id', $u->id)->count());
     }
 
-    public function test_messages_du_carnet_en_francais(): void
+    /** [supervision 2026-11-13] Un ancien client (adresses, aucune par défaut) : une nouvelle adresse ne devient pas « par défaut » d'office. */
+    public function test_une_nouvelle_adresse_ne_devient_par_defaut_que_si_c_est_la_premiere(): void
+    {
+        $this->fauxGeocodeur();
+        $u = $this->client();
+        $this->adresse($u, 'Ancienne');
+        $r = $this->api($u)->postJson('/api/frontend/address', ['label' => 'Livraison 123', 'address' => '1 Place Jean Jaurès, 62110 Hénin-Beaumont']);
+        $r->assertSuccessful();
+        $this->assertFalse((bool) $r->json('data.is_default'), 'Pas choisie par le client : pas par défaut.');
+    }
+
+    /** [supervision 2026-11-13] Suppression depuis l'admin/la caisse : la plus récente reprend le « par défaut ». */
+    public function test_suppression_admin_d_une_adresse_par_defaut_designe_une_autre(): void
+    {
+        $u = $this->client();
+        $vieille = $this->adresse($u, 'Travail');
+        $defaut = $this->adresse($u, 'Maison', true);
+        app(\App\Services\UserAddressService::class)->destroy($u, $defaut);
+        $this->assertTrue($vieille->fresh()->is_default);
+    }
+
+        public function test_messages_du_carnet_en_francais(): void
     {
         $u = $this->client();
         $adr = $this->adresse($u, 'Maison', true);

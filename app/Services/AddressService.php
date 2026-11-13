@@ -74,8 +74,10 @@ class AddressService
             return \Illuminate\Support\Facades\DB::transaction(function () use ($payload) {
                 \App\Models\User::withoutGlobalScopes()->whereKey($payload['user_id'])->lockForUpdate()->first(['id']);
                 $address = Address::create($payload);
+                // [supervision 2026-11-13] Vraiment la PREMIÈRE adresse (aucune autre) : un ancien client sans adresse par défaut ne
+                //   voit plus l'adresse automatique d'une livraison (« Livraison … ») devenir sa valeur par défaut sans l'avoir choisie.
                 if (self::aLaColonneParDefaut()
-                    && ! Address::where('user_id', $address->user_id)->where('id', '!=', $address->id)->where('is_default', true)->exists()) {
+                    && ! Address::where('user_id', $address->user_id)->where('id', '!=', $address->id)->exists()) {
                     $address->forceFill(['is_default' => true])->save();
                 }
 

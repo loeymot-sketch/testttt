@@ -94,7 +94,9 @@ class UserAddressService
     {
         try {
             if ($user->id == $address->user_id) {
-                $address->delete();
+                // [supervision 2026-11-13] Même chemin que la suppression par le client (verrou, adresse par défaut reprise par la
+                //   plus récente) : supprimée depuis l'admin ou la caisse, l'adresse par défaut laissait le client sans défaut.
+                app(\App\Services\AddressService::class)->destroy($address);
             } else {
                 throw new Exception(trans('all.user_match'), 422);
             }
