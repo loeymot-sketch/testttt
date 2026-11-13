@@ -308,6 +308,22 @@ class AccountDeletionTest extends TestCase
         $this->assertSame(['jeton-apple-test'], $espion->appels, 'Le jeton Apple est révoqué chez Apple.');
     }
 
+    /** @test [S20-001] Une commande prise par téléphone en caisse perd le nom et le numéro recopiés, à la suppression et au rattrapage. */
+    public function les_commandes_caisse_perdent_nom_et_numero_du_client(): void
+    {
+        $client = $this->client(['email' => 'caisse@example.test', 'phone' => '0699111111']);
+        $commande = Order::factory()->create(['user_id' => $client->id, 'branch_id' => $this->branch->id, 'status' => OrderStatus::DELIVERED]);
+        DB::table('orders')->where('id', $commande->id)->update(['pos_customer_name' => 'Client Téléphone', 'pos_customer_phone' => '0699111111']);
+
+        $this->withHeader('Authorization', 'Bearer ' . $this->jeton($client))->postJson('/api/auth/delete-account')->assertStatus(200);
+
+        $ligne = DB::table('orders')->find($commande->id);
+        $this->assertNull($ligne->pos_customer_name);
+        $this->assertNull($ligne->pos_customer_phone);
+        $this->assertNotNull($ligne->total, 'Le reste de la commande est conservé.');
+        $this->artisan('comptes:rattraper-suppressions')->expectsOutputToContain('commandes caisse avec nom/numéro : 0')->assertSuccessful();
+    }
+
     /** @test [P18-002] Les tours de roue crédités au compte perdent nom, e-mail et téléphone à la suppression (et au rattrapage). */
     public function les_tours_de_roue_du_compte_perdent_leur_identite(): void
     {

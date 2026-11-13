@@ -38,6 +38,14 @@ class AnonymisationCompte
                     $course->forceFill(['dropoff_phone' => null, 'dropoff_instructions' => null, 'delivery_payload' => $brut ?: null])->saveQuietly();
                 });
         }
+        // [test-e2e stores S20-001 · 2026-11-13] Commande prise par TÉLÉPHONE en caisse et rattachée au compte : la caisse y recopie
+        //   le nom et le numéro (pos_customer_name / pos_customer_phone). Ce ne sont pas des données fiscales (aucune empreinte ni
+        //   chaîne NF525 ne les contient) : effacées, comme la politique l'annonce (« plus votre nom ni votre numéro »).
+        foreach (['pos_customer_name', 'pos_customer_phone'] as $colonne) {
+            if (\Illuminate\Support\Facades\Schema::hasColumn('orders', $colonne)) {
+                \Illuminate\Support\Facades\DB::table('orders')->where('user_id', $userId)->whereNotNull($colonne)->update([$colonne => null]);
+            }
+        }
         // [test-e2e stores P18-002 · 2026-11-13] Tours de roue crédités à ce compte : nom, e-mail et téléphone saisis à la roue.
         //   Le téléphone est obligatoire et unique par campagne (un tour par téléphone) : remplacé par une valeur neutre unique.
         if (\Illuminate\Support\Facades\Schema::hasTable('wheel_spins') && \Illuminate\Support\Facades\Schema::hasColumn('wheel_spins', 'points_credited_user_id')) {
