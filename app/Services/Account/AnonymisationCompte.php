@@ -21,14 +21,14 @@ class AnonymisationCompte
         // COMPLÉMENT de leur adresse (étage, bâtiment, code d'entrée) et son libellé personnel (« Maison ») sont des
         // données personnelles sans aucune valeur comptable : effacés. Rue, commune, code postal et coordonnées
         // restent, car la commande et sa tournée de livraison en dépendent.
-        \App\Models\OrderAddress::withoutGlobalScopes()->where('user_id', $userId)
+        \App\Models\OrderAddress::query()->where('user_id', $userId)
             ->update(['apartment' => null, 'label' => 'Livraison']);
 
         // [test-e2e stores P-012] Même règle pour les courses Uber Direct de ses commandes : téléphone, consignes et nom
         // du destinataire effacés (colonnes ET réponse brute d'Uber) ; prix, statut et suivi de la course restent.
-        $idsCommandes = \App\Models\Order::withoutGlobalScopes()->where('user_id', $userId)->pluck('id');
+        $idsCommandes = \App\Models\Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->withTrashed()->where('user_id', $userId)->pluck('id');
         if ($idsCommandes->isNotEmpty()) {
-            \App\Models\UberDirectDelivery::withoutGlobalScopes()->whereIn('order_id', $idsCommandes)->get()
+            \App\Models\UberDirectDelivery::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->whereIn('order_id', $idsCommandes)->get()
                 ->each(function ($course) {
                     $brut = (array) ($course->delivery_payload ?? []);
                     if (isset($brut['dropoff']) && is_array($brut['dropoff'])) {
@@ -74,7 +74,7 @@ class AnonymisationCompte
         $emailAvant = mb_strtolower(trim((string) $user->email));
         // [supervision 2026-11-13] L'abonné n'est retiré que si AUCUN autre compte vivant n'a cette adresse (rattrapage d'un ancien
         //   compte dont la personne s'est réinscrite depuis avec le même e-mail).
-        $autreCompte = $emailAvant !== '' && \App\Models\User::withoutGlobalScopes()->whereKeyNot($user->id)
+        $autreCompte = $emailAvant !== '' && \App\Models\User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->whereKeyNot($user->id)
             ->whereRaw('LOWER(email) = ?', [$emailAvant])->exists();
         if ($emailAvant !== '' && ! $autreCompte) {
             \App\Models\Subscriber::query()->whereRaw('LOWER(email) = ?', [$emailAvant])->delete();

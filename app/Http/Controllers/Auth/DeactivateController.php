@@ -65,7 +65,7 @@ class DeactivateController extends Controller
                 // ces annulations — on ne supprime jamais « à moitié ».
                 // [supervision D1 · 2026-11-13] Verrou de la ligne du client, puis rôles et commande bloquante vérifiés AVANT toute
                 //   annulation : un refus n'envoie plus « commande annulée » pour une annulation aussitôt défaite.
-                \App\Models\User::withoutGlobalScopes()->whereKey($user->id)->lockForUpdate()->first(['id']);
+                \App\Models\User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->whereKey($user->id)->lockForUpdate()->first(['id']);
                 if (! $estClient) {
                     throw new Exception(trans('all.message.only_customer_delete'), 422);
                 }

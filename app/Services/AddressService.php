@@ -72,7 +72,7 @@ class AddressService
             // [test-e2e stores P-021 · 2026-11-13] Sous verrou de la ligne du CLIENT : deux ajouts simultanés donnaient deux
             // adresses « par défaut » (6 essais sur 8).
             return \Illuminate\Support\Facades\DB::transaction(function () use ($payload) {
-                \App\Models\User::withoutGlobalScopes()->whereKey($payload['user_id'])->lockForUpdate()->first(['id']);
+                \App\Models\User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->whereKey($payload['user_id'])->lockForUpdate()->first(['id']);
                 $address = Address::create($payload);
                 // [supervision 2026-11-13] Vraiment la PREMIÈRE adresse (aucune autre) : un ancien client sans adresse par défaut ne
                 //   voit plus l'adresse automatique d'une livraison (« Livraison … ») devenir sa valeur par défaut sans l'avoir choisie.
@@ -173,7 +173,7 @@ class AddressService
         try {
             $address = \Illuminate\Support\Facades\DB::transaction(function () use ($address) {
                 // [P-021] Même verrou que l'ajout : la ligne du client sérialise ajout, choix par défaut et suppression.
-                \App\Models\User::withoutGlobalScopes()->whereKey($address->user_id)->lockForUpdate()->first(['id']);
+                \App\Models\User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->whereKey($address->user_id)->lockForUpdate()->first(['id']);
                 // [test-e2e stores P15-001 · 2026-11-13] Relue SOUS le verrou : supprimée entre-temps par un autre appareil, elle ne
                 // devient pas « par défaut » (le carnet restait sans adresse par défaut, réponse 422 « No query results… »).
                 $fraiche = Address::whereKey($address->id)->first();
@@ -220,7 +220,7 @@ class AddressService
             // [test-e2e stores P-024 · 2026-11-13] Même verrou (ligne du client) que l'ajout et le choix par défaut : trois actions
             // simultanées provoquaient un interblocage (422 « erreur de base de données »).
             \Illuminate\Support\Facades\DB::transaction(function () use ($address) {
-                \App\Models\User::withoutGlobalScopes()->whereKey($address->user_id)->lockForUpdate()->first(['id']);
+                \App\Models\User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->whereKey($address->user_id)->lockForUpdate()->first(['id']);
                 // [P15-001] État relu SOUS le verrou : « par défaut » a pu changer (ou l'adresse disparaître) depuis la requête.
                 $fraiche = Address::whereKey($address->id)->first();
                 if (! $fraiche) {

@@ -182,7 +182,7 @@ class CustomerService
                         // [P20-002] Comme pour le client : ce qu'il aurait pu annuler lui-même (jamais commencé, jamais payé) est annulé
                         //   d'abord ; seule une commande réellement en cours (commencée ou réglée) bloque.
                         // [supervision D1] Verrou du client, puis refus AVANT toute annulation (aucune notification pour rien).
-                        \App\Models\User::withoutGlobalScopes()->whereKey($customer->id)->lockForUpdate()->first(['id']);
+                        \App\Models\User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->whereKey($customer->id)->lockForUpdate()->first(['id']);
                         if (app(\App\Services\FrontendOrderService::class)->aUneCommandeBloquantePourSuppression((int) $customer->id)) {
                             throw new Exception('Ce client a une commande en cours (en préparation ou déjà réglée) : supprimez son compte une fois la commande remise.', 422);
                         }
@@ -190,7 +190,7 @@ class CustomerService
                             (int) $customer->id,
                             'Suppression du compte par l\'administration'
                         );
-                        $enCours = \App\Models\Order::withoutGlobalScopes()->where('user_id', $customer->id)
+                        $enCours = \App\Models\Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('user_id', $customer->id)
                             ->whereNotIn('status', [\App\Enums\OrderStatus::DELIVERED, \App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED, \App\Enums\OrderStatus::RETURNED])
                             ->exists();
                         if ($enCours) {
