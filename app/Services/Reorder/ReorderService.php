@@ -86,6 +86,21 @@ final class ReorderService
             return $base + ['available' => false, 'reason' => $refus[0], 'message' => $refus[1], 'unit_price' => null, 'payload' => null];
         }
 
+        // [SUPERVISION 2026-11-13] Même garde que la commande web (FrontendOrderService::sansFormuleNonPayee) : la boisson
+        // du menu (« Boisson menu: … », dans l'instruction) doit exister et être disponible AUJOURD'HUI. Sans cela, un menu
+        // dont la boisson est en rupture était annoncé disponible puis refusé au paiement, sans issue pour le client.
+        // Les articles passent comme à la commande (JSON décodé en objets) ; seule l'exception compte, rien n'est modifié.
+        try {
+            \App\Services\FrontendOrderService::sansFormuleNonPayee(json_decode(json_encode([$payload])));
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $detail = (string) (collect($e->errors())->flatten()->first() ?? '');
+            $message = $detail !== ''
+                ? rtrim(preg_replace('/\s*Modifiez l\'article.*$/u', '', $detail), '. ') . ' : recomposez « ' . $nom . ' » depuis la carte.'
+                : 'La composition de « ' . $nom . ' » a changé depuis cette commande : recomposez-le depuis la carte.';
+
+            return $base + ['available' => false, 'reason' => 'composition', 'message' => $message, 'unit_price' => null, 'payload' => null];
+        }
+
         try {
             $prix = $this->preview->preview($branchId, [$payload], $customerId, null, null);
             $unitaire = round((float) ($prix['lines'][0]['line_total'] ?? $prix['total'] ?? 0), 2);
