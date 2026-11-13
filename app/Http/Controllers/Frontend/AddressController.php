@@ -80,6 +80,9 @@ class AddressController extends Controller
 
         try {
             return new AddressResource($this->addressService->setDefault($address));
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            // [test-e2e stores P15-001 · 2026-11-13] Supprimée depuis un autre appareil pendant la demande.
+            return response(['status' => false, 'code' => 'ADDRESS_GONE', 'message' => 'Cette adresse a été supprimée depuis un autre appareil.'], 404);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

@@ -169,15 +169,25 @@ class AddressService
     public function setDefault(Address $address): Address
     {
         try {
-            \Illuminate\Support\Facades\DB::transaction(function () use ($address) {
+            $address = \Illuminate\Support\Facades\DB::transaction(function () use ($address) {
                 // [P-021] Même verrou que l'ajout : la ligne du client sérialise ajout, choix par défaut et suppression.
                 \App\Models\User::withoutGlobalScopes()->whereKey($address->user_id)->lockForUpdate()->first(['id']);
-                Address::where('user_id', $address->user_id)->lockForUpdate()->get(['id']);
-                Address::where('user_id', $address->user_id)->where('id', '!=', $address->id)->update(['is_default' => false]);
-                $address->forceFill(['is_default' => true])->save();
+                // [test-e2e stores P15-001 · 2026-11-13] Relue SOUS le verrou : supprimée entre-temps par un autre appareil, elle ne
+                // devient pas « par défaut » (le carnet restait sans adresse par défaut, réponse 422 « No query results… »).
+                $fraiche = Address::whereKey($address->id)->first();
+                if (! $fraiche) {
+                    throw (new \Illuminate\Database\Eloquent\ModelNotFoundException())->setModel(Address::class, [$address->id]);
+                }
+                Address::where('user_id', $fraiche->user_id)->lockForUpdate()->get(['id']);
+                Address::where('user_id', $fraiche->user_id)->where('id', '!=', $fraiche->id)->update(['is_default' => false]);
+                $fraiche->forceFill(['is_default' => true])->save();
+
+                return $fraiche;
             });
 
             return $address->refresh();
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $disparue) {
+            throw $disparue;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -209,9 +219,14 @@ class AddressService
             // simultanées provoquaient un interblocage (422 « erreur de base de données »).
             \Illuminate\Support\Facades\DB::transaction(function () use ($address) {
                 \App\Models\User::withoutGlobalScopes()->whereKey($address->user_id)->lockForUpdate()->first(['id']);
-                $etaitParDefaut = self::aLaColonneParDefaut() && (bool) $address->is_default;
-                $userId = (int) $address->user_id;
-                $address->delete();
+                // [P15-001] État relu SOUS le verrou : « par défaut » a pu changer (ou l'adresse disparaître) depuis la requête.
+                $fraiche = Address::whereKey($address->id)->first();
+                if (! $fraiche) {
+                    return; // déjà supprimée par un autre appareil : rien à faire, la suppression est acquise
+                }
+                $etaitParDefaut = self::aLaColonneParDefaut() && (bool) $fraiche->is_default;
+                $userId = (int) $fraiche->user_id;
+                $fraiche->delete();
                 // [PROFIL APP 2026-11-12] L'adresse par défaut supprimée : la plus récente qui reste prend le relais.
                 if ($etaitParDefaut) {
                     $suivante = Address::where('user_id', $userId)->orderByDesc('id')->first();

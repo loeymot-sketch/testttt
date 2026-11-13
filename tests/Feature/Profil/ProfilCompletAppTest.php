@@ -165,6 +165,52 @@ class ProfilCompletAppTest extends TestCase
         $this->assertTrue($vieille->fresh()->is_default, 'L\'adresse restante prend le relais.');
     }
 
+    /**
+     * [test-e2e stores P15-001 · 2026-11-13] Deux appareils : l'un supprime « Travail », l'autre la désigne par défaut au même
+     * instant. La requête « par défaut » a déjà chargé l'adresse (liaison de route) quand la suppression passe : elle doit
+     * répondre « supprimée », sans laisser le carnet sans adresse par défaut ni renvoyer « No query results… ».
+     */
+    public function test_designer_par_defaut_une_adresse_supprimee_entre_temps(): void
+    {
+        $u = $this->client();
+        $maison = $this->adresse($u, 'Maison', true);
+        $travail = $this->adresse($u, 'Travail');
+        $chargee = Address::find($travail->id);          // ce que la requête « par défaut » a lu avant le verrou
+        $travail->delete();                               // l'autre appareil supprime pendant ce temps
+
+        try {
+            app(\App\Services\AddressService::class)->setDefault($chargee);
+            $this->fail('Une adresse supprimée ne peut pas devenir l\'adresse par défaut.');
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            // attendu : le contrôleur en fait un 404 « supprimée depuis un autre appareil »
+        }
+        $this->assertTrue($maison->fresh()->is_default, 'Le carnet garde son adresse par défaut.');
+        $this->assertSame(1, Address::where('user_id', $u->id)->where('is_default', true)->count());
+    }
+
+    /** [P15-001] Suppression avec un état « par défaut » périmé : c'est l'état relu sous le verrou qui décide de la relève. */
+    public function test_supprimer_avec_un_etat_par_defaut_perime_garde_une_adresse_par_defaut(): void
+    {
+        $u = $this->client();
+        $maison = $this->adresse($u, 'Maison', true);
+        $travail = $this->adresse($u, 'Travail');
+        $bureau = $this->adresse($u, 'Bureau');          // la plus récente : celle qu'une relève À TORT désignerait
+        $chargeeAvant = Address::find($maison->id);      // lue « par défaut »…
+        // … puis un autre appareil fait de « Travail » l'adresse par défaut.
+        app(\App\Services\AddressService::class)->setDefault($travail);
+
+        app(\App\Services\AddressService::class)->destroy($chargeeAvant);
+        $this->assertTrue($travail->fresh()->is_default, '« Travail » reste l\'adresse par défaut.');
+        $this->assertFalse($bureau->fresh()->is_default, 'Pas de 2e adresse par défaut (« Bureau »).');
+        $this->assertSame(1, Address::where('user_id', $u->id)->where('is_default', true)->count());
+
+        // Supprimer une adresse déjà supprimée ailleurs ne lève rien.
+        $deja = Address::find($bureau->id);
+        $bureau->delete();
+        app(\App\Services\AddressService::class)->destroy($deja);
+        $this->assertSame(1, Address::where('user_id', $u->id)->count());
+    }
+
     public function test_messages_du_carnet_en_francais(): void
     {
         $u = $this->client();
