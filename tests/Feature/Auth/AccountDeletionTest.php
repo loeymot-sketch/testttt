@@ -245,6 +245,56 @@ class AccountDeletionTest extends TestCase
         $this->assertSame($telephone, User::withTrashed()->find($ancien->id)->phone);
     }
 
+    /**
+     * @test
+     * [test-e2e stores S18-001 · 2026-11-13] Supprimer un client depuis l'administration efface réellement son identité et ses
+     * traces (même service que la suppression par le client), au lieu d'une simple suppression douce.
+     */
+    public function supprimer_un_client_depuis_l_administration_efface_ses_donnees(): void
+    {
+        $client = $this->client(['email' => 'admin-supprime@example.test', 'phone' => '0633333333', 'name' => 'Client Admin']);
+        \App\Models\Subscriber::create(['email' => 'admin-supprime@example.test']);
+        $commande = Order::factory()->create(['user_id' => $client->id, 'branch_id' => $this->branch->id, 'status' => OrderStatus::DELIVERED]);
+        $adresse = DB::table('order_addresses')->insertGetId([
+            'order_id' => $commande->id, 'user_id' => $client->id, 'label' => 'Maison',
+            'address' => '1 Rue Test 62110 Hénin-Beaumont', 'apartment' => 'code 9999',
+            'latitude' => '50.42', 'longitude' => '2.95', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        app(\App\Services\CustomerService::class)->destroy($client);
+
+        $apres = User::withTrashed()->find($client->id);
+        $this->assertNotNull($apres->deleted_at);
+        $this->assertNull($apres->email);
+        $this->assertSame('Compte supprimé', $apres->name);
+        $this->assertStringStartsWith('PENDING_DELETED_', (string) $apres->phone);
+        $this->assertNull($apres->apple_sub);
+        $this->assertSame(0, \App\Models\Subscriber::whereRaw('LOWER(email) = ?', ['admin-supprime@example.test'])->count(), 'Plus d\'offres par e-mail.');
+        $this->assertNull(DB::table('order_addresses')->find($adresse)->apartment);
+    }
+
+    /** @test [S18-002] Le rattrapage voit (et efface) un nom/téléphone restés seulement dans la réponse brute d'Uber. */
+    public function le_rattrapage_voit_les_traces_uber_restees_dans_la_reponse_brute(): void
+    {
+        $client = $this->client(['email' => 'brut@example.test', 'phone' => '0644444444']);
+        $commande = Order::factory()->create(['user_id' => $client->id, 'branch_id' => $this->branch->id, 'status' => OrderStatus::DELIVERED]);
+        $this->withHeader('Authorization', 'Bearer ' . $this->jeton($client))->postJson('/api/auth/delete-account')->assertStatus(200);
+        // Un webhook arrivé APRÈS la suppression remet nom et téléphone dans la réponse brute (colonnes vides).
+        $course = DB::table('uber_direct_deliveries')->insertGetId([
+            'branch_id' => $this->branch->id, 'order_id' => $commande->id, 'status' => 'delivered', 'quote_fee_cents' => 500,
+            'dropoff_phone' => null, 'dropoff_instructions' => null,
+            'delivery_payload' => json_encode(['id' => 'del_w', 'dropoff' => ['name' => 'Brut', 'phone_number' => '+33644444444']]),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->artisan('comptes:rattraper-suppressions')->expectsOutputToContain('courses Uber avec téléphone/consignes : 1')->assertSuccessful();
+        $this->artisan('comptes:rattraper-suppressions --appliquer')->assertSuccessful();
+        $brut = json_decode(DB::table('uber_direct_deliveries')->find($course)->delivery_payload, true);
+        $this->assertArrayNotHasKey('phone_number', $brut['dropoff']);
+        $this->assertArrayNotHasKey('name', $brut['dropoff']);
+        $this->artisan('comptes:rattraper-suppressions')->expectsOutputToContain('courses Uber avec téléphone/consignes : 0')->assertSuccessful();
+    }
+
     /** @test */
     public function un_compte_supprime_ne_peut_plus_etre_ressuscite_par_son_telephone(): void
     {

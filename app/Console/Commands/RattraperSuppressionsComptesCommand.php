@@ -43,9 +43,24 @@ class RattraperSuppressionsComptesCommand extends Command
                     $identite = ! $anonymisation->identiteDejaEffacee($compte);
                     $complements = DB::table('order_addresses')->where('user_id', $compte->id)
                         ->where(function ($q) { $q->whereNotNull('apartment')->orWhere('label', '!=', 'Livraison'); })->count();
+                    // [test-e2e stores S18-002] Aussi la réponse BRUTE d'Uber (delivery_payload) : un webhook reçu après la suppression
+                    //   y remettait nom et téléphone du destinataire, invisibles pour un contrôle limité aux colonnes.
                     $courses = DB::table('uber_direct_deliveries')
                         ->whereIn('order_id', DB::table('orders')->where('user_id', $compte->id)->select('id'))
-                        ->where(function ($q) { $q->whereNotNull('dropoff_phone')->orWhereNotNull('dropoff_instructions'); })->count();
+                        ->get(['dropoff_phone', 'dropoff_instructions', 'delivery_payload'])
+                        ->filter(function ($c) {
+                            if ($c->dropoff_phone !== null || $c->dropoff_instructions !== null) {
+                                return true;
+                            }
+                            $brut = json_decode((string) $c->delivery_payload, true);
+                            if (! is_array($brut)) {
+                                return false;
+                            }
+                            $d = is_array($brut['dropoff'] ?? null) ? $brut['dropoff'] : [];
+
+                            return isset($d['name']) || isset($d['phone_number']) || isset($d['notes'])
+                                || isset($brut['dropoff_name']) || isset($brut['dropoff_phone_number']) || isset($brut['dropoff_notes']);
+                        })->count();
                     $bilan['identites'] += $identite ? 1 : 0;
                     $bilan['complements'] += $complements;
                     $bilan['courses'] += $courses;

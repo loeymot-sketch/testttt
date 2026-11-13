@@ -160,9 +160,20 @@ class CustomerService
     {
         try {
             if (!in_array(EnumRole::CUSTOMER, $this->blockRoles) && $customer->id != 2) {
-                if ($customer->hasRole(EnumRole::CUSTOMER)) {
+                // [S18-001] Rôle PRINCIPAL reconnu par son NOM (« Customer »), comme DeactivateController : comparer l'identifiant
+                //   (EnumRole::CUSTOMER = 2) casse dès que les rôles n'ont pas été semés dans l'ordre d'origine.
+                $premierRole = $customer->roles->first();
+                if (($premierRole && $premierRole->name === 'Customer') || $customer->hasRole(EnumRole::CUSTOMER)) {
+                    // [test-e2e stores S18-001 · 2026-11-13] Supprimer un client depuis l'administration (demande d'effacement reçue à
+                    //   rgpd@…) EFFACE réellement ses données, comme la suppression faite par le client lui-même : avant, une simple
+                    //   suppression douce laissait nom, e-mail, téléphone, identifiants Apple/Google et abonnement aux offres — et la
+                    //   connexion invité suivante le « ressuscitait ». Même service que DeactivateController : les deux ne divergent plus.
                     DB::transaction(function () use ($customer) {
                         $customer->addresses()->delete();
+                        $anonymisation = app(\App\Services\Account\AnonymisationCompte::class);
+                        $anonymisation->effacerResidus((int) $customer->id);
+                        $anonymisation->anonymiserIdentite($customer);
+                        $customer->tokens()->delete();
                         $customer->delete();
                     });
                 } else {
