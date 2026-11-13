@@ -38,6 +38,19 @@ class AnonymisationCompte
                     $course->forceFill(['dropoff_phone' => null, 'dropoff_instructions' => null, 'delivery_payload' => $brut ?: null])->saveQuietly();
                 });
         }
+        // [test-e2e stores P18-002 · 2026-11-13] Tours de roue crédités à ce compte : nom, e-mail et téléphone saisis à la roue.
+        //   Le téléphone est obligatoire et unique par campagne (un tour par téléphone) : remplacé par une valeur neutre unique.
+        if (\Illuminate\Support\Facades\Schema::hasTable('wheel_spins') && \Illuminate\Support\Facades\Schema::hasColumn('wheel_spins', 'points_credited_user_id')) {
+            $avecEmail = \Illuminate\Support\Facades\Schema::hasColumn('wheel_spins', 'email');
+            \Illuminate\Support\Facades\DB::table('wheel_spins')->where('points_credited_user_id', $userId)->orderBy('id')
+                ->get(['id'])->each(function ($tour) use ($avecEmail) {
+                    $champs = ['customer_name' => null, 'phone' => 'SUPPRIME-' . $tour->id, 'updated_at' => now()];
+                    if ($avecEmail) {
+                        $champs['email'] = null;
+                    }
+                    \Illuminate\Support\Facades\DB::table('wheel_spins')->where('id', $tour->id)->update($champs);
+                });
+        }
     }
 
     /** Identité du compte : nom, e-mail, téléphones, identifiants Apple/Google, jetons ; et désinscription des offres. */

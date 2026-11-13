@@ -273,6 +273,32 @@ class AccountDeletionTest extends TestCase
         $this->assertNull(DB::table('order_addresses')->find($adresse)->apartment);
     }
 
+    /** @test [P18-002] Les tours de roue crédités au compte perdent nom, e-mail et téléphone à la suppression (et au rattrapage). */
+    public function les_tours_de_roue_du_compte_perdent_leur_identite(): void
+    {
+        $client = $this->client(['email' => 'roue@example.test', 'phone' => '0655555555']);
+        $ligne = [
+            'branch_id' => $this->branch->id, 'campaign_key' => 'test', 'phone' => '0655555555', 'customer_name' => 'Roue Client',
+            'prize_key' => 'pts', 'prize_label' => '50 points', 'prize_type' => 'points', 'unlock_method' => 'order',
+            'points_credited_user_id' => $client->id, 'created_at' => now(), 'updated_at' => now(),
+        ];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('wheel_spins', 'email')) {
+            $ligne['email'] = 'roue@example.test';
+        }
+        $id = DB::table('wheel_spins')->insertGetId($ligne);
+
+        $this->withHeader('Authorization', 'Bearer ' . $this->jeton($client))->postJson('/api/auth/delete-account')->assertStatus(200);
+
+        $tour = DB::table('wheel_spins')->find($id);
+        $this->assertNull($tour->customer_name);
+        $this->assertSame('SUPPRIME-' . $id, $tour->phone);
+        if (property_exists($tour, 'email')) {
+            $this->assertNull($tour->email);
+        }
+        $this->assertSame('50 points', $tour->prize_label, 'Le lot reste (comptabilité de la roue).');
+        $this->artisan('comptes:rattraper-suppressions')->expectsOutputToContain('tours de roue identifiants : 0')->assertSuccessful();
+    }
+
     /** @test [S18-002] Le rattrapage voit (et efface) un nom/téléphone restés seulement dans la réponse brute d'Uber. */
     public function le_rattrapage_voit_les_traces_uber_restees_dans_la_reponse_brute(): void
     {

@@ -29,7 +29,7 @@ class RattraperSuppressionsComptesCommand extends Command
     public function handle(AnonymisationCompte $anonymisation): int
     {
         $appliquer = (bool) $this->option('appliquer');
-        $bilan = ['comptes' => 0, 'identites' => 0, 'complements' => 0, 'courses' => 0, 'ignores_non_clients' => 0];
+        $bilan = ['comptes' => 0, 'identites' => 0, 'complements' => 0, 'courses' => 0, 'roue' => 0, 'ignores_non_clients' => 0];
 
         User::withoutGlobalScope(BranchScope::class)->onlyTrashed()->with('roles')->orderBy('id')
             ->chunkById(200, function ($comptes) use ($anonymisation, $appliquer, &$bilan) {
@@ -61,11 +61,17 @@ class RattraperSuppressionsComptesCommand extends Command
                             return isset($d['name']) || isset($d['phone_number']) || isset($d['notes'])
                                 || isset($brut['dropoff_name']) || isset($brut['dropoff_phone_number']) || isset($brut['dropoff_notes']);
                         })->count();
+                    // [P18-002] Tours de roue crédités au compte qui gardent encore nom / e-mail / téléphone.
+                    $roue = \Illuminate\Support\Facades\Schema::hasColumn('wheel_spins', 'points_credited_user_id')
+                        ? DB::table('wheel_spins')->where('points_credited_user_id', $compte->id)
+                            ->where(function ($q) { $q->whereNotNull('customer_name')->orWhere('phone', 'not like', 'SUPPRIME-%'); })->count()
+                        : 0;
+                    $bilan['roue'] += $roue;
                     $bilan['identites'] += $identite ? 1 : 0;
                     $bilan['complements'] += $complements;
                     $bilan['courses'] += $courses;
 
-                    if ($appliquer && ($identite || $complements || $courses)) {
+                    if ($appliquer && ($identite || $complements || $courses || $roue)) {
                         DB::transaction(function () use ($anonymisation, $compte, $identite) {
                             if ($identite) {
                                 $anonymisation->anonymiserIdentite($compte);
@@ -81,8 +87,9 @@ class RattraperSuppressionsComptesCommand extends Command
             . ' ; identités encore lisibles : ' . $bilan['identites']
             . ' ; compléments/libellés d\'adresse : ' . $bilan['complements']
             . ' ; courses Uber avec téléphone/consignes : ' . $bilan['courses']
+            . ' ; tours de roue identifiants : ' . $bilan['roue']
             . ' ; comptes non clients ignorés : ' . $bilan['ignores_non_clients'] . '.');
-        if (! $appliquer && ($bilan['identites'] || $bilan['complements'] || $bilan['courses'])) {
+        if (! $appliquer && ($bilan['identites'] || $bilan['complements'] || $bilan['courses'] || $bilan['roue'])) {
             $this->line('Relancer avec --appliquer pour effacer.');
         }
 
