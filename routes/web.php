@@ -280,7 +280,7 @@ Route::middleware(['installed', 'wheel.access'])->group(function () {
 // [S14-04] GET = page de confirmation (un lien OUVERT par l'antivirus d'une messagerie ne désinscrit personne) ;
 // POST = désinscription (bouton de la page, ou « un clic » RFC 8058 des messageries). Même signature dans les deux cas.
 Route::match(['get', 'post'], '/desinscription-offres', \App\Http\Controllers\Frontend\DesinscriptionOffresController::class)
-    ->middleware(['throttle:30,1'])->name('newsletter.desinscription'); // signature vérifiée dans le contrôleur (page FR)
+    ->middleware(['throttle:30,1,desinscription-offres'])->name('newsletter.desinscription'); // signature vérifiée dans le contrôleur (page FR) ; [supervision 2026-11-13] compteur propre (M1-002 : un throttle nu partage le seau IP)
 
 Route::get('/{any}', [RootController::class, 'index'])
     ->middleware(['installed'])

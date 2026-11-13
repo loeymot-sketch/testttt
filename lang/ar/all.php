@@ -197,6 +197,7 @@ return [
         'open_full_page' => 'فتح كصفحة كاملة',
     ],
     'message' => [
+        'email_send_partial' => "تم إرسال البريد إلى :count مشترك(ين)؛ رفض خادم البريد :failed عنوان(اً) (التفاصيل في السجل).",
         // [ONB-11 2026-08-28] Absentes ici : la cle brute s'affichait.
         'kds_reopen_invalid_state' => 'يمكن إعادة الطلبات المعلّمة \"جاهز\" فقط إلى التحضير.',
         'kds_reopen_success' => 'تمت إعادة الطلب إلى التحضير.',

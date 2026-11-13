@@ -123,6 +123,7 @@ return [
         'open_full_page' => 'পূর্ণ পৃষ্ঠা খুলুন',
     ],
     'message' => [
+        'email_send_partial' => ":count জন গ্রাহককে ইমেল পাঠানো হয়েছে; মেল সার্ভার :failed টি ঠিকানা প্রত্যাখ্যান করেছে (বিস্তারিত লগে)।",
         'validation_error'            => 'বৈধকরণ ত্রুটি।',
         'credentials_error'           => 'প্রমাণপত্রে ত্রুটি।',
         'credentials_invalid'         => 'অবৈধ শংসাপত্র বা আপনি অবরুদ্ধ',
