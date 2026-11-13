@@ -383,6 +383,18 @@ class UberDirectDispatchService
         UberDirectDelivery::STATUS_DELIVERED => 4,
     ];
 
+    /** [SUPERVISION 2026-11-13] Vrai quand la commande appartient à un compte supprimé (identité déjà effacée). */
+    private function compteEfface(int $orderId): bool
+    {
+        $userId = (int) (Order::query()->withoutGlobalScope(BranchScope::class)->whereKey($orderId)->value('user_id') ?? 0);
+        if ($userId <= 0) {
+            return false;
+        }
+        $user = \App\Models\User::withTrashed()->find($userId);
+
+        return $user !== null && ($user->trashed() || app(\App\Services\Account\AnonymisationCompte::class)->identiteDejaEffacee($user));
+    }
+
     /**
      * Applique un statut Uber (webhook ou relevé périodique). Idempotent ; ne recule jamais d'un état terminal.
      */
@@ -407,6 +419,16 @@ class UberDirectDispatchService
             && ! in_array($status, [UberDirectDelivery::STATUS_CANCELED, UberDirectDelivery::STATUS_RETURNED], true);
         if ($inconnuSurConnu) {
             Log::warning('uber_direct.unknown_status', ['order_id' => $row->order_id, 'status' => $status]);
+        }
+
+        // [SUPERVISION 2026-11-13] Course finie APRÈS la suppression du compte (commande annulée, sac déjà pris : la course
+        // n'est volontairement pas annulée) : la suppression a effacé nom, téléphone et consignes du destinataire ; la réponse
+        // d'Uber ne doit pas les remettre. Mêmes clés que AnonymisationCompte::effacerResidus.
+        if (is_array($payload) && $this->compteEfface((int) $row->order_id)) {
+            if (isset($payload['dropoff']) && is_array($payload['dropoff'])) {
+                unset($payload['dropoff']['name'], $payload['dropoff']['phone_number'], $payload['dropoff']['notes']);
+            }
+            unset($payload['dropoff_name'], $payload['dropoff_phone_number'], $payload['dropoff_notes']);
         }
 
         $row->forceFill(array_filter([
