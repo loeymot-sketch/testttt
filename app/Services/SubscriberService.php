@@ -124,8 +124,12 @@ class SubscriberService
                 return 0;
             }
 
-            Mail::bcc($subscribers->toArray())
-                ->send(new SubscriberMail($request->subject, $request->message));
+            // [S13-04 · 2026-11-13] Un e-mail PAR destinataire (au lieu d'une copie cachée commune) : chacun porte SON lien
+            // de désinscription signé — obligatoire pour un e-mail d'offre.
+            foreach ($subscribers as $email) {
+                $lien = \Illuminate\Support\Facades\URL::signedRoute('newsletter.desinscription', ['email' => $email]);
+                Mail::to($email)->send(new SubscriberMail($request->subject, $request->message, $lien));
+            }
 
             return $subscribers->count();
         } catch (Exception $exception) {

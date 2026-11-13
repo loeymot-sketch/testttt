@@ -18,11 +18,14 @@ class SubscriberMail extends Mailable
 
     public string $title;
     public mixed $message;
+    // [S13-04] Lien de désinscription propre au destinataire (null = aperçu / ancien appel).
+    public ?string $lienDesinscription;
 
-    public function __construct($title, $message)
+    public function __construct($title, $message, ?string $lienDesinscription = null)
     {
         $this->title = $title;
         $this->message = $message;
+        $this->lienDesinscription = $lienDesinscription;
     }
 
     public function build()

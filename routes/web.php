@@ -276,6 +276,10 @@ Route::middleware(['installed', 'wheel.access'])->group(function () {
 // doit répondre 404 — pas la SPA en 200 text/html (pages blanches « tout vert »,
 // classe de l'incident paiement borne 2026-07-07 ; les fichiers EXISTANTS sont
 // servis par le serveur web avant Laravel, seuls les manquants arrivent ici).
+// [S13-04] Désinscription des offres par e-mail (lien signé de chaque e-mail ; avant la route attrape-tout).
+Route::get('/desinscription-offres', \App\Http\Controllers\Frontend\DesinscriptionOffresController::class)
+    ->middleware(['signed', 'throttle:30,1'])->name('newsletter.desinscription');
+
 Route::get('/{any}', [RootController::class, 'index'])
     ->middleware(['installed'])
     // [W7-D D-011 · cycle C 2026-11-04] Un chemin `/api/…` qui ne matche aucune route API (jeton de suivi mal formé,
