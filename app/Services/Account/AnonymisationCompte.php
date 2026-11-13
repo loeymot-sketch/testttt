@@ -38,6 +38,11 @@ class AnonymisationCompte
                     $course->forceFill(['dropoff_phone' => null, 'dropoff_instructions' => null, 'delivery_payload' => $brut ?: null])->saveQuietly();
                 });
         }
+        // [supervision D4 · 2026-11-13] Messages écrits par le client au restaurant (messagerie) : texte effacé, la conversation
+        //   garde sa trace (lu / non lu) sans son contenu.
+        if (\Illuminate\Support\Facades\Schema::hasTable('message_histories')) {
+            \Illuminate\Support\Facades\DB::table('message_histories')->where('user_id', $userId)->whereNotNull('text')->update(['text' => null]);
+        }
         // [test-e2e stores S20-001 · 2026-11-13] Commande prise par TÉLÉPHONE en caisse et rattachée au compte : la caisse y recopie
         //   le nom et le numéro (pos_customer_name / pos_customer_phone). Ce ne sont pas des données fiscales (aucune empreinte ni
         //   chaîne NF525 ne les contient) : effacées, comme la politique l'annonce (« plus votre nom ni votre numéro »).
@@ -67,9 +72,16 @@ class AnonymisationCompte
         // [PROFIL APP 2026-11-12] Abonnement « offres par e-mail » (profil) : l'adresse quitte la liste des abonnés
         // AVANT d'être effacée — sinon un compte supprimé continuerait de recevoir les e-mails du restaurant.
         $emailAvant = mb_strtolower(trim((string) $user->email));
-        if ($emailAvant !== '') {
+        // [supervision 2026-11-13] L'abonné n'est retiré que si AUCUN autre compte vivant n'a cette adresse (rattrapage d'un ancien
+        //   compte dont la personne s'est réinscrite depuis avec le même e-mail).
+        $autreCompte = $emailAvant !== '' && \App\Models\User::withoutGlobalScopes()->whereKeyNot($user->id)
+            ->whereRaw('LOWER(email) = ?', [$emailAvant])->exists();
+        if ($emailAvant !== '' && ! $autreCompte) {
             \App\Models\Subscriber::query()->whereRaw('LOWER(email) = ?', [$emailAvant])->delete();
         }
+        // [supervision D3 · 2026-11-13] Photo de profil : le compte est supprimé en douceur, la médiathèque ne retire les fichiers
+        //   qu'au forceDelete — on vide la collection explicitement.
+        try { $user->clearMediaCollection('profile'); } catch (\Throwable) { /* médiathèque indisponible : rien à effacer */ }
 
         $user->name = 'Compte supprimé';
         $user->email = null;

@@ -328,7 +328,48 @@ class AccountDeletionTest extends TestCase
         $this->assertSame(OrderStatus::CANCELED, (int) DB::table('orders')->find($commande->id)->status, 'Elle est annulée, comme côté client.');
     }
 
-    /** @test [S20-001] Une commande prise par téléphone en caisse perd le nom et le numéro recopiés, à la suppression et au rattrapage. */
+    /** @test [supervision D3/D4] La photo de profil et le texte des messages au restaurant disparaissent à la suppression. */
+    public function la_photo_et_les_messages_disparaissent(): void
+    {
+        $u = $this->client(['email' => 'photo@example.test', 'phone' => '0612000101']);
+        $mediaId = DB::table('media')->insertGetId([
+            'model_type' => User::class, 'model_id' => $u->id, 'uuid' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'collection_name' => 'profile', 'name' => 'selfie', 'file_name' => 'selfie.jpg', 'mime_type' => 'image/jpeg',
+            'disk' => 'public', 'conversions_disk' => 'public', 'size' => 1234, 'manipulations' => '[]', 'custom_properties' => '[]',
+            'generated_conversions' => '[]', 'responsive_images' => '[]', 'order_column' => 1, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $messageId = null;
+        if (Schema::hasTable('messages') && Schema::hasTable('message_histories')) {
+            $fil = DB::table('messages')->insertGetId(array_filter(['user_id' => $u->id, 'branch_id' => $this->branch->id, 'created_at' => now(), 'updated_at' => now()],
+                fn ($v, $k) => Schema::hasColumn('messages', $k), ARRAY_FILTER_USE_BOTH));
+            $messageId = DB::table('message_histories')->insertGetId(['message_id' => $fil, 'user_id' => $u->id, 'text' => 'Mon code porte 1234', 'is_read' => 0, 'created_at' => now(), 'updated_at' => now()]);
+        }
+        $this->withHeader('Authorization', 'Bearer ' . $this->jeton($u))->postJson('/api/auth/delete-account')->assertStatus(200);
+        $this->assertNull(DB::table('media')->find($mediaId), 'La photo de profil est effacée.');
+        if ($messageId) {
+            $this->assertNull(DB::table('message_histories')->find($messageId)->text, 'Le texte du message est effacé.');
+        }
+    }
+
+    /** @test [supervision D1] Un refus (commande en préparation) n'envoie plus « commande annulée » pour une annulation aussitôt défaite. */
+    public function un_refus_n_envoie_aucune_annulation(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+        \App\Models\NotificationAlert::create(['name' => 'c', 'language' => 'order_canceled_message', 'mail_message' => 'Votre commande est annulée',
+            'sms_message' => 'x', 'push_notification_message' => 'x', 'mail' => \App\Enums\SwitchBox::ON, 'sms' => \App\Enums\SwitchBox::OFF, 'push_notification' => \App\Enums\SwitchBox::OFF]);
+        User::factory()->count(2)->create();
+        $u = $this->client(['email' => 'refus@example.test', 'phone' => '0612000102']);
+        $a = Order::factory()->create(['user_id' => $u->id, 'branch_id' => $this->branch->id, 'status' => OrderStatus::PENDING,
+            'payment_status' => \App\Enums\PaymentStatus::UNPAID, 'order_type' => \App\Enums\OrderType::TAKEAWAY, 'source' => 5, 'order_serial_no' => '131126' . random_int(1000, 9999)]);
+        Order::factory()->create(['user_id' => $u->id, 'branch_id' => $this->branch->id, 'status' => OrderStatus::PREPARING, 'source' => 5]);
+        try { app(\App\Services\CustomerService::class)->destroy($u); $this->fail('refus attendu'); }
+        catch (\Exception $e) { $this->assertSame(422, $e->getCode()); }
+        $this->withHeader('Authorization', 'Bearer ' . $this->jeton($u))->postJson('/api/auth/delete-account')->assertStatus(422);
+        $this->assertSame(OrderStatus::PENDING, (int) DB::table('orders')->find($a->id)->status, 'La commande A reste en attente.');
+        $this->assertCount(0, \Illuminate\Support\Facades\Mail::sent(\App\Mail\OrderMail::class), 'Aucun e-mail « commande annulée ».');
+    }
+
+        /** @test [S20-001] Une commande prise par téléphone en caisse perd le nom et le numéro recopiés, à la suppression et au rattrapage. */
     public function les_commandes_caisse_perdent_nom_et_numero_du_client(): void
     {
         $client = $this->client(['email' => 'caisse@example.test', 'phone' => '0699111111']);

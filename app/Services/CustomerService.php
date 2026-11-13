@@ -181,6 +181,11 @@ class CustomerService
                     DB::transaction(function () use ($customer) {
                         // [P20-002] Comme pour le client : ce qu'il aurait pu annuler lui-même (jamais commencé, jamais payé) est annulé
                         //   d'abord ; seule une commande réellement en cours (commencée ou réglée) bloque.
+                        // [supervision D1] Verrou du client, puis refus AVANT toute annulation (aucune notification pour rien).
+                        \App\Models\User::withoutGlobalScopes()->whereKey($customer->id)->lockForUpdate()->first(['id']);
+                        if (app(\App\Services\FrontendOrderService::class)->aUneCommandeBloquantePourSuppression((int) $customer->id)) {
+                            throw new Exception('Ce client a une commande en cours (en préparation ou déjà réglée) : supprimez son compte une fois la commande remise.', 422);
+                        }
                         app(\App\Services\FrontendOrderService::class)->cancelAllOwnCancellableForAccountDeletion(
                             (int) $customer->id,
                             'Suppression du compte par l\'administration'

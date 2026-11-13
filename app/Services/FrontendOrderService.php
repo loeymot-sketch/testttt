@@ -1112,6 +1112,26 @@ class FrontendOrderService
      *
      * @return int nombre de commandes annulées
      */
+    /**
+     * [supervision D1 · 2026-11-13] Vrai si une commande de ce client resterait en cours APRÈS les annulations permises (commencée
+     * par la cuisine ou déjà payée) : la suppression sera refusée — à vérifier AVANT d'annuler quoi que ce soit, sinon le client
+     * reçoit « commande annulée » pour une annulation ensuite défaite par le refus.
+     */
+    public function aUneCommandeBloquantePourSuppression(int $userId): bool
+    {
+        return FrontendOrder::query()
+            ->where('user_id', $userId)
+            ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED, OrderStatus::RETURNED, OrderStatus::REJECTED])
+            ->get(['id', 'status', 'order_type', 'payment_status'])
+            ->contains(function ($commande) {
+                $seuil = in_array((int) $commande->order_type, [OrderType::KIOSK, OrderType::TAKEAWAY], true)
+                    ? OrderStatus::PREPARING
+                    : OrderStatus::ACCEPT;
+
+                return (int) $commande->status >= $seuil || (int) $commande->payment_status === PaymentStatus::PAID;
+            });
+    }
+
     public function cancelAllOwnCancellableForAccountDeletion(int $userId, string $reason): int
     {
         $annulees = 0;

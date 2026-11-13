@@ -63,6 +63,15 @@ class DeactivateController extends Controller
                 // place » sans jamais retirer ne pouvait plus supprimer son compte (5.1.1(v)).
                 // Tout se passe dans la transaction englobante : un refus plus bas annule aussi
                 // ces annulations — on ne supprime jamais « à moitié ».
+                // [supervision D1 · 2026-11-13] Verrou de la ligne du client, puis rôles et commande bloquante vérifiés AVANT toute
+                //   annulation : un refus n'envoie plus « commande annulée » pour une annulation aussitôt défaite.
+                \App\Models\User::withoutGlobalScopes()->whereKey($user->id)->lockForUpdate()->first(['id']);
+                if (! $estClient) {
+                    throw new Exception(trans('all.message.only_customer_delete'), 422);
+                }
+                if (app(\App\Services\FrontendOrderService::class)->aUneCommandeBloquantePourSuppression((int) $user->id)) {
+                    throw new Exception(trans('all.message.account_not_delete_kitchen'), 422);
+                }
                 app(\App\Services\FrontendOrderService::class)->cancelAllOwnCancellableForAccountDeletion(
                     (int) $user->id,
                     'Suppression du compte par le client'

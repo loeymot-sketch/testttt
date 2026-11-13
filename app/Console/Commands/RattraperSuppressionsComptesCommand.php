@@ -29,7 +29,7 @@ class RattraperSuppressionsComptesCommand extends Command
     public function handle(AnonymisationCompte $anonymisation): int
     {
         $appliquer = (bool) $this->option('appliquer');
-        $bilan = ['comptes' => 0, 'identites' => 0, 'complements' => 0, 'courses' => 0, 'roue' => 0, 'caisse' => 0, 'ignores_non_clients' => 0];
+        $bilan = ['comptes' => 0, 'identites' => 0, 'complements' => 0, 'courses' => 0, 'roue' => 0, 'caisse' => 0, 'photos' => 0, 'messages' => 0, 'ignores_non_clients' => 0];
 
         User::withoutGlobalScope(BranchScope::class)->onlyTrashed()->with('roles')->orderBy('id')
             ->chunkById(200, function ($comptes) use ($anonymisation, $appliquer, &$bilan) {
@@ -74,11 +74,20 @@ class RattraperSuppressionsComptesCommand extends Command
                             ->where(function ($q) { $q->whereNotNull('pos_customer_phone')->orWhereNotNull('pos_customer_name'); })->count()
                         : 0;
                     $bilan['caisse'] += $caisse;
+                    // [supervision D3/D4] Photo de profil restée dans la médiathèque ; messages écrits au restaurant.
+                    $photo = \Illuminate\Support\Facades\Schema::hasTable('media')
+                        ? DB::table('media')->where('model_type', \App\Models\User::class)->where('model_id', $compte->id)->where('collection_name', 'profile')->count()
+                        : 0;
+                    $messages = \Illuminate\Support\Facades\Schema::hasTable('message_histories')
+                        ? DB::table('message_histories')->where('user_id', $compte->id)->whereNotNull('text')->count()
+                        : 0;
+                    $bilan['photos'] += $photo;
+                    $bilan['messages'] += $messages;
                     $bilan['identites'] += $identite ? 1 : 0;
                     $bilan['complements'] += $complements;
                     $bilan['courses'] += $courses;
 
-                    if ($appliquer && ($identite || $complements || $courses || $roue || $caisse)) {
+                    if ($appliquer && ($identite || $complements || $courses || $roue || $caisse || $photo || $messages)) {
                         // [S19-001] Jeton Apple encore présent sur un ancien compte : révoqué chez Apple après l'effacement.
                         $jetonApple = null;
                         try { $jetonApple = $identite ? $compte->apple_refresh_token : null; } catch (\Throwable) { $jetonApple = null; }
@@ -89,6 +98,9 @@ class RattraperSuppressionsComptesCommand extends Command
                             }
                             $anonymisation->effacerResidus((int) $compte->id);
                         });
+                        if ($photo && ! $identite) {
+                            try { $compte->clearMediaCollection('profile'); } catch (\Throwable) { /* rien à effacer */ }
+                        }
                         if (filled($jetonApple)) {
                             app(\App\Services\Auth\AppleTokenRevoker::class)->revoquer((string) $jetonApple);
                         }
@@ -102,8 +114,9 @@ class RattraperSuppressionsComptesCommand extends Command
             . ' ; courses Uber avec téléphone/consignes : ' . $bilan['courses']
             . ' ; tours de roue identifiants : ' . $bilan['roue']
             . ' ; commandes caisse avec nom/numéro : ' . $bilan['caisse']
+            . ' ; photos de profil : ' . $bilan['photos'] . ' ; messages : ' . $bilan['messages']
             . ' ; comptes non clients ignorés : ' . $bilan['ignores_non_clients'] . '.');
-        if (! $appliquer && ($bilan['identites'] || $bilan['complements'] || $bilan['courses'] || $bilan['roue'] || $bilan['caisse'])) {
+        if (! $appliquer && ($bilan['identites'] || $bilan['complements'] || $bilan['courses'] || $bilan['roue'] || $bilan['caisse'] || $bilan['photos'] || $bilan['messages'])) {
             $this->line('Relancer avec --appliquer pour effacer.');
         }
 
