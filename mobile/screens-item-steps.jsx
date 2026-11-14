@@ -519,7 +519,8 @@ function ScreenStepSauce({ item, selections, setSelections, headingRef, sauceFie
   // [2026-11-14 R4-001] Une seule sauce dans le champ sauce : le serveur la limite à 1 (attribut max 1) et
   // facture une 2ᵉ sauce comme « Sauce supplémentaire » — l'envoyer ici faisait refuser toute la commande.
   const profilSauceMax = 1;
-  const maxOne = isFritesSauce || (isMainSauce && profilSauceMax === 1 && (item.has_frites_style || template === 'tacos' || template === 'sandwich' || template === 'burger' || template === 'bol'));
+  // [2026-11-14 R5-001] Sauce principale : TOUJOURS une seule (menus enfant compris — attribut serveur max 1).
+  const maxOne = isFritesSauce || (isMainSauce && profilSauceMax === 1);
   const maxMulti = isMainSauce && profilSauceMax > 1 ? profilSauceMax : null;
   // [2026-11-14] Bol : avec le profil serveur chargé, la liste complète du serveur (14 sauces) — le pool local
   // « bolSauces » (2 noms) faisait disparaître la Spicy et « Sans sauce » (régression R2-001).
@@ -618,6 +619,7 @@ function ExtraMeatSection({ item, selections, setSelections }) {
       const arr = s.extraMeatIds || [];
       if (arr.includes(id)) return { ...s, extraMeatIds: arr.filter(x => x !== id) };
       if (arr.length >= 1) return s; // [2026-11-14 R4-002] 1 seule : le serveur refuse 2 « Viande supplémentaire » (choix non répétable)
+      if ((s.supplementIds || []).length + (s.bolSupplementIds || []).length >= 5) return s; // [R5-002] 5 choix au total
       return { ...s, extraMeatIds: [...arr, id] };
     });
   };
@@ -630,7 +632,7 @@ function ExtraMeatSection({ item, selections, setSelections }) {
       <div role="group" aria-label={`Viande supplémentaire +${priceLabel} €`} style={{ background: 'var(--cream)', borderRadius: 14, overflow: 'hidden' }}>
         {lcMenu.meats.map(m => {
           const on = extraMeatIds.includes(m.id);
-          const blocked = !on && extraMeatIds.length >= 1;
+          const blocked = !on && (extraMeatIds.length >= 1 || (selections.supplementIds || []).length + (selections.bolSupplementIds || []).length >= 5);
           const handleKey = (e) => {
             if (blocked) return;
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(m.id); }
@@ -919,7 +921,7 @@ function ScreenStepBolSupplements({ item, selections, setSelections, headingRef 
     setSelections(s => {
       const arr = s.bolSupplementIds || [];
       if (arr.includes(id)) return { ...s, bolSupplementIds: arr.filter(x => x !== id) };
-      if (arr.length >= MAX_BOL_SUPPLEMENTS) return s; // max 5 (canon)
+      if (arr.length + (s.extraMeatIds || []).length >= MAX_BOL_SUPPLEMENTS) return s; // max 5, viande en plus comprise (R5-002)
       return { ...s, bolSupplementIds: [...arr, id] };
     });
   };
