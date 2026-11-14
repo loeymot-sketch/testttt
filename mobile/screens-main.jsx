@@ -9,7 +9,7 @@ if (!window.LC || !window.LC.menu) {
   console.warn('[Le Cayenne] data/menu.js non chargé — fallback stub');
   window.LC = window.LC || {};
   window.LC.menu = {
-    branch: { name: 'Le Cayenne', city: 'Hénin-Beaumont', zip: '62210' },
+    branch: { name: 'Le Cayenne', city: 'Hénin-Beaumont', zip: '62110' },
     items: [], categories: [],
     findItem: () => null, findCategory: () => null, itemsForCategory: () => [],
     priceFor: (item) => (item && item.price) || 0,
@@ -44,6 +44,23 @@ function lcEarnRatio() {
   const c = lcLoyaltyCfg();
   const r = Number(c.earn_ratio != null ? c.earn_ratio : c.points_per_euro);
   return (isFinite(r) && r > 0) ? r : 10;
+}
+// [2026-11-14] Le compte SMS porte au serveur le nom technique « Guest User » : jamais affiché.
+function lcHumanName(raw) {
+  const n = String(raw || '').trim();
+  return /^(guest|invit[ée]|client)(\s+user)?$/i.test(n) ? '' : n;
+}
+// [2026-11-14] Seuil d'utilisation des points = serveur (min_redeem_points 1000, paliers 1000/2000) :
+// l'app promettait −1 € dès 100 pts alors que le serveur refuse tout usage sous 1 000 points (R2-002).
+function lcMinRedeem() {
+  const c = lcLoyaltyCfg();
+  const m = Number(c.min_redeem_points);
+  return (isFinite(m) && m > 0) ? m : 1000;
+}
+function lcRedeemTiers() {
+  const c = lcLoyaltyCfg();
+  const t = Array.isArray(c.tiers) ? c.tiers.map(Number).filter(n => isFinite(n) && n > 0) : [];
+  return t.length ? t : [lcMinRedeem()];
 }
 function lcRedeemRatio() {
   const c = lcLoyaltyCfg();
@@ -117,35 +134,21 @@ const ALLERGEN_META = {
   lupin:      { label: 'Lupin' },
 };
 
-function AllergenDisclosure({ allergens, size = 'sm' }) {
-  const labels = Array.from(new Set(allergens || []))
-    .map(k => (ALLERGEN_META[k] && ALLERGEN_META[k].label) || k)
-    .filter(Boolean);
-  if (labels.length === 0) return null;
+function AllergenDisclosure({ size = 'sm' }) {
+  // [2026-11-14] P0 relecture adverse : la liste affichée était DEVINÉE par catégorie (« Gluten » seul sur
+  // un burger au cheddar et à la mayonnaise) et le serveur n'a de fiche allergènes que pour 1 produit sur 72.
+  // Une information santé fausse est pire qu'aucune : on renvoie vers l'équipe tant que la fiche réelle
+  // n'est pas saisie côté restaurant (règlement UE 1169/2011 — information orale permise si annoncée).
   const isLg = size === 'lg';
-  const labelText = labels.join(', ');
+  const tel = (typeof branchPhoneInfo === 'function' && branchPhoneInfo()) || {};
   return (
-    <details
-      open
-      data-testid="allergen-disclosure"
-      aria-label={`Allergènes présents : ${labelText}`}
-      style={{ marginTop: isLg ? 16 : 10, padding: isLg ? '12px 14px' : '9px 11px', border: '1px solid var(--gray-2)', borderRadius: 14, background: '#fff', color: 'var(--ink)' }}
-    >
-      <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: isLg ? 13 : 11, fontWeight: 750, lineHeight: 1.3 }}>
-        <span>Informations allergènes</span>
-        <span style={{ color: 'var(--gray-4)', fontSize: isLg ? 11 : 10, fontWeight: 600, whiteSpace: 'nowrap' }}>
-          {labels.length} {labels.length > 1 ? 'allergènes' : 'allergène'}
-        </span>
-      </summary>
-      <div role="region" aria-label={`Allergènes : ${labelText}`} style={{ marginTop: 9, paddingTop: 9, borderTop: '1px solid var(--gray-2)' }}>
-        <p style={{ margin: 0, color: 'var(--gray-4)', fontSize: isLg ? 11 : 10, lineHeight: 1.4 }}>
-          Allergènes présents dans cette sélection :
-        </p>
-        <ul style={{ margin: '6px 0 0', paddingLeft: 18, color: 'var(--ink)', fontSize: isLg ? 12 : 11, lineHeight: 1.55 }}>
-          {labels.map(label => <li key={label}>{label}</li>)}
-        </ul>
-      </div>
-    </details>
+    <div data-testid="allergen-disclosure" role="note" aria-label="Informations allergènes"
+      style={{ marginTop: isLg ? 16 : 10, padding: isLg ? '12px 14px' : '9px 11px', border: '1px solid var(--gray-2)', borderRadius: 14, background: '#fff', color: 'var(--ink)' }}>
+      <div style={{ fontSize: isLg ? 13 : 11, fontWeight: 750, lineHeight: 1.3 }}>Allergies ou intolérances ?</div>
+      <p style={{ margin: '6px 0 0', color: 'var(--gray-4)', fontSize: isLg ? 12 : 11, lineHeight: 1.45 }}>
+        Demande-nous la composition exacte avant de commander : en caisse{tel.display ? <> ou au <a href={tel.href || undefined} style={{ color: 'var(--ink)', fontWeight: 700 }}>{tel.display}</a></> : null}.
+      </p>
+    </div>
   );
 }
 
@@ -171,10 +174,15 @@ const OWNER_BESTSELLER_SLUGS = Object.freeze([
 // name (posé par index.html depuis le profil réel / storage). Fallback neutre FR si absent.
 function ScreenHome({ go, name = '' }) {
   const screenRef = useScreenScrollReset('home');
-  const safeName = String(name || '').trim();
+  // [2026-11-14] Le compte créé par SMS porte le nom technique « Guest User » côté serveur :
+  // ne jamais l'afficher (« Bonjour, Invité / GUEST »).
+  const rawName = String(name || '').trim();
+  const safeName = /^(guest|invit[ée]|client)(\s+user)?$/i.test(rawName) ? '' : rawName;
   const avatarInitial = (safeName ? safeName.charAt(0) : 'C').toUpperCase();
   const greeting = (new Date().getHours() < 20 && new Date().getHours() >= 5) ? 'Bonjour' : 'Bonsoir';
   const currentItems = window.LC.menu.items || [];
+  // [2026-11-14] Ouvert / fermé et horaires = serveur (/api/frontend/horaires) ; rien d'affirmé si inconnu.
+  const hours = (window.LC.hoursInfo && window.LC.hoursInfo()) || null;
   const featured = currentItems.find(item => item.slug === 'cayenne') || currentItems[0];
   const featuredLines = featured ? featured.name.toUpperCase().split(' ') : ['LE', 'CAYENNE'];
   const featuredTop = featuredLines.slice(0, 2).join(' ');
@@ -193,11 +201,12 @@ function ScreenHome({ go, name = '' }) {
       <div className="lc-screen lc-home__scroll">
         <header className="lc-home__header">
           <button type="button" onClick={() => go('profile')} aria-label={safeName ? `Profil — ${safeName}` : 'Profil'} className="lc-home__avatar">{avatarInitial}</button>
-          <div className="lc-home__brand" aria-label="Le Cayenne — restaurant ouvert">
+          <div className="lc-home__brand" aria-label={hours ? `Le Cayenne — ${hours.label}` : 'Le Cayenne'}>
             <Logo size={18}/>
-            <span className="lc-home__status"><i aria-hidden="true"/> Ouvert maintenant</span>
+            {hours && <span className={'lc-home__status' + (hours.open ? '' : ' is-closed')} data-testid="home-open-status"><i aria-hidden="true"/> {hours.label}</span>}
           </div>
-          <IconBtn bg="var(--paper)" ariaLabel="Notifications" className="lc-home__notify" onClick={() => go('toast', { msg: 'Notifications — bientôt disponibles', kind: 'info' })}><I.Bell size={18}/></IconBtn>
+          {/* [2026-11-14] Cloche retirée : la fonction notifications n'existe pas encore. */}
+          <span className="lc-home__notify" aria-hidden="true" style={{ width: 44, height: 44 }}/>
         </header>
 
         <section className="lc-home__intro" aria-labelledby="home-title">
@@ -267,7 +276,7 @@ function ScreenHome({ go, name = '' }) {
           <p className="lc-eyebrow">Notre maison</p>
           <h2 id="restaurant-title" className="lc-display">Le Cayenne<br/><em>Hénin-Beaumont</em></h2>
           <p>Abdoullah en cuisine, fait maison chaque jour. Sandwich Cayenne signature, bols frites/riz et tacos M & L — du peuple, pour le peuple.</p>
-          <div className="lc-home__restaurant-meta"><span><i aria-hidden="true"/> Ouvert 11h — 00h</span><a data-testid="branch-phone" aria-label={'Téléphone du restaurant : ' + branchPhoneInfo().display} href={branchPhoneInfo().href || undefined}>{branchPhoneInfo().display}</a></div>
+          <div className="lc-home__restaurant-meta"><span className={hours && !hours.open ? 'is-closed' : ''} data-testid="home-hours"><i aria-hidden="true"/> {hours && hours.summary ? hours.summary : 'Horaires : appelez-nous'}</span><a data-testid="branch-phone" aria-label={'Téléphone du restaurant : ' + branchPhoneInfo().display} href={branchPhoneInfo().href || undefined}>{branchPhoneInfo().display}</a></div>
         </section>
       </div>
     </div>
@@ -278,7 +287,20 @@ function ScreenHome({ go, name = '' }) {
 function ScreenMenu({ go, cart, addToCart, initialFilter = 'all' }) {
   const screenRef = useScreenScrollReset('menu');
   const [filter, setFilter] = uS(initialFilter || 'all');
-  const filtered = filter === 'all' ? ITEMS : ITEMS.filter(i => i.cat === filter);
+  // [2026-11-14] Recherche réelle (le bouton n'ouvrait qu'un « bientôt disponible ») : nom, description,
+  // catégorie ; « poulet » trouve aussi les plats au poulet (Chicken, Tenders, Nuggets).
+  const [searchOpen, setSearchOpen] = uS(false);
+  const [query, setQuery] = uS('');
+  const fold = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const SYNONYMES = { poulet: ['chicken', 'tenders', 'nuggets', 'poulet'], boeuf: ['steak', 'viande hachee', 'burger'], frite: ['frites'] };
+  const q = fold(query).trim();
+  const matches = (i) => {
+    if (!q) return true;
+    const hay = fold([i.name, i.desc || i.description, i.cat].join(' '));
+    const termes = [q, ...((SYNONYMES[q] || SYNONYMES[q.replace(/s$/, '')]) || [])];
+    return termes.some(t => hay.indexOf(t) !== -1);
+  };
+  const filtered = (filter === 'all' ? ITEMS : ITEMS.filter(i => i.cat === filter)).filter(matches);
   return (
     <div ref={screenRef} data-screen-label="08 Menu" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
       <div className="lc-screen" style={{ paddingBottom: 160 }}>
@@ -287,8 +309,15 @@ function ScreenMenu({ go, cart, addToCart, initialFilter = 'all' }) {
             <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.9 }}>Menu</h1>
             <div style={{ fontSize: 12, color: 'var(--gray-3)', marginTop: 4 }}>{CATS.length} catégories · {ITEMS.length} produits</div>
           </div>
-          <IconBtn bg="var(--cream)" ariaLabel="Rechercher dans le menu" onClick={() => go('toast', { msg: 'Recherche — bientôt disponible', kind: 'info' })}><I.Search size={18}/></IconBtn>
+          <IconBtn bg="var(--cream)" ariaLabel={searchOpen ? 'Fermer la recherche' : 'Rechercher dans le menu'} onClick={() => { setSearchOpen(o => !o); setQuery(''); }}>{searchOpen ? <I.Close size={18}/> : <I.Search size={18}/>}</IconBtn>
         </div>
+        {searchOpen && (
+          <div style={{ padding: '6px 20px 0' }}>
+            <input type="search" autoFocus value={query} onChange={e => setQuery(e.target.value)} placeholder="Un plat, une viande, une boisson…" aria-label="Rechercher un plat" data-testid="menu-search"
+              style={{ width: '100%', height: 48, borderRadius: 14, border: '1.5px solid var(--gray-2)', padding: '0 16px', fontSize: 16, background: '#fff', color: 'var(--ink)', outline: 'none', boxSizing: 'border-box' }}/>
+            {q && !filtered.length && <p role="status" style={{ margin: '14px 2px 0', fontSize: 14, color: 'var(--gray-4)' }}>Aucun plat ne correspond à « {query} ».</p>}
+          </div>
+        )}
         {/* filter chips */}
         <div style={{ display: 'flex', gap: 8, padding: '12px 20px', overflowX: 'auto' }}>
           {[{ id: 'all', label: 'Tout' }, ...CATS].map(c => {
@@ -302,7 +331,7 @@ function ScreenMenu({ go, cart, addToCart, initialFilter = 'all' }) {
         </div>
         {/* category sections */}
         {CATS.filter(c => filter === 'all' || filter === c.id).map(cat => {
-          const items = ITEMS.filter(i => i.cat === cat.id);
+          const items = ITEMS.filter(i => i.cat === cat.id).filter(matches);
           if (!items.length) return null;
           return (
             <div key={cat.id} style={{ marginTop: 18 }}>
@@ -311,8 +340,8 @@ function ScreenMenu({ go, cart, addToCart, initialFilter = 'all' }) {
                 <span style={{ fontSize: 11, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{items.length} créations</span>
               </div>
               <div style={{ padding: '0 20px', display: 'grid', gap: 10 }}>
-                {items.map(it => (
-                  <div key={it.id} role="button" tabIndex={0} aria-label={`Voir ${it.name} — ${it.price.toFixed(2).replace('.', ',')} €`} className="lc-tap" onClick={() => go('item', it.id)} onKeyDown={window.lcTapKey(() => go('item', it.id))} style={{ display: 'flex', gap: 14, padding: 12, background: 'var(--cream)', borderRadius: 16, cursor: 'pointer', alignItems: 'center' }}>
+                {items.map(it => { const soldOut = it.available === false; return (
+                  <div key={it.id} role="button" tabIndex={0} aria-label={`Voir ${it.name} — ${soldOut ? 'épuisé' : it.price.toFixed(2).replace('.', ',') + ' €'}`} className={'lc-tap' + (soldOut ? ' lc-soldout' : '')} onClick={() => go('item', it.id)} onKeyDown={window.lcTapKey(() => go('item', it.id))} style={{ display: 'flex', gap: 14, padding: 12, background: 'var(--cream)', borderRadius: 16, cursor: 'pointer', alignItems: 'center' }}>
                     <div style={{ width: 84, height: 84, borderRadius: 12, overflow: 'hidden', flexShrink: 0, background: '#0A0A0A' }}>
                       <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/>
                     </div>
@@ -327,13 +356,14 @@ function ScreenMenu({ go, cart, addToCart, initialFilter = 'all' }) {
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: 'var(--orange)' }}>{it.price.toFixed(2).replace('.', ',')} €</span>
                         {/* [Owner re-cadrage 2026-05-11 D3] Quick-add "+" : si item personnalisable (viandes / sauce / suppléments / menu_addon / frites_style),
                             ouvrir le wizard au lieu d'ajouter direct au panier avec composition vide. Pour desserts/boissons/items direct, garder add direct. */}
-                        {(it.viandes > 0 || it.has_sauce || it.has_supplements !== false || it.has_menu_addon || it.has_frites_style)
+                        {soldOut ? <span data-testid="item-soldout" style={{ display: 'inline-flex', alignItems: 'center', height: 28, padding: '0 12px', borderRadius: 999, background: 'var(--ink)', color: '#FFFFFF', fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 1 }}>Épuisé</span>
+                          : (it.viandes > 0 || it.has_sauce || it.has_supplements !== false || it.has_menu_addon || it.has_frites_style)
                           ? <button onClick={e => { e.stopPropagation(); go('item', it.id); }} aria-label={`Personnaliser ${it.name}`} style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--orange)', color: '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><I.Arrow size={14} stroke="#fff" sw={2.4}/></button>
                           : <button onClick={e => { e.stopPropagation(); addToCart(it); }} aria-label={`Ajouter ${it.name} au panier`} style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--ink)', color: 'var(--yellow)', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><I.Plus size={16}/></button>}
                       </div>
                     </div>
                   </div>
-                ))}
+                ); })}
               </div>
             </div>
           );
@@ -438,7 +468,7 @@ function ScreenItem({ go, itemId, addToCart }) {
           <div style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) - 14px)', left: 14, right: 14, display: 'flex', justifyContent: 'space-between', zIndex: 2 }}>
             <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)" ariaLabel="Retour"><I.Back size={20}/></IconBtn>
             <div style={{ display: 'flex', gap: 8 }}>
-              <IconBtn bg="rgba(255,255,255,0.95)" ariaLabel="Ajouter aux favoris" onClick={() => go('toast', { msg: 'Favoris — bientôt disponibles', kind: 'info' })}><I.Heart size={20}/></IconBtn>
+              <span aria-hidden="true" style={{ width: 44, height: 44 }}/>
               <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)" ariaLabel="Fermer"><I.Close size={20}/></IconBtn>
             </div>
           </div>
@@ -688,13 +718,11 @@ function ScreenItem({ go, itemId, addToCart }) {
 // CART
 function ScreenCart({ go, cart, setCart }) {
   const screenRef = useScreenScrollReset('cart');
-  // [Adversarial cluster-7 P1 fix] Promo discount wired — banner appliqué applique vraiment
-  // une réduction (V0 mock : WELCOME10/CAYENNE = -10%). Avant : banner cosmetic-only,
-  // user pensait avoir -10% mais payait full price → mauvaise UX + risque légal.
-  const [promoCode, setPromoCode] = uS(null); // null | 'WELCOME10' | 'CAYENNE'
-  const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const discount = promoCode ? Math.round(subtotal * 10) / 100 : 0; // -10%, arrondi 2 décimales
-  const total = Math.max(0, subtotal - discount);
+  // [2026-11-14 B-001 P0] Code promo local SUPPRIMÉ : la remise -10 % n'existait que dans l'app,
+  // le serveur (seule source du prix) ne la recevait jamais → total affiché ≠ total encaissé.
+  // Le total du panier est désormais strictement la somme des lignes.
+  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const articleCount = cart.reduce((s, i) => s + (Number(i.qty) || 0), 0);
   // [GOAL-SYNC 2026-07-08] Earn RÉEL (contrat §2) : 1 pt/€ FLOOR du total TTC, ratio lu depuis
   // la config alignée backend (lcEarnRatio, plus de 10 pt/€ hardcodé). La « prochaine
   // récompense » du catalogue mock est remplacée par le modèle continu points→€.
@@ -709,7 +737,7 @@ function ScreenCart({ go, cart, setCart }) {
         <ScreenHeader left={<IconBtn onClick={() => go('back')} ariaLabel="Retour"><I.Back size={20}/></IconBtn>} center={<div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>PANIER</div>}/>
         <div style={{ padding: '8px 20px 0' }}>
           <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.9 }}>Ta<br/>commande</h1>
-          <div style={{ marginTop: 8, fontSize: 13, color: 'var(--gray-3)' }}>{cart.length} article{cart.length>1?'s':''} · prêt dans ~12 min</div>
+          <div style={{ marginTop: 8, fontSize: 13, color: 'var(--gray-3)' }}>{articleCount} article{articleCount>1?'s':''} · à retirer au comptoir</div>
         </div>
         {/* items */}
         <div style={{ padding: '20px 20px 0', display: 'grid', gap: 12 }}>
@@ -752,7 +780,7 @@ function ScreenCart({ go, cart, setCart }) {
                   <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--orange)' }}>{(it.price*it.qty).toFixed(2).replace('.', ',')} €</span>
                 </div>
               </div>
-              <button onClick={() => remove(idx)} aria-label={`Retirer ${it.name} du panier`} style={{ background: 'transparent', border: 0, color: 'var(--gray-3)', cursor: 'pointer' }}><I.Trash size={16}/></button>
+              <button onClick={() => remove(idx)} aria-label={`Retirer ${it.name} du panier`} style={{ background: 'transparent', border: 0, color: 'var(--gray-3)', cursor: 'pointer', minWidth: 44, minHeight: 44, alignSelf: 'flex-start', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><I.Trash size={16}/></button>
             </div>
           ))}
         </div>
@@ -760,9 +788,11 @@ function ScreenCart({ go, cart, setCart }) {
         <div style={{ margin: '20px 20px 0', padding: 16, background: 'var(--yellow)', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--ink)', color: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><I.Gift size={20}/></div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>+{pointsForCart} pts gagnés sur cette commande</div>
+            {/* [2026-11-14 B-004] Règle propriétaire : les points sont crédités quand le restaurant
+                VALIDE la commande — jamais « gagnés » au passage en caisse. */}
+            <div style={{ fontSize: 13, fontWeight: 700 }}>Environ {pointsForCart} pts à créditer dès que le restaurant valide ta commande</div>
             {/* [GOAL-SYNC 2026-07-08] Modèle continu points→€ (contrat §2) — plus de nom de récompense mock */}
-            <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>{redeemRatio} pts = 1 € de réduction en caisse</div>
+            <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>Réductions en caisse dès {lcMinRedeem()} pts ({redeemRatio} pts = 1 €)</div>
           </div>
         </div>
         {/* upsell */}
@@ -776,9 +806,10 @@ function ScreenCart({ go, cart, setCart }) {
                 de data/menu.js sont 'frites'/'boissons'/'desserts') → l'upsell n'affichait que les
                 desserts. Mix garanti frites + boissons + desserts (fixture canonique = loi). */}
             {[
-              ...ITEMS.filter(i => i.cat === 'frites').slice(0, 2),
-              ...ITEMS.filter(i => i.cat === 'boissons').slice(0, 3),
-              ...ITEMS.filter(i => i.cat === 'desserts').slice(0, 2),
+              // [2026-11-14] jamais un produit épuisé en suggestion (B-003 / R2).
+              ...ITEMS.filter(i => i.cat === 'frites' && i.available !== false).slice(0, 2),
+              ...ITEMS.filter(i => i.cat === 'boissons' && i.available !== false).slice(0, 3),
+              ...ITEMS.filter(i => i.cat === 'desserts' && i.available !== false).slice(0, 2),
             ].map(it => (
               <div key={it.id} onClick={() => go('item', it.id)} style={{ flex: '0 0 130px', background: 'var(--cream)', borderRadius: 12, padding: 8, cursor: 'pointer' }}>
                 <div style={{ height: 80, borderRadius: 8, overflow: 'hidden', background: 'var(--ink)' }}>
@@ -787,7 +818,7 @@ function ScreenCart({ go, cart, setCart }) {
                 <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, lineHeight: 1.2 }}>{it.name}</div>
                 <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{it.price.toFixed(2).replace('.', ',')} €</span>
-                  <button onClick={(e) => { e.stopPropagation(); go('item', it.id); }} style={{ width: 26, height: 26, borderRadius: 999, background: 'var(--orange)', color: '#fff', border: 0, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>+</button>
+                  <button onClick={(e) => { e.stopPropagation(); go('item', it.id); }} aria-label={`Ajouter ${it.name}`} style={{ width: 44, height: 44, borderRadius: 999, background: 'var(--orange)', color: '#fff', border: 0, fontSize: 18, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>+</button>
                 </div>
               </div>
             ))}
@@ -797,21 +828,11 @@ function ScreenCart({ go, cart, setCart }) {
       {/* sticky checkout */}
       {cart.length > 0 && (
         <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#fff', padding: '14px 20px 36px', borderTop: '1px solid var(--gray-1)' }}>
-          {/* [D6 + Adversarial cluster-7 P1 fix] Promo code input + REAL discount mock V0 */}
-          <PromoCodeRow onApply={setPromoCode}/>
-          {/* Total breakdown : sous-total / réduction / TOTAL */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 10, marginBottom: 4 }}>
+          {/* [2026-11-14 B-001 P0] Plus de champ code promo : TOTAL = somme des lignes (le serveur recalcule). */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 4 }}>
             <div>
               <div style={{ fontSize: 11, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Total</div>
-              {discount > 0 && (
-                <div data-testid="cart-subtotal-strike" style={{ fontSize: 14, color: 'var(--gray-3)', textDecoration: 'line-through', fontFamily: 'var(--font-mono)' }}>{subtotal.toFixed(2).replace('.', ',')} €</div>
-              )}
-              <div className="lc-display" style={{ fontSize: 36, lineHeight: 1 }}>{total.toFixed(2).replace('.', ',')} €</div>
-              {discount > 0 && (
-                <div data-testid="cart-discount-line" aria-live="polite" style={{ fontSize: 11, color: 'var(--green, #1FA653)', fontWeight: 700, marginTop: 2 }}>
-                  Économie <span data-testid="cart-discount-amount">{discount.toFixed(2).replace('.', ',')} €</span> (code {promoCode})
-                </div>
-              )}
+              <div data-testid="cart-total" className="lc-display" style={{ fontSize: 36, lineHeight: 1 }}>{total.toFixed(2).replace('.', ',')} €</div>
             </div>
             <span style={{ fontSize: 11, color: 'var(--gray-3)' }}>TVA incluse</span>
           </div>
@@ -860,24 +881,25 @@ function ScreenConfirm({ go, order }) {
           <div style={{ position: 'absolute', top: 44, left: -6, width: 12, height: 12, borderRadius: 999, background: 'var(--yellow)' }}/>
           <div style={{ position: 'absolute', top: 44, right: -6, width: 12, height: 12, borderRadius: 999, background: 'var(--yellow)' }}/>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-            <div className="lc-eyebrow" style={{ color: 'var(--gray-3)', fontSize: 9 }}>Ticket retrait</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--gray-3)' }}>HÉNIN-BEAUMONT · 62210</div>
+            <div className="lc-eyebrow" style={{ color: 'var(--gray-3)', fontSize: 9 }}>Retrait au comptoir</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--gray-3)' }}>HÉNIN-BEAUMONT · 62110</div>
           </div>
-          <div style={{ borderTop: '1.2px dashed var(--gray-2)', paddingTop: 10, display: 'flex', justifyContent: 'center' }}>
-            <QRMock size={150} value={`LECAY-ORDER-${orderId.replace(/^C-/, '')}`}/>
-          </div>
+          {/* [2026-11-14 B-009] Le QR décoratif (QRMock, motif pseudo-aléatoire non scannable) est
+              SUPPRIMÉ : la caisse appelle le client par son numéro d'appel, affiché en grand. */}
           {/* [GOAL-SYNC 2026-07-08] queue_number réel (commande caisse) affiché en grand */}
-          {queueNo && (
-            <div style={{ textAlign: 'center', fontSize: 9, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: 6 }}>N° d'appel en caisse</div>
-          )}
-          <div data-testid="confirm-queue-number" style={{ textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: 24, letterSpacing: '0.1em', marginTop: queueNo ? 2 : 6 }}>{queueNo || orderId}</div>
+          <div style={{ borderTop: '1.2px dashed var(--gray-2)', paddingTop: 12 }}>
+            {queueNo && (
+              <div style={{ textAlign: 'center', fontSize: 10, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' }}>Ton numéro d'appel</div>
+            )}
+            <div data-testid="confirm-queue-number" style={{ textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: queueNo ? 56 : 24, lineHeight: 1, letterSpacing: '0.06em', marginTop: 4 }}>{queueNo || orderId}</div>
+          </div>
           {queueNo && queueNo !== orderId && (
             <div style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--gray-3)', marginTop: 2 }}>Commande #{orderId}</div>
           )}
           <div style={{ borderTop: '1.2px dashed var(--gray-2)', marginTop: 10, paddingTop: 8, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
             <div>
-              <div style={{ fontSize: 9, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Prêt à</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 18 }}>{orderEta}</div>
+              <div style={{ fontSize: 9, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Paiement</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 18 }}>En caisse</div>
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 9, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Total</div>
@@ -885,18 +907,14 @@ function ScreenConfirm({ go, order }) {
             </div>
           </div>
         </div>
-        {/* ETA progress */}
-        <div style={{ marginTop: 10, padding: 12, background: 'var(--ink)', borderRadius: 12, color: '#fff' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>
-            <span>En préparation</span>
-            <span style={{ color: 'var(--yellow)' }}>~12 MIN</span>
+        {/* [2026-11-14 B-014] Plus de « EN PRÉPARATION ~12 MIN » ni de barre à moitié pleine codés en
+            dur : la commande vient d'être ENVOYÉE, le restaurant ne l'a pas encore validée. */}
+        {!isOffline && (
+          <div data-testid="confirm-status" style={{ marginTop: 10, padding: 12, background: 'var(--ink)', borderRadius: 12, color: '#fff', fontSize: 12, lineHeight: 1.45 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--yellow)', marginBottom: 4 }}>Envoyée au restaurant</div>
+            Le restaurant va valider ta commande. Suis son avancement dans « Commandes ».
           </div>
-          <div style={{ display: 'flex', gap: 3 }}>
-            {[1,2,3,4].map(i => (
-              <div key={i} style={{ flex: 1, height: 5, borderRadius: 999, background: i <= 2 ? 'var(--orange)' : 'rgba(255,255,255,0.15)' }}/>
-            ))}
-          </div>
-        </div>
+        )}
         <div style={{ marginTop: 'auto', display: 'flex', gap: 8, paddingTop: 10 }}>
           <button onClick={() => go('home')} style={{ flex: 1, background: 'var(--ink)', color: '#fff', border: 0, height: 50, borderRadius: 999, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: 'pointer' }}>Accueil</button>
           <button onClick={() => go('orders')} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', flex: 1.6, height: 50, fontSize: 12 }}>Suivre →</button>
@@ -920,10 +938,16 @@ function mapRemoteOrderRow(o) {
   const status = /annul/.test(sn) ? 'cancelled'
     : /(termin|livr|récup|recup|complet|prêt|pret|servi)/.test(sn) ? 'delivered'
     : 'pending';
-  const count = Number(o.order_items) || 0;
+  // [2026-11-14 B-022] nombre d'ARTICLES = somme des quantités (order_items_quantity), pas des lignes
+  const count = Number(o.order_items_quantity) || Number(o.order_items) || 0;
   return {
     id: o.order_serial_no || ('#' + (o.id != null ? o.id : '—')),
     dbId: o.id != null ? o.id : null,
+    // [2026-11-14 B-005] Le numéro d'appel (A0032) est celui de l'écran de confirmation et celui que
+    // la caisse annonce : c'est l'identifiant principal de la carte ; le n° de série reste secondaire.
+    queue_number: (o.queue_number != null && String(o.queue_number).trim()) ? String(o.queue_number).trim() : null,
+    // Points RÉELLEMENT crédités par le serveur (net) — jamais une estimation présentée comme acquise.
+    points_awarded: Number(o.loyalty_points_awarded) || 0,
     date: o.order_datetime || '',
     total: parseFloat(o.total_amount_price || 0) || 0,
     status,
@@ -966,7 +990,12 @@ function ScreenOrders({ go }) {
   const ordersApi = (window.LC && window.LC.orders) ? window.LC.orders : { active: [], history: [] };
   const active = remoteMode ? remote.active : (Array.isArray(ordersApi.active) ? ordersApi.active : []);
   const history = remoteMode ? remote.history : (Array.isArray(ordersApi.history) ? ordersApi.history : []);
-  const histTotal = history.reduce((s, o) => s + (Number(o.total) || 0), 0);
+  // [2026-11-14 B-010] Plus de tuile « Dépensé » (règle propriétaire : jamais la dépense du client).
+  // [2026-11-14 B-006] Les commandes serveur ouvrent la fiche détail (GET /api/frontend/order/show/{id}).
+  const detailOpener = (o) => {
+    if (o.remote) return o.dbId != null ? (() => go('orderDetail', 'srv-' + o.dbId)) : undefined;
+    return () => go('orderDetail', o.id);
+  };
   const groupByDate = (!remoteMode && ordersApi.groupByDate && typeof ordersApi.groupByDate === 'function')
     ? ordersApi.groupByDate
     : null;
@@ -977,9 +1006,6 @@ function ScreenOrders({ go }) {
   const balancePts = (window.LC && window.LC.loyalty && window.LC.loyalty.account)
     ? window.LC.loyalty.account.balance
     : 0;
-  // [GOAL-SYNC 2026-07-08] Estimation points par commande = Math.floor(total × ratio config
-  // réelle) — contrat §2 (earn backend = floor du total TTC), plus de 10 pt/€ hardcodé.
-  const earnRatio = lcEarnRatio();
   const fmtEur = (n) => (Number(n) || 0).toFixed(2).replace('.', ',') + ' €';
 
   return (
@@ -1026,27 +1052,23 @@ function ScreenOrders({ go }) {
             {active.map(o => {
               const summary = o.items_summary || (Array.isArray(o.items) ? o.items.map(i => i.name).join(' · ') : '');
               const statusLabel = (o.status_label || 'En préparation').toUpperCase();
-              const eta = Number(o.eta_minutes) || 12;
-              const progressSteps = Math.max(1, Math.round((Number(o.progress_pct) || 50) / 25));
-              // [GOAL-SYNC 2026-07-08] commandes API : pas de fiche détail locale → carte non cliquable
-              const openDetail = o.remote ? undefined : (() => go('orderDetail', o.id));
+              // [2026-11-14 B-014] Plus d'ETA « ~12 MIN » ni de barre de progression par défaut : seul le
+              // statut serveur est affiché. [B-005] Le numéro d'appel (même que la confirmation) en grand.
+              const callNo = o.queue_number || null;
+              const openDetail = detailOpener(o);
               return (
                 /* [test-e2e fix D-004 round-2 2026-05-11] active order routes to detail, not confirm */
-                <div key={o.id} role={openDetail ? 'button' : undefined} tabIndex={openDetail ? 0 : undefined} aria-label={openDetail ? `Commande ${o.id} en cours — voir détails` : `Commande ${o.id} en cours`} className="lc-tap" onClick={openDetail} onKeyDown={openDetail ? window.lcTapKey(openDetail) : undefined} style={{ background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, position: 'relative', overflow: 'hidden', cursor: openDetail ? 'pointer' : 'default', marginBottom: 12 }}>
+                <div key={o.id} data-testid={'orders-active-card-' + o.id} role={openDetail ? 'button' : undefined} tabIndex={openDetail ? 0 : undefined} aria-label={(callNo ? `Commande ${callNo}` : `Commande ${o.id}`) + ' en cours' + (openDetail ? ' — voir détails' : '')} className="lc-tap" onClick={openDetail} onKeyDown={openDetail ? window.lcTapKey(openDetail) : undefined} style={{ background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, position: 'relative', overflow: 'hidden', cursor: openDetail ? 'pointer' : 'default', marginBottom: 12 }}>
                   <div style={{ position: 'absolute', top: -20, right: -20, width: 140, height: 140, opacity: 0.06 }}><I.Pepper size={140} stroke="#FF5A1F"/></div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span className="lc-pill" style={{ background: 'var(--orange)', color: '#fff' }}><span className="lc-status-dot" style={{ background: '#fff' }}/> {statusLabel}</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>#{o.id}</span>
+                    {callNo && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>#{o.id}</span>}
                   </div>
-                  <div className="lc-display" style={{ fontSize: 36, marginTop: 14, color: 'var(--yellow)' }}>~{eta} MIN</div>
+                  {callNo && <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', marginTop: 14 }}>Numéro d'appel</div>}
+                  <div data-testid="orders-card-call-number" className="lc-display" style={{ fontSize: 36, marginTop: callNo ? 2 : 14, color: 'var(--yellow)' }}>{callNo || ('#' + o.id)}</div>
                   <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>{summary}</div>
-                  <div style={{ display: 'flex', gap: 4, marginTop: 16 }}>
-                    {[1,2,3,4].map(i => (
-                      <div key={i} style={{ flex: 1, height: 4, borderRadius: 999, background: i <= progressSteps ? 'var(--orange)' : 'rgba(255,255,255,0.15)' }}/>
-                    ))}
-                  </div>
                   <div style={{ marginTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--yellow)' }}>{o.remote ? (o.date || 'Commande en cours') : 'Voir le QR de retrait →'}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--yellow)' }}>{openDetail ? 'Voir le détail →' : (o.date || 'Commande en cours')}</span>
                     <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{fmtEur(o.total)}</span>
                   </div>
                 </div>
@@ -1060,10 +1082,6 @@ function ScreenOrders({ go }) {
               <div style={{ flex: 1, background: 'var(--ink)', color: '#fff', borderRadius: 14, padding: '12px 14px' }}>
                 <div style={{ fontSize: 10, color: 'var(--yellow)', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Commandes</div>
                 <div data-testid="orders-stat-count" className="lc-display" style={{ fontSize: 26, color: '#fff' }}>{history.length}</div>
-              </div>
-              <div style={{ flex: 1, background: 'var(--orange)', color: '#fff', borderRadius: 14, padding: '12px 14px' }}>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.85)', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Dépensé</div>
-                <div data-testid="orders-stat-total" className="lc-display" style={{ fontSize: 26 }}>{Math.round(histTotal)}€</div>
               </div>
               <div style={{ flex: 1, background: 'var(--yellow)', color: 'var(--ink)', borderRadius: 14, padding: '12px 14px' }}>
                 <div style={{ fontSize: 10, color: 'var(--ink)', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Pts</div>
@@ -1082,16 +1100,18 @@ function ScreenOrders({ go }) {
                 <div style={{ display: 'grid', gap: 8 }}>
                   {g.items.map(o => {
                     const summary = o.items_summary || (Array.isArray(o.items) ? o.items.map(i => i.name).join(' · ') : '');
-                    // [GOAL-SYNC 2026-07-08] estimation FLOOR (contrat §2), ratio config réelle
-                    const points = Number(o.points_earned) || Math.floor((Number(o.total) || 0) * earnRatio);
+                    // [2026-11-14 B-004] Seuls les points RÉELLEMENT crédités (serveur) sont affichés — plus
+                    // d'estimation présentée comme acquise.
+                    const points = o.remote ? (Number(o.points_awarded) || 0) : (Number(o.points_earned) || 0);
                     const statusLabel = o.status_label || 'Récupérée';
                     const isCancelled = o.status === 'cancelled';
-                    const openDetail = o.remote ? undefined : (() => go('orderDetail', o.id));
+                    const openDetail = detailOpener(o);
                     return (
-                      <div key={o.id} data-testid={'orders-history-card-' + o.id} onClick={openDetail} style={{ background: 'var(--cream)', borderRadius: 14, padding: 14, position: 'relative', cursor: openDetail ? 'pointer' : 'default' }}>
+                      <div key={o.id} data-testid={'orders-history-card-' + o.id} role={openDetail ? 'button' : undefined} tabIndex={openDetail ? 0 : undefined} aria-label={(o.queue_number ? `Commande ${o.queue_number}` : `Commande ${o.id}`) + (openDetail ? ' — voir détails' : '')} onClick={openDetail} onKeyDown={openDetail ? window.lcTapKey(openDetail) : undefined} style={{ background: 'var(--cream)', borderRadius: 14, padding: 14, position: 'relative', cursor: openDetail ? 'pointer' : 'default' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                              {o.queue_number ? <span style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--ink)' }}>{o.queue_number}</span> : null}
                               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--gray-3)' }}>#{o.id}</span>
                               <span style={{ width: 4, height: 4, borderRadius: 999, background: 'var(--gray-2)' }}/>
                               <span style={{ fontSize: 10, fontWeight: 700, color: isCancelled ? 'var(--red)' : 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{isCancelled ? '✕' : '✓'} {statusLabel}</span>
@@ -1100,10 +1120,10 @@ function ScreenOrders({ go }) {
                             <div style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.3 }}>{summary}</div>
                             <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
                               <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--orange)' }}>{fmtEur(o.total)}</span>
-                              <span style={{ fontSize: 10, color: 'var(--gray-3)', fontWeight: 600 }}>+{points} pts</span>
+                              {points > 0 ? <span style={{ fontSize: 10, color: 'var(--gray-3)', fontWeight: 600 }}>+{points} pts crédités</span> : null}
                             </div>
                           </div>
-                          <button onClick={(e) => { e.stopPropagation(); go('menu'); }} style={{ background: 'var(--ink)', color: 'var(--yellow)', border: 0, padding: '10px 14px', borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0, alignSelf: 'center' }}>↻ Refaire</button>
+                          <button onClick={(e) => { e.stopPropagation(); go('menu'); }} onKeyDown={(e) => e.stopPropagation()} style={{ background: 'var(--ink)', color: 'var(--yellow)', border: 0, padding: '10px 14px', minHeight: 44, borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0, alignSelf: 'center' }}>↻ Refaire</button>
                         </div>
                       </div>
                     );
@@ -1135,7 +1155,7 @@ function ScreenProfile({ go }) {
     return () => { alive = false; };
   }, []);
   const rawName = (prof && (prof.name || [prof.first_name, prof.last_name].filter(Boolean).join(' '))) || '';
-  const displayName = String(rawName).trim() || 'Client Le Cayenne';
+  const displayName = lcHumanName(rawName) || 'Client Le Cayenne';
   const displayPhone = (prof && prof.phone) || storedAuth.phone || '—';
   const { display: branchPhoneDisplay, href: branchPhoneHref } = branchPhoneInfo();
   const initials = displayName.split(/\s+/).slice(0, 2).map(w => w.charAt(0)).join('').toUpperCase() || 'LC';
@@ -1153,7 +1173,7 @@ function ScreenProfile({ go }) {
               <div data-testid="profile-name" style={{ fontSize: 17, fontWeight: 700 }}>{displayName}</div>
               <div data-testid="profile-phone" style={{ fontSize: 12, color: 'var(--gray-3)', fontFamily: 'var(--font-mono)' }}>{displayPhone}</div>
             </div>
-            <button onClick={() => go('toast', { msg: 'Édition profil — bientôt disponible', kind: 'info' })} style={{ background: 'var(--ink)', border: 0, padding: '8px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer', color: 'var(--yellow)', letterSpacing: '0.08em' }}>MODIFIER</button>
+            {/* [2026-11-14 B-008] Bouton « MODIFIER » (toast « bientôt disponible ») retiré : aucune édition n'est branchée. */}
           </div>
         </div>
         {/* loyalty preview card — [GOAL-SYNC 2026-07-08] modèle CONTINU points→€ (contrat §2) :
@@ -1162,9 +1182,9 @@ function ScreenProfile({ go }) {
           const lAcc = (window.LC.loyalty && window.LC.loyalty.account) || { balance: 0 };
           const lBalance = (prof && prof.loyalty_points != null) ? (Number(prof.loyalty_points) || 0) : (Number(lAcc.balance) || 0);
           const lRatio = lcRedeemRatio();
-          const lEuros = Math.floor(lBalance / lRatio);
-          const lMod = lBalance % lRatio;
-          const lProgPct = Math.round((lMod / lRatio) * 100);
+          const lMin = lcMinRedeem();
+          const lEuros = lBalance >= lMin ? Math.floor(lBalance / lRatio) : 0;
+          const lProgPct = Math.min(100, Math.round((lBalance / lMin) * 100));
           return (
             <div style={{ padding: '14px 20px 0' }}>
               <div role="button" tabIndex={0} aria-label={`Carte fidélité — ${lBalance} points, voir détails`} className="lc-tap" onClick={() => go('loyalty')} onKeyDown={window.lcTapKey(() => go('loyalty'))} style={{ position: 'relative', background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, overflow: 'hidden', cursor: 'pointer' }}>
@@ -1178,7 +1198,7 @@ function ScreenProfile({ go }) {
                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 6 }}>
                   {lEuros > 0
                     ? <>Soit <b style={{ color: 'var(--yellow)' }}>{lEuros} €</b> de réduction en caisse · {lRatio} pts = 1 €</>
-                    : <>Plus que <b style={{ color: 'var(--orange)' }}>{lRatio - lMod} pts</b> pour 1 € de réduction ({lRatio} pts = 1 €)</>}
+                    : <>Plus que <b style={{ color: 'var(--orange)' }}>{lMin - lBalance} pts</b> pour ta première réduction ({lMin} pts = {Math.floor(lMin / lRatio)} €)</>}
                 </div>
                 <div style={{ marginTop: 14, height: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 999, overflow: 'hidden' }}>
                   <div style={{ width: lProgPct + '%', height: '100%', background: 'linear-gradient(90deg, var(--yellow), var(--orange))' }}/>
@@ -1196,13 +1216,16 @@ function ScreenProfile({ go }) {
           <div style={{ background: 'var(--cream)', borderRadius: 18, overflow: 'hidden' }}>
             {[
               { i: I.Gift, t: 'Ma carte fidélité', d: (window.LC.loyalty.account.balance + ' pts'), go: 'loyalty', accent: 'var(--orange)' },
-              // [GOAL-SYNC 2026-07-08] Flag carte-en-ligne OFF (contrat §4) — plus de fausse « Visa ····4242 »
-              { i: I.Card, t: 'Moyens de paiement', d: 'En caisse (CB ou espèces)' },
-              { i: I.Bell, t: 'Notifications', d: 'Activées' },
-              { i: I.Pepper, t: 'Allergènes & préférences', d: '2 actives' },
-              { i: I.Globe, t: 'Langue', d: 'Français' },
+              // [2026-11-14 B-008] Lignes factices retirées (Notifications « Activées », Allergènes « 2 actives »,
+              // Langue « Français » : valeurs inventées + toast « bientôt disponible »). Le paiement devient
+              // une simple information, pas un bouton.
+              { i: I.Card, t: 'Paiement : en caisse, CB ou espèces', info: true },
               { i: I.Phone, t: 'Nous contacter', d: branchPhoneDisplay, href: branchPhoneHref },
-              { i: I.Shield, t: 'CGU & Confidentialité' },
+              // [2026-11-14 B-007] Vrais liens légaux (pages vérifiées HTTP 200 sur lecayenne.fr), source
+              // unique window.LC_LEGAL (screens-onboarding.jsx), repli sur les mêmes URLs.
+              { i: I.Shield, t: 'Politique de confidentialité', href: (window.LC_LEGAL && window.LC_LEGAL.confidentialite) || 'https://www.lecayenne.fr/legal/privacy.html', external: true },
+              { i: I.Shield, t: 'Conditions générales de vente', href: (window.LC_LEGAL && window.LC_LEGAL.cgu) || 'https://www.lecayenne.fr/legal/cgv.html', external: true },
+              { i: I.Shield, t: 'Mentions légales', href: 'https://www.lecayenne.fr/legal/mentions.html', external: true },
             ].map((row, i) => {
               const content = <>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: row.accent || 'var(--ink)', color: row.accent ? '#fff' : 'var(--yellow)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}><row.i size={16}/></div>
@@ -1210,13 +1233,16 @@ function ScreenProfile({ go }) {
                   <div style={{ fontSize: 14, fontWeight: 600 }}>{row.t}</div>
                 </div>
                 {row.d && <div style={{ fontSize: 12, color: 'var(--gray-3)', marginRight: 10 }}>{row.d}</div>}
-                <I.Chevron size={14} stroke="var(--gray-3)"/>
+                {!row.info && <I.Chevron size={14} stroke="var(--gray-3)"/>}
               </>;
-              const label = row.t + (row.d ? ' — ' + row.d : '');
-              if (row.href) {
-                return <a key={i} href={row.href} aria-label={label} className="lc-toggle-row lc-tap" style={{ cursor: 'pointer', color: 'inherit', textDecoration: 'none' }}>{content}</a>;
+              const label = row.t + (row.d ? ' — ' + row.d : '') + (row.external ? ' (nouvelle fenêtre)' : '');
+              if (row.info) {
+                return <div key={i} data-testid="profile-payment-info" className="lc-toggle-row">{content}</div>;
               }
-              return <div key={i} role="button" tabIndex={0} aria-label={label} className="lc-toggle-row lc-tap" style={{ cursor: 'pointer' }} onClick={() => row.go ? go(row.go) : go('toast', { msg: row.t + ' — bientôt disponible', kind: 'info' })} onKeyDown={window.lcTapKey(() => row.go ? go(row.go) : go('toast', { msg: row.t + ' — bientôt disponible', kind: 'info' }))}>{content}</div>;
+              if (row.href) {
+                return <a key={i} href={row.href} aria-label={label} target={row.external ? '_blank' : undefined} rel={row.external ? 'noopener' : undefined} className="lc-toggle-row lc-tap" style={{ cursor: 'pointer', color: 'inherit', textDecoration: 'none' }}>{content}</a>;
+              }
+              return <div key={i} role="button" tabIndex={0} aria-label={label} className="lc-toggle-row lc-tap" style={{ cursor: 'pointer' }} onClick={() => go(row.go)} onKeyDown={window.lcTapKey(() => go(row.go))}>{content}</div>;
             })}
           </div>
           {authed && (
@@ -1445,18 +1471,19 @@ function ScreenLoyalty({ go }) {
   const isOptedOut = consent === 'opted_out';
   const userFirstName = (window.LC.user && window.LC.user.current && window.LC.user.current.first_name) || '';
   const userLastInit = (window.LC.user && window.LC.user.current && window.LC.user.current.last_name) || '';
-  const memberDisplayName = (userFirstName + (userLastInit ? ' ' + userLastInit : '')).toUpperCase().trim();
+  const memberDisplayName = lcHumanName(userFirstName) ? (userFirstName + (userLastInit ? ' ' + userLastInit : '')).toUpperCase().trim() : '';
 
   // Solde RÉEL (profil API) prioritaire ; fallback data layer locale
   const balance = (remoteProfile && remoteProfile.loyalty_points != null)
     ? (Number(remoteProfile.loyalty_points) || 0)
     : (Number(account.balance) || 0);
   const isEmpty = balance === 0 && (Array.isArray(remoteHist) ? remoteHist.length === 0 : (account.lifetime_earned || 0) === 0);
-  const discountValue = balance / redeemRatio;
-  // [GOAL-SYNC 2026-07-08] Progression CONTINUE vers le prochain € (plus de catalogue mock)
-  const progressMod = balance % redeemRatio;
-  const progressRemaining = progressMod === 0 ? 0 : (redeemRatio - progressMod);
-  const progressPct = Math.round((progressMod / redeemRatio) * 100);
+  // [2026-11-14] Utilisable seulement à partir du seuil serveur (min_redeem_points, 1 000) — R2-002.
+  const minRedeem = lcMinRedeem();
+  const discountValue = balance >= minRedeem ? Math.floor(balance / redeemRatio) : 0;
+  const progressMod = Math.min(balance, minRedeem);
+  const progressRemaining = balance >= minRedeem ? 0 : (minRedeem - balance);
+  const progressPct = Math.round((progressMod / minRedeem) * 100);
 
   const onQRToggle = () => {
     const newMode = qrMode === 'qr' ? 'barcode' : 'qr';
@@ -1521,71 +1548,35 @@ function ScreenLoyalty({ go }) {
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--orange)' }}>POINTS</div>
             </div>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>
-              Soit {discountValue.toFixed(2).replace('.', ',')} € de réduction disponible
+              {discountValue > 0 ? <>Soit {discountValue},00 € de réduction utilisable en caisse</> : <>Réductions dès {minRedeem} points ({Math.floor(minRedeem / redeemRatio)} € en caisse)</>}
             </div>
             {/* [GOAL-SYNC 2026-07-08] Progression CONTINUE vers le prochain € (contrat §2) */}
             {progressRemaining > 0 && (
               <div style={{ marginTop: 16 }}>
                 <div data-testid="loyalty-progress-text" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'rgba(255,255,255,0.7)', marginBottom: 6 }}>
-                  <span>{progressMod} / {redeemRatio} pts</span>
-                  <span style={{ color: 'var(--yellow)' }}>+1 € DE RÉDUCTION</span>
+                  <span>{progressMod} / {minRedeem} pts</span>
+                  <span style={{ color: 'var(--yellow)' }}>−{Math.floor(minRedeem / redeemRatio)} € EN CAISSE</span>
                 </div>
-                <div role="progressbar" aria-valuenow={progressMod} aria-valuemax={redeemRatio} aria-valuetext={progressMod + ' sur ' + redeemRatio + ' points vers le prochain euro'} style={{ height: 8, background: 'rgba(255,255,255,0.12)', borderRadius: 999, overflow: 'hidden', position: 'relative' }}>
+                <div role="progressbar" aria-valuenow={progressMod} aria-valuemax={minRedeem} aria-valuetext={progressMod + ' sur ' + minRedeem + ' points avant la première réduction'} style={{ height: 8, background: 'rgba(255,255,255,0.12)', borderRadius: 999, overflow: 'hidden', position: 'relative' }}>
                   <div style={{ width: progressPct + '%', height: '100%', background: 'linear-gradient(90deg, var(--yellow), var(--orange))' }}/>
                 </div>
                 <div style={{ marginTop: 8, fontSize: 12, fontWeight: 600 }}>
-                  Plus que <span style={{ color: 'var(--orange)', fontWeight: 800 }}>{progressRemaining} pts</span> pour <b style={{ color: 'var(--yellow)' }}>1 € de réduction</b> supplémentaire 🎁
+                  Plus que <span style={{ color: 'var(--orange)', fontWeight: 800 }}>{progressRemaining} pts</span> pour <b style={{ color: 'var(--yellow)' }}>{Math.floor(minRedeem / redeemRatio)} € de réduction</b> 🎁
                 </div>
               </div>
             )}
             {progressRemaining === 0 && balance > 0 && (
               <div style={{ marginTop: 16, padding: 10, background: 'rgba(31,166,83,0.15)', borderRadius: 10, fontSize: 12, fontWeight: 700, color: 'var(--yellow)', textAlign: 'center' }}>
-                🎉 {balance / redeemRatio} € de réduction prêts à être utilisés en caisse
+                🎉 {discountValue} € de réduction prêts à être utilisés en caisse
               </div>
             )}
           </div>
         )}
 
-        {/* ACTIONS RAPIDES — Apple Wallet + Google Wallet + plastic card (DEC-10)
-            Cycle C Wave 4 refactor : rdl-actions grid 3-col (Claude Design rdl-* lib).
-            Apple/Google brand-compliant image badges PRESERVED inside rdl-action shell. */}
-        {!isOptedOut && (
-          <div className="rdl-actions">
-            <button
-              className="rdl-action"
-              data-testid="wallet-apple-btn"
-              onClick={() => go('walletApple')}
-              aria-label="Ajouter à Apple Wallet"
-              style={{ padding: 8 }}
-            >
-              <img src="uploads/add-to-apple-wallet-fr-stub.svg" alt="" height="36" style={{ display: 'block', borderRadius: 10, maxWidth: '100%' }}/>
-              <div className="rdl-action-label" style={{ marginTop: 4 }}>Apple Wallet</div>
-            </button>
-            <button
-              className="rdl-action"
-              data-testid="wallet-google-btn"
-              onClick={() => go('walletGoogle')}
-              aria-label="Ajouter à Google Wallet"
-              style={{ padding: 8 }}
-            >
-              <img src="uploads/add-to-google-wallet-fr-stub.svg" alt="" height="36" style={{ display: 'block', borderRadius: 10, maxWidth: '100%' }}/>
-              <div className="rdl-action-label" style={{ marginTop: 4 }}>Google Wallet</div>
-            </button>
-            <button
-              className="rdl-action"
-              data-testid="link-plastic-card-btn"
-              onClick={() => go('link')}
-              aria-label={account.plastic_card_linked ? 'Carte plastique liée' : 'Lier carte plastique'}
-            >
-              <div className="rdl-action-icon" style={{ background: 'var(--orange)' }}>
-                <I.Card size={18}/>
-              </div>
-              <div className="rdl-action-label">
-                {account.plastic_card_linked ? <>Carte<br/>liée ✓</> : <>Lier carte<br/>plastique</>}
-              </div>
-            </button>
-          </div>
-        )}
+        {/* [2026-11-14 B-012] ACTIONS RAPIDES retirées : les badges officiels Apple/Google Wallet
+            n'ouvraient qu'une modale « en cours de provisioning » (badge réservé aux passes réels) et
+            « Lier carte plastique » affichait un faux succès sans appareil photo ni appel serveur.
+            La carte fidélité RÉELLE reste le QR serveur ci-dessus. */}
 
         {/* [GOAL-SYNC 2026-07-08] Bandeau hors-ligne (fallback data locale) */}
         {!isOptedOut && authed && netOffline && (
@@ -1626,14 +1617,14 @@ function ScreenLoyalty({ go }) {
                 <div style={{ fontSize: 40, marginBottom: 8 }}>🎉</div>
                 <div className="lc-display" style={{ fontSize: 26, marginBottom: 4 }}>Bienvenue dans le club</div>
                 {/* [GOAL-SYNC 2026-07-08] earn réel : 1 pt/€ (config backend), plus de bonus mock imposé */}
-                <div style={{ fontSize: 13, color: 'var(--gray-4)', marginBottom: 16 }}>Tu n'as pas encore de points. Chaque euro dépensé te rapporte <b>{earnRatio} pt{earnRatio > 1 ? 's' : ''}</b>.</div>
-                <button data-testid="cta-first-order" onClick={() => go('menu')} className="lc-btn lc-btn--orange" style={{ height: 48 }}>Commencer ma commande →</button>
+                <div style={{ fontSize: 13, color: 'var(--gray-4)', marginBottom: 16 }}>Tu n'as pas encore de points. <b>1 € = {earnRatio} pt{earnRatio > 1 ? 's' : ''}</b>, crédités quand le restaurant valide ta commande.</div>
+                <button data-testid="cta-first-order" onClick={() => go('menu')} className="lc-btn lc-btn--orange" style={{ height: 48, whiteSpace: 'nowrap', letterSpacing: '0.04em' }}>Commencer ma commande →</button>
                 <div style={{ marginTop: 20, fontSize: 11, color: 'var(--gray-4)', textAlign: 'left' }}>
                   <div className="lc-eyebrow" style={{ marginBottom: 6, color: 'var(--ink)' }}>Aperçu des réductions</div>
-                  {[1, 3, 5].map(n => (
-                    <div key={n} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--gray-1)' }}>
-                      <span>🎁 −{n},00 € en caisse</span>
-                      <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{n * redeemRatio} pts</span>
+                  {lcRedeemTiers().map(pts => (
+                    <div key={pts} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--gray-1)' }}>
+                      <span>🎁 −{Math.floor(pts / redeemRatio)},00 € en caisse</span>
+                      <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{pts} pts</span>
                     </div>
                   ))}
                 </div>
@@ -1739,7 +1730,7 @@ function ScreenLoyalty({ go }) {
             <div className="lc-eyebrow" style={{ color: 'var(--gray-4)', marginBottom: 8 }}>Programme fidélité</div>
             {/* [GOAL-SYNC 2026-07-08] Taux dérivés de la config RÉELLE (10 pt/€ · 100 pts = 1 €) */}
             <div style={{ background: 'var(--cream)', borderRadius: 14, padding: 14, fontSize: 12, color: 'var(--ink)', marginBottom: 8 }}>
-              {earnRatio} pt{earnRatio > 1 ? 's' : ''} par € dépensé · {redeemRatio} pts = 1 € de réduction{config.expires_after_days ? ' · Validité ' + config.expires_after_days + ' jours' : ''}
+              1 € = {earnRatio} pt{earnRatio > 1 ? 's' : ''} · {redeemRatio} pts = 1 € de réduction{config.expires_after_days ? ' · Validité ' + config.expires_after_days + ' jours' : ''}
             </div>
             <button
               data-testid="loyalty-opt-out-btn"
@@ -1755,59 +1746,4 @@ function ScreenLoyalty({ go }) {
   );
 }
 
-// [D6 + Adversarial cluster-7 P1 fix 2026-05-11] PromoCodeRow — input promo + mock V0.
-// Adversarial caught : success banner was cosmetic-only, total stayed full price.
-// Fix : onApply callback lifts the applied code to ScreenCart which computes -10% discount.
-// Backend wireup Phase 6.C : POST /api/v1/frontend/cart/promo with code → returns discount or 422.
-function PromoCodeRow({ onApply }) {
-  const [code, setCode] = uS('');
-  const [status, setStatus] = uS('idle'); // idle | applied | invalid
-  const [appliedCode, setAppliedCode] = uS('');
-  const apply = () => {
-    const trimmed = code.trim().toUpperCase();
-    if (!trimmed) return;
-    // [FULL-FLOW HEAL 2026-05-18 P0-2] Unify promo codes with web (WELCOME10 + CAYENNE + CAYENNE10)
-    if (trimmed === 'WELCOME10' || trimmed === 'CAYENNE' || trimmed === 'CAYENNE10') {
-      setStatus('applied');
-      setAppliedCode(trimmed);
-      if (typeof onApply === 'function') onApply(trimmed);
-    } else {
-      setStatus('invalid');
-      setTimeout(() => setStatus('idle'), 2200);
-    }
-  };
-  const clear = () => {
-    setCode(''); setStatus('idle'); setAppliedCode('');
-    if (typeof onApply === 'function') onApply(null);
-  };
-  if (status === 'applied') {
-    return (
-      <div data-testid="cart-promo-applied" role="status" aria-live="polite" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--green-light, #ECFDF5)', border: '1px solid var(--green, #1FA653)', borderRadius: 10, marginBottom: 4 }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green-dark, #047857)' }}>✓ Code <code>{appliedCode}</code> appliqué</span>
-        <button onClick={clear} aria-label="Retirer le code promo" style={{ background: 'transparent', border: 0, color: 'var(--gray-4)', fontSize: 11, cursor: 'pointer' }}>Retirer</button>
-      </div>
-    );
-  }
-  return (
-    <div style={{ marginBottom: 4 }}>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
-        <input
-          data-testid="cart-promo-input"
-          type="text"
-          value={code}
-          onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 16))}
-          placeholder="Code promo (ex. WELCOME10)"
-          aria-label="Code promo"
-          style={{ flex: 1, minWidth: 0, padding: '10px 12px', fontSize: 13, fontFamily: 'var(--font-mono)', border: status === 'invalid' ? '1.5px solid var(--red)' : '1.5px solid var(--gray-2)', borderRadius: 10, background: '#fff', color: 'var(--ink)', textTransform: 'uppercase', letterSpacing: '0.04em' }}
-          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); apply(); } }}
-        />
-        <button onClick={apply} disabled={!code.trim()} aria-label="Appliquer le code promo" style={{ padding: '0 16px', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', background: code.trim() ? 'var(--ink)' : 'var(--gray-1)', color: code.trim() ? 'var(--yellow)' : 'var(--gray-3)', border: 0, borderRadius: 10, cursor: code.trim() ? 'pointer' : 'not-allowed' }}>Appliquer</button>
-      </div>
-      {status === 'invalid' && (
-        <div role="alert" aria-live="assertive" style={{ marginTop: 4, fontSize: 11, color: 'var(--red)', fontWeight: 600 }}>Code invalide</div>
-      )}
-    </div>
-  );
-}
-
-Object.assign(window, { ScreenHome, ScreenMenu, ScreenItem, ScreenCart, ScreenConfirm, ScreenOrders, ScreenProfile, ScreenLoyalty, LoyaltyRedeemPanel, ITEMS, CATS, AllergenDisclosure, AllergenBadge, PromoCodeRow });
+Object.assign(window, { ScreenHome, ScreenMenu, ScreenItem, ScreenCart, ScreenConfirm, ScreenOrders, ScreenProfile, ScreenLoyalty, LoyaltyRedeemPanel, ITEMS, CATS, AllergenDisclosure, AllergenBadge });

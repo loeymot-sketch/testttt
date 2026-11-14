@@ -91,18 +91,18 @@ function computeActiveSteps(item, selections) {
     case 'tacos':
     case 'sandwich':
       // [GOAL-SYNC 2026-07-08] Pain/Galette AVANT viandes (parité web wizard-v2.jsx:68-73)
-      if (item.has_pain_choice) steps.push(STEP.PAIN);
+      if (item.has_pain_choice && (lcOffered('variations', 'Pain') || lcOffered('variations', 'Galette'))) steps.push(STEP.PAIN);
       if ((item.viande_count || item.viandes) > 0) steps.push(STEP.VIANDES);
       if (item.has_sauce) steps.push(STEP.SAUCE);
-      if (item.has_crudites) steps.push(STEP.CRUDITES);
-      if (item.has_supplements !== false) steps.push(STEP.SUPPLEMENTS);
+      if (item.has_crudites && lcOffersCrudites()) steps.push(STEP.CRUDITES);
+      if (item.has_supplements !== false && lcOffersSupplements(item)) steps.push(STEP.SUPPLEMENTS);
       if (item.has_menu_addon) steps.push(STEP.MENU);
       break;
     case 'burger':
-      if (item.has_pain_choice) steps.push(STEP.PAIN); // parité web (case partagé)
+      if (item.has_pain_choice && (lcOffered('variations', 'Pain') || lcOffered('variations', 'Galette'))) steps.push(STEP.PAIN); // parité web (case partagé)
       if (item.has_sauce) steps.push(STEP.SAUCE);
-      if (item.has_crudites) steps.push(STEP.CRUDITES);
-      if (item.has_supplements !== false) steps.push(STEP.SUPPLEMENTS);
+      if (item.has_crudites && lcOffersCrudites()) steps.push(STEP.CRUDITES);
+      if (item.has_supplements !== false && lcOffersSupplements(item)) steps.push(STEP.SUPPLEMENTS);
       if (item.has_menu_addon) steps.push(STEP.MENU);
       break;
     case 'bol':
@@ -116,13 +116,13 @@ function computeActiveSteps(item, selections) {
       break;
     case 'assiette':
       if (item.has_sauce) steps.push(STEP.SAUCE);
-      if (item.has_supplements !== false) steps.push(STEP.SUPPLEMENTS);
+      if (item.has_supplements !== false && lcOffersSupplements(item)) steps.push(STEP.SUPPLEMENTS);
       break;
     case 'omelette':
       // Ojja + Omelettes + Menus Enfants (V3.8) — frites already in price → no menu, no frites_style
       if (item.has_sauce) steps.push(STEP.SAUCE);
-      if (item.has_crudites) steps.push(STEP.CRUDITES);
-      if (item.has_supplements !== false) steps.push(STEP.SUPPLEMENTS);
+      if (item.has_crudites && lcOffersCrudites()) steps.push(STEP.CRUDITES);
+      if (item.has_supplements !== false && lcOffersSupplements(item)) steps.push(STEP.SUPPLEMENTS);
       break;
     case 'salade':
       // [Owner re-cadrage 2026-05-11] Salade simplifiée : sauce(opt) + suppléments(opt) + menu(opt) + cascade.
@@ -130,14 +130,14 @@ function computeActiveSteps(item, selections) {
       // une salade dont la composition est déjà fixée par le nom (Salade Royale = Laitue+Tomate+Maïs+Poulet+Olives).
       // Logique humaine = "choisis sauce optionnelle + suppléments optionnels + veux-tu rajouter frites/boisson ?"
       if (item.has_sauce) steps.push(STEP.SAUCE);
-      if (item.has_supplements !== false) steps.push(STEP.SUPPLEMENTS);
+      if (item.has_supplements !== false && lcOffersSupplements(item)) steps.push(STEP.SUPPLEMENTS);
       if (item.has_menu_addon) steps.push(STEP.MENU);
       break;
     case 'snacking':
       // Wings + tenders (cat 8/313). Sauce générique 12 sauces (U2 owner: pas BBQ/Nashville).
       if (item.has_sauce) steps.push(STEP.SAUCE);
       if (item.has_menu_addon) steps.push(STEP.MENU);
-      if (item.has_supplements !== false) steps.push(STEP.SUPPLEMENTS);
+      if (item.has_supplements !== false && lcOffersSupplements(item)) steps.push(STEP.SUPPLEMENTS);
       break;
     case 'custom':
       // [MOBILE-REALIGNMENT 2026-05-16] Custom composer profile driven by
@@ -151,6 +151,9 @@ function computeActiveSteps(item, selections) {
       }
       if (item.has_frites_style) {
         steps.push(STEP.FRITES_STYLE);                          // step_key=frites_style
+        // [2026-11-14] Les frites seules exigent une sauce au serveur (min 1) : sans cette étape, le serveur
+        // choisissait « Ketchup » à la place du client (relecture adverse A2-011).
+        if (item.has_sauce) steps.push(STEP.SAUCE);
         break;
       }
       // Unknown custom profile — fall through to simple
@@ -160,7 +163,7 @@ function computeActiveSteps(item, selections) {
       // Cas spéciaux : frites standalone, sauce sup, ou direct add
       if (item.has_frites_style) steps.push(STEP.FRITES_STYLE);
       if (item.has_sauce) steps.push(STEP.SAUCE);
-      if (item.has_supplements !== false && (item.has_sauce || item.has_frites_style)) {
+      if (item.has_supplements !== false && (item.has_sauce || item.has_frites_style) && lcOffersSupplements(item)) {
         steps.push(STEP.SUPPLEMENTS);
       }
       break;
@@ -173,7 +176,9 @@ function computeActiveSteps(item, selections) {
     const cascade = [];
     if (menuChoice === 'full' || menuChoice === 'boisson') cascade.push(STEP.DRINK);
     if (menuChoice === 'full' || menuChoice === 'frites') {
-      cascade.push(STEP.FRITES_STYLE);
+      // [2026-11-14] Plus de « style de frites » DANS la formule : le serveur ne le facture ni ne le transmet
+      // (FrontendOrderService::instructionWebAssainie, même règle que le site) — le client voyait +1/+2 €
+      // jamais encaissés et la cuisine ne recevait pas le cheddar (relecture adverse A2-003).
       cascade.push(STEP.FRITES_SAUCE);
     }
     steps.splice(menuIdx + 1, 0, ...cascade);
@@ -235,7 +240,8 @@ function computeTotal(item, selections) {
     formuleId: selections.menuChoice && selections.menuChoice !== 'none'
       ? (selections.menuChoice === 'full' ? 'f-menu' : selections.menuChoice === 'frites' ? 'f-frites' : 'f-boisson')
       : null,
-    fritesStyleId: selections.fritesStyleId,
+    // Style de frites facturé UNIQUEMENT pour un produit Frites seul (SKU « … Cheddar fondu » au serveur).
+    fritesStyleId: item && item.has_frites_style ? selections.fritesStyleId : null,
     fritesSauceIds: selections.fritesSauceIds,
     qty: selections.qty || 1,
   });
@@ -374,6 +380,38 @@ function extraMeatPriceOf(lcMenu) {
 // STEP 0 — Pain ou galette ([GOAL-SYNC 2026-07-08] has_pain_choice, pool PAINS,
 // défaut Pain — parité web wizard-v2.jsx:68-73, gratuit)
 // ============================================================================
+// [2026-11-14] Filtre « proposé par le serveur pour CE produit » (chargé à l'ouverture de l'assistant).
+// Tant que la réponse n'est pas arrivée (ou hors ligne), tout reste affiché ; la commande échoue alors
+// clairement si une option n'existe pas (api/client.js optionAbsente).
+// Étape crudités seulement si le profil serveur du produit en propose (Tacos L : aucune — R2).
+function lcOffersCrudites() {
+  return ['Salade', 'Tomate', 'Oignon'].some(n => lcOffered('extras', n));
+}
+// Étape suppléments seulement si le profil propose au moins un supplément ou la viande en plus.
+function lcOffersSupplements(item) {
+  const lcMenu = window.LC.menu;
+  return (lcMenu.supplements || []).some(sp => lcOffered('extras', sp.name))
+    || (lcMenu.supplementsBols || []).some(sp => lcOffered('extras', sp.name))
+    || (!!item.has_extra_meat && lcOffered('extras', 'Viande supplémentaire'));
+}
+// Sauce frites de formule : seulement une sauce que le serveur vend (« Sauce … » au catalogue) — R3-003.
+function lcSauceVendue(name) {
+  const set = window.LC && window.LC.catalog && window.LC.catalog.sauceNames;
+  const api = window.LC && window.LC.mobileApi;
+  if (!set || !api || !api._norm) return true;
+  return !!set[api._norm(name)];
+}
+function lcOffered(kind, name) {
+  const o = window.LC && window.LC.currentItemOptions;
+  const api = window.LC && window.LC.mobileApi;
+  if (!o || !api || !api._norm) return true;
+  const table = o[kind] || {};
+  // Profil publié chargé : une rubrique vide veut dire « rien de proposé » (Tacos : ni supplément ni
+  // crudités — R3-001) ; sans profil, on ne restreint pas.
+  if (!Object.keys(table).length) return !o.profile;
+  return !!table[api._norm(name)];
+}
+
 function ScreenStepPain({ item, selections, setSelections, headingRef }) {
   const lcMenu = window.LC.menu;
   const pains = lcMenu.pains || [];
@@ -431,7 +469,7 @@ function ScreenStepViandes({ item, selections, setSelections, headingRef }) {
         </span>
       </div>
       <div role="radiogroup" aria-label={`Choisis ${required} viandes`} style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-        {lcMenu.meats.map(m => {
+        {lcMenu.meats.filter(m => lcOffered('variations', m.name)).map(m => {
           const on = meatIds.includes(m.id);
           return (
             <ChoiceCard key={m.id} on={on} onPick={() => togglePush(m.id)} ariaRole="checkbox">
@@ -473,10 +511,21 @@ function ScreenStepSauce({ item, selections, setSelections, headingRef, sauceFie
   const SANS_SAUCE = 's-sans';
   const isMainSauce = sauceField === 'sauceIds';
   const template = wizardTemplateFor(item);
-  const maxOne = isMainSauce && (template === 'tacos' || template === 'sandwich' || template === 'burger' || template === 'bol');
-  const pool = (isMainSauce && template === 'bol' && (lcMenu.bolSauces || []).length > 0)
+  // [2026-11-14] Sauce frites de formule : une seule, offerte — le serveur ne garde que la 1re non payée
+  // (instructionWebAssainie) ; « incluses » en sélection multiple promettait des sauces jamais servies.
+  const isFritesSauce = sauceField === 'fritesSauceIds';
+  // [2026-11-14] Nombre de sauces = maximum du PROFIL publié au serveur (Sandwich Classique / Cayenne : 2 sauces
+  // incluses, max_select 2) ; 1 par défaut tant que le profil n'est pas chargé.
+  // [2026-11-14 R4-001] Une seule sauce dans le champ sauce : le serveur la limite à 1 (attribut max 1) et
+  // facture une 2ᵉ sauce comme « Sauce supplémentaire » — l'envoyer ici faisait refuser toute la commande.
+  const profilSauceMax = 1;
+  const maxOne = isFritesSauce || (isMainSauce && profilSauceMax === 1 && (item.has_frites_style || template === 'tacos' || template === 'sandwich' || template === 'burger' || template === 'bol'));
+  const maxMulti = isMainSauce && profilSauceMax > 1 ? profilSauceMax : null;
+  // [2026-11-14] Bol : avec le profil serveur chargé, la liste complète du serveur (14 sauces) — le pool local
+  // « bolSauces » (2 noms) faisait disparaître la Spicy et « Sans sauce » (régression R2-001).
+  const pool = ((isMainSauce && template === 'bol' && !window.LC.currentItemOptions && (lcMenu.bolSauces || []).length > 0)
     ? lcMenu.bolSauces
-    : lcMenu.sauces;
+    : lcMenu.sauces).filter(x => /^sans/i.test(x.name) || (isFritesSauce ? lcSauceVendue(x.name) : lcOffered('variations', x.name)));
   const toggle = (id) => {
     setSelections(s => {
       const arr = s[sauceField] || [];
@@ -484,6 +533,7 @@ function ScreenStepSauce({ item, selections, setSelections, headingRef, sauceFie
       if (maxOne) return { ...s, [sauceField]: [id] };
       // "Sans Sauce" exclusivity (kiosk: KioskStepSauceComponent.vue:65-78)
       if (id === SANS_SAUCE) return { ...s, [sauceField]: [SANS_SAUCE] };
+      if (maxMulti && !arr.includes(id) && arr.filter(x => x !== SANS_SAUCE).length >= maxMulti) return s; // plafond du profil
       const nextArr = arr.includes(id) ? arr.filter(x => x !== id) : [...arr.filter(x => x !== SANS_SAUCE), id];
       return { ...s, [sauceField]: nextArr };
     });
@@ -491,7 +541,7 @@ function ScreenStepSauce({ item, selections, setSelections, headingRef, sauceFie
   return (
     <div style={{ padding: '20px 20px 120px' }}>
       <p style={{ margin: '0 0 14px', fontSize: 14, color: 'var(--gray-4)' }}>
-        {maxOne ? <span><strong>1 sauce incluse</strong> · choisis ta sauce</span> : 'Sauces pour les frites · incluses'}
+        {isFritesSauce ? <span><strong>1 sauce frites offerte</strong> · choisis-la</span> : maxOne ? <span><strong>1 sauce incluse</strong> · choisis ta sauce</span> : maxMulti ? <span><strong>{maxMulti} sauces incluses</strong> · choisis-en jusqu'à {maxMulti}</span> : 'Sauces au choix'}
       </p>
       <div role={maxOne ? 'radiogroup' : 'group'} aria-label="Sauces" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
         {pool.map(s => {
@@ -560,14 +610,14 @@ function ScreenStepCrudites({ item, selections, setSelections, headingRef }) {
 // ============================================================================
 function ExtraMeatSection({ item, selections, setSelections }) {
   const lcMenu = window.LC.menu;
-  if (!item.has_extra_meat) return null;
+  if (!item.has_extra_meat || !lcOffered('extras', 'Viande supplémentaire')) return null;
   const emPrice = extraMeatPriceOf(lcMenu);
   const extraMeatIds = selections.extraMeatIds || [];
   const toggle = (id) => {
     setSelections(s => {
       const arr = s.extraMeatIds || [];
       if (arr.includes(id)) return { ...s, extraMeatIds: arr.filter(x => x !== id) };
-      if (arr.length >= 2) return s; // max 2 (canon)
+      if (arr.length >= 1) return s; // [2026-11-14 R4-002] 1 seule : le serveur refuse 2 « Viande supplémentaire » (choix non répétable)
       return { ...s, extraMeatIds: [...arr, id] };
     });
   };
@@ -575,12 +625,12 @@ function ExtraMeatSection({ item, selections, setSelections }) {
   return (
     <div style={{ marginTop: 18 }} data-testid="extra-meat-section">
       <p style={{ margin: '0 0 10px', fontSize: 14, color: 'var(--gray-4)' }}>
-        Viande supplémentaire <strong>+{priceLabel} €</strong> · max 2
+        Viande supplémentaire <strong>+{priceLabel} €</strong> · 1 au choix
       </p>
       <div role="group" aria-label={`Viande supplémentaire +${priceLabel} €`} style={{ background: 'var(--cream)', borderRadius: 14, overflow: 'hidden' }}>
         {lcMenu.meats.map(m => {
           const on = extraMeatIds.includes(m.id);
-          const blocked = !on && extraMeatIds.length >= 2;
+          const blocked = !on && extraMeatIds.length >= 1;
           const handleKey = (e) => {
             if (blocked) return;
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(m.id); }
@@ -626,6 +676,7 @@ function ScreenStepSupplements({ item, selections, setSelections, headingRef }) 
   const supplementIds = selections.supplementIds || [];
   const isGalette = item.category_id === 2;
   const pool = lcMenu.supplements.filter(s => {
+    if (!lcOffered('extras', s.name)) return false;
     if (s.galette_only && !isGalette) return false;
     if (s.galette_excluded && isGalette) return false;
     return true;
@@ -633,6 +684,8 @@ function ScreenStepSupplements({ item, selections, setSelections, headingRef }) 
   const toggle = (id) => {
     setSelections(s => {
       const arr = s.supplementIds || [];
+      // [2026-11-14 R4-002] plafond du profil serveur (5 suppléments ; la viande en plus compte dans l'étape).
+      if (!arr.includes(id) && arr.length + (s.extraMeatIds || []).length >= 5) return s;
       return { ...s, supplementIds: arr.includes(id) ? arr.filter(x => x !== id) : [...arr, id] };
     });
   };
@@ -778,7 +831,7 @@ function ScreenStepDrink({ item, selections, setSelections, headingRef }) {
         1 boisson au choix incluse dans ta formule
       </p>
       <div role="radiogroup" aria-label="Choix boisson" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-        {lcMenu.formuleDrinks.map(d => {
+        {lcMenu.formuleDrinks.filter(d => d.available !== false).map(d => {
           const on = drinkId === d.id;
           return (
             <ChoiceCard key={d.id} on={on} onPick={() => pick(d.id)} ariaRole="radio">
@@ -856,6 +909,7 @@ function ScreenStepBolSupplements({ item, selections, setSelections, headingRef 
   // (sb-gratine, riz_only) visible UNIQUEMENT sur le Bol Riz (slug 'bol-riz').
   const isBolRiz = item.slug === 'bol-riz';
   const supplementsBols = (lcMenu.supplementsBols || []).filter(s => {
+    if (!lcOffered('extras', s.name)) return false;
     if ((s.riz_only || s.id === 'sb-gratine') && !isBolRiz) return false;
     return true;
   });
@@ -937,7 +991,7 @@ function ScreenStepBolDrink({ item, selections, setSelections, headingRef }) {
             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', textAlign: 'center' }}>Aucune boisson</span>
           </div>
         </ChoiceCard>
-        {lcMenu.formuleDrinks.map(d => {
+        {lcMenu.formuleDrinks.filter(d => d.available !== false).map(d => {
           const on = bolDrinkId === d.id;
           const price = lcMenu.priceForDrinkAddon ? lcMenu.priceForDrinkAddon(d.id) : 1.50;
           return (
@@ -971,7 +1025,7 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
   const painLabel = selections.painId ? ((lcMenu.pains || []).find(p => p.id === selections.painId) || {}).name : null;
   const extraMeatLabels = (selections.extraMeatIds || []).map(id => (lcMenu.meats.find(m => m.id === id) || {}).name).filter(Boolean);
   const cruditeIds = selections.cruditeIds || lcMenu.defaultCruditeIds();
-  const cruditeAll = lcMenu.crudites.map(c => c.id);
+  const cruditeAll = lcMenu.crudites.filter(c => c.default).map(c => c.id); // « retirées » = servies par défaut seulement
   const cruditeRemoved = cruditeAll.filter(id => !cruditeIds.includes(id)).map(id => (lcMenu.crudites.find(c => c.id === id) || {}).name).filter(Boolean);
   const cruditeKept = lcMenu.crudites.filter(c => cruditeIds.includes(c.id)).map(c => c.name);
   const supLabels = (selections.supplementIds || []).map(id => (lcMenu.supplements.find(s => s.id === id) || {}).name).filter(Boolean);
@@ -1146,7 +1200,11 @@ function buildLineItem(item, selections) {
   const painLabel = selections.painId ? ((lcMenu.pains || []).find(p => p.id === selections.painId) || {}).name || null : null;
   const extraMeatLabels = (selections.extraMeatIds || []).map(id => (lcMenu.meats.find(m => m.id === id) || {}).name).filter(Boolean);
   const cruditeIds = selections.cruditeIds || lcMenu.defaultCruditeIds();
-  const cruditeRemoved = lcMenu.crudites.filter(c => !cruditeIds.includes(c.id)).map(c => c.name);
+  // [2026-11-14] « Sans … » seulement pour un produit AVEC crudités, et seulement les crudités servies par
+  // défaut ; une option ajoutée (Oignons cuits) s'affiche « Avec … » (avant : « Sans oignons cuits » partout,
+  // même sur des frites — relecture adverse A2-008).
+  const cruditeRemoved = item.has_crudites ? lcMenu.crudites.filter(c => c.default && !cruditeIds.includes(c.id)).map(c => c.name) : [];
+  const cruditeAdded = item.has_crudites ? lcMenu.crudites.filter(c => !c.default && cruditeIds.includes(c.id)).map(c => c.name) : [];
   const supLabels = (selections.supplementIds || []).map(id => (lcMenu.supplements.find(s => s.id === id) || {}).name).filter(Boolean);
   const bolSupLabels = (selections.bolSupplementIds || []).map(id => (lcMenu.supplementsBols.find(s => s.id === id) || {}).name).filter(Boolean);
   const bolDrinkLabel = selections.bolDrinkId
@@ -1168,8 +1226,9 @@ function buildLineItem(item, selections) {
     if (item.bol_meat_fixed) summary.push(item.bol_meat_fixed);
   }
   if (meatLabels.length) summary.push(meatLabels.join(' + '));
-  if (sauceLabels.length) summary.push('Sauce ' + sauceLabels.join('/'));
+  if (sauceLabels.length) summary.push('Sauce ' + sauceLabels.map(l => String(l).replace(/^sauce\s+/i, '')).join('/'));
   if (cruditeRemoved.length) summary.push('Sans ' + cruditeRemoved.map(s => s.toLowerCase()).join('/'));
+  if (cruditeAdded.length) summary.push('Avec ' + cruditeAdded.map(s => s.toLowerCase()).join('/'));
   if (supLabels.length) summary.push('+ ' + supLabels.join(' + '));
   // [GOAL-SYNC 2026-07-08] viandes supplémentaires (+2,50 € chacune) dans le résumé cuisine
   if (extraMeatLabels.length) summary.push('Viande suppl. ' + extraMeatLabels.join(' + '));
@@ -1267,9 +1326,8 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
     // bolSauces, sinon sauces génériques) — match exact PUIS inclusion insensible
     // à la casse (pool 'Fromagère maison' vs canon 'Sauce fromagère maison').
     if (item && item.sauce_default && !init.sauceIds.length) {
-      const pool = wizardTemplateFor(item) === 'bol'
-        ? (lcMenu.bolSauces || [])
-        : (lcMenu.sauces || []);
+      // [2026-11-14] Pool générique d'abord (l'étape sauce du bol affiche désormais la liste serveur complète).
+      const pool = (lcMenu.sauces || []).concat(wizardTemplateFor(item) === 'bol' ? (lcMenu.bolSauces || []) : []);
       const wanted = String(item.sauce_default).toLowerCase();
       const defaultSauce = pool.find(s => s.name === item.sauce_default)
         || pool.find(s => wanted.indexOf(String(s.name).toLowerCase()) !== -1 || String(s.name).toLowerCase().indexOf(wanted) !== -1);
@@ -1287,6 +1345,22 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
 
   const [stepIndex, setStepIndex] = useState_w(0);
   const screenRef = useScreenScrollReset(`${itemId}:${stepIndex}`);
+
+  // [2026-11-14] Options du serveur pour ce produit (voir lcOffered).
+  const [itemOptions, setItemOptions] = useState_w(() => ((window.LC.itemOptions || {})[itemId]) || null);
+  useEffect_w(() => {
+    let alive = true;
+    const api = window.LC.mobileApi;
+    if (!itemOptions && item && item.server_id && api && api.optionNames) {
+      api.optionNames(item.server_id).then(o => {
+        window.LC.itemOptions = window.LC.itemOptions || {};
+        window.LC.itemOptions[itemId] = o;
+        if (alive) setItemOptions(o);
+      }).catch(() => { /* hors ligne : tout reste affiché */ });
+    }
+    return () => { alive = false; };
+  }, [itemId]);
+  window.LC.currentItemOptions = itemOptions;
 
   // If item not found, render error early
   if (!item) {
@@ -1395,9 +1469,9 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
         </div>
       </div>
       <WizardCTA
-        label={isRecap ? `Ajouter au panier · ${selections.qty || 1}` : 'Suivant'}
+        label={item.available === false ? 'Épuisé pour le moment' : (isRecap ? `Ajouter au panier · ${selections.qty || 1}` : 'Suivant')}
         total={total}
-        disabled={!valid}
+        disabled={!valid || item.available === false}
         hint={hint}
         onClick={onNext}
       />
@@ -1443,9 +1517,9 @@ function ScreenItemDirectAdd({ item, selections, setSelections, go, addToCart })
         </div>
       </div>
       <WizardCTA
-        label={`Ajouter au panier · ${qty}`}
+        label={item.available === false ? 'Épuisé pour le moment' : `Ajouter au panier · ${qty}`}
         total={total}
-        disabled={false}
+        disabled={item.available === false}
         onClick={() => {
           const lineItem = { ...item, qty, unitPrice: item.price, lineTotal: total, sups: [], composition_summary: '' };
           addToCart(lineItem);

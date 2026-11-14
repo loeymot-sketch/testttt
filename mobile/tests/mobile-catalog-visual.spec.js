@@ -17,7 +17,8 @@ const neutral = 'assets/menu/item-default.svg';
 // Guards names, slugs, IDs, prices, allergens, flags and option metadata.
 // The branch phone is intentionally covered by mobile-identity.spec.js.
 assert.equal(sha(JSON.stringify(menu, (key, value) => ['image', 'hero', 'phone'].includes(key) ? undefined : value)),
-  'dba1d13ba410398c0429ad164d937e28cffb91336cf176b0d384c20b313ae91d',
+  // [2026-11-14] verrou ré-enregistré après l'alignement serveur (mêmes changements que mobile-identity).
+  '79caa96d38fd75049b1014595d8043f9e3ac9874284de37bc484e4fc1c946092',
   'all nonvisual catalog data remains unchanged');
 
 function localAsset(file) {
@@ -36,7 +37,8 @@ const canonicalProductImages = {
   'fish-burger': 'fish-burger.png',
   'big-burger': 'big-burger.png',
   'grill-burger': 'grill-burger.png',
-  'galette-normale': 'galette.png',
+  'galette-classique': 'galette.png',
+  'sandwich-classique': 'sandwich-classique.png',
   'galette-cayenne': 'galette.png',
   'tacos-m': 'tacos-cayenne.png',
   'tacos-l': 'tacos-cayenne.png',
@@ -92,10 +94,7 @@ const canonicalDrinkBinaryFiles = [
 ];
 
 const missingExactDrinkAssets = [
-  { slug: 'orangina', label: 'Orangina 33cl', image: 'item-default.svg' },
-  { slug: 'fuze-tea', label: 'Fuze Tea 33cl', image: 'item-default.svg' },
-  { slug: 'hawai', label: 'Hawaï 33cl', image: 'item-default.svg' },
-  { slug: 'perrier', label: 'Perrier 33cl', image: 'item-default.svg' },
+  // [2026-11-14] Orangina, Fuze Tea, Hawaï et Perrier ont désormais la canette exacte du site publié (vérifiée à l'œil).
   { slug: null, label: 'Schweppes Agrumes', image: null },
   { slug: null, label: 'Oasis Cassis', image: null },
   { slug: null, label: 'Coca bouteille', image: null },
@@ -152,7 +151,8 @@ for (const item of menu.items) {
   localAsset(item.image);
   localAsset(item.hero);
 }
-assert.equal(menu.categories.length, 9);
+// [2026-11-14] 10 catégories depuis l’ajout de Tenders (propriétaire 2026-11-11).
+assert.equal(menu.categories.length, 10);
 for (const category of menu.categories) {
   localAsset(category.image);
   assert.equal(sandbox.window.CATS.find(c => c.id === category.slug).image, category.image);
@@ -160,10 +160,10 @@ for (const category of menu.categories) {
 
 const expectedDrinks = {
   coca: 'coca.png', 'coca-zero': 'coca-zero.png', fanta: 'fanta-orange.png',
-  sprite: 'sprite.png', oasis: 'oasis.png', orangina: 'item-default.svg',
+  sprite: 'sprite.png', oasis: 'oasis.png', orangina: 'orangina-canette.webp', /* 2026-11-14 : canettes du site publié (orangina.png local = verre de cola, rejeté) */
   'eau-plate': 'eau.png', 'capri-sun': 'capri-sun.png', 'coca-cherry': 'coca-cherry.png',
   tropico: 'tropico.png', 'ice-tea-peche': 'lipton-peche.png', 'fanta-citron': 'fanta-citron.png',
-  'fuze-tea': 'item-default.svg', hawai: 'item-default.svg', perrier: 'item-default.svg',
+  'fuze-tea': 'fuze-tea.png', hawai: 'hawai.png', perrier: 'perrier.png',
 };
 assert.equal(menu.items.filter(i => i.category_id === 10).length, 15);
 assert.equal(menu.formuleDrinks.length, 15);
@@ -215,19 +215,17 @@ const steps = read('screens-item-steps.jsx');
 const compact = main.slice(main.indexOf('function ScreenHome('), main.indexOf('function ScreenItem('));
 assert.doesNotMatch(compact, /<AllergenDisclosure\b/, 'no compact allergen disclosure');
 assert.doesNotMatch(main, /⚠️/, 'no warning emoji remains in product presentation');
-assert.doesNotMatch(main, /AllergenBadge/, 'badge compatibility name is removed from the product UI');
-assert.match(main, /function AllergenDisclosure\(\{ allergens, size = 'sm' \}\)/, 'text-only allergen disclosure exists');
+// [2026-11-14] P0 : plus de liste d'allergènes DEVINÉE (serveur : 1 fiche sur 72) — renvoi vers l'équipe.
+// L'alias AllergenBadge reste exigé par mobile-ui-excellence.spec.js (compatibilité).
+assert.match(main, /function AllergenDisclosure\(\{ size = 'sm' \}\)/, 'text-only allergen disclosure exists');
 assert.match(main, /data-testid="allergen-disclosure"/, 'allergen disclosure has the stable test id');
-assert.match(main, /gluten:\s*\{ label: 'Gluten' \}/, 'French allergen label vocabulary is explicit');
-assert.match(main, /oeuf:\s*\{ label: 'Œuf' \}/, 'French egg allergen label is explicit');
+assert.match(main, /Demande-nous la composition exacte avant de commander/, 'no guessed allergen list is shown');
 assert.match(compact, /CATS\.map\(c => \(/, 'all nine home categories rendered');
 assert.match(compact, /id=\{`home-category-\$\{c.id\}`\}[^>]*src=\{c.image\}[^>]*fit="contain"/);
 assert.match(compact, /id=\{`menu-category-\$\{c.id\}`\}[^>]*src=\{c.image\}[^>]*fit="contain"/);
 assert.match(compact, /src=\{cat.image\}[^>]*fit="contain"/, 'menu section categories illustrated');
-assert.match(main, /<AllergenDisclosure allergens=\{item.allergens\} size="lg"/, 'main detail disclosure retained');
-assert.match(steps, /<window.AllergenDisclosure allergens=\{item.allergens\} size="lg"/, 'direct detail disclosure retained');
-assert.match(steps, /<window.AllergenDisclosure allergens=\{aggregatedAllergens\} size="lg"/, 'recap disclosure retained');
 assert.match(steps, /aggregatedAllergens[\s\S]*selections\.supplementIds[\s\S]*selections\.drinkId/, 'recap keeps item + supplements + drink aggregation');
 assert.equal(sha(steps.match(/function buildLineItem\([\s\S]*?\n\}/)[0]),
-  '92fd480da9dc71da31397f6efcd17e4bdba7f06603b790da54777271020034d1', 'order line payload builder unchanged');
-console.log('PASS: burger SHA/mappings, 9 categories, 15 drinks + wizard parity, text allergens and payload invariants');
+  // [2026-11-14] buildLineItem modifié exprès : résumé crudités (« Sans » = défaut retiré, « Avec » = option ajoutée).
+  '37bebc4576eda0587a2cf8f5b9d912599ad1dde0126d39e6f4b91c10c285ce68', 'order line payload builder unchanged');
+console.log('PASS: burger SHA/mappings, 10 categories, 15 drinks + wizard parity, text allergens and payload invariants');

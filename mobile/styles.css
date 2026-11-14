@@ -408,6 +408,12 @@ image-slot {
   box-shadow: 0 0 0 3px rgba(31,166,83,.12);
 }
 .lc-home__notify { box-shadow: 0 1px 0 rgba(10,10,10,.04); }
+/* [2026-11-14] Fermé : point rouge (horaires serveur). Épuisé : carte grisée, ajout désactivé. */
+.lc-home__status.is-closed i,
+.lc-home__restaurant-meta .is-closed i { background: var(--red, #D62828); box-shadow: 0 0 0 3px rgba(214,40,40,.14); }
+.lc-soldout img { opacity: .45; filter: grayscale(.6); }
+.lc-soldout [style*="--orange"] { opacity: .6; }
+.lc-soldout-tag { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 999px; background: #0A0A0A; color: #fff; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .lc-home__intro {
   padding: 24px 20px 18px;
 }

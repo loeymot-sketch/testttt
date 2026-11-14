@@ -12,8 +12,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20261111-r1">
-<link rel="stylesheet" href="redesigns-styles.css?v=20261016-r2">
+<link rel="stylesheet" href="styles.css?v=20261114-r1">
+<link rel="stylesheet" href="redesigns-styles.css?v=20261114-r1">
 
 <style>
   /* Production mobile entry — single full-viewport device frame, no prototype UI. */
@@ -79,11 +79,13 @@
 <script src="api/storage.js?v=20261016"></script>
 <!-- [GOAL-SYNC 2026-07-08] Couche réseau RÉELLE (window.LC.mobileApi) — auth OTP, résolution
      par NOM canonique, commandes, fidélité. Chargée juste après storage.js (setAuth). -->
-<script src="api/client.js?v=20261016-r1"></script>
-<script src="data/menu.js?v=20261111-r1"></script>
+<script src="api/client.js?v=20261114-r1"></script>
+<script src="data/menu.js?v=20261114-r1"></script>
+<!-- [2026-11-14] Carte + horaires relus au SERVEUR (noms, prix, ruptures) — après menu.js. -->
+<script src="api/catalog-sync.js?v=20261114-r1"></script>
 <script src="data/loyalty.js?v=20261016"></script>
 <script src="data/loyaltyRewardState.js?v=20261016"></script>
-<script src="data/orders.js?v=20261016"></script>
+<script src="data/orders.js?v=20261114-r1"></script>
 <script src="data/user.js?v=20261016"></script>
 <script src="data/wallet-spec.js?v=20261016"></script>
 <!-- Dev helpers last: wire onto LC.loyalty + LC.storage + LC.user. -->
@@ -114,14 +116,14 @@
 <script src="hooks/useCountdown.js?v=20261016"></script>
 <script type="text/babel" src="hooks/useLoyaltyQR.js?v=20261016"></script>
 <script type="text/babel" src="components/BarcodeMock.jsx?v=20261016"></script>
-<script type="text/babel" src="components/LoyaltyQR.jsx?v=20261016"></script>
+<script type="text/babel" src="components/LoyaltyQR.jsx?v=20261114-r1"></script>
 <script type="text/babel" src="components/WizardRedeem.jsx?v=20261016"></script>
 
 <!-- Screens -->
-<script type="text/babel" src="screens-onboarding.jsx?v=20261111-r1"></script>
-<script type="text/babel" src="screens-item-steps.jsx?v=20261018-r1"></script>
-<script type="text/babel" src="screens-main.jsx?v=20261111-r1"></script>
-<script type="text/babel" src="screens-modals.jsx?v=20261016-r1"></script>
+<script type="text/babel" src="screens-onboarding.jsx?v=20261114-r1"></script>
+<script type="text/babel" src="screens-item-steps.jsx?v=20261114-r1"></script>
+<script type="text/babel" src="screens-main.jsx?v=20261114-r1"></script>
+<script type="text/babel" src="screens-modals.jsx?v=20261114-r1"></script>
 
 <!-- App root -->
 <script type="text/babel">
@@ -136,8 +138,9 @@ function App() {
 
   // Boot screen depends on auth + onboarding state
   const initialScreen = (() => {
-    if (storage.isAuthenticated()) return 'home';
-    if (storage.hasSeenOnboarding()) return 'login';
+    // [2026-11-14] La carte se consulte SANS compte (App Store 5.1.1(v)) : le numéro n'est demandé
+    // qu'au moment de commander ou pour ses commandes / son profil / sa fidélité.
+    if (storage.isAuthenticated() || storage.hasSeenOnboarding()) return 'home';
     return 'splash';
   })();
 
@@ -155,7 +158,17 @@ function App() {
   // affiché sur ScreenOTP, envoyé à guest-signup /otp puis /verify (plus de mock).
   const [authPhone, setAuthPhone] = useState('');
   const [devOtp, setDevOtp] = useState('');
+  // Où reprendre après la connexion (null = accueil ; 'pay' = choix du paiement du panier).
+  const [afterLogin, setAfterLogin] = useState(null);
+  const NEEDS_ACCOUNT = ['orders', 'orderDetail', 'profile', 'loyalty'];
 
+  // [2026-11-14] La carte et les horaires arrivent du serveur après le démarrage : on redessine.
+  const [, setCatalogTick] = useState(0);
+  useEffect(() => {
+    const onCat = () => setCatalogTick(n => n + 1);
+    window.addEventListener('lc:catalog', onCat);
+    return () => window.removeEventListener('lc:catalog', onCat);
+  }, []);
   // Persist cart on change
   useEffect(() => { storage.setCart(cart); }, [cart]);
 
@@ -174,6 +187,15 @@ function App() {
       const h = [...history]; h.pop();
       const prev = h[h.length-1] || 'home';
       setHistory(h); setScreen(prev);
+      return;
+    }
+    if (s === 'pay' && !storage.isAuthenticated()) {
+      setAfterLogin('pay'); setHistory(h => [...h, 'login']); setScreen('login');
+      setToast({ m: 'Ton numéro suffit pour commander : on t’envoie un code par SMS.', k: 'info' });
+      return;
+    }
+    if (NEEDS_ACCOUNT.includes(s) && !storage.isAuthenticated()) {
+      setAfterLogin(s); setHistory(h => [...h, 'login']); setScreen('login');
       return;
     }
     if (s === 'pay')    { snapshotOrder(); setModal('pay'); return; }
@@ -195,8 +217,8 @@ function App() {
       setAuthPhone('');
       setDevOtp('');
       setCart([]);
-      setHistory(['login']);
-      setScreen('login');
+      setHistory(['home']);
+      setScreen('home');
       return;
     }
     if (s === 'orderDetail' && ext) {
@@ -222,6 +244,12 @@ function App() {
   // snapshot local V0 (id 'C-XXXX' déjà posé par snapshotOrder) + bandeau « Hors ligne ».
   const placeCounterOrder = async () => {
     const api = window.LC.mobileApi;
+    if (api && api.isAuthed && !api.isAuthed()) {
+      // [2026-11-14] Non connecté : on demande le numéro puis on revient au paiement (jamais de commande
+      // « hors ligne » fictive pour un simple oubli de connexion).
+      setAfterLogin('pay'); setHistory(h => [...h, 'login']); setScreen('login');
+      return false;
+    }
     if (!(api && api.isAuthed && api.isAuthed() && api.resolveOrderItems && api.placeOrder)) {
       // Couche API absente ou non connecté ⇒ mode local V0 (dégradation douce contrat §7)
       // [GOAL-SYNC-HEAL 2026-07-08] Honnêteté hors-ligne : on marque l'order local offline:true
@@ -230,6 +258,26 @@ function App() {
       setLastOrder(o => o ? { ...o, offline: true, queue_number: null } : o);
       setToast({ m: 'Hors ligne — commande NON transmise. À repasser sur place.', k: 'error' });
       return 'offline'; // truthy (l'appelant enchaîne) mais distinct de true → PAS de modale « points gagnés » fictifs
+    }
+    // [2026-11-14] Contrôle AVANT envoi, sur la carte relue à l'instant : un produit ou une boisson de menu
+    // en rupture est nommé·e au client (avant : refus 422 générique « (et 3 autres erreurs) »).
+    try { if (window.LC.catalogSync) await window.LC.catalogSync.run(); } catch (e) { /* carte précédente */ }
+    {
+      const M = window.LC.menu;
+      const bloquants = [];
+      cart.forEach(l => {
+        const it = M.items.find(x => x.id === l.id || x.slug === l.slug);
+        if (!it) bloquants.push(`${l.name} n'est plus à la carte`);
+        else if (it.available === false) bloquants.push(`${it.name} est épuisé`);
+        const d = l.drinkId && (M.formuleDrinks || []).find(x => x.id === l.drinkId);
+        if (d && d.available === false) bloquants.push(`la boisson du menu ${l.name} (${d.name}) est épuisée`);
+        const bd = l.bolDrinkId && (M.formuleDrinks || []).find(x => x.id === l.bolDrinkId);
+        if (bd && bd.available === false) bloquants.push(`la boisson du ${l.name} (${bd.name}) est épuisée`);
+      });
+      if (bloquants.length) {
+        setToast({ m: 'Impossible de commander : ' + bloquants.join(' ; ') + '. Modifie ton panier.', k: 'error' });
+        return false;
+      }
     }
     try {
       // loyalty_code du profil (fidélité optionnelle : un échec ici ne bloque PAS la commande)
@@ -282,10 +330,10 @@ function App() {
   let body;
   switch (screen) {
     case 'splash':  body = <ScreenSplash onNext={() => go('onb1')}/>; break;
-    case 'onb1':    body = <ScreenOnb1 onNext={() => go('onb2')} onSkip={() => { storage.markOnboardingSeen(); go('login'); }}/>; break;
-    case 'onb2':    body = <ScreenOnb2 onNext={() => go('onb3')} onSkip={() => { storage.markOnboardingSeen(); go('login'); }}/>; break;
-    case 'onb3':    body = <ScreenOnb3 onNext={() => go('onb4')} onSkip={() => { storage.markOnboardingSeen(); go('login'); }}/>; break;
-    case 'onb4':    body = <ScreenOnb4 onNext={() => { storage.markOnboardingSeen(); go('login'); }} onSkip={() => { storage.markOnboardingSeen(); go('login'); }}/>; break;
+    case 'onb1':    body = <ScreenOnb1 onNext={() => go('onb2')} onSkip={() => { storage.markOnboardingSeen(); setHistory(['home']); setScreen('home'); }}/>; break;
+    case 'onb2':    body = <ScreenOnb2 onNext={() => go('onb3')} onSkip={() => { storage.markOnboardingSeen(); setHistory(['home']); setScreen('home'); }}/>; break;
+    case 'onb3':    body = <ScreenOnb3 onNext={() => go('onb4')} onSkip={() => { storage.markOnboardingSeen(); setHistory(['home']); setScreen('home'); }}/>; break;
+    case 'onb4':    body = <ScreenOnb4 onNext={() => { storage.markOnboardingSeen(); setHistory(['home']); setScreen('home'); }} onSkip={() => { storage.markOnboardingSeen(); setHistory(['home']); setScreen('home'); }}/>; break;
     // [GOAL-SYNC 2026-07-08] AUTH RÉELLE guest-signup OTP (contrat §1). Erreur réseau ⇒ toast FR + on RESTE sur l'écran.
     case 'login':   body = <ScreenLogin onNext={async (phone) => {
                       // Signature cible : onNext(phone:string) (ScreenLogin remonte la saisie).
@@ -318,7 +366,10 @@ function App() {
                         // guestVerify fait storage.setAuth({token, phone, user_id}) — client.js (contrat §7)
                         await api.guestVerify(authPhone, (typeof otp === 'string') ? otp : (otp == null ? '' : String(otp)));
                         storage.markOnboardingSeen();
-                        setHistory(['home']); setScreen('home');
+                        const suite = afterLogin; setAfterLogin(null);
+                        if (suite === 'pay') { setHistory(['home', 'cart']); setScreen('cart'); snapshotOrder(); setModal('pay'); }
+                        else if (suite) { setHistory(['home', suite]); setScreen(suite); }
+                        else { setHistory(['home']); setScreen('home'); }
                       } catch (e) {
                         setToast({ m: (e && e.kind === 'network') ? 'Réseau indisponible — vérification impossible. Réessaie.' : (e && e.status === 429) ? 'Trop de tentatives — attends un instant puis réessaie.' : 'Code invalide. Réessaie.', k: 'error' });
                       }
@@ -367,7 +418,7 @@ function App() {
           (story standalone). [2026-09-25] Bug réel corrigé : ce calcul multipliait par 1 en dur
           (Math.floor(total)), jamais par le vrai taux — un client voyait "12 points" pour une
           commande à 12 € au lieu des 120 réellement crédités (barème 10 pts/€). */}
-      {modal === 'gain' && <ModalPointsGain gain={lastOrder ? Math.floor(lastOrder.total * (Number(window.LC.loyalty && window.LC.loyalty.config && window.LC.loyalty.config.points_per_euro) || 10)) : 25} onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
+      {modal === 'gain' && lastOrder && <ModalPointsGain gain={lastOrder ? Math.floor(lastOrder.total * (Number(window.LC.loyalty && window.LC.loyalty.config && window.LC.loyalty.config.points_per_euro) || 10)) : 0} onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
       {modal === 'redeem' && <WizardRedeem ctx={modalCtx} onClose={()=>{ setModal(null); setModalCtx(null); }} onSuccess={(r)=>{ /* WizardRedeem handles toast internally via step3 success state */ }}/>}
       {modal === 'optOut' && <ModalOptOutConfirm onClose={()=>setModal(null)} onConfirm={()=>{
         setModal(null);
@@ -412,7 +463,7 @@ function App() {
         setScreen('login');
         setToast({ m: 'Compte supprimé. Tu peux recréer un compte quand tu le souhaites.', k: 'success' });
       }}/>}
-      {modal === 'link' && <ModalCardLink onClose={()=>setModal(null)} onScan={()=>{ setModal(null); storage.setPlasticCardLinked && storage.setPlasticCardLinked(true); setToast({m:'Carte plastique liée à ton compte', k:'success'}); }}/>}
+      {/* [2026-11-14] « Lier ma carte plastique » retiré : il annonçait un succès sans caméra ni appel serveur. */}
       {modal === 'walletApple' && <ModalWalletV0Notice kind="apple" onClose={()=>setModal(null)} onSeeQR={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
       {modal === 'walletGoogle' && <ModalWalletV0Notice kind="google" onClose={()=>setModal(null)} onSeeQR={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
       {toast && <Toast message={toast.m} kind={toast.k} onClose={()=>setToast(null)}/>}

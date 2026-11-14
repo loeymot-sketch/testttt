@@ -50,7 +50,8 @@ function ModalPayChoice({ onClose, onPickCounter, onPickCard, total = 33, online
 
       <button data-testid="pay-counter" onClick={onPickCounter} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'var(--ink)', color: '#fff', borderRadius: 18, padding: 18, border: 0, marginBottom: 12, cursor: 'pointer' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--orange)' }}>★ Recommandé</span>
+          {/* [2026-11-14 B-019] Plus de « ★ Recommandé » sur l'unique option. */}
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--orange)' }}>Au retrait</span>
           <span style={{ fontSize: 22, color: 'var(--orange)' }}>→</span>
         </div>
         <div className="lc-display" style={{ fontSize: 26, lineHeight: 1, color: '#fff' }}>Payer sur place</div>
@@ -67,7 +68,7 @@ function ModalPayChoice({ onClose, onPickCounter, onPickCard, total = 33, online
           <div style={{ fontSize: 12, color: 'var(--gray-4)', marginTop: 6 }}>Visa · Mastercard · Apple Pay</div>
         </button>
       ) : (
-        <p data-testid="pay-online-soon" style={{ margin: '4px 2px 0', fontSize: 12, color: 'var(--gray-3)' }}>Le paiement en ligne arrive bientôt.</p>
+        <p data-testid="pay-counter-info" style={{ margin: '4px 2px 0', fontSize: 12, color: 'var(--gray-3)' }}>Paiement à la caisse, CB ou espèces, au retrait.</p>
       )}
     </ModalShell>
   );
@@ -84,7 +85,7 @@ function ScreenStripe({ go, total = 33 }) {
       <div data-screen-label="11b Stripe" data-testid="stripe-unavailable" style={{ position: 'absolute', inset: 0, background: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32, textAlign: 'center' }}>
         <div style={{ fontSize: 40, marginBottom: 14 }} aria-hidden="true">💳</div>
         <div className="lc-display" style={{ fontSize: 30, lineHeight: 0.95, color: 'var(--ink)' }}>Paiement en ligne<br/>indisponible</div>
-        <p style={{ marginTop: 14, fontSize: 13, lineHeight: 1.5, color: 'var(--gray-4)', maxWidth: 280 }}>Le paiement en ligne arrive bientôt. Tu peux régler ta commande sur place, en CB ou en espèces.</p>
+        <p style={{ marginTop: 14, fontSize: 13, lineHeight: 1.5, color: 'var(--gray-4)', maxWidth: 280 }}>Tu règles ta commande sur place, en CB ou en espèces.</p>
         <button onClick={() => go('cart')} className="lc-btn" style={{ marginTop: 20, background: 'var(--ink)', color: '#fff', height: 52, padding: '0 28px' }}>← Retour au panier</button>
       </div>
     );
@@ -137,8 +138,11 @@ function ScreenStripe({ go, total = 33 }) {
 // conservé (index.html passe gain={Math.floor(lastOrder.total)}) ; fallback 25 (story
 // standalone) en dernier recours. Plus de « +25 » fixe.
 function ModalPointsGain({ onClose, onSee, points, gain }) {
+  // [2026-11-14 B-004] Règle propriétaire : les points sont crédités quand le restaurant VALIDE la
+  // commande — la modale annonce une ESTIMATION « à créditer », jamais des points « gagnés ».
+  // Plus de repli inventé (25) : sans montant connu, la phrase n'avance aucun chiffre.
   const shownGain = Number.isFinite(Number(points)) && points != null ? Math.floor(Number(points))
-    : (Number.isFinite(Number(gain)) && gain != null ? Math.floor(Number(gain)) : 25);
+    : (Number.isFinite(Number(gain)) && gain != null ? Math.floor(Number(gain)) : null);
   // A11-007 P2 closed round-3 : confetti spans aria-hidden + container
   // role=dialog + ESC keydown. A11-014 : skip confetti DOM nodes entirely
   // when prefers-reduced-motion (cosmetic, no visual loss).
@@ -154,17 +158,23 @@ function ModalPointsGain({ onClose, onSee, points, gain }) {
       {pieces.map((_, i) => {
         const colors = ['#FF5A1F', '#FFD93D', '#0A0A0A', '#1FA653'];
         const c = colors[i % colors.length];
-        const left = (i * 4.2) % 100;
+        const left = (i * 4.2) % 92; // [2026-11-14 B-026] borné : plus de débordement horizontal
         const delay = (i % 8) * 0.12;
         return <span key={i} aria-hidden="true" style={{ position: 'absolute', top: -20, left: `${left}%`, width: 10, height: 14, background: c, animation: `lc-confetti 3.4s ${delay}s ease-in infinite`, transformOrigin: 'center', willChange: 'transform, opacity' }}/>;
       })}
       <div style={{ position: 'relative', background: 'var(--yellow)', borderRadius: 28, padding: '32px 24px', textAlign: 'center', maxWidth: 320, boxShadow: '8px 8px 0 var(--ink)' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--ink)' }}>// Bienvenue au club</div>
-        <div id="modal-points-gain-title" className="lc-display" style={{ fontSize: 88, lineHeight: 0.85, color: 'var(--ink)', margin: '6px 0 4px' }}>+{shownGain}</div>
-        <div className="lc-display" style={{ fontSize: 24, lineHeight: 0.9, color: 'var(--orange)' }}>points gagnés</div>
-        <p style={{ fontSize: 12.5, color: 'var(--gray-4)', margin: '14px 0 18px', lineHeight: 1.45 }}>Tu fais partie du club Le Cayenne. Continue à commander pour débloquer des récompenses gratuites.</p>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--ink)' }}>// Club Le Cayenne</div>
+        {shownGain != null && shownGain > 0 ? (
+          <>
+            <div className="lc-display" aria-hidden="true" style={{ fontSize: 72, lineHeight: 0.85, color: 'var(--ink)', margin: '6px 0 4px' }}>~{shownGain}</div>
+            <div className="lc-display" style={{ fontSize: 22, lineHeight: 0.9, color: 'var(--orange)' }}>points à créditer</div>
+            <p id="modal-points-gain-title" data-testid="points-pending-text" style={{ fontSize: 13, color: 'var(--ink)', margin: '14px 0 18px', lineHeight: 1.45 }}>Environ {shownGain} points seront crédités dès que le restaurant valide ta commande.</p>
+          </>
+        ) : (
+          <p id="modal-points-gain-title" data-testid="points-pending-text" style={{ fontSize: 13, color: 'var(--ink)', margin: '14px 0 18px', lineHeight: 1.45 }}>Tes points seront crédités dès que le restaurant valide ta commande.</p>
+        )}
         <button onClick={onSee} className="lc-btn" style={{ background: 'var(--ink)', color: '#fff', width: '100%', height: 50, marginBottom: 8 }}>Voir ma carte</button>
-        <button onClick={onClose} style={{ background: 'transparent', border: 0, color: 'var(--gray-4)', fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>Plus tard</button>
+        <button onClick={onClose} style={{ background: 'transparent', border: 0, color: 'var(--gray-4)', fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', minHeight: 44, padding: '0 16px' }}>Plus tard</button>
       </div>
     </div>
   );
@@ -228,7 +238,113 @@ function ModalCardLink({ onClose, onScan }) {
 // (Box Nashville / Bowl Gratiné / Frite XXL) when LC.orders.findById returns
 // null. Anti-fiction discipline (CLAUDE.md §13). Items=null branch renders a
 // role="status" empty-state UI instead of canonical-catalogue-violating mock.
+// [2026-11-14 B-006] Fiche d'une commande SERVEUR (id préfixé 'srv-' par ScreenOrders) :
+// GET /api/frontend/order/show/{id} via LC.mobileApi.getOrder (garde de propriété côté serveur).
+// Affiche le n° d'appel, les lignes réelles (composition figée), le total serveur et les points
+// RÉELLEMENT crédités — une estimation n'apparaît que pour une commande en cours, libellée « à créditer ».
+function lcRemoteOrderLineSups(oi) {
+  const pick = (arr, keys) => (Array.isArray(arr) ? arr : []).map(x => {
+    if (!x || typeof x !== 'object') return '';
+    for (const k of keys) { if (x[k]) return String(x[k]); }
+    return '';
+  });
+  return [
+    ...pick(oi.item_variations, ['variation_name', 'name']),
+    ...pick(oi.item_extras, ['name', 'extra_name', 'item_extra_name']),
+    ...pick(oi.item_addons, ['name', 'item_name', 'addon_name']),
+  ].filter(Boolean).join(' · ');
+}
+
+function ScreenOrderDetailRemote({ go, dbId }) {
+  const [state, setState] = useState_m({ loading: true, order: null, error: '' });
+  useEffect_m(() => {
+    const api = window.LC && window.LC.mobileApi;
+    if (!(api && api.getOrder)) { setState({ loading: false, order: null, error: 'Service indisponible pour le moment.' }); return undefined; }
+    let alive = true;
+    api.getOrder(dbId).then(o => {
+      if (alive) setState({ loading: false, order: o || null, error: o ? '' : 'Commande introuvable.' });
+    }).catch(e => {
+      if (alive) setState({ loading: false, order: null, error: (e && e.message) || 'Chargement de la commande impossible.' });
+    });
+    return () => { alive = false; };
+  }, [dbId]);
+  const o = state.order;
+  const fmt = (n) => (Number(n) || 0).toFixed(2).replace('.', ',') + ' €';
+  const sn = String((o && o.status_name) || '').toLowerCase();
+  const isCancelled = /annul|rejet|refus/.test(sn);
+  const isDone = /(termin|livr|récup|recup|complet|prêt|pret|servi)/.test(sn);
+  const awarded = Number(o && o.loyalty_points_awarded) || 0;
+  const loyCfg = (window.LC && window.LC.loyalty && window.LC.loyalty.config) || {};
+  const earnRatio = Number(loyCfg.points_per_euro != null ? loyCfg.points_per_euro : loyCfg.earn_ratio) || 10;
+  const estimate = o ? Math.floor((Number(o.total) || 0) * earnRatio) : 0;
+  const lines = o && Array.isArray(o.order_items) ? o.order_items : [];
+  const callNo = o && o.queue_number ? String(o.queue_number) : '';
+  return (
+    <div data-screen-label="12b Order detail" data-testid="order-detail-remote" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
+      <div className="lc-screen" style={{ paddingBottom: 120 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 20px 8px' }}>
+          <button onClick={() => go('orders')} aria-label="Retour à mes commandes" style={{ width: 44, height: 44, borderRadius: 999, background: 'var(--cream)', border: 0, color: 'var(--ink)', cursor: 'pointer', fontSize: 16 }}>←</button>
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--ink)' }}>Détail</div>
+          <div style={{ width: 44 }}/>
+        </div>
+        {state.loading && (
+          <div role="status" style={{ margin: '20px', background: 'var(--cream)', borderRadius: 16, padding: 24, textAlign: 'center', color: 'var(--gray-4)', fontSize: 13 }}>Chargement de ta commande…</div>
+        )}
+        {!state.loading && !o && (
+          <div role="alert" data-testid="order-detail-error" style={{ padding: 32, textAlign: 'center', color: 'var(--gray-4)', marginTop: 40 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', marginBottom: 8 }}>Commande indisponible</div>
+            <div style={{ fontSize: 13, lineHeight: 1.5 }}>{state.error}</div>
+          </div>
+        )}
+        {o && (
+          <>
+            <div style={{ padding: '6px 20px 0' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: isCancelled ? 'var(--red)' : isDone ? 'var(--green)' : 'var(--orange)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{isCancelled ? '✕' : isDone ? '✓' : '●'} {o.status_name || ''}</div>
+              {callNo && <div style={{ marginTop: 10, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gray-3)' }}>Numéro d'appel</div>}
+              <h1 data-testid="order-detail-call-number" className="lc-display" style={{ margin: callNo ? '2px 0 2px' : '8px 0 2px', fontSize: 44, lineHeight: 0.9, color: 'var(--ink)' }}>{callNo || ('#' + (o.order_serial_no || o.id))}</h1>
+              <div style={{ fontSize: 12, color: 'var(--gray-3)' }}>{callNo && o.order_serial_no ? 'Commande #' + o.order_serial_no + ' · ' : ''}{o.order_datetime || ''}</div>
+            </div>
+            <div style={{ margin: '20px 20px 0', background: 'var(--cream)', borderRadius: 18, padding: 16 }}>
+              {lines.map((oi, i) => {
+                const sups = lcRemoteOrderLineSups(oi);
+                return (
+                  <div key={oi.id || i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, padding: '12px 0', borderBottom: i < lines.length - 1 ? '1px solid var(--gray-2)' : 'none' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>{oi.quantity} × {oi.item_name}</div>
+                      {sups && <div style={{ fontSize: 11, color: 'var(--gray-3)', marginTop: 2, lineHeight: 1.4 }}>{sups}</div>}
+                      {oi.instruction && <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2, fontStyle: 'italic' }}>{oi.instruction}</div>}
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--ink)' }}>{fmt(oi.total_price)}</div>
+                  </div>
+                );
+              })}
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 14, marginTop: 6, borderTop: '2px solid var(--ink)' }}>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gray-3)' }}>Total</span>
+                <span data-testid="order-detail-total" className="lc-display" style={{ fontSize: 24, color: 'var(--orange)' }}>{fmt(o.total)}</span>
+              </div>
+            </div>
+            <div style={{ margin: '14px 20px 0', fontSize: 12, color: 'var(--gray-4)', textAlign: 'center' }}>Paiement en caisse, CB ou espèces.</div>
+            {awarded > 0 ? (
+              <div data-testid="order-detail-points" style={{ margin: '14px 20px 0', background: 'var(--ink)', color: '#fff', borderRadius: 18, padding: 16, fontSize: 14, fontWeight: 700 }}>+{awarded} pts crédités sur ta carte</div>
+            ) : (!isCancelled && !isDone && estimate > 0) ? (
+              <div data-testid="order-detail-points" style={{ margin: '14px 20px 0', background: 'var(--ink)', color: '#fff', borderRadius: 18, padding: 16, fontSize: 13, lineHeight: 1.45 }}>Environ {estimate} points seront crédités dès que le restaurant valide ta commande.</div>
+            ) : null}
+          </>
+        )}
+        {/* Bouton dans le flux (la barre d'onglets couvre le bas de l'écran sur cette fiche). */}
+        {!state.loading && (
+          <div style={{ padding: '18px 20px 0' }}>
+            <button onClick={() => go(o ? 'menu' : 'orders')} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', width: '100%', height: 56 }}>{o ? 'Commander à nouveau sur la carte' : '← Retour à mes commandes'}</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
+  const srv = /^srv-(\d+)$/.exec(String(orderId || ''));
+  if (srv) return <ScreenOrderDetailRemote go={go} dbId={srv[1]}/>;
   // Pull real order from data layer (window.LC.orders.findById) when available.
   const real = window.LC && window.LC.orders ? window.LC.orders.findById(orderId) : null;
   const items = real
@@ -309,7 +425,7 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
         )}
       </div>
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#fff', padding: '14px 20px 30px', borderTop: '1px solid var(--gray-1)' }}>
-        <button onClick={() => go(items ? 'menu' : 'orders')} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', width: '100%', height: 56 }}>{items ? '↻ Recommander' : '← Retour'}</button>
+        <button onClick={() => go(items ? 'menu' : 'orders')} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', width: '100%', height: 56 }}>{items ? 'Commander à nouveau sur la carte' : '← Retour'}</button>
       </div>
     </div>
   );
@@ -317,13 +433,15 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
 
 // ---------- Toast ----------
 function Toast({ message, kind = 'info', onClose }) {
-  useEffect_m(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, []);
+  // [2026-11-14] Une ERREUR reste affichée jusqu'à ce que le client la ferme : un refus de commande
+  // effacé en 3 s laissait le client devant son panier sans savoir pourquoi (relecture adverse).
+  useEffect_m(() => { if (kind === 'error') return undefined; const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, [message, kind]);
   const bg = kind === 'success' ? 'var(--green)' : kind === 'error' ? 'var(--red)' : 'var(--ink)';
   return (
-    <div data-testid="toast" data-kind={kind} role="status" aria-live="polite" style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) + 8px)', left: 14, right: 14, zIndex: 70, background: bg, color: '#fff', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 22px rgba(0,0,0,0.25)', animation: 'lc-slide-down 0.3s ease' }}>
+    <div data-testid="toast" data-kind={kind} role={kind === 'error' ? 'alert' : 'status'} aria-live={kind === 'error' ? 'assertive' : 'polite'} style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) + 8px)', left: 14, right: 14, zIndex: 70, background: bg, color: '#fff', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 22px rgba(0,0,0,0.25)', animation: 'lc-slide-down 0.3s ease' }}>
       <span style={{ width: 8, height: 8, borderRadius: 999, background: kind === 'success' ? 'var(--yellow)' : '#fff' }}/>
       <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>{message}</span>
-      <button onClick={onClose} aria-label="Fermer le toast" style={{ background: 'transparent', border: 0, color: '#fff', fontSize: 16, cursor: 'pointer', opacity: 0.7 }}>×</button>
+      <button onClick={onClose} aria-label="Fermer le message" style={{ background: 'transparent', border: 0, color: '#fff', fontSize: 20, cursor: 'pointer', opacity: 0.85, minWidth: 44, minHeight: 44, margin: '-12px -12px -12px 0' }}>×</button>
     </div>
   );
 }

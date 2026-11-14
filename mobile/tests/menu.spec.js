@@ -44,16 +44,18 @@ function verify(label, file) {
   const meatNames = M.meats.map(m => m.name).sort();
   const expMeats = ['Cordon Bleu','Fricadelle','Mexicanos','Nuggets','Poulet mariné','Tenders','Viande Hachée'];
   check(JSON.stringify(meatNames) === JSON.stringify(expMeats), '7 viandes exactes = ' + JSON.stringify(expMeats));
-  check(M.sauces.length === 12, '12 sauces (got ' + M.sauces.length + ')');
+  // [2026-11-14] 16 = sauces de l'attribut serveur « Sauce (1ère Gratuite) » (dont Sans sauce, Poivre, Burger, Américaine).
+  check(M.sauces.length === 16, '16 sauces (got ' + M.sauces.length + ')');
   check(M.crudites.length === 4, '4 crudités (got ' + M.crudites.length + ')');
   check(!M.crudites.find(c => c.name === 'Cornichon'), 'Cornichon supprimé des crudités');
   check(!!M.crudites.find(c => c.name === 'Oignons cuits'), 'Crudité "Oignons cuits" présente (sync 2026-07-08)');
-  check(M.supplements.length === 10, '10 suppléments (got ' + M.supplements.length + ')');
+  // [2026-11-14] Boule gratinée retirée : la galette de production ne la propose pas.
+  check(M.supplements.length === 9, '9 suppléments (got ' + M.supplements.length + ')');
   check(!!M.supplements.find(s => s.name === 'Oignons frits'), 'Supplément "Oignons frits" présent');
   check(!M.supplements.find(s => s.name === 'Oignon frais'), '"Oignon frais" renommé (absent)');
   // 9 suppléments à 0,90€ + "Boule gratinée" à 1,00€ (ajoutée sync 2026-07-08)
-  check(M.supplements.filter(s => s.name !== 'Boule gratinée').every(s => s.price === 0.90), 'Suppléments (hors Boule gratinée) tous à 0,90€');
-  check(!!M.supplements.find(s => s.name === 'Boule gratinée' && s.price === 1.00), 'Supplément "Boule gratinée" 1,00€');
+  check(M.supplements.every(s => s.price === 0.90), 'Suppléments tous à 0,90€ (prix serveur)');
+  check(!M.supplements.find(s => s.name === 'Boule gratinée'), 'Boule gratinée absente (non proposée au serveur)');
 
   // --- [GOAL-SYNC 2026-07-08] nouveaux pools normatifs (CONTRACTS.md §5, mêmes noms web & mobile) ---
   check(Array.isArray(M.pains) && M.pains.length === 2, 'PAINS = 2 entrées (got ' + (M.pains && M.pains.length) + ')');
@@ -68,13 +70,12 @@ function verify(label, file) {
   check(!!sbGratine && sbGratine.price === 2.00 && sbGratine.riz_only === true, 'Option Gratiné 2,00€ riz_only (Bol Riz uniquement)');
   const boursin = M.supplements.find(s => s.id === 'sup-boursin');
   check(!!boursin && boursin.galette_excluded === true, 'Boursin galette_excluded (pas offert sur galettes)');
-  const bouleG = M.supplements.find(s => s.id === 'sup-boule-gratinee');
-  check(!!bouleG && bouleG.galette_only === true, 'Boule gratinée galette_only');
   // Canon owner 2026-08-24 adds Tacos XL: 17 items with extra meat.
   const sandwichs = items.filter(i => i.category_id === 1);
   // [OWNER 2026-11-11] + Sandwich 2 Viandes (9 €) : 5 sandwichs, 18 produits à viande en plus, 41 produits, 10 catégories (Tenders).
-  check(sandwichs.length === 5 && sandwichs.every(s => s.has_pain_choice === true), '5 sandwichs has_pain_choice');
-  check(items.filter(i => i.has_extra_meat === true).length === 18, '18 items has_extra_meat (5 sandwichs + 2 galettes + 6 burgers + 3 tacos + 2 bols)');
+  // [2026-11-14] + Sandwich Classique (serveur, 7,40 €) : 6 sandwichs, 19 produits à viande en plus, 42 produits.
+  check(sandwichs.length === 6 && sandwichs.every(s => s.has_pain_choice === true), '6 sandwichs has_pain_choice');
+  check(items.filter(i => i.has_extra_meat === true).length === 19, '19 items has_extra_meat (6 sandwichs + 2 galettes + 6 burgers + 3 tacos + 2 bols)');
   // Tacos M/L : crudités restaurées (REVERT 05e5cacd0)
   check(byName('Tacos M') && byName('Tacos M').has_crudites === true, 'Tacos M has_crudites (revert crudités)');
   check(byName('Tacos L') && byName('Tacos L').has_crudites === true, 'Tacos L has_crudites (revert crudités)');
@@ -166,7 +167,7 @@ function verify(label, file) {
   check(!!byName('Menu Enfant Nuggets') && !!byName('Menu Enfant Chicken Burger'), 'Menu Enfant Nuggets + Chicken Burger');
 
   // --- PHANTOMS (must be absent) ---
-  ['Big Cayenne','Big Chicken','Big Tacos','Big Classique','Sandwich Classique',
+  ['Big Cayenne','Big Chicken','Big Tacos','Big Classique', /* Sandwich Classique : revenu au serveur le 2026-11-11 (7,40 €) */
    'Bowl Frites Poulet mariné','Bowl Riz Poulet curry','Menu Nuggets',
    'Cheddar','Raclette','Emmental'].forEach(ph => {
     check(!names.includes(ph), 'fantôme absent: "' + ph + '"');
@@ -185,7 +186,7 @@ function verify(label, file) {
   check(typeof M.priceForDrinkAddon === 'function' && M.priceForDrinkAddon('d-coca') === 1.90, 'priceForDrinkAddon coca = 1,90€');
 
   // 38 historical mirror items + owner-approved Tacos XL (2026-08-24).
-  check(items.length === 41, '41 items mirror (got ' + items.length + ')');
+  check(items.length === 42, '42 items mirror (got ' + items.length + ')');
   check(M.categories.length === 10, '10 catégories (got ' + M.categories.length + ')');
 
   console.log('  -> ' + items.length + ' produits, ' + M.categories.length + ' catégories');

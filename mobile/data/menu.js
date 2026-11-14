@@ -54,8 +54,8 @@
     id: 1,
     name: 'Le Cayenne',
     city: 'Hénin-Beaumont',
-    zip: '62210',
-    address: 'Le Cayenne, 62210 Hénin-Beaumont',
+    zip: '62110',
+    address: 'Le Cayenne, 62110 Hénin-Beaumont',
     phone: '0365678291',
     is_open: true,
     hours: '11h — 00h',
@@ -78,9 +78,10 @@
     'terminator':  'sandwich-terminator.png',
     // [OWNER 2026-11-11] nouveaux produits de la carte (backend : php artisan menu:owner-2026-11-11)
     'sandwich-2-viandes': 'sandwich-classique.png',
+    'sandwich-classique': 'sandwich-classique.png',
     'tenders-5':   'tenders-5-20261111.png',
     // Galette (cat 2)
-    'galette-normale': 'galette.png',
+    'galette-classique': 'galette.png',
     'galette-cayenne': 'galette.png',
     // Burgers (cat 4)
     'chicken-burger': 'chicken_burger.png',
@@ -110,7 +111,7 @@
     'fanta': 'fanta-orange.png',
     'sprite': 'sprite.png',
     'oasis': 'oasis.png',
-    'orangina': 'item-default.svg',
+    'orangina': 'orangina-canette.webp',
     'eau-plate': 'eau.png',
     'capri-sun': 'capri-sun.png',
     // Phase 16 — drink asset parity: brand-specific assets only; no other
@@ -126,9 +127,9 @@
     'tropico':       'tropico.png',
     'ice-tea-peche': 'lipton-peche.png',
     'fanta-citron':  'fanta-citron.png',
-    'fuze-tea':      'item-default.svg',
-    'hawai':         'item-default.svg',
-    'perrier':       'item-default.svg',
+    'fuze-tea':      'fuze-tea.png',
+    'hawai':         'hawai.png',
+    'perrier':       'perrier.png',
     // Menu enfant (cat 11)
     'menu-enfant-nuggets': 'nuggets.png',
     'menu-enfant-burger':  'chicken_burger.png',
@@ -187,6 +188,12 @@
     { id: 's-harissa',    name: 'Harissa',           price: 0, is_spicy: true, image: ASSET_BASE + 'sauce-harissa.png' },
     { id: 's-fromagere',  name: 'Fromagère maison',  price: 0, image: ASSET_BASE + 'sauce-fromagere-maison.png' },
     { id: 's-spicy',      name: 'Spicy maison',      price: 0, is_spicy: true, image: ASSET_BASE + 'sauce-spicy-maison.png' },
+    // [2026-11-14] Sauces proposées par le serveur et absentes de l'app (attribut « Sauce (1ère Gratuite) »
+    // relu en production) ; l'assistant n'affiche ensuite que celles du produit (lcOffered).
+    { id: 's-americaine', name: 'Américaine',        price: 0, image: ASSET_BASE + 'sauce_americaine.png' },
+    { id: 's-poivre',     name: 'Poivre',            price: 0, image: ASSET_BASE + 'sauce_poivre.png' },
+    { id: 's-burger',     name: 'Burger',            price: 0, image: ASSET_BASE + 'sauce_burger.png' },
+    { id: 's-sans',       name: 'Sans sauce',        price: 0, image: ASSET_BASE + 'sauce_sans.png' },
   ];
 
   // 4 crudités — [GOAL-SYNC 2026-07-08] +Oignons cuits (canon extras group_label='crudite' ×4,
@@ -211,8 +218,8 @@
     { id: 'sup-boursin',        name: 'Boursin',        price: 0.90, image: ASSET_BASE + 'boursin.png',           allergens: ['lactose'], galette_excluded: true },
     { id: 'sup-oeuf',           name: 'Œuf',            price: 0.90, image: ASSET_BASE + 'oeuf.png',              allergens: ['oeuf'] },
     { id: 'sup-legumes-sautes', name: 'Légumes sautés', price: 0.90, image: ASSET_BASE + 'legumes-sautes.png',    allergens: [] },
-    // [GOAL-SYNC 2026-07-08] Boule gratinée 1,00€ — réservée aux galettes (canon).
-    { id: 'sup-boule-gratinee', name: 'Boule gratinée', price: 1.00, image: ASSET_BASE + 'supplement_galette.png', allergens: ['lactose'], galette_only: true },
+    // [2026-11-14] « Boule gratinée » RETIRÉE : la galette de production ne la propose pas (extras de l'article
+    // 120 relus le 2026-11-14) ; l'app la facturait 1,00 € et le serveur l'ignorait en silence.
   ];
 
   // Suppléments spécifiques aux bols (seeder SUPP_GROUP_BOL).
@@ -441,6 +448,12 @@
       { viandes: 2, has_crudites: true, has_menu_addon: true, has_sauce: true,
         has_pain_choice: true, has_extra_meat: true,
         is_featured: true, tags: ['XL'], time: 12, emoji: '🥖' }),
+    // [2026-11-14] Au serveur depuis le 2026-11-11 (7,40 €), absent de l'app : même recette que le Cayenne
+    // sans la base fromage et crème fraîche, sauce au choix.
+    mkItem(106, 'sandwich-classique', 1, 'Sandwich Classique', 7.40,
+      'Viande au choix · Crudités · Sauce au choix',
+      { viandes: 1, has_crudites: true, has_menu_addon: true, has_sauce: true,
+        has_pain_choice: true, has_extra_meat: true, time: 10, emoji: '🥖' }),
     // [OWNER 2026-11-11] « le sandwich classique … en deux viandes, 9 euros » — deux viandes comprises.
     mkItem(105, 'sandwich-2-viandes', 1, 'Sandwich 2 Viandes', 9.00,
       '2 viandes au choix · Crudités · Sauces au choix',
@@ -451,10 +464,12 @@
 
   // ====== GALETTE (cat 2) — conservée (gate owner) ; 7 viandes + 12 sauces (pools partagés). ======
   const GALETTE = [
-    mkItem(201, 'galette-normale', 2, 'Galette Normale', 6.50,
-      'Galette traditionnelle · 1 viande au choix · Sauce au choix · Crudités · Suppléments optionnels',
+    // [2026-11-14] Nom et prix du serveur : « Galette Classique » 7,40 € (« Galette Normale » n'existait
+    // pas côté caisse → tout panier avec une galette était refusé). api/catalog-sync.js réaligne en ligne.
+    mkItem(201, 'galette-classique', 2, 'Galette Classique', 7.40,
+      'Galette croustillante · 1 viande au choix · Crudités · Sauce au choix · Suppléments optionnels',
       { viandes: 1, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true, time: 8, emoji: '🌯' }),
-    mkItem(202, 'galette-cayenne', 2, 'Galette Cayenne', 7.00,
+    mkItem(202, 'galette-cayenne', 2, 'Galette Cayenne', 7.40,
       'Galette signature · 1 viande au choix · Sauce au choix · Crudités · Suppléments optionnels',
       { viandes: 1, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true,
         // [GOAL-SYNC 2026-07-08] is_spicy retiré — canon Galette Cayenne is_spicy:false (gate parity).
@@ -526,10 +541,10 @@
   const FRITES = [
     mkItem(701, 'petite-frites', 7, 'Petite Frites', 2.50,
       'Portion petite · Style au choix (Nature / Cheddar fondu +1€ / Cheddar+Oignons +2€)',
-      { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, has_frites_style: true, time: 4, emoji: '🍟', is_vegetarian: true }),
+      { has_sauce: true, has_crudites: false, has_supplements: false, has_menu_addon: false, has_frites_style: true, time: 4, emoji: '🍟', is_vegetarian: true }),
     mkItem(702, 'grande-frites', 7, 'Grande Frites', 4.00,
       'Portion grande · Style au choix (Nature / Cheddar fondu +1€ / Cheddar+Oignons +2€)',
-      { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, has_frites_style: true, time: 5, emoji: '🍟', is_vegetarian: true }),
+      { has_sauce: true, has_crudites: false, has_supplements: false, has_menu_addon: false, has_frites_style: true, time: 5, emoji: '🍟', is_vegetarian: true }),
   ];
 
   // ====== DESSERTS (cat 9) — seeder : 3,50€. [GOAL-SYNC 2026-07-08] is_vegetarian:true (canon). ======
@@ -563,12 +578,12 @@
   const MENU_ENFANT = [
     mkItem(1101, 'menu-enfant-nuggets', 11, 'Menu Enfant Nuggets', 4.90,
       '6 nuggets · Frites · Capri-Sun',
-      { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 8, emoji: '🧒', tags: ['ENFANT'] }),
+      { has_sauce: true, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 8, emoji: '🧒', tags: ['ENFANT'] }),
     // [GOAL-SYNC 2026-07-08] renommé 'Menu Enfant Burger'→'Menu Enfant Chicken Burger'
     // (nom canonique EXACT — la résolution API au wireup se fait PAR NOM ; slug conservé).
     mkItem(1102, 'menu-enfant-burger', 11, 'Menu Enfant Chicken Burger', 4.90,
       'Chicken burger · Frites · Capri-Sun',
-      { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 8, emoji: '🧒', tags: ['ENFANT'] }),
+      { has_sauce: true, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 8, emoji: '🧒', tags: ['ENFANT'] }),
   ];
 
   // -------------------------------------------------------------------------

@@ -10,15 +10,19 @@ const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const productionHtml = html.replace(/document\.write\('[\s\S]*?'\);/, '');
 const VERSION = 'v=20261016';
 // [OWNER 2026-11-11] accueil (meilleures ventes), onboarding et carte (5 Tenders, Sandwich 2 Viandes) re-versionnés.
+// [2026-11-14] Ressources re-versionnées par l'audit superviseur de l'app (carte serveur, corrections P0/P1).
 const VERSION_BY_RESOURCE = new Map([
-  ['screens-onboarding.jsx', 'v=20261111-r1'],
-  ['styles.css', 'v=20261111-r1'],
-  ['redesigns-styles.css', 'v=20261016-r2'],
-  ['api/client.js', 'v=20261016-r1'],
-  ['data/menu.js', 'v=20261111-r1'],
-  ['screens-main.jsx', 'v=20261111-r1'],
-  ['screens-item-steps.jsx', 'v=20261018-r1'],
-  ['screens-modals.jsx', 'v=20261016-r1'],
+  ['styles.css', 'v=20261114-r1'],
+  ['redesigns-styles.css', 'v=20261114-r1'],
+  ['api/client.js', 'v=20261114-r1'],
+  ['data/menu.js', 'v=20261114-r1'],
+  ['api/catalog-sync.js', 'v=20261114-r1'],
+  ['data/orders.js', 'v=20261114-r1'],
+  ['components/LoyaltyQR.jsx', 'v=20261114-r1'],
+  ['screens-onboarding.jsx', 'v=20261114-r1'],
+  ['screens-item-steps.jsx', 'v=20261114-r1'],
+  ['screens-main.jsx', 'v=20261114-r1'],
+  ['screens-modals.jsx', 'v=20261114-r1'],
 ]);
 
 const localScriptOrder = [...productionHtml.matchAll(/<script[^>]+src="([^"]+)"/g)]
@@ -26,7 +30,7 @@ const localScriptOrder = [...productionHtml.matchAll(/<script[^>]+src="([^"]+)"/
   .filter(src => !src.startsWith('http'))
   .map(src => src.split('?')[0]);
 const expectedOrder = [
-  'api/storage.js', 'api/client.js', 'data/menu.js', 'data/loyalty.js',
+  'api/storage.js', 'api/client.js', 'data/menu.js', 'api/catalog-sync.js', 'data/loyalty.js',
   'data/loyaltyRewardState.js', 'data/orders.js', 'data/user.js',
   'data/wallet-spec.js', 'image-slot.js', 'icons.jsx',
   'shared.jsx', 'vendor/qrcode.js', 'hooks/useCountdown.js',
@@ -43,7 +47,7 @@ const expectedLocalResources = [
   'styles.css', 'redesigns-styles.css',
   ...expectedOrder,
 ];
-assert.equal(localResources.length, expectedLocalResources.length, 'exactly 23 local resources are present in the production boot');
+assert.equal(localResources.length, expectedLocalResources.length, 'exactly 24 local resources are present in the production boot');
 assert.deepEqual(
   localResources.map(url => url.split('?')[0]),
   expectedLocalResources,

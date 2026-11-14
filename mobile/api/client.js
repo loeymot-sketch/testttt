@@ -309,6 +309,14 @@
     var item_extras = [];
     var item_addons = [];
 
+    // [2026-11-14] Une option choisie que le serveur ne propose pas pour CE produit faisait l'objet d'un
+    // abandon SILENCIEUX : le client voyait (et croyait payer) une Boule gratinée qui n'arrivait jamais en
+    // cuisine. Désormais la commande s'arrête avec un message clair, panier intact.
+    var optionAbsente = function (nm) {
+      throw { kind: 'resolve', message: '« ' + nm + ' » n’est plus proposé pour ' + (line.name || 'ce produit') + '. Retire-le du panier et recommence ce produit.' };
+    };
+    var choisis = [];          // extras choisis par le client (jamais retirés en silence)
+    var viandesEnPlus = null;
     // Viandes (meatIds = ids pool m-*) → attrs 1/2 (Viande 1 / Viande 2) par nom.
     var meatAttrs = ['1', '2'];
     var usedAttr = {};
@@ -316,7 +324,8 @@
       var nm = nameFromPools(['meats'], mid);
       if (!nm) return;
       var vid = pickVariation(dIdx, meatAttrs, nm, usedAttr);
-      if (vid != null) item_variations.push({ id: vid, quantity: 1 });
+      if (vid == null) optionAbsente(nm);
+      item_variations.push({ id: vid, quantity: 1 });
     });
 
     // Pain (painId = pain-classique | pain-galette) → attr 6.
@@ -332,6 +341,7 @@
       var nm = nameFromPools(['bolSauces', 'sauces'], sid, BOL_SAUCES_FALLBACK);
       if (!nm) return;
       var vid = pickVariation(dIdx, sauceAttrs, nm, {});
+      if (vid == null && !/^sans/i.test(nm)) optionAbsente(nm);
       if (vid != null) item_variations.push({ id: vid, quantity: 1 });
     });
 
@@ -358,7 +368,9 @@
       var nm = nameFromPools(['supplements'], sid);
       if (!nm) return;
       var eid = findExtraId(dIdx, ['supplement'], nm);
-      if (eid != null) item_extras.push({ id: eid, quantity: 1 });
+      if (eid == null) optionAbsente(nm);
+      item_extras.push({ id: eid, quantity: 1 });
+      choisis.push({ id: eid, nom: nm });
     });
 
     // Suppléments bol (bolSupplementIds = sb-*) → extras group 'supplement_bol'.
@@ -366,14 +378,22 @@
       var nm = nameFromPools(['supplementsBols'], sid);
       if (!nm) return;
       var eid = findExtraId(dIdx, ['supplement_bol'], nm);
-      if (eid != null) item_extras.push({ id: eid, quantity: 1 });
+      if (eid == null) optionAbsente(nm);
+      item_extras.push({ id: eid, quantity: 1 });
+      choisis.push({ id: eid, nom: nm });
     });
 
     // Viande supplémentaire +2,50 € (extraMeatIds = ids pool m-*) → extra « Viande supplémentaire ».
     var extraMeatCount = (Array.isArray(line.extraMeatIds) ? line.extraMeatIds.length : 0);
     if (extraMeatCount > 0) {
       var emId = findExtraId(dIdx, ['supplement', 'supplement_bol'], 'Viande supplémentaire');
-      if (emId != null) item_extras.push({ id: emId, quantity: extraMeatCount });
+      if (emId == null) optionAbsente('Viande supplémentaire');
+      item_extras.push({ id: emId, quantity: extraMeatCount });
+      choisis.push({ id: emId, nom: 'Viande supplémentaire' });
+      // [2026-11-14] R3-002 : la cuisine doit savoir QUELLE viande (format lu par le serveur, plafonné aux
+      // extras payés) — avant, seul « Viande supplémentaire » partait.
+      var emNoms = line.extraMeatIds.map(function (mid) { return nameFromPools(['meats'], mid); }).filter(Boolean);
+      if (emNoms.length) viandesEnPlus = 'Viandes en plus : ' + emNoms.join(', ') + '.';
     }
 
     // Formule menu (menuChoice full|frites|boisson) → addon backend par role.
@@ -399,7 +419,9 @@
       }
       var fsNames = (Array.isArray(line.fritesSauceIds) ? line.fritesSauceIds : [])
         .map(function (sid) { return nameFromPools(['sauces'], sid); }).filter(Boolean);
-      if (fsNames.length) menuNoteParts.push('Sauce frites: ' + fsNames.join('/'));
+      // Format lu par le serveur (FrontendOrderService::instructionWebAssainie) : « Sauce frites : X »,
+      // espace avant les deux-points ; la 1re sauce frites est offerte, une seule est envoyée.
+      if (fsNames.length) menuNoteParts.push('Sauce frites : ' + fsNames[0]);
     }
 
     // Complète les attributs REQUIS (min_select) non couverts par la compo mobile —
@@ -415,12 +437,60 @@
       }
     });
 
+    // [2026-11-14] Le PROFIL DE COMPOSITION publié fait foi (comme la borne et la caisse) : un choix absent
+    // du profil est refusé en 422 (« le choix #708 n'appartient pas au profil publié » — le pain du Sandwich
+    // Classique). On n'envoie donc que les choix du profil ; une rubrique que le profil ne demande pas
+    // (ex. type de pain) n'est pas envoyée.
+    var prof = profileChoiceIds(d);
+    if (prof) {
+      item_variations = item_variations.filter(function (v) { return prof.variations[v.id]; });
+      item_extras = item_extras.filter(function (e) { return prof.extras[e.id]; });
+      choisis.forEach(function (c) { if (!prof.extras[c.id]) optionAbsente(c.nom); });
+    }
     var out = { item_id: realId, quantity: line.qty || 1 };
     if (item_variations.length) out.item_variations = item_variations;
     if (item_extras.length) out.item_extras = item_extras;
     if (item_addons.length) out.item_addons = item_addons;
-    var noteAll = [line.instruction].concat(menuNoteParts).filter(Boolean).join(' · ');
+    // [2026-11-14] UNE rubrique par LIGNE (le serveur découpe sur les retours à la ligne et retire toute
+    // ligne inconnue) ; la consigne du client voyage en « [Note : … ] » — sinon la cuisine ne voyait ni la
+    // boisson du menu, ni la sauce frites, ni « sans oignon » (relecture adverse A2-004/A2-005, vérifié au code).
+    var note = String(line.instruction || '').replace(/[\[\]\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+    var noteAll = (note ? ['[Note : ' + note + ']'] : []).concat(viandesEnPlus ? [viandesEnPlus] : []).concat(menuNoteParts).join('\n');
     if (noteAll) out.instruction = String(noteAll).slice(0, 500);
+    return out;
+  }
+
+  // Ids des choix du profil de composition publié (null s'il n'y en a pas : on garde alors les variations).
+  function profileChoiceIds(d) {
+    var steps = d && d.composer_profile && d.composer_profile.is_published !== false && d.composer_profile.steps;
+    if (!Array.isArray(steps) || !steps.length) return null;
+    var out = { variations: {}, extras: {}, names: { variations: {}, extras: {} }, sauceMax: null };
+    steps.forEach(function (st) {
+      if (st && st.is_active === false) return;
+      if (st && st.step_key === 'sauce' && Number(st.max_select) > 0) out.sauceMax = Number(st.max_select);
+      ((st && st.choices) || []).forEach(function (c) {
+        if (!c || c.is_available === false || (c.status != null && Number(c.status) !== 5)) return;
+        var k = c.source_type === 'extra' ? 'extras' : c.source_type === 'variation' ? 'variations' : null;
+        if (!k) return;
+        out[k][c.id] = true;
+        out.names[k][norm(c.name)] = true;
+      });
+    });
+    return out;
+  }
+
+  // [2026-11-14] Options réellement proposées par le serveur pour CET article (noms normalisés) :
+  // l'assistant n'affiche que celles-là (variations = viandes/sauces/pain, extras = suppléments).
+  async function optionNames(realId) {
+    var d = await itemDetails(realId);
+    var prof = profileChoiceIds(d);
+    if (prof) return { variations: prof.names.variations, extras: prof.names.extras, profile: true, sauceMax: prof.sauceMax };
+    var out = { variations: {}, extras: {} };
+    var vs = (d && d.variations) || {};
+    Object.keys(vs).forEach(function (a) {
+      (vs[a] || []).forEach(function (v) { if (v && v.is_available !== false) out.variations[norm(v.name)] = true; });
+    });
+    ((d && d.extras) || []).forEach(function (e) { if (e && e.is_available !== false) out.extras[norm(e.name)] = true; });
     return out;
   }
 
@@ -492,7 +562,7 @@
     loyaltyQr: loyaltyQr, loyaltyRedeem: loyaltyRedeem,
     // menu / résolution
     buildItemIndex: buildItemIndex, itemDetails: itemDetails,
-    resolveLine: resolveLine, resolveOrderItems: resolveOrderItems, _norm: norm,
+    resolveLine: resolveLine, resolveOrderItems: resolveOrderItems, _norm: norm, optionNames: optionNames,
     // commandes
     placeOrder: placeOrder, getOrder: getOrder, orderHistory: orderHistory, uuid: uuid,
   };

@@ -61,9 +61,12 @@ assert.match(menu, /mkItem\(503,\s*'tacos-xl'[\s\S]*?is_new:\s*true/, 'catalog m
 // Phase 24 — compact home copy and a centered, responsive logo/status stack.
 assert.match(home, /<p className="lc-home__lead">Prêt quand tu l'es\.<\/p>/, 'home lead is a short single phrase without a forced line break');
 assert.doesNotMatch(home, /Le goût du fait maison/, 'home no longer shows the old long greeting');
-assert.match(home, /<div className="lc-home__brand"[^>]*>\s*<Logo size=\{18\}\/>\s*<span className="lc-home__status"><i aria-hidden="true"\/> Ouvert maintenant<\/span>\s*<\/div>/, 'opening status follows the larger logo and keeps its decorative dot hidden from assistive technology');
+// [2026-11-14] Ouvert / fermé vient du SERVEUR (/api/frontend/horaires via LC.hoursInfo) : plus jamais de texte en dur.
+assert.match(home, /<div className="lc-home__brand"[^>]*>\s*<Logo size=\{18\}\/>\s*\{hours && <span className=\{'lc-home__status'[^>]*><i aria-hidden="true"\/> \{hours\.label\}<\/span>\}\s*<\/div>/, 'opening status follows the larger logo, comes from the server hours and keeps its decorative dot hidden');
+assert.doesNotMatch(home, /Ouvert maintenant|Ouvert 11h/, 'no hard-coded opening status or hours on the home screen');
 assert.match(home, /<button type="button"[^\n]*go\('profile'\)[^\n]*aria-label=\{safeName/, 'profile button keeps its accessible name and navigation');
-assert.match(home, /<IconBtn[^>]*ariaLabel="Notifications"[^>]*className="lc-home__notify"[^\n]*Notifications — bientôt disponibles/, 'notifications retain an accessible name and explicit unavailable state');
+// [2026-11-14] La cloche n'ouvrait qu'un « bientôt disponible » : retirée (aucune fausse fonction à la relecture store).
+assert.doesNotMatch(home, /bientôt disponible/i, 'home shows no placeholder feature');
 
 const headerStyles = styles.match(/\.lc-home__header\s*\{([^}]+)\}/)?.[1] || '';
 const brandStyles = styles.match(/\.lc-home__brand\s*\{([^}]+)\}/)?.[1] || '';
@@ -83,10 +86,11 @@ assert.doesNotMatch(home, /[🌶🥖🌮🥣🍔🍟🧒⚡]/, 'home decoration 
 assert.doesNotMatch(home, /⚠️|❗/, 'home cards do not show alert-style allergen markers');
 
 // Allergen information is text-first and stays off dense cards/image slots.
-assert.match(homeSource, /function AllergenDisclosure\(\{ allergens, size = 'sm' \}\)/, 'text-first allergen disclosure exists');
-assert.match(homeSource, /<details[\s\S]*data-testid="allergen-disclosure"/, 'disclosure uses a native keyboard-accessible details control');
-assert.match(homeSource, /<summary[\s\S]*Informations allergènes/, 'disclosure has a visible text summary');
-assert.match(homeSource, /role="region" aria-label=\{`Allergènes : \$\{labelText\}`\}/, 'disclosure region is screen-reader labelled');
+// [2026-11-14] P0 : la liste était DEVINÉE par catégorie (serveur : fiche allergènes pour 1 produit sur 72).
+// La mention renvoie vers l'équipe ; aucune liste inventée n'est affichée.
+assert.match(homeSource, /function AllergenDisclosure\(\{ size = 'sm' \}\)/, 'text-first allergen disclosure exists');
+assert.match(homeSource, /data-testid="allergen-disclosure" role="note"/, 'disclosure is a labelled note');
+assert.match(homeSource, /Demande-nous la composition exacte avant de commander/, 'disclosure sends the customer to the team, never a guessed list');
 assert.match(homeSource, /const AllergenBadge = AllergenDisclosure/, 'legacy badge name is a disclosure-only compatibility alias');
 assert.doesNotMatch(homeSource, /icon:\s*['"][^'"]+['"]/, 'allergen metadata contains no icon vocabulary');
 assert.doesNotMatch(disclosure, /[🌾🥛🥚🥜🌰🫘🐟🦐🦑🥬🍇🌿⚠️❗]/, 'allergen disclosure contains no emoji/icon warning markers');

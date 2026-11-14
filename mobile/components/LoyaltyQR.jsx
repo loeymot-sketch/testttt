@@ -147,7 +147,7 @@
             <div data-testid="loyalty-code-text" style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, letterSpacing: '0.16em', color: 'var(--ink)' }}>{displayCode}</div>
           ) : null}
           <div style={{ marginTop: 4, fontSize: 11, color: 'var(--gray-3)', fontWeight: 600 }}>
-            Présentez ce QR ou dictez votre numéro en caisse
+            Présente ce QR ou dicte ton numéro en caisse
           </div>
           <div className="lc-eyebrow" style={{ color: 'var(--gray-4)', marginTop: 8 }} data-testid="loyalty-member-number">
             LE CAYENNE FIDÉLITÉ
@@ -190,7 +190,10 @@
               fontSize: 11,
               cursor: loading ? 'wait' : 'pointer',
               fontWeight: 700,
-              padding: 0,
+              padding: '0 6px',
+              minWidth: 44,
+              minHeight: 44,
+              margin: '-12px 0',
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
               textDecoration: 'underline',

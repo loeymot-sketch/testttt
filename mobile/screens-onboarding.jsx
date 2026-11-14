@@ -18,7 +18,7 @@ function ScreenSplash({ onNext }) {
         <div style={{ fontSize: 42, color: '#0A0A0A' }}>LE</div>
         <div style={{ fontSize: 56, color: '#FF5A1F', letterSpacing: '0.01em' }}>CAYENNE</div>
       </div>
-      <div style={{ marginTop: 22, fontSize: 11, fontWeight: 700, letterSpacing: '0.32em', color: '#0A0A0A' }}>HÉNIN-BEAUMONT · 62210</div>
+      <div style={{ marginTop: 22, fontSize: 11, fontWeight: 700, letterSpacing: '0.32em', color: '#0A0A0A' }}>HÉNIN-BEAUMONT · 62110</div>
       <div style={{ position: 'absolute', bottom: 60, fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', color: 'rgba(0,0,0,0.55)', textTransform: 'uppercase' }}>Du peuple, pour le peuple</div>
     </div>
   );
@@ -32,7 +32,7 @@ function OnboardingShell({ index, onNext, onSkip, hero, eyebrow, title, body, ac
       {/* top bar — logo centered, skip absolute right */}
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '14px 20px 8px', minHeight: 36 }}>
         <Logo size={14}/>
-        <button onClick={onSkip} style={{ position: 'absolute', right: 20, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 0, fontSize: 11, fontWeight: 700, color: 'var(--gray-3)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}>Passer</button>
+        <button onClick={onSkip} aria-label="Passer la présentation" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', minWidth: 44, minHeight: 44, padding: '0 12px', background: 'transparent', border: 0, fontSize: 11, fontWeight: 700, color: 'var(--gray-3)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}>Passer</button>
       </div>
       {/* hero */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>{hero}</div>
@@ -43,7 +43,7 @@ function OnboardingShell({ index, onNext, onSkip, hero, eyebrow, title, body, ac
         <p style={{ marginTop: 14, marginBottom: 24, fontSize: 15, lineHeight: 1.5, color: 'var(--gray-4)', maxWidth: 320 }}>{body}</p>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Dots count={total} active={index} color="#0A0A0A"/>
-          <button onClick={onNext} style={{ width: 64, height: 64, borderRadius: 999, background: 'var(--ink)', color: '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}>
+          <button onClick={onNext} aria-label={index === total - 1 ? 'Commencer' : `Écran suivant (${index + 2} sur ${total})`} style={{ width: 64, height: 64, borderRadius: 999, background: 'var(--ink)', color: '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}>
             <I.Arrow size={26} stroke="#FF5A1F" sw={2.4}/>
           </button>
         </div>
@@ -149,6 +149,10 @@ function ScreenOnb4({ onNext, onSkip }) {
   );
 }
 
+// [2026-11-14] Pages légales publiques du restaurant (liens réels, exigés par les stores).
+const LC_LEGAL = window.LC_LEGAL || { cgu: 'https://www.lecayenne.fr/legal/cgv.html', confidentialite: 'https://www.lecayenne.fr/legal/privacy.html' };
+window.LC_LEGAL = LC_LEGAL;
+
 // LOGIN — phone
 // [GOAL-SYNC 2026-07-08] onNext(phone) remonte LE STRING téléphone normalisé ('06…')
 // au parent (index.html appelle guestOtp) ; CTA désactivé si numéro FR invalide
@@ -193,7 +197,7 @@ function ScreenLogin({ onNext, onBack }) {
         <div style={{ marginTop: 32, display: 'grid', gap: 10 }}>
           {[
             { icon: I.Sparkle, text: 'Commandes en 30 sec' },
-            { icon: I.Gift, text: '+25 pts dès la 1ʳᵉ commande' },
+            { icon: I.Gift, text: 'Des points à chaque commande' },
             { icon: I.Shield, text: 'Aucune donnée revendue' },
           ].map((b, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: 'var(--cream)', borderRadius: 14 }}>
@@ -211,7 +215,7 @@ function ScreenLogin({ onNext, onBack }) {
           {loading ? 'Envoi du code…' : <>Recevoir le code <I.Arrow size={18} stroke="var(--orange)"/></>}
         </button>
         {error && !loading && <div role="alert" style={{ marginTop: 10, textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'var(--red)' }}>{error}</div>}
-        <div style={{ marginTop: 12, textAlign: 'center', fontSize: 11, color: 'var(--gray-3)' }}>En continuant, tu acceptes nos <u>CGU</u> · <u>Confidentialité</u></div>
+        <div style={{ marginTop: 12, textAlign: 'center', fontSize: 11, color: 'var(--gray-3)' }}>En continuant, tu acceptes nos <a href={LC_LEGAL.cgu} target="_blank" rel="noopener" style={{ color: 'inherit' }}>CGU</a> · <a href={LC_LEGAL.confidentialite} target="_blank" rel="noopener" style={{ color: 'inherit' }}>Confidentialité</a></div>
       </div>
     </div>
   );
