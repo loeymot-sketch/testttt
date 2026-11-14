@@ -442,6 +442,14 @@
     // Classique). On n'envoie donc que les choix du profil ; une rubrique que le profil ne demande pas
     // (ex. type de pain) n'est pas envoyée.
     var prof = profileChoiceIds(d);
+    // [2026-11-14 R9-002] « Galette » choisie alors que le profil du produit ne propose pas le choix du pain
+    // (options non chargées dans l'assistant) : on arrête avec un message au lieu d'envoyer un sandwich sans
+    // la galette annoncée. Le pain par défaut, lui, n'a pas besoin d'être transmis.
+    if (prof && line.painId && line.painId !== 'pain-classique') {
+      var painNom = nameFromPools(['pains'], line.painId, PAINS_FALLBACK) || 'Galette';
+      var painVid = pickVariation(dIdx, ['6'], painNom, {});
+      if (painVid == null || !prof.variations[painVid]) optionAbsente(painNom);
+    }
     if (prof) {
       item_variations = item_variations.filter(function (v) { return prof.variations[v.id]; });
       item_extras = item_extras.filter(function (e) { return prof.extras[e.id]; });

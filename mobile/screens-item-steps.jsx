@@ -1294,7 +1294,9 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
   const headingRef = useRef_w(null);
   // [2026-11-14 R8] L'étape courante est suivie par son NOM : quand les options du serveur arrivent, la liste
   // d'étapes change et l'index pointait sur l'étape suivante (étape viande sautée).
-  const wantedKeyRef = useRef_w(null);
+  // [2026-11-14 R9-001] Étape voulue en ÉTAT (pas en ref) : changer de nom d'étape doit redessiner, même si
+  // l'index numérique reste le même (sinon « Suivant » ne faisait plus rien).
+  const [wantedKey, setWantedKey] = useState_w(null);
 
   const [selections, setSelections] = useState_w(() => {
     // [MOBILE-REALIGNMENT 2026-05-16] Pre-fill defaults from composer profile + item flags
@@ -1399,10 +1401,10 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
 
   // Clamp stepIndex if cascade insertion changed steps array — et recalage par nom d'étape (R8).
   // La navigation mémorise le NOM de l'étape voulue (wantedKeyRef) ; la position en découle à chaque rendu.
-  const wantedIdx = wantedKeyRef.current ? activeSteps.indexOf(wantedKeyRef.current) : -1;
+  const wantedIdx = wantedKey ? activeSteps.indexOf(wantedKey) : -1;
   const clampedIndex = Math.min(wantedIdx >= 0 ? wantedIdx : stepIndex, activeSteps.length - 1);
   const currentKey = activeSteps[clampedIndex];
-  const goStep = (idx) => { const i = Math.max(0, Math.min(activeSteps.length - 1, idx)); wantedKeyRef.current = activeSteps[i]; setStepIndex(i); };
+  const goStep = (idx) => { const i = Math.max(0, Math.min(activeSteps.length - 1, idx)); setWantedKey(activeSteps[i]); setStepIndex(i); };
   const isRecap = currentKey === STEP.RECAP;
 
   // Move focus to step heading on transition (a11y)
