@@ -436,9 +436,11 @@
       { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true,
         sauce_default: 'Sauce fromagère maison', has_pain_choice: true, has_extra_meat: true,
         is_featured: true, tags: ['SIGNATURE'], emoji: '🌶️', time: 10 }),
+    // [2026-11-14 R7-001] 2 viandes au choix : le serveur l'exige (config/menu_meat_rules.php, « à confirmer » par le
+    // propriétaire) — avec 0, TOUT panier contenant un Suprême était refusé (422).
     mkItem(102, 'supreme', 1, 'Suprême', 7.00,
-      'Steak haché frais · Cordon bleu · Cheddar · Oignons rouges · Tomates · Salade · Sauce au choix',
-      { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true,
+      '2 viandes au choix · Cheddar · Oignons rouges · Tomates · Salade · Sauce au choix',
+      { viandes: 2, has_crudites: true, has_menu_addon: true, has_sauce: true,
         has_pain_choice: true, has_extra_meat: true, time: 10, emoji: '🥖' }),
     mkItem(103, 'mega', 1, 'Méga', 8.00,
       '2 viandes au choix · Cheddar · Œuf · Oignons rouges · Tomates · Salade · Sauce au choix',

@@ -456,7 +456,9 @@
     // boisson du menu, ni la sauce frites, ni « sans oignon » (relecture adverse A2-004/A2-005, vérifié au code).
     var note = String(line.instruction || '').replace(/[\[\]\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
     var noteAll = (note ? ['[Note : ' + note + ']'] : []).concat(viandesEnPlus ? [viandesEnPlus] : []).concat(menuNoteParts).join('\n');
-    if (noteAll) out.instruction = String(noteAll).slice(0, 500);
+    // [2026-11-14 R7-003] Le serveur limite la consigne à 500 OCTETS (UTF-8), pas 500 caractères : une note riche
+    // en emojis passait à 400 caractères mais dépassait 500 octets → 422. On coupe au dernier caractère entier.
+    if (noteAll) out.instruction = coupeOctets(String(noteAll), 500);
     return out;
   }
 
@@ -491,6 +493,17 @@
       (vs[a] || []).forEach(function (v) { if (v && v.is_available !== false) out.variations[norm(v.name)] = true; });
     });
     ((d && d.extras) || []).forEach(function (e) { if (e && e.is_available !== false) out.extras[norm(e.name)] = true; });
+    return out;
+  }
+
+  function coupeOctets(t, max) {
+    // Une moitié d'emoji (surrogate isolé) rend le JSON refusé par le serveur : on l'enlève d'abord.
+    t = String(t).replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(^|[^\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '$1');
+    if (typeof TextEncoder !== 'function') return t.slice(0, Math.floor(max / 4));
+    var enc = new TextEncoder();
+    if (enc.encode(t).length <= max) return t;
+    var chars = Array.from(t), out = '';
+    for (var i = 0; i < chars.length; i++) { if (enc.encode(out + chars[i]).length > max) break; out += chars[i]; }
     return out;
   }
 

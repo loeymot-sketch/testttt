@@ -1166,11 +1166,11 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
           rows={2}
           placeholder="Ex. Sans oignon, bien cuit, etc."
           value={selections.instruction || ''}
-          onChange={(e) => setSelections(s => ({ ...s, instruction: e.target.value.slice(0, 190) }))}
+          onChange={(e) => setSelections(s => ({ ...s, instruction: Array.from(e.target.value).slice(0, 190).join('') }))}
           style={{ width: '100%', padding: '10px 12px', fontSize: 13, lineHeight: 1.35, border: '1.5px solid var(--gray-2)', borderRadius: 12, background: '#fff', color: 'var(--ink)', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box' }}
         />
         <div aria-live="polite" style={{ fontSize: 10, color: 'var(--gray-3)', textAlign: 'right', marginTop: 2 }}>
-          {(selections.instruction || '').length} / 190
+          {Array.from(selections.instruction || '').length} / 190
         </div>
       </div>
 
@@ -1350,18 +1350,26 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
 
   // [2026-11-14] Options du serveur pour ce produit (voir lcOffered).
   const [itemOptions, setItemOptions] = useState_w(() => ((window.LC.itemOptions || {})[itemId]) || null);
+  // [2026-11-14 R7-002] On attend les options du serveur AVANT de laisser avancer (sinon une étape viande
+  // pouvait sauter si la réponse arrivait après le 1er « Suivant ») ; 5 s au plus, puis repli local.
+  const [optionsWait, setOptionsWait] = useState_w(() => !!(item && item.server_id && !((window.LC.itemOptions || {})[itemId]) && window.LC.mobileApi && window.LC.mobileApi.optionNames));
   useEffect_w(() => {
     let alive = true;
     const api = window.LC.mobileApi;
     if (!itemOptions && item && item.server_id && api && api.optionNames) {
+      const t = setTimeout(() => { if (alive) setOptionsWait(false); }, 5000);
       api.optionNames(item.server_id).then(o => {
         window.LC.itemOptions = window.LC.itemOptions || {};
         window.LC.itemOptions[itemId] = o;
-        if (alive) setItemOptions(o);
-      }).catch(() => { /* hors ligne : tout reste affiché */ });
+        if (alive) { setItemOptions(o); setOptionsWait(false); }
+      }).catch(() => { if (alive) setOptionsWait(false); /* hors ligne : tout reste affiché */ }).finally(() => clearTimeout(t));
+      return () => { alive = false; clearTimeout(t); };
     }
-    return () => { alive = false; };
-  }, [itemId]);
+    // Carte pas encore relue (pas d'id serveur) : on patiente tant qu'elle est en cours, sinon repli local.
+    if (!(window.LC.catalog && window.LC.catalog.status === 'pending')) { setOptionsWait(false); return () => { alive = false; }; }
+    const t2 = setTimeout(() => { if (alive) setOptionsWait(false); }, 5000); // carte injoignable : repli local
+    return () => { alive = false; clearTimeout(t2); };
+  }, [itemId, item && item.server_id]);
   window.LC.currentItemOptions = itemOptions;
 
   // If item not found, render error early
@@ -1471,9 +1479,9 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
         </div>
       </div>
       <WizardCTA
-        label={item.available === false ? 'Épuisé pour le moment' : (isRecap ? `Ajouter au panier · ${selections.qty || 1}` : 'Suivant')}
+        label={item.available === false ? 'Épuisé pour le moment' : optionsWait ? 'Chargement des options…' : (isRecap ? `Ajouter au panier · ${selections.qty || 1}` : 'Suivant')}
         total={total}
-        disabled={!valid || item.available === false}
+        disabled={!valid || item.available === false || optionsWait}
         hint={hint}
         onClick={onNext}
       />

@@ -25,8 +25,8 @@ assert.equal(menu.branch.phone, '0365678291', 'canonical branch phone is stored 
 assert.equal(
   sha256(JSON.stringify(menu, (key, value) => ['image', 'hero', 'phone'].includes(key) ? undefined : value)),
   // [OWNER 2026-11-11] carte mise à jour : 5 Tenders, Sandwich 2 Viandes, libellés « frais » / « base fromage ».
-  // [2026-11-14] carte alignée sur le serveur : Galette Classique/Cayenne 7,40 €, Sandwich Classique, 16 sauces, sans Boule gratinée, code postal 62110, sauce des menus enfant, formules frites/boisson 1,90 €.
-  '65eb931d4716c4953a3dffcab9deb9aeac0d1a636094114465eb65882fe55023',
+  // [2026-11-14] carte alignée sur le serveur : Galette Classique/Cayenne 7,40 €, Sandwich Classique, 16 sauces, sans Boule gratinée, code postal 62110, sauce des menus enfant, formules frites/boisson 1,90 €, Suprême 2 viandes.
+  '35774b22751adc2e0e20a776adcd2cfac16dc2be9e8a89a3cefbb3e2e6f3d4c6',
   'catalog business data is unchanged apart from visual paths and branch phone',
 );
 
