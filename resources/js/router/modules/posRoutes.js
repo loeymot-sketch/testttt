@@ -12,6 +12,8 @@ const PosComponent       = () => import(/* webpackChunkName: "pos-shell" */ "../
 // nos livreurs ⇄ Uber) posée en page plutôt qu'en fenêtre au-dessus de la caisse.
 const PosDeliveryPage    = () => import(/* webpackChunkName: "pos-shell" */ "../../components/admin/pos/PosDeliveryPage");
 const FloorplanComponent = () => import(/* webpackChunkName: "pos-shell" */ "../../components/admin/pos/FloorplanComponent");
+// [FACTURE PRO 2026-11-14] Facture à montant libre pour client professionnel, hors ticket de caisse.
+const ProInvoicePage     = () => import(/* webpackChunkName: "pos-shell" */ "../../components/admin/pos/ProInvoicePage");
 
 export default [
     {
@@ -45,6 +47,17 @@ export default [
             auth: true,
             permissionUrl: "pos",
             breadcrumb: "livraisons",
+        },
+    },
+    {
+        path: "/admin/facture-pro",
+        component: ProInvoicePage,
+        name: "admin.facture-pro",
+        meta: {
+            isFrontend: false,
+            auth: true,
+            permissionUrl: "pos",
+            breadcrumb: "facture_pro",
         },
     },
     {

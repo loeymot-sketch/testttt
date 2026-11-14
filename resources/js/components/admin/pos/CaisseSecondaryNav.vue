@@ -57,6 +57,17 @@
                 <span class="csn-ico" aria-hidden="true">🗂️</span>
                 <span>{{ $t('menu.historique') }}</span>
             </router-link>
+            <!-- [FACTURE PRO 2026-11-14] Facture à montant libre pour un client professionnel (hors ticket de caisse). -->
+            <router-link
+                :to="{ name: 'admin.facture-pro' }"
+                class="csn-link"
+                :class="{ active: current === 'facture-pro' }"
+                :aria-current="current === 'facture-pro' ? 'page' : null"
+                data-testid="csn-facture-pro"
+            >
+                <span class="csn-ico" aria-hidden="true">🧾</span>
+                <span>{{ $t('menu.facture_pro') }}</span>
+            </router-link>
             <router-link
                 :to="{ name: 'admin.order-status-screen' }"
                 target="_blank"

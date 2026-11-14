@@ -333,6 +333,20 @@
                             <template #icon>🗂️</template>
                             <span class="hidden lg:inline">{{ $t('menu.historique') }}</span>
                         </PosV5Button>
+                        <!-- [FACTURE PRO 2026-11-14 · propriétaire] Facture à montant libre pour un client
+                             professionnel, hors ticket de caisse (page admin.facture-pro, stub dans pos-app.js). -->
+                        <PosV5Button
+                            variant="ghost"
+                            size="md"
+                            as="router-link"
+                            :to="{ name: 'admin.facture-pro' }"
+                            data-testid="pos-facture-pro-open"
+                            :title="$t('menu.facture_pro')"
+                            :aria-label="$t('menu.facture_pro')"
+                        >
+                            <template #icon>🧾</template>
+                            <span class="hidden lg:inline">{{ $t('menu.facture_pro') }}</span>
+                        </PosV5Button>
                         <PosV5Button
                             variant="ghost"
                             size="md"

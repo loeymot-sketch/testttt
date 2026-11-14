@@ -134,6 +134,10 @@ return [
         // déjà X-Idempotency-Key ; l'ajout ici active l'enforcement + rend verte la sentinelle CI
         // IdempotencyRequiredRoutesCoverageTest (la route portait le middleware sans être couverte).
         'api/admin/pos/stock-outflow',
+        // [FACTURE PRO 2026-11-14] Création et annulation d'une facture pro : un rejeu réseau ne doit
+        // pas émettre deux factures (deux numéros) ni rejouer une annulation. La page envoie la clé.
+        'api/admin/pos/pro-invoices',
+        'api/admin/pos/pro-invoices/*/cancel',
         'api/admin/pos/orders/*/print-receipt',
         // [ULTRA-AUDIT 2026-07-02] Route print-kitchen porte le middleware `idempotency`
         // (routes/api.php) mais manquait dans required_routes → IdempotencyRequiredRoutesCoverageTest

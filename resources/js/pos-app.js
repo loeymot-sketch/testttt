@@ -222,6 +222,14 @@ const router = createRouter({
             beforeEnter(to) { window.location.assign(to.fullPath); },
             component: { render: () => null },
         },
+        // [FACTURE PRO 2026-11-14] Bouton « Facture pro » de la barre caisse : la page vit dans le
+        // bundle COMPLET (app.js). Même stub que ci-dessus, sinon resolve() lève MATCHER_NOT_FOUND.
+        {
+            path: '/admin/facture-pro',
+            name: 'admin.facture-pro',
+            beforeEnter(to) { window.location.assign(to.fullPath); },
+            component: { render: () => null },
+        },
         // auth.login is read by DefaultComponent.vue L110 when staffOnlyMode
         // triggers a logout-redirect; in pos-app this code path is unused
         // (POS V4 is staff-authenticated) but we add the stub anyway to keep

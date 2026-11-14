@@ -1467,6 +1467,21 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             ->middleware('permission:pos')->name('stock-outflow.recent');
         Route::post('/stock-outflow', [\App\Http\Controllers\Admin\PosStockOutflowController::class, 'store'])
             ->middleware(['permission:pos', 'throttle:pos-order-update', 'idempotency'])->name('stock-outflow.store');
+
+        // [FACTURE PRO 2026-11-14 · propriétaire] Facture à montant libre pour un client professionnel.
+        // HORS chaîne NF525 (choix du propriétaire) : ni commande, ni séquence fiscale, ni Z, ni tiroir.
+        // Ajout seul : AUCUNE route de suppression ni de modification — créer, lire, imprimer, annuler.
+        Route::prefix('pro-invoices')->name('pro-invoices.')->middleware('permission:pos')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\Pos\ProInvoiceController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\Admin\Pos\ProInvoiceController::class, 'store'])
+                ->middleware('idempotency')->name('store');
+            Route::get('/{proInvoice}', [\App\Http\Controllers\Admin\Pos\ProInvoiceController::class, 'show'])
+                ->whereNumber('proInvoice')->name('show');
+            Route::get('/{proInvoice}/document', [\App\Http\Controllers\Admin\Pos\ProInvoiceController::class, 'document'])
+                ->whereNumber('proInvoice')->name('document');
+            Route::post('/{proInvoice}/cancel', [\App\Http\Controllers\Admin\Pos\ProInvoiceController::class, 'cancel'])
+                ->whereNumber('proInvoice')->middleware('idempotency')->name('cancel');
+        });
         Route::post('/counter-collect/{order}/confirm', function (\App\Models\Order $order, \Illuminate\Http\Request $request) {
             abort_unless(auth()->user()?->can('pos'), 403);
 
