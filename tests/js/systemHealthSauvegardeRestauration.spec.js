@@ -18,6 +18,12 @@ vi.mock('axios', () => ({
  * Ce banc vérifie le COMPORTEMENT rendu (couleur + texte), pas la présence d'une
  * chaîne dans le source : un banc qui grep le fichier resterait vert si la
  * couleur retombait au vert par une autre voie.
+ *
+ * [GOAL G4 2026-09-03 · T4.3/T4.4] Les gabarits ont été mis à jour parce que le
+ * CONTRAT de la réponse a changé, pas pour faire passer le banc :
+ *  - `max_age_hours` publié vaut désormais 26 (et non 48) — un seul seuil ;
+ *  - la réponse porte `sauvegarde.fraiche`, le verdict de fraîcheur décidé par le
+ *    serveur. L'écran ne recalcule plus le sien sur une valeur arrondie.
  */
 function etatSante(sauvegarde) {
     return {
@@ -42,7 +48,7 @@ function drill(status, extra = {}) {
         sha256: 'a'.repeat(64),
         duration_s: 42.5,
         reasons: [],
-        max_age_hours: 48,
+        max_age_hours: 26,
         ...extra,
     };
 }
@@ -74,6 +80,7 @@ describe('Cockpit — la carte sauvegarde lit la restauration de vérification',
             dernier_fichier: 'daily-2026-09-02.sql.gz',
             age_heures: 2,
             attendu_max_h: 26,
+            fraiche: true,
             restauration: drill('green'),
         });
         expect(carte(w).html()).toContain('text-emerald-700');
@@ -85,6 +92,7 @@ describe('Cockpit — la carte sauvegarde lit la restauration de vérification',
             dernier_fichier: 'daily-2026-09-02.sql.gz',
             age_heures: 2,
             attendu_max_h: 26,
+            fraiche: true,
             restauration: drill('failed', { reasons: ['audit_logs chain broken at seq 41'] }),
         });
         const html = carte(w).html();
@@ -97,6 +105,7 @@ describe('Cockpit — la carte sauvegarde lit la restauration de vérification',
             dernier_fichier: 'daily-2026-09-02.sql.gz',
             age_heures: 2,
             attendu_max_h: 26,
+            fraiche: true,
             restauration: {
                 status: 'unknown',
                 verified_at: null,
@@ -105,7 +114,7 @@ describe('Cockpit — la carte sauvegarde lit la restauration de vérification',
                 sha256: null,
                 duration_s: null,
                 reasons: [],
-                max_age_hours: 48,
+                max_age_hours: 26,
             },
         });
         const html = carte(w).html();
@@ -118,6 +127,7 @@ describe('Cockpit — la carte sauvegarde lit la restauration de vérification',
             dernier_fichier: 'daily-2026-09-02.sql.gz',
             age_heures: 2,
             attendu_max_h: 26,
+            fraiche: true,
             restauration: drill('stale', { age_hours: 121 }),
         });
         expect(carte(w).html()).toContain('text-red-700');
@@ -128,6 +138,7 @@ describe('Cockpit — la carte sauvegarde lit la restauration de vérification',
             dernier_fichier: 'daily-2026-08-28.sql.gz',
             age_heures: 110,
             attendu_max_h: 26,
+            fraiche: false,
             restauration: drill('green'),
         });
         expect(carte(w).html()).toContain('text-red-700');
@@ -138,6 +149,7 @@ describe('Cockpit — la carte sauvegarde lit la restauration de vérification',
             dernier_fichier: 'daily-2026-09-02.sql.gz',
             age_heures: 2,
             attendu_max_h: 26,
+            fraiche: true,
             restauration: drill('green'),
         });
         expect(carte(w).text()).not.toMatch(/n'est pas encore lue/);

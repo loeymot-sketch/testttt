@@ -9,12 +9,14 @@ use Smartisan\Settings\Facades\Settings;
 
 final class DiscountCalculator
 {
-    public function couponDiscount(CouponService $couponService, int $couponId, float $subtotal, int $customerUserId): float
+    // [LOCK_COUPON_SURFACE_BRANCHE_AU_PAIEMENT_2026-11-05] Branche et surface transmises : un code limité à « web » ou à une
+    // branche était refusé au paiement (isUsableNow(null, null)) alors que « Appliquer » l'acceptait.
+    public function couponDiscount(CouponService $couponService, int $couponId, float $subtotal, int $customerUserId, ?int $branchId = null, ?string $surface = null): float
     {
         if ($couponId <= 0) {
             return 0.0;
         }
-        $coupon = $couponService->resolveCouponById($couponId, $subtotal, $customerUserId);
+        $coupon = $couponService->resolveCouponById($couponId, $subtotal, $customerUserId, $branchId, $surface);
 
         return (float) $couponService->calculateDiscountAmount($coupon, $subtotal);
     }
@@ -66,7 +68,9 @@ final class DiscountCalculator
         // [RED-1 2026-08-04 · LOCK_FRONTENDORDER_REDEEM_REORDER] La barrière de solde ne s'applique
         // qu'au DÉBIT FRAIS. Le RATTACHEMENT d'un pré-rachat déjà débité doit obtenir la valeur de
         // remise SANS re-tester le solde (déjà à 0 après « j'utilise tous mes points ») → skipBalanceGate.
-        if (! $skipBalanceGate && $lockedLoyaltyUser->loyalty_points < $pointsRequired) {
+        // [DÉCISION PROPRIÉTAIRE 2026-11-06 · relecture adverse P2-2] Le devis contrôle les points DÉPENSABLES, comme la
+        // création : sinon la borne annonçait une remise que la commande sautait (409 « le total a changé »).
+        if (! $skipBalanceGate && \App\Services\LoyaltyService::pointsDepensables((int) $lockedLoyaltyUser->id, (int) $lockedLoyaltyUser->loyalty_points) < $pointsRequired) {
             return ['discount' => 0.0, 'points' => 0];
         }
 

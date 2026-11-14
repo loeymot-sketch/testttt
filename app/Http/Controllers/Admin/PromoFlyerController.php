@@ -111,6 +111,14 @@ class PromoFlyerController extends Controller
             // (un chemin absolu ou remontant permettrait de faire imprimer
             // n'importe quel fichier de la machine).
             'logo_path'        => ['nullable', 'string', 'max:160', 'regex:/^[A-Za-z0-9._\/-]*$/'],
+            // [TICKET PROMO 2026-11-03] Offre « livraison offerte » : textes et conditions.
+            'free_delivery_intro'     => ['nullable', 'string', 'max:400'],
+            'free_delivery_strengths' => ['nullable', 'string', 'max:600'],
+            'free_delivery_footer'    => ['nullable', 'string', 'max:200'],
+            'free_delivery_min_order' => ['nullable', 'numeric', 'min:0', 'max:200'],
+            // Plafonné au rayon de NOTRE livraison : au-delà, le code promettrait une course
+            // que nos livreurs ne font pas.
+            'free_delivery_max_km'    => ['nullable', 'numeric', 'min:0.5', 'max:' . (float) config('delivery.max_km', 10)],
         ]);
 
         Settings::group(PromoFlyerService::SETTINGS_GROUP)->set($validated);
@@ -133,6 +141,8 @@ class PromoFlyerController extends Controller
             // Liste fermée : la civilité est imprimée telle quelle sur le
             // ticket, on n'y laisse pas passer du texte libre.
             'civility'      => ['nullable', 'string', Rule::in(['', 'Mme', 'M.'])],
+            // [TICKET PROMO 2026-11-03] Offre imprimée : −10 % (défaut historique) ou livraison offerte.
+            'offer'         => ['nullable', 'string', Rule::in(PromoFlyer::OFFERS)],
             // Confirmation explicite de l'exploitant quand un doublon est signalé.
             'force'         => ['nullable', 'boolean'],
         ]);
@@ -162,7 +172,7 @@ class PromoFlyerController extends Controller
             if ($doublon) {
                 return new JsonResponse([
                     'duplicate' => true,
-                    'message'   => 'Un code vient deja d\'etre cree pour ce prenom.',
+                    'message'   => 'Un code vient déjà d\'être créé pour ce prénom.',
                     'flyer'     => $this->present($doublon),
                 ], 200);
             }
@@ -175,6 +185,7 @@ class PromoFlyerController extends Controller
                 (int) $user->id,
                 $this->service->deviceIdFrom($request),
                 (string) ($validated['civility'] ?? ''),
+                (string) ($validated['offer'] ?? PromoFlyer::OFFER_PERCENT),
             );
         } catch (\Throwable $e) {
             Log::error('[FLYER] création impossible', [
@@ -221,6 +232,7 @@ class PromoFlyerController extends Controller
                 'used_at'     => $usage['used_at'] ?? null,
                 'order_total' => $usage['order_total'] ?? null,
                 'saved'       => $usage['discount'] ?? null,
+                'delivery_waived' => $usage['delivery_waived'] ?? null,
             ];
         })->values();
 
@@ -238,7 +250,23 @@ class PromoFlyerController extends Controller
                 'used'        => $utilises->count(),
                 'rate'        => $imprimes > 0 ? round($utilises->count() * 100 / $imprimes, 1) : null,
                 'revenue'     => round((float) $utilises->sum('order_total'), 2),
-                'given_away'  => round((float) $utilises->sum('saved'), 2),
+                'given_away'  => round((float) $utilises->sum('saved') + (float) $utilises->sum('delivery_waived'), 2),
+                // [TICKET PROMO 2026-11-03 · propriétaire « avec le nombre de clients »] Le même bilan,
+                // offre par offre : c'est ce qui permet de choisir entre −10 % et livraison offerte.
+                'by_offer'    => collect(PromoFlyer::OFFERS)->mapWithKeys(function (string $offer) use ($lignes) {
+                    $l = $lignes->where('offer', $offer);
+                    $u = $l->where('used', true);
+                    $p = $l->where('status', PromoFlyer::STATUS_PRINTED)->count();
+
+                    return [$offer => [
+                        'total'      => $l->count(),
+                        'printed'    => $p,
+                        'used'       => $u->count(),
+                        'rate'       => $p > 0 ? round($u->count() * 100 / $p, 1) : null,
+                        'revenue'    => round((float) $u->sum('order_total'), 2),
+                        'given_away' => round((float) $u->sum('saved') + (float) $u->sum('delivery_waived'), 2),
+                    ]];
+                })->all(),
             ],
         ], 200);
     }
@@ -287,7 +315,7 @@ class PromoFlyerController extends Controller
         $this->service->revoke($model);
 
         return new JsonResponse([
-            'message' => 'Code annule.',
+            'message' => 'Code annulé.',
             'flyer'   => $this->present($model->fresh()),
         ], 200);
     }
@@ -435,6 +463,7 @@ class PromoFlyerController extends Controller
             'valid_until'   => $flyer->rendered_payload['valid_until'] ?? null,
             'revoked'       => $revoque ?? $this->estRevoque($flyer),
             'discount'      => $flyer->rendered_payload['discount_percent'] ?? null,
+            'offer'         => $flyer->offer ?: PromoFlyer::OFFER_PERCENT,
         ];
     }
 }

@@ -63,6 +63,8 @@ class KitchenTicketBolBaseTest extends TestCase
         $this->assertSame('CHICKEN BURGER', $this->code('Chicken Burger'));
         $this->assertSame('DOUBLE CHEESE', $this->code('Double Cheese'));
         $this->assertSame('MENU ENFANT CHICKEN BURGER', $this->code('Menu Enfant Chicken Burger'));
+        // [OWNER 2026-11-12] « là ça s'écrit que TEN » — jumeau de kdsSymbolic.js.
+        $this->assertSame('5 TENDERS', $this->code('5 Tenders'));
         $this->assertSame('MENU ENFANT NUGGETS', $this->code('Menu Enfant Nuggets'));
 
         // Aucune de ces lignes ne doit pouvoir se confondre avec une autre.

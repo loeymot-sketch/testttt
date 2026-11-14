@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Services\Orders\QueueNumberAllocator;
 use App\Domain\Order\AutoPrepareOnPaidPolicy;
 use App\Domain\Order\OrderStateMachine;
 use App\Enums\OrderStatus;
@@ -65,6 +66,9 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 class OrderService
 {
     public object $order;
+
+    // [VG-2026-10-21 M6-002] « branche|jour » dont la transaction en cours tient déjà la ligne compteur de file.
+    private ?string $queueDayHeld = null;
 
     protected CouponService $couponService;
 
@@ -460,7 +464,7 @@ class OrderService
                     // posOrderStore's in-SSOT gate (~813). [round-4 bypass-hunt P0]
                     $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
                     if (! blank($itemsArray)) {
-                        OrderItem::insert($itemsArray);
+                        OrderItem::insertRows($itemsArray);
                     }
                 } else {
                     $i = 0;
@@ -591,7 +595,7 @@ class OrderService
                     }
 
                     if (! blank($itemsArray)) {
-                        OrderItem::insert($itemsArray);
+                        OrderItem::insertRows($itemsArray);
                     }
 
                     // [AUDIT-FIX P0-1] Coupon recalculation server-side — never trust $request->discount
@@ -641,6 +645,8 @@ class OrderService
                             'apartment' => $address->apartment,
                             'latitude' => $address->latitude,
                             'longitude' => $address->longitude,
+                            'city' => $address->city,
+                            'postal_code' => $address->postal_code,
                         ]);
                     }
                 }
@@ -757,6 +763,17 @@ class OrderService
         try {
             $order = null;
             DB::transaction(function () use ($request, &$order, $idempotencyKey) {
+                // [VG-2026-10-21 M6-002] PREMIÈRE instruction : verrouiller la ligne compteur de file du jour. Une vente
+                // simultanée attend ici le COMMIT de la précédente AVANT toute lecture : son instantané REPEATABLE-READ
+                // la contient (numéro de file, et dernier maillon de la chaîne d'audit relu sans verrou par le service gelé).
+                $this->queueDayHeld = null;
+                $queueBranchId = (int) $request->branch_id; // allow: verrou de file, la propriété de la branche est vérifiée juste après
+                if ($queueBranchId > 0) {
+                    $queueDay = $this->resolveBusinessDate(null);
+                    app(QueueNumberAllocator::class)->reserveDay($queueBranchId, $queueDay);
+                    $this->queueDayHeld = $queueBranchId.'|'.$queueDay;
+                }
+
                 // [GAP-20-3] Unset client-supplied financial fields before Order::create().
                 // Mirrors the same pattern in myOrderStore() — server always recalculates
                 // total, subtotal, discount from DB prices below. This prevents any
@@ -844,8 +861,10 @@ class OrderService
                         'status' => $posInitialStatus,
                         'token' => $request->token,
                         // [C2-CAISSE 2026-07-05] Nom du client (optionnel) → imprimé sur le ticket.
+                        // [NOM-COMMANDE-BORNE 2026-10-19] Même nettoyage que la borne (TAB/LF et noms
+                        // invisibles passaient ici) — une seule définition : App\Support\NomClient.
                         'pos_customer_name' => $request->filled('pos_customer_name')
-                            ? mb_substr(trim((string) $request->input('pos_customer_name')), 0, 60)
+                            ? \App\Support\NomClient::nettoyer((string) $request->input('pos_customer_name'))
                             : null,
                         // [C4-CAISSE-TELEPHONE 2026-07-07] Téléphone du client (optionnel) → noté sur
                         // la commande téléphone pour la rappeler/reconnaître, imprimé sur le ticket.
@@ -888,6 +907,17 @@ class OrderService
 
                 $requestItems = $this->safeJsonDecode($request->items);
                 $requestItems = is_array($requestItems) ? $requestItems : [];
+
+                // A free-form supplement has no catalog item_id. Its fiscal
+                // calculation and persistence exist only in PricingService;
+                // never let the legacy branch reinterpret it as a catalog row.
+                if (! config('pricing.use_ssot_service', true)
+                    && collect($requestItems)->contains(fn ($item) => ($item->line_type ?? null) === OrderItem::LINE_TYPE_MANUAL_SUPPLEMENT)) {
+                    throw new \InvalidArgumentException(
+                        'Le supplément libre nécessite le moteur de prix sécurisé.',
+                        422
+                    );
+                }
 
                 $posSsotPricingResult = null;
                 // [FIDÉLITÉ CAISSE 2026-08-19] Déclaré ICI (et pas dans la branche SSOT) pour que
@@ -985,7 +1015,7 @@ class OrderService
                     // at order time, not read through a live FK join later).
                     $itemsArray = OrderItemAllergenSnapshot::hydrate($itemsArray);
                     if (! blank($itemsArray)) {
-                        OrderItem::insert($itemsArray);
+                        OrderItem::insertRows($itemsArray);
                     }
                 } else {
                     $i = 0;
@@ -1146,7 +1176,7 @@ class OrderService
                     // non-SSOT legacy path (feature flag `pricing.use_ssot_service=false`).
                     $itemsArray = OrderItemAllergenSnapshot::hydrate($itemsArray);
                     if (! blank($itemsArray)) {
-                        OrderItem::insert($itemsArray);
+                        OrderItem::insertRows($itemsArray);
                     }
 
                     // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT POUR TABLE ORDER
@@ -1270,7 +1300,11 @@ class OrderService
                     // ('phone') du walk-in caisse standard ('pos') pour la file d'encaissement, le
                     // KDS (badge « Tél ») et l'historique. Les deux passent par le sceau
                     // counter-collect (assertCounterDeferredOrder accepte 'phone' aussi).
-                    $this->order->source_surface = $request->boolean('phone_order') ? 'phone' : 'pos';
+                    // [CAISSE 2026-10-23] Livraison payée à la porte : 'delivery' (comme une livraison du site payée à la porte) — jamais
+                    // 'phone' (purge « client non venu ») ni 'pos' ; deliveryBoyOrderChangeStatus la reconnaît et la scelle à la remise.
+                    $this->order->source_surface = $request->boolean('phone_order')
+                        ? 'phone'
+                        : ($request->boolean('delivery_door_payment') && (int) $request->order_type === \App\Enums\OrderType::DELIVERY ? 'delivery' : 'pos');
 
                     $currentTime = Carbon::now();
                     $endTime = $currentTime->copy()->addMinutes(Settings::group('order_setup')->get('order_setup_schedule_order_slot_duration'));
@@ -1340,6 +1374,8 @@ class OrderService
                             'apartment' => $address->apartment,
                             'latitude' => $address->latitude,
                             'longitude' => $address->longitude,
+                            'city' => $address->city,
+                            'postal_code' => $address->postal_code,
                         ]);
                     } else {
                         // [Y5 FIX] Address not found or doesn't belong to customer — fail explicitly
@@ -1644,7 +1680,7 @@ class OrderService
                     // incorrect Z. Mirrors posOrderStore's in-SSOT gate (~813). [round-4 P0]
                     $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
                     if (! blank($itemsArray)) {
-                        OrderItem::insert($itemsArray);
+                        OrderItem::insertRows($itemsArray);
                     }
                 } else {
                     $i = 0;
@@ -1791,7 +1827,7 @@ class OrderService
                     }
 
                     if (! blank($itemsArray)) {
-                        OrderItem::insert($itemsArray);
+                        OrderItem::insertRows($itemsArray);
                     }
 
                     // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT POUR TABLE ORDER
@@ -2011,9 +2047,49 @@ class OrderService
     }
 
     /**
+     * [LIVREUR CAISSE 2026-11-02] Le service (caisse) ouvert du livreur ; s'il n'y en a pas, il s'ouvre ici avec un fond de 0 €.
+     * Idempotent : `openSession` garde l'unicité (verrou + index unique) ; une course entre deux remises retombe sur le service déjà ouvert.
+     *
+     * @throws \Throwable si le service n'a pu ni être ouvert ni être retrouvé
+     */
+    private function ensureOpenDeliveryShift(int $branchId, int $driverId, bool $forCash): ?\App\Models\DeliveryBoyCashSession
+    {
+        $svc = app(\App\Services\Delivery\DeliveryBoyCashSessionService::class);
+        $open = $svc->findOpenSessionForDeliveryBoy($branchId, $driverId);
+        if ($open) {
+            return $open;
+        }
+        try {
+            $open = $svc->openSession($branchId, $driverId, 0.0, $driverId);
+            $open->forceFill(['notes' => $forCash
+                ? 'Ouvert automatiquement à la première remise en espèces (aucun service ouvert).'
+                : 'Ouvert automatiquement à la première remise encaissée (aucun service ouvert).'])->save();
+        } catch (\Throwable $openError) {
+            $open = $svc->findOpenSessionForDeliveryBoy($branchId, $driverId);
+            if (! $open) {
+                throw $openError;
+            }
+        }
+
+        return $open;
+    }
+
+    /**
      * @throws Exception
      */
-    public function deliveryBoyOrderChangeStatus(Order $order, Request $request): Order
+    /**
+     * @param  string|null  $declaredDoorMode  [LIVRAISON QR 2026-11-01] Mode RÉELLEMENT encaissé à la porte, déclaré par le livreur
+     *                                         à la remise par QR : 'cash' | 'card' | 'meal_voucher'. NULL (tous les autres appelants,
+     *                                         dont l'écran /livreur historique) = comportement inchangé, dérivé de la commande.
+     *                                         Lu et appliqué SOUS le `lockForUpdate` ci-dessous : le Z range vente par
+     *                                         `pos_payment_method ?: payment_method`, donc le mode déclaré doit être posé dans CE verrou.
+     * @param  array|null  $doorPayments  [LIVREUR CAISSE 2026-11-02] Règlement à la porte en PLUSIEURS moyens : liste `[{mode, amount}]`
+     *                                    (mode = cash|card|meal_voucher, amount en euros). Vérifiée par {@see DoorPaymentSplit} contre le
+     *                                    total de la commande relu SOUS le verrou (jamais un total venu du client). Valable uniquement à la
+     *                                    remise d'une commande encore à encaisser à la porte ; exclusif avec `$declaredDoorMode`. NULL (tous
+     *                                    les autres appelants) = comportement strictement inchangé.
+     */
+    public function deliveryBoyOrderChangeStatus(Order $order, Request $request, ?string $declaredDoorMode = null, ?array $doorPayments = null): Order
     {
         try {
             // [FIX-54-1] Ownership check — same as deliveryBoyOrderDetails()
@@ -2054,7 +2130,13 @@ class OrderService
             // atomically with the status mutation.
             $cashEscrowWritten = false;
             $cashEscrowMeta = null;
-            DB::transaction(function () use (&$order, $oldStatus, $newStatus, &$cashEscrowWritten, &$cashEscrowMeta) {
+            // [VG-2026-10-21 L2] Trace NF525 de la tranche titre-restaurant remise au livreur (écrite après le COMMIT).
+            // [CARTE À LA LIVRAISON 2026-10-24] Même structure pour la tranche CARTE encaissée au terminal du livreur
+            // (clés `mode` + `event` : une tranche d'audit, deux modes, jamais d'escrow espèces).
+            $doorTrancheMeta = null;
+            // [LIVREUR CAISSE 2026-11-02] Tranches CARTE / TITRE d'un règlement en plusieurs moyens (une trace d'audit chacune, après COMMIT).
+            $doorSplitMetas = [];
+            DB::transaction(function () use (&$order, $oldStatus, $newStatus, &$cashEscrowWritten, &$cashEscrowMeta, &$doorTrancheMeta, &$doorSplitMetas, $declaredDoorMode, $doorPayments) {
                 $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
 
                 // Idempotent: if a concurrent caller already applied the
@@ -2082,11 +2164,66 @@ class OrderService
                 // issu d'un flip web-LIVRAISON (source_surface='web' + DELIVERY), sans toucher la
                 // logique fiscale en aval (allocation seq/escrow inchangées). Restreint à la livraison :
                 // le takeaway web s'encaisse au comptoir (counter-collect), jamais au doorstep.
+                // [LIVRAISON 2026-10-20 · trouvé par le test réel navigateur] Une commande de livraison créée par l'API du site
+                // porte `source_surface = 'delivery'` (FrontendOrder::creating), pas 'web' : la comparaison stricte à 'web'
+                // ne la reconnaissait JAMAIS → livrée et encaissée à la porte mais restée PENDING_COUNTER, sans numéro fiscal
+                // (vente hors chaîne NF525 — exactement ce que P1-3 voulait empêcher). Même ensemble que
+                // OnlineOrderController::changeStatus (l.149), qui produit ce PENDING_COUNTER.
+                // [VG-2026-10-21 M4-001] Une livraison prise à la CAISSE et payée à la porte porte 'phone' (commande téléphone,
+                // OrderService:1288) ou 'pos' (vente différée, pos.walkin_route_to_counter) : elle n'était jamais scellée
+                // (#8099/#8115 : livrées, PENDING_COUNTER, sans numéro fiscal, hors Z, toujours « À encaisser »).
                 $isWebDeliveryDeferred = (int) $locked->payment_status === (int) PaymentStatus::PENDING_COUNTER
-                    && $locked->source_surface === 'web'
+                    && in_array(strtolower((string) $locked->source_surface), ['web', 'delivery', 'phone', 'pos'], true)
                     && (int) $locked->order_type === (int) \App\Enums\OrderType::DELIVERY;
                 $wasUnpaidCash = (! $transaction)
                     && ((int) $locked->payment_status === (int) PaymentStatus::UNPAID || $isWebDeliveryDeferred);
+
+                // [LIVRAISON QR 2026-11-01] Mode déclaré par le livreur : valable UNIQUEMENT à la remise d'une commande encore à
+                // encaisser. Une commande déjà payée (en ligne, au comptoir) ne change JAMAIS, quoi qu'on déclare.
+                $expectedPosMethod = null;
+                if ($declaredDoorMode !== null) {
+                    if (! in_array($declaredDoorMode, ['cash', 'card', 'meal_voucher'], true)
+                        || (int) $newStatus !== (int) OrderStatus::DELIVERED || ! $wasUnpaidCash) {
+                        abort(422, 'Mode d\'encaissement déclaré sur une commande qui n\'est pas à encaisser : renvoyez-la à la caisse.');
+                    }
+                    $expectedKind = $declaredDoorMode === 'meal_voucher'
+                        ? \App\Enums\PaymentGateway::TICKET_RESTAURANT
+                        : \App\Enums\PaymentGateway::CASH_ON_DELIVERY;
+                    if ((int) $locked->payment_method !== (int) $expectedKind) {
+                        abort(422, 'Ce mode d\'encaissement ne correspond pas à la commande : renvoyez-la à la caisse.');
+                    }
+                    $expectedPosMethod = match ($declaredDoorMode) {
+                        'card' => \App\Enums\PosPaymentMethod::CARD,
+                        'cash' => \App\Enums\PosPaymentMethod::CASH,
+                        default => \App\Enums\PosPaymentMethod::TICKET_RESTAURANT,
+                    };
+                    // Le Z range par pos_payment_method : une valeur déjà posée et différente du déclaré fausserait la ventilation.
+                    if ($locked->pos_payment_method !== null
+                        && (int) $locked->pos_payment_method !== \App\Enums\PosPaymentMethod::COUNTER_DEFERRED
+                        && (int) $locked->pos_payment_method !== (int) $expectedPosMethod) {
+                        abort(422, 'Le mode d\'encaissement déjà enregistré contredit celui déclaré : renvoyez la commande à la caisse.');
+                    }
+                }
+
+                // [LIVREUR CAISSE 2026-11-02] Règlement en plusieurs moyens : seulement à la REMISE d'une commande encore à encaisser à la
+                // porte (espèces / carte à la livraison / titre-restaurant). Le total vient de la commande VERROUILLÉE, jamais du client.
+                // Tout refus a lieu AVANT la moindre écriture : la transaction est annulée, rien n'est encaissé.
+                $doorSplitTranches = null;
+                if ($doorPayments !== null) {
+                    if ($declaredDoorMode !== null) {
+                        abort(422, 'Choisissez un seul mode de règlement : un moyen unique OU plusieurs moyens.');
+                    }
+                    if ((int) $newStatus !== (int) OrderStatus::DELIVERED || ! $wasUnpaidCash) {
+                        abort(422, 'Cette commande est déjà payée ou n\'est pas à encaisser à la porte : il n\'y a rien à encaisser.');
+                    }
+                    if (! in_array((int) $locked->payment_method, [
+                        \App\Enums\PaymentGateway::CASH_ON_DELIVERY,
+                        \App\Enums\PaymentGateway::TICKET_RESTAURANT,
+                    ], true)) {
+                        abort(422, 'Cette commande n\'est pas encaissable à la porte : renvoyez-la à la caisse.');
+                    }
+                    $doorSplitTranches = \App\Services\Delivery\DoorPaymentSplit::normalize($doorPayments, (int) round(((float) $locked->total) * 100));
+                }
 
                 if ($wasUnpaidCash) {
                     // [P0-LIV-03] Guard payment_method against silent double-charge.
@@ -2131,8 +2268,8 @@ class OrderService
                     // gains exactly one row per cash delivery regardless
                     // of single-jump or 2-step path.
                     //
-                    // For non-COD methods (E_WALLET / PAYPAL / CARD /
-                    // TICKET_RESTAURANT) that somehow reached the driver
+                    // For non-COD methods (E_WALLET / PAYPAL / CARD —
+                    // TICKET_RESTAURANT: voir [VG-2026-10-21 L2] ci-dessous) that somehow reached the driver
                     // still UNPAID (an unusual but observed edge case —
                     // e.g. card auth captured late), the prior flip-at-
                     // OFD-or-DELIVERED behaviour is preserved verbatim.
@@ -2140,9 +2277,52 @@ class OrderService
                     $isCod = ((int) $pm === (int) \App\Enums\PaymentGateway::CASH_ON_DELIVERY);
                     $atDelivered = ((int) $newStatus === (int) OrderStatus::DELIVERED);
 
-                    if ($isCod) {
+                    // [CARTE À LA LIVRAISON 2026-10-24] Livraison du site « à payer à la livraison » mais PAR CARTE
+                    // (orders.door_payment_mode='card', posé à la prise de commande — OrderRequest le restreint à
+                    // livraison + payment_method=1). Comme le titre-restaurant : jamais PAYÉ au départ ; PAYÉ, scellé
+                    // (numéro fiscal) et tranche CARTE à la REMISE. Le livreur encaisse au terminal de paiement qu'il porte
+                    // (hors de notre système) ; nous enregistrons le mode et le montant. AUCUN escrow espèces ni mouvement
+                    // de tiroir : ce n'est pas de l'argent liquide.
+                    // [LIVRAISON QR 2026-11-01] Le livreur a déclaré ce qu'il a réellement encaissé : cela prime sur le choix du client
+                    // (qui reste intact sur la commande, `door_payment_mode` n'est pas réécrit).
+                    $isCardAtDoor = $isCod && ($declaredDoorMode !== null
+                        ? $declaredDoorMode === 'card'
+                        : (string) $locked->door_payment_mode === 'card');
+
+                    if ($doorSplitTranches !== null) {
+                        // [LIVREUR CAISSE 2026-11-02] Règlement à la porte en 1 à 4 moyens. Même scellement qu'un règlement simple (PAYÉ + numéro
+                        // fiscal ci-dessous, dans CETTE transaction) ; une ligne `order_payments` par tranche (référence « livraison »), écrite
+                        // après le save. `pos_payment_method` = moyen DOMINANT (convention du paiement multi-moyens du comptoir : le Z range la
+                        // commande entière sous ce moyen, la ventilation exacte vit dans `order_payments`).
+                        $locked->payment_status = PaymentStatus::PAID;
+                        $locked->pos_payment_method = \App\Services\Delivery\DoorPaymentSplit::posMethod(
+                            \App\Services\Delivery\DoorPaymentSplit::dominant($doorSplitTranches)
+                        );
+                    } elseif ($isCardAtDoor) {
                         if ($atDelivered) {
                             $locked->payment_status = PaymentStatus::PAID;
+                            if ($locked->pos_payment_method === null
+                                || (int) $locked->pos_payment_method === \App\Enums\PosPaymentMethod::COUNTER_DEFERRED) {
+                                $locked->pos_payment_method = \App\Enums\PosPaymentMethod::CARD;
+                            }
+                            $doorTrancheMeta = [
+                                'branch_id' => (int) $locked->branch_id,
+                                'order_id' => (int) $locked->id,
+                                'driver_id' => Auth::check() ? (int) Auth::id() : null,
+                                'amount' => round((float) $locked->total, 2),
+                                'mode' => \App\Enums\PosPaymentMethod::CARD,
+                                'event' => 'doorstep_card_collection',
+                            ];
+                        }
+                    } elseif ($isCod) {
+                        if ($atDelivered) {
+                            $locked->payment_status = PaymentStatus::PAID;
+                            // [VG-2026-10-21 Z-livraison] Le Z range par `pos_payment_method ?: payment_method` : une livraison
+                            // de la caisse gardait 6 (différé) et tombait en « différé ». À la remise, le vrai mode encaissé.
+                            if ($locked->pos_payment_method === null
+                                || (int) $locked->pos_payment_method === \App\Enums\PosPaymentMethod::COUNTER_DEFERRED) {
+                                $locked->pos_payment_method = \App\Enums\PosPaymentMethod::CASH;
+                            }
 
                             // [P0-LIV-02] Record the cash-collection event
                             // for NF525. The escrow row is the audit-trail
@@ -2161,6 +2341,27 @@ class OrderService
                         // UNPAID. The flip + audit row will fire on the
                         // next call (OFD → DELIVERED), which re-enters
                         // this branch with $wasUnpaidCash still true.
+                    } elseif ((int) $pm === (int) \App\Enums\PaymentGateway::TICKET_RESTAURANT) {
+                        // [VG-2026-10-21 L2] Titre-restaurant remis au livreur à la PORTE (décision propriétaire 2026-10-22) :
+                        // comme les espèces, PAYÉ seulement à la REMISE — jamais au départ (le flip historique scellait la
+                        // vente avec un numéro fiscal et ZÉRO paiement : P0 de docs/LIVRAISON.md §3quinquies). La tranche
+                        // order_payments (mode titre-restaurant, montant total) est écrite dans CETTE transaction.
+                        if ($atDelivered) {
+                            $locked->payment_status = PaymentStatus::PAID;
+                            // [VG-2026-10-21 Z-livraison] Même règle qu'en espèces : rangée en « Titre-restaurant » au Z.
+                            if ($locked->pos_payment_method === null
+                                || (int) $locked->pos_payment_method === \App\Enums\PosPaymentMethod::COUNTER_DEFERRED) {
+                                $locked->pos_payment_method = \App\Enums\PosPaymentMethod::TICKET_RESTAURANT;
+                            }
+                            $doorTrancheMeta = [
+                                'branch_id' => (int) $locked->branch_id,
+                                'order_id' => (int) $locked->id,
+                                'driver_id' => Auth::check() ? (int) Auth::id() : null,
+                                'amount' => round((float) $locked->total, 2),
+                                'mode' => \App\Enums\PosPaymentMethod::TICKET_RESTAURANT,
+                                'event' => 'doorstep_meal_voucher_collection',
+                            ];
+                        }
                     } else {
                         // Non-COD methods preserve the legacy flip semantics
                         // (flip at OFD-or-DELIVERED, no escrow row).
@@ -2198,6 +2399,76 @@ class OrderService
 
                 $locked->save();
 
+                // [VG-2026-10-21 L2] La vente titre-restaurant scellée à la remise porte SON paiement (même forme que
+                // SplitPaymentService : mode PosPaymentMethod::TICKET_RESTAURANT, montant = total serveur).
+                // [CARTE À LA LIVRAISON 2026-10-24] Idem pour la carte encaissée au terminal du livreur (mode CARD).
+                if (is_array($doorTrancheMeta)) {
+                    $doorTrancheMeta['payment_id'] = (int) \App\Models\OrderPayment::query()->create([
+                        'order_id' => $doorTrancheMeta['order_id'],
+                        'branch_id' => $doorTrancheMeta['branch_id'],
+                        'mode' => $doorTrancheMeta['mode'],
+                        'amount' => $doorTrancheMeta['amount'],
+                        'tendered' => null,
+                        'change_amount' => 0,
+                        'reference' => 'livraison',
+                        'paid_at' => now(),
+                    ])->id;
+                }
+
+                // [LIVREUR CAISSE 2026-11-02] Une ligne `order_payments` par tranche, dans CETTE transaction (atomique avec le PAYÉ et
+                // le numéro fiscal ci-dessus : un rejeu n'arrive jamais ici, le statut est déjà LIVRÉ). Les tranches ESPÈCES alimentent
+                // l'escrow + le mouvement de caisse livreur (montant ESPÈCES seul) ; CARTE / TITRE alimentent une trace d'audit chacune.
+                if ($doorSplitTranches !== null) {
+                    $chosenByCustomer = (int) $locked->payment_method === \App\Enums\PaymentGateway::TICKET_RESTAURANT
+                        ? \App\Services\Delivery\DoorPaymentSplit::MEAL_VOUCHER
+                        : ((string) $locked->door_payment_mode === 'card' ? \App\Services\Delivery\DoorPaymentSplit::CARD : \App\Services\Delivery\DoorPaymentSplit::CASH);
+                    // Le choix du client n'est jamais réécrit ; si le livreur a encaissé autrement, c'est accepté mais TRACÉ.
+                    $declaredDiffers = ! (count($doorSplitTranches) === 1 && $doorSplitTranches[0]['mode'] === $chosenByCustomer);
+                    $splitContext = [
+                        'chosen_mode' => $chosenByCustomer,
+                        'declared_differs' => $declaredDiffers,
+                        'split' => count($doorSplitTranches) > 1,
+                        'tranches' => array_map(static fn (array $t) => ['mode' => $t['mode'], 'amount' => round($t['cents'] / 100, 2)], $doorSplitTranches),
+                    ];
+                    foreach ($doorSplitTranches as $idx => $tranche) {
+                        $paymentId = (int) \App\Models\OrderPayment::query()->create([
+                            'order_id' => (int) $locked->id,
+                            'branch_id' => (int) $locked->branch_id,
+                            'mode' => \App\Services\Delivery\DoorPaymentSplit::posMethod($tranche['mode']),
+                            'amount' => round($tranche['cents'] / 100, 2),
+                            'tendered' => null,
+                            'change_amount' => 0,
+                            'reference' => 'livraison',
+                            'paid_at' => now(),
+                        ])->id;
+                        if ($tranche['mode'] === \App\Services\Delivery\DoorPaymentSplit::CASH) {
+                            $cashEscrowWritten = true;
+                            $cashEscrowMeta = [
+                                'branch_id' => (int) $locked->branch_id,
+                                'order_id' => (int) $locked->id,
+                                'driver_id' => Auth::check() ? (int) Auth::id() : null,
+                                'amount' => round($tranche['cents'] / 100, 2),
+                                'serial' => $locked->order_serial_no,
+                                'payment_id' => $paymentId,
+                                'extra' => $splitContext + ['order_total' => round((float) $locked->total, 2)],
+                            ];
+                        } else {
+                            $doorSplitMetas[] = [
+                                'branch_id' => (int) $locked->branch_id,
+                                'order_id' => (int) $locked->id,
+                                'driver_id' => Auth::check() ? (int) Auth::id() : null,
+                                'payment_id' => $paymentId,
+                                'tranche_index' => (int) $idx,
+                                'amount' => round($tranche['cents'] / 100, 2),
+                                'mode' => \App\Services\Delivery\DoorPaymentSplit::posMethod($tranche['mode']),
+                                'event' => $tranche['mode'] === \App\Services\Delivery\DoorPaymentSplit::CARD
+                                    ? 'doorstep_card_collection' : 'doorstep_meal_voucher_collection',
+                                'extra' => $splitContext + ['order_total' => round((float) $locked->total, 2)],
+                            ];
+                        }
+                    }
+                }
+
                 OrderStateMachine::recordTransition(
                     Order::class,
                     (int) $locked->id,
@@ -2209,6 +2480,78 @@ class OrderService
 
                 $order = $locked;
             });
+
+            // [LIVREUR CAISSE 2026-11-02] Traces d'audit des tranches CARTE / TITRE d'un règlement en plusieurs moyens (après COMMIT).
+            foreach ($doorSplitMetas as $meta) {
+                try {
+                    app(AuditLogService::class)->write([
+                        'branch_id' => $meta['branch_id'],
+                        'user_id' => $meta['driver_id'],
+                        'action' => 'order.payment_tranche_persisted',
+                        'resource' => 'order_payment',
+                        'resource_id' => $meta['payment_id'],
+                        'payload' => [
+                            'order_id' => $meta['order_id'],
+                            'tranche_index' => $meta['tranche_index'],
+                            'mode' => $meta['mode'],
+                            'amount' => $meta['amount'],
+                            'tendered' => null,
+                            'change' => 0.0,
+                            'event' => $meta['event'],
+                        ] + $meta['extra'],
+                    ]);
+                } catch (\Throwable $auditError) {
+                    Log::warning('[DeliveryBoy] split tranche (' . ($meta['event'] ?? '?') . ') audit_log write failed: '.$auditError->getMessage(), [
+                        'order_id' => $meta['order_id'],
+                    ]);
+                }
+            }
+            if ($doorSplitMetas !== []) {
+                // La caisse du livreur doit exister dès la première remise encaissée, même sans espèces (récap par moyen cohérent).
+                try {
+                    if (! empty($doorSplitMetas[0]['driver_id'])) {
+                        $this->ensureOpenDeliveryShift((int) $doorSplitMetas[0]['branch_id'], (int) $doorSplitMetas[0]['driver_id'], false);
+                    }
+                } catch (\Throwable $shiftError) {
+                    Log::error('[DeliveryBoy] auto-open shift failed (non-blocking): '.$shiftError->getMessage(), ['order_id' => $doorSplitMetas[0]['order_id']]);
+                }
+            }
+
+            if (is_array($doorTrancheMeta)) {
+                // [VG-2026-10-21 L2] Trace d'audit chaînée de la tranche, après le COMMIT (même discipline que l'escrow
+                // espèces ci-dessous) ; une erreur d'audit ne défait jamais un encaissement réel.
+                try {
+                    app(AuditLogService::class)->write([
+                        'branch_id' => $doorTrancheMeta['branch_id'],
+                        'user_id' => $doorTrancheMeta['driver_id'],
+                        'action' => 'order.payment_tranche_persisted',
+                        'resource' => 'order_payment',
+                        'resource_id' => $doorTrancheMeta['payment_id'],
+                        'payload' => [
+                            'order_id' => $doorTrancheMeta['order_id'],
+                            'tranche_index' => 0,
+                            'mode' => $doorTrancheMeta['mode'],
+                            'amount' => $doorTrancheMeta['amount'],
+                            'tendered' => null,
+                            'change' => 0.0,
+                            'event' => $doorTrancheMeta['event'],
+                        ],
+                    ]);
+                } catch (\Throwable $auditError) {
+                    Log::warning('[DeliveryBoy] door tranche (' . ($doorTrancheMeta['event'] ?? '?') . ') audit_log write failed: '.$auditError->getMessage(), [
+                        'order_id' => $doorTrancheMeta['order_id'],
+                    ]);
+                }
+                // [LIVREUR CAISSE 2026-11-02] Carte / titre-restaurant encaissés à la porte : le service du livreur s'ouvre aussi (fond 0 €),
+                // sinon « Ma caisse » ne verrait pas ces encaissements tant qu'aucune espèce n'a été prise. Best-effort : n'empêche jamais la remise.
+                try {
+                    if (! empty($doorTrancheMeta['driver_id'])) {
+                        $this->ensureOpenDeliveryShift((int) $doorTrancheMeta['branch_id'], (int) $doorTrancheMeta['driver_id'], false);
+                    }
+                } catch (\Throwable $shiftError) {
+                    Log::error('[DeliveryBoy] auto-open shift failed (non-blocking): '.$shiftError->getMessage(), ['order_id' => $doorTrancheMeta['order_id']]);
+                }
+            }
 
             if ($cashEscrowWritten && is_array($cashEscrowMeta)) {
                 // [P0-LIV-02] Append AFTER the transaction commits so the chain
@@ -2231,7 +2574,7 @@ class OrderService
                             'payment_method' => (int) \App\Enums\PaymentGateway::CASH_ON_DELIVERY,
                             'collected_at' => now()->toIso8601String(),
                             'event' => 'doorstep_cash_collection',
-                        ],
+                        ] + ($cashEscrowMeta['extra'] ?? []),
                     ]);
                 } catch (\Throwable $auditError) {
                     // Never let an audit write error cascade into a billing
@@ -2254,9 +2597,13 @@ class OrderService
                 try {
                     if (! empty($cashEscrowMeta['driver_id'])) {
                         $svc = app(\App\Services\Delivery\DeliveryBoyCashSessionService::class);
-                        $openSession = $svc->findOpenSessionForDeliveryBoy(
+                        // [E2E 2026-10-30 · propriétaire : « que ce soit tracé à 1000 % »] Sans service ouvert, l'espèces encaissée à la
+                        // porte n'avait AUCUNE ligne de caisse livreur : le service du livreur s'ouvre à sa première remise (fond 0 €).
+                        // [LIVREUR CAISSE 2026-11-02] Logique déplacée dans ensureOpenDeliveryShift() (partagée avec carte / titre-restaurant).
+                        $openSession = $this->ensureOpenDeliveryShift(
                             (int) $cashEscrowMeta['branch_id'],
                             (int) $cashEscrowMeta['driver_id'],
+                            true
                         );
                         if ($openSession) {
                             $svc->recordMovement(
@@ -2506,6 +2853,31 @@ class OrderService
                     // concurrent move to CANCELED/REJECTED/RETURNED between route-binding
                     // and the lock could otherwise persist a terminal→active edge.
                     $this->assertNotResurrectingTerminalOrder((int) $locked->status, $toStatus);
+
+                    // [VG-2026-10-21 M4-106] « Livrée » depuis la caisse ne scelle rien : sur une LIVRAISON non encaissée
+                    // (paiement à la porte), elle la sortait définitivement du Z (DELIVERED + PENDING_COUNTER, sans numéro
+                    // fiscal, hors « À encaisser », inscellable ensuite). Une telle livraison se remet par l'écran livreur
+                    // (deliveryBoyOrderChangeStatus encaisse et scelle). Toutes les routes jumelles passent ici.
+                    if ($toStatus === OrderStatus::DELIVERED
+                        && (int) $locked->order_type === \App\Enums\OrderType::DELIVERY
+                        && in_array((int) $locked->payment_status, [PaymentStatus::UNPAID, PaymentStatus::PENDING_COUNTER], true)
+                        && $locked->fiscal_sequence_no === null
+                        && strtolower((string) $locked->source_surface) !== 'uber_eats') {
+                        throw new Exception("Livraison non encaissée : la remise passe par l'écran du livreur, qui encaisse à la porte et enregistre la vente. La marquer « Livrée » ici la sortirait de la caisse sans paiement.", 422);
+                    }
+
+                    // [VG-2026-10-21 M6-102] Jumeau comptoir : une commande à encaisser au comptoir (à emporter, borne, site au
+                    // retrait, sur place) n'est REMISE qu'une fois encaissée — sinon la marchandise sort avant paiement, sans
+                    // numéro fiscal. Payée (borne/site carte, caisse) : remise libre. Service à table (table renseignée) :
+                    // servi puis payé, exempté. Uber : prépayé hors chaîne, exempté.
+                    if ($toStatus === OrderStatus::DELIVERED
+                        && (int) $locked->order_type !== \App\Enums\OrderType::DELIVERY
+                        && in_array((int) $locked->payment_status, [PaymentStatus::UNPAID, PaymentStatus::PENDING_COUNTER], true)
+                        && $locked->fiscal_sequence_no === null
+                        && strtolower((string) $locked->source_surface) !== 'uber_eats'
+                        && ! ((int) $locked->order_type === \App\Enums\OrderType::DINING_TABLE && (int) ($locked->dining_table_id ?? 0) > 0)) {
+                        throw new Exception("Commande non encaissée : encaissez-la d'abord (file « À encaisser »), puis remettez-la au client. La remettre avant paiement ferait sortir la marchandise sans vente enregistrée.", 422);
+                    }
 
                     // [P3] RETURNED — même barrière motif / contrepartie que CANCELED & REJECTED.
                     if (in_array($toStatus, [OrderStatus::REJECTED, OrderStatus::CANCELED, OrderStatus::RETURNED], true)) {
@@ -3092,6 +3464,19 @@ class OrderService
                 }
             }
 
+            // [POINTS À LA VALIDATION 2026-11-06 · relecture adverse tour 2 · P3] « Marquer payé » sur une commande déjà
+            // VALIDÉE : les points d'une commande impayée tombent au règlement (miroir de confirmCounterPayment). Sans
+            // cet appel, ils attendaient la transition suivante et le site affichait « Aucun point » entre-temps.
+            // Idempotent (sentinelle orders.loyalty_points_awarded) ; ne bloque jamais l'encaissement.
+            if ($targetPaymentStatus === \App\Enums\PaymentStatus::PAID
+                && in_array((int) $order->status, \App\Listeners\AwardLoyaltyPointsOnDelivery::STATUTS_VALIDES, true)) {
+                try {
+                    app(\App\Listeners\AwardLoyaltyPointsOnDelivery::class)->award($order);
+                } catch (\Throwable $e) {
+                    Log::warning('[Loyalty] crédit au « marquer payé » échoué', ['order_id' => (int) $order->id, 'error' => $e->getMessage()]);
+                }
+            }
+
             // [F-VERIFY-09-01 P13] Persist Idempotency-Key replay marker (TTL 24h).
             if ($cacheKey !== null) {
                 Cache::put($cacheKey, $order->id, now()->addHours(24));
@@ -3207,6 +3592,13 @@ class OrderService
         try {
             $order->delivery_boy_id = (int) $targetId;
             $order->save();
+
+            // [LIVRAISON 2026-10-20 · relecture adverse P1] Le livreur est porté par DEUX endroits (la commande,
+            // que vérifie le changement de statut, et son arrêt de tournée, que lit l'écran livreur). Les garder
+            // synchrones : sinon le livreur B choisi ici ne voit rien et le livreur A voit l'arrêt mais reçoit 403.
+            \App\Models\DeliveryStop::query()->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                ->where('order_id', $order->id)->whereNull('left_at')
+                ->update(['delivery_boy_id' => (int) $targetId]);
 
             // [P0-LIV-01 trace] Audit-log the assignment so the same chain
             // also records WHO assigned WHICH driver to WHICH order. Mirrors
@@ -3477,10 +3869,41 @@ class OrderService
         return in_array($requestedDirection, ['asc', 'desc'], true) ? $requestedDirection : 'desc';
     }
 
+    /**
+     * [ONB-07 2026-08-28] Les colonnes NUMÉRIQUES doivent être comparées à l'identique,
+     * jamais avec `LIKE`.
+     *
+     * `payment_status` est un `tinyInteger`. Filtrer « Payé » posait
+     * `payment_status LIKE '%5%'` — et `PENDING_COUNTER` vaut **15**, donc
+     * `15 LIKE '%5%'` est VRAI. Mesuré sur la base réelle : le filtre « Payé »
+     * ramenait **3 017** commandes au lieu de 2 774, dont **243 en attente
+     * d'encaissement**.
+     *
+     * Le commerçant qui filtre « Payé » pour savoir ce qu'il a réellement encaissé
+     * obtenait une liste et un compte gonflés de commandes non encaissées — et le
+     * tableur comme le PDF héritaient du même jeu de lignes. La tuile « Revenus »,
+     * elle, les excluait : deux chiffres contradictoires issus du même filtre.
+     *
+     * Le même piège vaut pour toute colonne d'énumération : `order_type`,
+     * `payment_method`, `status`, `source`. On les compare à l'identique.
+     */
+    private const COLONNES_A_COMPARER_EXACTEMENT = [
+        'payment_status',
+        'status',
+        'order_type',
+        'source',
+    ];
+
     private function applyOrderFilter($query, string $key, $value): void
     {
         if ($key === 'branch_id') {
             $query->where('branch_id', '=', (int) $value);
+
+            return;
+        }
+
+        if (in_array($key, self::COLONNES_A_COMPARER_EXACTEMENT, true) && is_numeric($value)) {
+            $query->where($key, '=', (int) $value);
 
             return;
         }
@@ -3644,6 +4067,13 @@ class OrderService
                 422
             );
         }
+        // [DÉCISION PROPRIÉTAIRE 2026-11-06] Points d'une commande à distance pas encore remise : non dépensables.
+        if (\App\Services\LoyaltyService::pointsDepensables($clientId, $soldeReel) < $pointsDebites) {
+            throw new \InvalidArgumentException(
+                'Une partie des points du client attend la remise d\'une commande à distance — ils ne sont pas encore utilisables.',
+                422
+            );
+        }
 
         $soldeApres = $soldeReel - $pointsDebites;
 
@@ -3744,34 +4174,41 @@ class OrderService
     {
         $maxAttempts = 5;
 
-        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
-            $businessDate = $this->resolveBusinessDate($this->order->order_datetime ?? null);
-            $this->order->business_date = $businessDate;
-            $this->order->queue_number = $this->allocateQueueNumber(
-                (int) $this->order->branch_id,
-                $businessDate,
-                $context
-            );
-            $applyFields();
-            $this->order->business_date = $businessDate;
+        // [VG-2026-10-21 M6-002] la réservation de la ligne compteur ne vaut que pour CETTE création.
+        try {
+            for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+                $businessDate = $this->resolveBusinessDate($this->order->order_datetime ?? null);
+                $this->order->business_date = $businessDate;
+                // [VG-2026-10-21 M6-002] si la vente tient déjà la ligne compteur (reprise, ou réservée en tête de
+                // transaction), pas de Cache::lock : attendre le mutex tenu par une vente qui attend NOTRE ligne = blocage croisé.
+                $holdsQueueDay = $attempt > 1
+                    || $this->queueDayHeld === (int) $this->order->branch_id.'|'.$businessDate;
+                $this->order->queue_number = $holdsQueueDay
+                    ? app(QueueNumberAllocator::class)->allocate((int) $this->order->branch_id, $businessDate)
+                    : $this->allocateQueueNumber((int) $this->order->branch_id, $businessDate, $context);
+                $applyFields();
+                $this->order->business_date = $businessDate;
 
-            try {
-                $this->order->save();
+                try {
+                    $this->order->save();
 
-                return;
-            } catch (QueryException $exception) {
-                if (! $this->isQueueNumberUniqueViolation($exception) || $attempt >= $maxAttempts) {
-                    throw $exception;
+                    return;
+                } catch (QueryException $exception) {
+                    if (! $this->isQueueNumberUniqueViolation($exception) || $attempt >= $maxAttempts) {
+                        throw $exception;
+                    }
+
+                    Log::warning(sprintf(
+                        '[Queue] Duplicate queue_number %s for branch %s on business_date %s during %s save; retrying allocation once.',
+                        (string) $this->order->queue_number,
+                        (string) $this->order->branch_id,
+                        (string) $this->order->business_date,
+                        $context
+                    ));
                 }
-
-                Log::warning(sprintf(
-                    '[Queue] Duplicate queue_number %s for branch %s on business_date %s during %s save; retrying allocation once.',
-                    (string) $this->order->queue_number,
-                    (string) $this->order->branch_id,
-                    (string) $this->order->business_date,
-                    $context
-                ));
             }
+        } finally {
+            $this->queueDayHeld = null;
         }
     }
 
@@ -3785,23 +4222,8 @@ class OrderService
             $lock->block(15);
             $acquired = true;
 
-            $queueNumbers = DB::table('orders')
-                ->where('branch_id', $branchId)
-                ->where('business_date', $businessDate)
-                ->whereNotNull('queue_number')
-                ->where('queue_number', 'like', 'A%')
-                ->pluck('queue_number');
-
-            $maxQueueNum = (int) $queueNumbers
-                ->filter(static fn ($queueNumber): bool => preg_match('/^A\d+$/', (string) $queueNumber) === 1)
-                ->map(static fn ($queueNumber): int => (int) substr((string) $queueNumber, 1))
-                ->max();
-
-            // [owner 2026-07-07] Le compteur quotidien démarre à kiosk.queue_start_number
-            // (32 par défaut) : 1er ordre du jour = A0032, puis suit le max existant.
-            $startNumber = max(1, (int) config('kiosk.queue_start_number', 1));
-
-            return 'A'.str_pad(max($maxQueueNum + 1, $startNumber), 4, '0', STR_PAD_LEFT);
+            // [VG-2026-10-21 M6-002] lecture COURANTE d'un compteur verrouillé jusqu'au COMMIT (plus l'instantané périmé des commandes)
+            return app(QueueNumberAllocator::class)->allocate($branchId, $businessDate);
         } catch (LockTimeoutException $exception) {
             Log::warning(sprintf(
                 '[Queue] Lock timeout for branch %s on business_date %s during %s order creation; queue number fallback disabled by D-M13.',

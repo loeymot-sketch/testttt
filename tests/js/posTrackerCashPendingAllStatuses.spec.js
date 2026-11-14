@@ -141,4 +141,31 @@ describe('Tracker — cash-pending appartient à « À encaisser » quel que soi
         expect(buckets.prepared.map((x) => x.id)).toContain(202);
         expect(buckets.accept.map((x) => x.id)).not.toContain(202);
     });
+
+    // [Relecture adverse 2026-10-23, suite de C1-003] Une « Commande livraison » (encaissée À LA PORTE par le livreur) porte
+    // les mêmes marqueurs différés qu'un comptoir (PENDING_COUNTER + COUNTER_DEFERRED). Le serveur l'exclut déjà
+    // (`is_cash_pending: false`) ; le repli local sur les marqueurs bruts la recomptait et affichait un bouton « Encaisser »
+    // que le comptoir refuse (422). Le tiroir était corrigé, pas ce tableau.
+    it.each([
+        ['ACCEPT', orderStatusEnum.ACCEPT],
+        ['PREPARING', orderStatusEnum.PREPARING],
+        ['PREPARED', orderStatusEnum.PREPARED],
+    ])('une livraison payée à la porte en %s n\'est PAS « à encaisser », même quand le serveur ne dit rien', (_label, status) => {
+        const wrapper = buildHarness();
+        const porte = { ...cashPending(505, status), source_surface: 'delivery', is_cash_pending: false };
+        const sansChamp = { ...cashPending(506, status), source_surface: 'delivery' };
+        delete sansChamp.is_cash_pending;
+        wrapper.vm.orders = [porte, sansChamp];
+        expect(wrapper.vm.isCashPending(porte)).toBe(false);
+        expect(wrapper.vm.isCashPending(sansChamp)).toBe(false);
+        expect(wrapper.vm.ordersByStatus.accept.map((o) => o.id)).toEqual(expect.not.arrayContaining([505, 506]));
+    });
+
+    it('une commande téléphone différée au comptoir reste « à encaisser » (seule l\'origine delivery est exclue)', () => {
+        const wrapper = buildHarness();
+        const tel = { ...cashPending(507, orderStatusEnum.ACCEPT), source_surface: 'phone' };
+        wrapper.vm.orders = [tel];
+        expect(wrapper.vm.isCashPending(tel)).toBe(true);
+        expect(wrapper.vm.ordersByStatus.accept.map((o) => o.id)).toContain(507);
+    });
 });

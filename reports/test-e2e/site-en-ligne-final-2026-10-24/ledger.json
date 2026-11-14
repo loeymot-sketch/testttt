@@ -1,0 +1,493 @@
+{
+ "checks": [
+  {
+   "id": "L-0 jetons servis",
+   "ok": true,
+   "detail": {
+    "menu": "20261024fix2",
+    "api": "20261024via1",
+    "wiz": "20261024via1",
+    "funnel": "20261024pay2"
+   }
+  },
+  {
+   "id": "L-0 livraison active côté serveur + barème",
+   "ok": true,
+   "detail": {
+    "enabled": true,
+    "home_fee": 3.9,
+    "tiers": [
+     {
+      "max_km": 5,
+      "fee": 4.9
+     },
+     {
+      "max_km": 8,
+      "fee": 5.9
+     },
+     {
+      "max_km": 10,
+      "fee": 6.9
+     }
+    ]
+   }
+  },
+  {
+   "id": "L-1D texte de l'annonce",
+   "ok": true,
+   "detail": "NOUVEAU 🛵 La livraison est lancée ! À Hénin-Beaumont et jusqu'à 10 km, dès 3,90 €. Commander ×"
+  },
+  {
+   "id": "L-1D annonce tout en haut, au-dessus de la nav",
+   "ok": true,
+   "detail": {
+    "annonceTop": 0,
+    "hauteur": 52,
+    "navTop": 52
+   }
+  },
+  {
+   "id": "L-1D croix ≥ 44 px",
+   "ok": true,
+   "detail": {
+    "w": 44,
+    "h": 44
+   }
+  },
+  {
+   "id": "L-1D « Commander » mène à la carte",
+   "ok": true,
+   "detail": "https://www.lecayenne.fr/#menu"
+  },
+  {
+   "id": "L-1D fermée = reste fermée après rechargement",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "id": "L-1D absente sur la page de paiement",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "id": "L-1M texte de l'annonce",
+   "ok": true,
+   "detail": "NOUVEAU🛵 La livraison est lancée ! À Hénin-Beaumont et jusqu'à 10 km, dès 3,90 €.Commander ×"
+  },
+  {
+   "id": "L-1M annonce tout en haut, au-dessus de la nav",
+   "ok": true,
+   "detail": {
+    "annonceTop": 0,
+    "hauteur": 98,
+    "navTop": 98
+   }
+  },
+  {
+   "id": "L-1M hauteur ≤ 100 px (15 % d'écran)",
+   "ok": true,
+   "detail": 98
+  },
+  {
+   "id": "L-1M croix ≥ 44 px",
+   "ok": true,
+   "detail": {
+    "w": 44,
+    "h": 44
+   }
+  },
+  {
+   "id": "L-1M « Commander » mène à la carte",
+   "ok": true,
+   "detail": "https://www.lecayenne.fr/#menu"
+  },
+  {
+   "id": "L-1M fermée = reste fermée après rechargement",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "id": "L-1M absente sur la page de paiement",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "id": "L-2 accueil : « À emporter ou en livraison »",
+   "ok": true,
+   "detail": "Ouvert 7j/7 · 18h – minuit 437 rue Élie Gruyelle, Hénin-Beaumont À emporter ou en livraison"
+  },
+  {
+   "id": "L-2 pied de page : « retrait sur place ou livraison »",
+   "ok": true,
+   "detail": "Commande en ligne, retrait sur place ou livraison."
+  },
+  {
+   "id": "L-2 à emporter : règlements = Payer sur place + carte en ligne",
+   "ok": true,
+   "detail": [
+    "Payer sur place",
+    "Carte bancaire (en ligne)"
+   ]
+  },
+  {
+   "id": "L-2 à emporter : aucun élément de livraison",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "id": "L-3D devis Hénin-Beaumont autorisé à 3,90 €",
+   "ok": true,
+   "detail": {
+    "allowed": true,
+    "fee": 3.9,
+    "travel": 5
+   }
+  },
+  {
+   "id": "L-3D frais affichés",
+   "ok": true,
+   "detail": "nez chercher 🛵 Livraison Dès 3,90 € · selon votre commu"
+  },
+  {
+   "id": "L-3D préparation « 15 à 20 min » (= serveur) puis trajet",
+   "ok": true,
+   "detail": "⏱ Préparation : 15 à 20 min, puis livraison selon le trajet (environ 5 min)."
+  },
+  {
+   "id": "L-3D aucun « 30 à 45 » sur la page",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "id": "L-3D heure de livraison : « Au plus tôt » + créneaux",
+   "ok": true,
+   "detail": {
+    "slots": 9
+   }
+  },
+  {
+   "id": "L-3D trois règlements",
+   "ok": true,
+   "detail": [
+    "Carte bancaire (en ligne)",
+    "Carte à la livraison",
+    "Espèces à la livraison"
+   ]
+  },
+  {
+   "id": "L-3D « Carte à la livraison » : bouton « Confirmer ma commande » actif",
+   "ok": true,
+   "detail": "Confirmer ma commande 5,80 €"
+  },
+  {
+   "id": "L-3D « Espèces à la livraison » : bouton actif",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "id": "L-3D « Carte en ligne » : libellé « Payer par carte »",
+   "ok": true,
+   "detail": "Payer par carte 5,80 €"
+  },
+  {
+   "id": "L-3D Lille : refusé + Uber Eats + bouton bloqué",
+   "ok": true,
+   "detail": {
+    "allowed": false
+   }
+  },
+  {
+   "id": "L-3D Oignies : frais = barème du serveur",
+   "ok": true,
+   "detail": {
+    "allowed": true,
+    "km": 5.82,
+    "fee": 5.9,
+    "attendu": 5.9
+   }
+  },
+  {
+   "id": "L-3M devis Hénin-Beaumont autorisé à 3,90 €",
+   "ok": true,
+   "detail": {
+    "allowed": true,
+    "fee": 3.9,
+    "travel": 5
+   }
+  },
+  {
+   "id": "L-3M frais affichés",
+   "ok": true,
+   "detail": "nez chercher 🛵 Livraison Dès 3,90 € · selon votre commu"
+  },
+  {
+   "id": "L-3M préparation « 15 à 20 min » (= serveur) puis trajet",
+   "ok": true,
+   "detail": "⏱ Préparation : 15 à 20 min, puis livraison selon le trajet (environ 5 min)."
+  },
+  {
+   "id": "L-3M aucun « 30 à 45 » sur la page",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "id": "L-3M heure de livraison : « Au plus tôt » + créneaux",
+   "ok": true,
+   "detail": {
+    "slots": 9
+   }
+  },
+  {
+   "id": "L-3M trois règlements",
+   "ok": true,
+   "detail": [
+    "Carte bancaire (en ligne)",
+    "Carte à la livraison",
+    "Espèces à la livraison"
+   ]
+  },
+  {
+   "id": "L-3M « Carte à la livraison » : bouton « Confirmer ma commande » actif",
+   "ok": true,
+   "detail": "Confirmer ma commande 5,80 €"
+  },
+  {
+   "id": "L-3M « Espèces à la livraison » : bouton actif",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "id": "L-3M « Carte en ligne » : libellé « Payer par carte »",
+   "ok": true,
+   "detail": "Payer par carte 5,80 €"
+  },
+  {
+   "id": "L-3M aucun débordement horizontal",
+   "ok": true,
+   "detail": {
+    "sw": 390,
+    "vw": 390
+   }
+  },
+  {
+   "id": "L-3M zones tactiles des règlements ≥ 44 px",
+   "ok": true,
+   "detail": []
+  },
+  {
+   "id": "L-3M Lille : refusé + Uber Eats + bouton bloqué",
+   "ok": true,
+   "detail": {
+    "allowed": false
+   }
+  },
+  {
+   "id": "L-3M Oignies : frais = barème du serveur",
+   "ok": true,
+   "detail": {
+    "allowed": true,
+    "km": 5.82,
+    "fee": 5.9,
+    "attendu": 5.9
+   }
+  },
+  {
+   "id": "L-4 Cayenne : « Choisis 1 viande », Poulet mariné pré-cochée (Inclus), suite possible",
+   "ok": true,
+   "detail": {
+    "extrait": "· viande en plus +2,50 € chacune 1 sélectionné · 1 minimum · 4 maximum Viande Hachée Poulet mariné Inclus Mixte (hachée + poulet) Continuer 7,40 € APERÇU LIVE CAYENNE Pai"
+   }
+  },
+  {
+   "id": "L-4 Cayenne : 2ᵉ viande = +2,50 € (7,40 → 9,90)",
+   "ok": true,
+   "detail": {
+    "d": 250
+   }
+  },
+  {
+   "id": "L-4 Sandwich Classique : « Choisis 1 viande », Poulet mariné pré-cochée (Inclus), suite possible",
+   "ok": true,
+   "detail": {
+    "extrait": "de incluse · viande en plus +2,50 € chacune 1 sélectionné · 1 minimum · 4 maximum Viande Hachée Poulet mariné Inclus Mixte (hachée + poulet) Continuer 7,40 € APERÇU LIVE "
+   }
+  },
+  {
+   "id": "L-4 Sandwich Classique : 2ᵉ viande = +2,50 € (7,40 → 9,90)",
+   "ok": true,
+   "detail": {
+    "d": 250
+   }
+  },
+  {
+   "id": "L-4 Galette Classique : « Choisis 1 viande », Poulet mariné pré-cochée (Inclus), suite possible",
+   "ok": true,
+   "detail": {
+    "extrait": "e incluse · viande en plus +2,50 € chacune 1 sélectionné · 1 minimum · 4 maximum Mexicanos Cordon Bleu Viande Hachée Nuggets Tenders Fricadelle Poulet mariné Inclus Mixte"
+   }
+  },
+  {
+   "id": "L-4 Galette Classique : 2ᵉ viande = +2,50 € (7,40 → 9,90)",
+   "ok": true,
+   "detail": {
+    "d": 250
+   }
+  },
+  {
+   "id": "L-4 Galette Cayenne : « Choisis 1 viande », Poulet mariné pré-cochée (Inclus), suite possible",
+   "ok": true,
+   "detail": {
+    "extrait": "incluse · viande en plus +2,50 € chacune 1 sélectionné · 1 minimum · 4 maximum Mexicanos Cordon Bleu Viande Hachée Nuggets Tenders Fricadelle Poulet mariné Inclus Mixte ("
+   }
+  },
+  {
+   "id": "L-4 Galette Cayenne : 2ᵉ viande = +2,50 € (7,40 → 9,90)",
+   "ok": true,
+   "detail": {
+    "d": 250
+   }
+  },
+  {
+   "id": "L-4b Cheese Burger : aucune étape viande",
+   "ok": true,
+   "detail": [
+    "SAUCE"
+   ]
+  },
+  {
+   "id": "L-4b Chicken Burger : aucune étape viande",
+   "ok": true,
+   "detail": [
+    "SAUCE"
+   ]
+  },
+  {
+   "id": "L-4b Double Cheese : aucune étape viande",
+   "ok": true,
+   "detail": [
+    "SAUCE"
+   ]
+  },
+  {
+   "id": "L-4b Fish Burger : aucune étape viande",
+   "ok": true,
+   "detail": [
+    "SAUCE"
+   ]
+  },
+  {
+   "id": "L-4b Big Burger : aucune étape viande",
+   "ok": true,
+   "detail": [
+    "SAUCE"
+   ]
+  },
+  {
+   "id": "L-4b Grill Burger : aucune étape viande",
+   "ok": true,
+   "detail": [
+    "SAUCE"
+   ]
+  },
+  {
+   "id": "L-4b Suprême : aucune étape viande",
+   "ok": true,
+   "detail": [
+    "PAIN OU GALETTE ?",
+    "SAUCE"
+   ]
+  },
+  {
+   "id": "L-5 40 produits : lignes valides (min/max, ids connus)",
+   "ok": true,
+   "detail": []
+  },
+  {
+   "id": "L-6 page livraison : 10 km, dès 3,90 €, Uber Eats en alternative",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "id": "L-6 sitemap contient la page livraison",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "id": "L-6 pages 200 et sans « pas de livraison »",
+   "ok": true,
+   "detail": []
+  },
+  {
+   "id": "L-7 aucune écriture (hors devis) tentée ni passée",
+   "ok": true,
+   "detail": {
+    "bloquees": [],
+    "devisPostes": 6
+   }
+  },
+  {
+   "id": "L-7 aucune erreur de page",
+   "ok": true,
+   "detail": []
+  },
+  {
+   "id": "L-7 aucune erreur console",
+   "ok": true,
+   "detail": []
+  }
+ ],
+ "blockedWrites": [],
+ "allowedWrites": [
+  "POST /api/frontend/delivery/quote",
+  "POST /api/frontend/delivery/quote",
+  "POST /api/frontend/delivery/quote",
+  "POST /api/frontend/delivery/quote",
+  "POST /api/frontend/delivery/quote",
+  "POST /api/frontend/delivery/quote"
+ ],
+ "consoleErrors": [],
+ "pageErrors": [],
+ "observations": [
+  {
+   "produit": "Cayenne",
+   "viandesProposees": [
+    "Viande Hachée",
+    "Poulet mariné",
+    "Mixte"
+   ]
+  },
+  {
+   "produit": "Sandwich Classique",
+   "viandesProposees": [
+    "Viande Hachée",
+    "Poulet mariné",
+    "Mixte"
+   ]
+  },
+  {
+   "produit": "Galette Classique",
+   "viandesProposees": [
+    "Mexicanos",
+    "Viande Hachée",
+    "Nuggets",
+    "Tenders",
+    "Poulet mariné",
+    "Mixte"
+   ]
+  },
+  {
+   "produit": "Galette Cayenne",
+   "viandesProposees": [
+    "Mexicanos",
+    "Viande Hachée",
+    "Nuggets",
+    "Tenders",
+    "Poulet mariné",
+    "Mixte"
+   ]
+  },
+  {
+   "cgv_dit_pas_de_livraison": false
+  }
+ ]
+}

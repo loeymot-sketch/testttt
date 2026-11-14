@@ -1,0 +1,411 @@
+<!DOCTYPE html><html lang="fr"><head>
+<meta charset="UTF-8">
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     [SEO 2026-08-07] RÉFÉRENCEMENT — bloc unique, tout ce que Google lit.
+
+     Avant ce bloc, cette page portait le titre « Le Cayenne — Site officiel »
+     et RIEN d'autre : aucune description, aucun canonique, aucune donnée
+     structurée, aucune image de partage. Un client qui cherche « tacos
+     hénin-beaumont » n'avait aucune raison de tomber ici, et un lien partagé
+     sur WhatsApp n'affichait qu'une vignette vide.
+
+     Les faits ci-dessous sont VÉRIFIÉS, jamais devinés :
+       · adresse + GPS  → API officielle adresse.data.gouv.fr (BAN), score 0,97,
+                          identifiant 62427_0250_00437 → 50.421556 / 2.954915
+       · horaires 7j/7  → screens.jsx:126-132 (tableau affiché au client)
+       · téléphone/mail → components.jsx:217-219 (pied de page)
+       · paiements      → FAQ_HOME, screens-v3.jsx:110
+       · À EMPORTER, ou LIVRÉ par le restaurant à Hénin-Beaumont et jusqu'à 10 km
+         (tunnel de livraison, frais selon la commune dès 3,90 €) ; Uber Eats reste
+         une alternative → tools/seo/generer.py. La livraison peut être suspendue
+         depuis la caisse : n'affirmer AUCUN horaire ni délai de livraison, ce serait
+         une promesse que la caisse ne peut pas tenir (Google sanctionne l'écart
+         entre la fiche et le réel).
+     ══════════════════════════════════════════════════════════════════════════ -->
+<title>Le Cayenne — Tacos, Burgers &amp; Sandwichs à Hénin-Beaumont</title>
+<meta name="description" content="Tacos, burgers, sandwichs, galettes et bols faits maison à Hénin-Beaumont. Viande fraîche, frites maison. Ouvert 7j/7 de 18h à minuit — commande en ligne.">
+<link rel="canonical" href="https://www.lecayenne.fr/">
+<!-- max-image-preview:large = autorise la GRANDE vignette dans Google et Discover.
+     Sans elle, Google se limite à une miniature — sur une recherche de restaurant,
+     la photo du plat est ce qui déclenche le clic. -->
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<meta name="author" content="Le Cayenne">
+<meta name="theme-color" content="#0A0A0A">
+
+<!-- Partage social : sans og:image, un lien collé dans WhatsApp / Messenger /
+     iMessage / X n'affiche aucune vignette. og-cayenne.jpg est en 1200x630,
+     le seul format que toutes ces plateformes recadrent proprement. -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:site_name" content="Le Cayenne">
+<meta property="og:title" content="Le Cayenne — Tacos, Burgers &amp; Sandwichs à Hénin-Beaumont">
+<meta property="og:description" content="Fait maison chaque soir : tacos, burgers, sandwichs, galettes et bols. Viande fraîche et frites maison, 7j/7 de 18h à minuit, à Hénin-Beaumont.">
+<meta property="og:url" content="https://www.lecayenne.fr/">
+<meta property="og:image" content="https://www.lecayenne.fr/assets/brand/og-cayenne.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Sandwich Le Cayenne — snack à Hénin-Beaumont, ouvert 7j/7 de 18h à minuit">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Le Cayenne — Tacos, Burgers &amp; Sandwichs à Hénin-Beaumont">
+<meta name="twitter:description" content="Fait maison chaque soir : tacos, burgers, sandwichs, galettes et bols. 7j/7 de 18h à minuit, à Hénin-Beaumont.">
+<meta name="twitter:image" content="https://www.lecayenne.fr/assets/brand/og-cayenne.jpg">
+
+<!-- [LOGO 2026-07-30] Favicon = vrai mascot Le Cayenne (piment). -->
+<link rel="icon" type="image/png" sizes="32x32" href="assets/brand/favicon-32.png?v=20260809v5">
+<link rel="icon" type="image/png" sizes="512x512" href="assets/brand/logo-mark.png?v=20260809v5">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/brand/favicon-180.png?v=20260809v5">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- [WEB-WIREUP 2026-06-26] API réelle / caisse FoodKing. Modifier api-base-url pour la prod.
+     [DEPLOY 2026-07-19] Pointé sur le backend VPS staging (HTTPS, cert valide, CORS OK). -->
+<meta name="api-base-url" content="http://127.0.0.1:8766">
+<meta name="api-branch-id" content="1">
+<!-- [DEPLOY 2026-07-19] Clé API front (X-API-Key) alignée sur MIX_API_KEY du VPS. Une clé front est
+     PUBLIQUE par nature (elle voyage dans le JS client) ; celle-ci est un PLACEHOLDER faible côté VPS.
+     ⚠️ GO-LIVE : remplacer par une clé forte des DEUX côtés (VPS .env + ce meta) — registre secrets. -->
+<meta name="api-key" content="b6d68vy2-m7g5-20r0-5275-h103w73453q120">
+<!-- [GOAL-SYNC 2026-07-08] Flag « paiement en ligne par carte » — OFF par défaut ('1' pour activer, test uniquement).
+     Double verrou : le serveur (config/payment.php) reste le verrou final. Lu par api.js → LC.api.config.onlineCardEnabled. -->
+<meta name="feature-online-card" content="1">
+<!-- [ROUE 2026-08-09] Entrée « Roue » dans la navigation. À 0 tant que le jeu n'est pas
+     ouvert au public : sinon chaque visiteur cliquerait sur un lien qui répond « pas encore
+     ouvert », ce qui abîme la promesse avant même de l'avoir faite. Passer à 1 le jour où
+     WHEEL_ENABLED passe à true côté serveur — les deux drapeaux vont ensemble. -->
+<meta name="feature-wheel" content="0">
+<!-- [OWNER 2026-08-01 · PAIEMENT DANS LA PAGE] Identifiant de profil Mollie (valeur PUBLIQUE
+     par conception, comme une clé publishable) : il monte les champs carte DANS cette page,
+     pour que le client ne parte JAMAIS sur un site de paiement tiers.
+     VIDE = aucune saisie carte proposée (règlement au comptoir seul) — jamais de faux
+     formulaire ni de redirection. À renseigner avec le profil du dashboard Mollie
+     (format pfl_xxxxxxxx), en même temps que MOLLIE_API_KEY côté serveur.
+     mollie-testmode : '0' — profil LIVE vérifié pfl_Ymr3Tb6vvp (E.DELICE / Le Cayenne),
+     creditcard activé, clé live posée côté VPS (owner 2026-08-03 : paiement en ligne ON). -->
+<meta name="mollie-profile-id" content="pfl_Ymr3Tb6vvp">
+<meta name="mollie-testmode" content="0">
+<!-- [OWNER 2026-07-29] Boutique Uber Eats officielle — le code après /le-cayenne/ est
+     l'identifiant STABLE de l'enseigne (les autres paramètres = tracking, retirés). -->
+<meta name="uber-eats-url" content="https://www.ubereats.com/fr/store/le-cayenne/C1s3XHn2V2m_D8d6IOVJQg">
+<!-- [PHOTOS-FIX 2026-07-09] Images produits EMBARQUÉES dans le site (assets/menu/) → chemin
+     RELATIF : le site déployé sert ses propres photos, aucune dépendance au backend local.
+     (Avant : http://127.0.0.1:8766 = injoignable en ligne → toutes les photos cassées.) -->
+<meta name="menu-image-base" content="assets/menu/">
+<!-- [PERF 2026-08-08 · V7] POLICES AUTO-HÉBERGÉES sur index.html.
+     fonts.css + assets/fonts/*.woff2 (91 Ko : Anton, Inter et JetBrains variables)
+     existaient depuis le 2026-08-07 et servaient DÉJÀ les 8 pages statiques de
+     référencement — mais index.html, c'est-à-dire l'application, donc la page la
+     plus visitée du site, continuait d'appeler fonts.googleapis.com. Elle payait
+     à chaque première visite 2 origines tierces (DNS + poignée de main TLS) avant
+     le premier pixel, plus ~226 Ko dont 118 Ko de sous-ensemble « latin-ext »
+     tirés par le SEUL caractère « œ ». Depuis le cloisonnement du cache par site
+     (Chrome 86), le « cache Google Fonts partagé entre sites » n'existe plus :
+     personne n'en profitait. Le correctif dormait sur le disque, non branché.
+     Bebas Neue disparaît au passage : c'est un REPLI de var(--font-display),
+     jamais utilisé tant qu'Anton se charge — une police entière téléchargée
+     pour un cas qui ne se produit pas. -->
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/anton.woff2" crossorigin="">
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/inter.woff2" crossorigin="">
+<!-- ══════════════════════════════════════════════════════════════════════════
+     [APPS 2026-08-19] APPLICATIONS App Store / Google Play + installation depuis
+     le navigateur. Ces balises servent aux DEUX : le manifeste rend le site
+     installable, et les identifiants de connexion sociale ci-dessous sont lus par
+     app-native.js exactement comme api-base-url l'est par api.js — un seul endroit
+     à renseigner au déploiement, jamais de valeur en dur dans le code.
+
+     À RENSEIGNER AVANT PUBLICATION (laisser vide masque proprement le bouton
+     correspondant plutôt que d'afficher une option qui échouerait) :
+       · apple-services-id      → Apple Developer ▸ Identifiers ▸ Services IDs
+                                  (nécessaire pour « Se connecter avec Apple » sur
+                                   ANDROID et sur le web ; inutile sur iOS, où la
+                                   capacité signée dans Xcode suffit)
+       · google-ios-client-id   → Google Cloud ▸ Identifiants ▸ ID client OAuth iOS
+       · google-web-client-id   → Google Cloud ▸ Identifiants ▸ ID client OAuth Web
+                                  (exigé par Android ET par la vérification serveur)
+     ══════════════════════════════════════════════════════════════════════════ -->
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Le Cayenne">
+<link rel="apple-touch-icon" href="/assets/brand/app-icons/icon-192.png">
+<meta name="apple-services-id" content="">
+<meta name="google-ios-client-id" content="">
+<meta name="google-web-client-id" content="">
+<link rel="stylesheet" href="fonts.css?v=20260828aud1">
+<!-- [PERF 2026-08-08] React est servi depuis NOTRE origine, plus depuis un CDN tiers. Mesuré : ce CDN injoignable = React absent, 0 bouton, plus aucune commande possible. Preload du hero LCP en WebP, requête sans ?v=. -->
+<link rel="preload" as="image" href="assets/brand/hero-cayenne-night-v2.webp" fetchpriority="high">
+<link rel="stylesheet" href="styles.css?v=20260929audit1">
+<link rel="stylesheet" href="styles-v2.css?v=20260809v5">
+<link rel="stylesheet" href="styles-v3.css?v=20260809v5">
+<link rel="stylesheet" href="styles-v4.css?v=20260809v5">
+<link rel="stylesheet" href="styles-v5.css?v=20260809v5">
+<link rel="stylesheet" href="styles-mobile.css?v=20260928suivi1">
+<!-- [S7 VITRINE 2026-07-29] Feuille de marque, chargée EN DERNIER : elle SURCHARGE
+     v1→v5 + mobile sans jamais les réécrire. Direction « service de nuit » et
+     zones minées respectées : voir l'en-tête de styles-v6-brand.css. -->
+<link rel="stylesheet" href="styles-v6-brand.css?v=20260809v5">
+<!-- [V7 « LA BRAISE » 2026-08-08] Refonte de la vitrine, chargée APRÈS v6.
+     N'ajoute que des classes `lcx-*` : elle ne réécrit aucune règle v1→v6 ni
+     styles-mobile.css, donc aucune régression possible sur le tunnel de
+     commande. Direction, zones minées et engagement « mouvement réduit » :
+     voir l'en-tête de styles-v7-braise.css. -->
+<link rel="stylesheet" href="styles-v7-braise.css?v=20260829aud1">
+<!-- [VITRINE 2026-08-27 · owner] Barre de découverte, pastille d'ouverture, deux voies de
+     commande, pages Avis/Réseaux, réseaux + message sanitaire au pied de page.
+     Chargée EN DERNIER, à dessein : elle écrase trois règles de styles.css (hauteur de la
+     nav, hauteur du tiroir mobile) sans avoir à éditer une feuille vieille de six mois. -->
+<link rel="stylesheet" href="styles-v8-vitrine.css?v=20261023liv1">
+<style>
+  /* [T2-11 HEAL 2026-06-05 WCAG 2.4.1] Skip-link — off-screen until focused. */
+  .lc-skip-link {
+    position: absolute; top: -48px; left: 12px; z-index: 9999;
+    background: var(--ink, #0A0A0A); color: var(--yellow, #FFD93D);
+    padding: 10px 16px; border-radius: 0 0 10px 10px;
+    font-family: var(--font-mono, monospace); font-size: 13px; font-weight: 700;
+    text-decoration: none; transition: top 0.15s ease;
+  }
+  .lc-skip-link:focus { top: 0; outline: 2px solid var(--orange, #FF5A1F); outline-offset: 2px; }
+  /* [T2-13 HEAL 2026-06-05] On mobile the .lcf-cta-bar is position:fixed (styles-mobile.css);
+     give the funnel card extra bottom space so the last payment method / pickup slot clears it. */
+  @media (max-width: 480px) {
+    .lcf-card { padding-bottom: 96px; }
+  }
+</style>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     [SEO 2026-08-07] DONNÉES STRUCTURÉES — la carte d'identité du restaurant
+     dans un format que Google lit sans deviner.
+
+     Pourquoi ça compte ici plus qu'ailleurs : cette page est une application
+     React transpilée par Babel DANS le navigateur. Tant que ce code n'a pas
+     tourné, la page est vide de texte. Ce bloc JSON-LD, lui, est présent dans
+     le HTML brut : c'est la seule chose que Google comprend à coup sûr, même
+     s'il renonce à exécuter le JavaScript.
+
+     Règle de rédaction : AUCUN champ inventé. Pas de note moyenne, pas de
+     nombre d'avis, pas de service qu'on ne rend pas. Une donnée structurée
+     fausse est pire que pas de donnée du tout — c'est un motif de sanction
+     manuelle, et la fiche entière perd sa crédibilité.
+
+     POURQUOI « closes: 23:59 » ET SURTOUT PAS « 00:00 ». C'est contre-intuitif,
+     mais la documentation Google est formelle (developers.google.com/search/docs/
+     appearance/structured-data/local-business) :
+       · « To show a business is closed all day, set both opens and closes
+         properties to 00:00. » → écrire closes:"00:00" ferait comprendre
+         FERMÉ TOUTE LA JOURNÉE, sept jours sur sept. Le pire résultat possible.
+       · « To show a business as open 24 hours a day, set the opens property to
+         00:00 and the closes property to 23:59. » → 23:59 EST la convention
+         Google pour « fin de journée ». C'est donc la valeur juste ici.
+     Et si l'owner tranche un jour pour un service jusqu'à 1h du matin, Google
+     gère le franchissement de minuit dans UNE SEULE spécification :
+     opens "18:00", closes "01:00" — surtout pas deux plages découpées.
+     ══════════════════════════════════════════════════════════════════════════ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Restaurant",
+      "@id": "https://www.lecayenne.fr/#restaurant",
+      "name": "Le Cayenne",
+      "alternateName": "Le Cayenne Hénin-Beaumont",
+      "description": "Snack fait maison à Hénin-Beaumont : tacos, burgers, sandwichs, galettes et bols. Viande fraîche et frites maison, préparés à la commande. Ouvert 7j/7 de 18h à minuit, à emporter.",
+      "slogan": "Du peuple, pour le peuple",
+      "legalName": "E.DELICE SAS",
+      "vatID": "FR19104170501",
+      "taxID": "10417050100019",
+      "isicV4": "5610",
+      "identifier": [
+        { "@type": "PropertyValue", "propertyID": "SIREN", "value": "104170501" },
+        { "@type": "PropertyValue", "propertyID": "SIRET", "value": "10417050100019" },
+        { "@type": "PropertyValue", "propertyID": "APE", "value": "5610C" }
+      ],
+      "url": "https://www.lecayenne.fr/",
+      "telephone": "+33365678291",
+      "email": "contact@lecayenne.fr",
+      "image": [
+        "https://www.lecayenne.fr/assets/brand/og-cayenne.jpg",
+        "https://www.lecayenne.fr/assets/brand/hero-cayenne-night-v2.webp",
+        "https://www.lecayenne.fr/assets/menu/tacos-cayenne.webp",
+        "https://www.lecayenne.fr/assets/menu/double-cheese.webp"
+      ],
+      "logo": "https://www.lecayenne.fr/assets/brand/logo-mark.png",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "437 Rue Élie Gruyelle",
+        "postalCode": "62110",
+        "addressLocality": "Hénin-Beaumont",
+        "addressRegion": "Hauts-de-France",
+        "addressCountry": "FR"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 50.421556,
+        "longitude": 2.954915
+      },
+      "contactPoint": [{
+        "@type": "ContactPoint",
+        "telephone": "+33365678291",
+        "email": "contact@lecayenne.fr",
+        "contactType": "customer service",
+        "areaServed": "FR",
+        "availableLanguage": ["French", "fr"],
+        "hoursAvailable": {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+          "opens": "18:00",
+          "closes": "23:59"
+        }
+      }],
+      "areaServed": [
+        { "@type": "City", "name": "Hénin-Beaumont" },
+        { "@type": "City", "name": "Noyelles-Godault" },
+        { "@type": "City", "name": "Dourges" },
+        { "@type": "City", "name": "Billy-Montigny" },
+        { "@type": "City", "name": "Montigny-en-Gohelle" },
+        { "@type": "City", "name": "Rouvroy" },
+        { "@type": "City", "name": "Courrières" },
+        { "@type": "City", "name": "Carvin" },
+        { "@type": "City", "name": "Oignies" },
+        { "@type": "City", "name": "Drocourt" }
+      ],
+      "hasMap": "https://www.google.com/maps/search/?api=1&query=50.421556,2.954915",
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+          "opens": "18:00",
+          "closes": "23:59"
+        }
+      ],
+      "servesCuisine": ["Fast-food", "Tacos", "Burgers", "Sandwichs"],
+      "priceRange": "€",
+      "currenciesAccepted": "EUR",
+      "paymentAccepted": "Espèces, Carte bancaire, Titres-restaurant",
+      "acceptsReservations": false,
+      "hasMenu": "https://www.lecayenne.fr/carte.html",
+      "menu": "https://www.lecayenne.fr/carte.html",
+      "sameAs": [
+        "https://www.ubereats.com/fr/store/le-cayenne/C1s3XHn2V2m_D8d6IOVJQg"
+      ],
+      "potentialAction": {
+        "@type": "OrderAction",
+        "name": "Commander en ligne",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://www.lecayenne.fr/",
+          "actionPlatform": [
+            "https://schema.org/DesktopWebPlatform",
+            "https://schema.org/MobileWebPlatform"
+          ]
+        },
+        "deliveryMethod": "https://purl.org/goodrelations/v1#PickUpAtStorePreOrder"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://www.lecayenne.fr/#site",
+      "url": "https://www.lecayenne.fr/",
+      "name": "Le Cayenne",
+      "inLanguage": "fr-FR",
+      "publisher": { "@id": "https://www.lecayenne.fr/#restaurant" }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<!-- [T2-11 HEAL 2026-06-05 WCAG 2.4.1] Skip-link — first focusable element, jumps to <main id="main">. -->
+<a href="#main" class="lc-skip-link">Aller au contenu</a>
+<!-- ══════════════════════════════════════════════════════════════════════════
+     [SEO 2026-08-07] BANDEAU D'ACCUEIL PRÉ-RENDU.
+
+     Ce qu'il y avait avant : un logo et « Chargement… ». Autrement dit, la page
+     la plus importante du site — celle où atterrissent les recherches « le
+     cayenne » et celle où l'on commande — n'avait AUCUN texte tant que le
+     navigateur n'avait pas téléchargé puis exécuté 3 Mo de transpileur Babel,
+     puis transpilé 460 Ko de JSX. Un robot qui renonce à exécuter le
+     JavaScript, et il y en a beaucoup hors Google, ne voyait rien du tout.
+
+     Ce bloc est le MÊME bandeau que celui de l'application (mêmes classes CSS,
+     mêmes textes — cf. screens.jsx:150-170), écrit en HTML. React le remplace
+     par sa version au montage : la bascule est donc invisible, et il n'y a
+     aucune divergence entre ce que voit un robot et ce que voit un client —
+     ce serait du cloaking, et ça se sanctionne.
+
+     Bénéfice secondaire, non négligeable : si le JavaScript échoue ou traîne,
+     le client a devant lui un vrai bandeau et un lien vers la carte, au lieu
+     d'un rond qui tourne.
+
+     ⚠️ Si le bandeau de screens.jsx change, changer ce bloc AUSSI. Les deux
+     doivent rester identiques.
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div id="root"><div class="lc-app"><header class="lc-nav"><div class="lc-container lc-nav-row"><button aria-label="Le Cayenne — accueil" class="lc-nav-brand" style="background: transparent; border: 0px; padding: 0px;"><img src="assets/brand/logo-cayenne.png" alt="Le Cayenne" class="lc-nav-logo" width="760" height="208"></button><nav class="lc-nav-links"><button class="lc-nav-link">Commandes</button><button class="lc-nav-link">Fidélité</button></nav><div class="lc-nav-actions"><button class="lc-nav-btn-cart"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 8h12l-1 12H7L6 8zM9 8V6a3 3 0 116 0v2" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path></svg><span>Panier</span><span class="lc-nav-btn-cart-dot" role="status" aria-live="polite" aria-label="1 article dans le panier">1</span></button><button class="lc-nav-btn-account">Se connecter</button><button class="lc-nav-burger" aria-label="Menu" aria-expanded="false" aria-controls="lc-mobile-menu"><span></span><span></span><span></span></button></div></div><nav class="lc-navx" aria-label="Navigation du restaurant"><div class="lc-container lc-navx-piste"><button class="lc-navx-item"><span class="lc-navx-ico" aria-hidden="true"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 10.5L12 4l8 6.5V19a1.5 1.5 0 01-1.5 1.5h-4v-6h-5v6h-4A1.5 1.5 0 014 19v-8.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path></svg></span><span class="lc-navx-lbl">Accueil</span></button><button class="lc-navx-item"><span class="lc-navx-ico" aria-hidden="true"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3v6a2 2 0 002 2 2 2 0 002-2V3M9 11v10M17 3c-1.6 1.2-2.5 3-2.5 5.2 0 1.6.8 2.6 2.5 2.8V3zm0 8v10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span class="lc-navx-lbl">Menu</span></button><button class="lc-navx-item"><span class="lc-navx-ico" aria-hidden="true"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.6l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.8l5.9-.9L12 3.6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path></svg></span><span class="lc-navx-lbl">Avis</span></button><button class="lc-navx-item"><span class="lc-navx-ico" aria-hidden="true"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="18" cy="5.5" r="2.6" stroke="currentColor" stroke-width="1.8"></circle><circle cx="6" cy="12" r="2.6" stroke="currentColor" stroke-width="1.8"></circle><circle cx="18" cy="18.5" r="2.6" stroke="currentColor" stroke-width="1.8"></circle><path d="M8.4 10.8l7.2-4M8.4 13.2l7.2 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg></span><span class="lc-navx-lbl">Réseaux</span></button><a href="https://www.google.com/maps/dir/?api=1&amp;destination=437%20Rue%20%C3%89lie%20Gruyelle%2062110%20H%C3%A9nin-Beaumont" target="_blank" rel="noopener noreferrer" class="lc-navx-item" aria-label="Itinéraire vers Le Cayenne — ouvre Google Maps"><span class="lc-navx-ico" aria-hidden="true"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s6.5-5.6 6.5-10.4A6.5 6.5 0 005.5 10.6C5.5 15.4 12 21 12 21z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path><circle cx="12" cy="10.3" r="2.4" stroke="currentColor" stroke-width="1.8"></circle></svg></span><span class="lc-navx-lbl">Itinéraire</span></a></div></nav></header><main id="main" class="lc-route-anim"><div class="lcf-page"><div class="lc-container"><div class="lcf-steps"><div class="lcf-step is-current"><div class="lcf-step-num"><span>1</span></div><span>Retrait &amp; paiement</span></div><div class="lcf-step-arrow">→</div><div class="lcf-step"><div class="lcf-step-num"><span>2</span></div><span>Confirmé</span></div></div><div class="lcf-grid"><div class="lcf-card"><div class="lcf-card-head"><div><div class="lc-eyebrow">Commander</div><h2>Quand récupérer<br>ta commande ?</h2></div></div><div class="lcf-section"><h3>Mode</h3><div class="lcf-paymethods" role="radiogroup" aria-label="Mode de retrait" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px;"><button role="radio" aria-checked="true" class="lcf-paymethod is-on"><div class="lcf-paymethod-icon lcf-paymethod-icon--cash" aria-hidden="true">🛍️</div><div class="lcf-paymethod-body"><div class="lcf-paymethod-name">À emporter</div><div class="lcf-paymethod-meta">Tu viens chercher</div></div><div class="lcf-paymethod-radio" aria-hidden="true"><i></i></div></button><a role="link" href="https://www.ubereats.com/fr/store/le-cayenne/C1s3XHn2V2m_D8d6IOVJQg" target="_blank" rel="noopener noreferrer" class="lcf-paymethod" aria-label="Commander en livraison sur Uber Eats (nouvel onglet)" style="text-decoration: none;"><div class="lcf-paymethod-icon lcf-paymethod-icon--cash" aria-hidden="true">🛵</div><div class="lcf-paymethod-body"><div class="lcf-paymethod-name">Livraison</div><div class="lcf-paymethod-meta">Sur Uber Eats →</div></div></a></div></div><div class="lcf-section"><h3>Heure de retrait — aujourd'hui</h3><div class="lcf-pickup"><div class="lcf-pickup-rows" role="radiogroup" aria-label="Créneau de retrait"><button role="radio" aria-checked="true" class="lcf-pickup-slot is-on"><div class="lcf-pickup-slot-head">Dès que prêt</div><div class="lcf-pickup-slot-time">~10-15 min</div></button><button role="radio" aria-checked="false" class="lcf-pickup-slot"><div class="lcf-pickup-slot-head">Dans 30 min</div><div class="lcf-pickup-slot-time">+30 min</div></button><button role="radio" aria-checked="false" class="lcf-pickup-slot"><div class="lcf-pickup-slot-head">Dans 40 min</div><div class="lcf-pickup-slot-time">+40 min</div></button><button role="radio" aria-checked="false" class="lcf-pickup-slot"><div class="lcf-pickup-slot-head">Choisir une heure</div><div class="lcf-pickup-slot-time">—</div></button></div></div></div><div class="lcf-section"><h3>Code promo</h3><div class="lc-promo"><input placeholder="Ex: CAYENNE10" aria-label="Code promo" maxlength="20" autocapitalize="characters" autocorrect="off" spellcheck="false" value="" style=""><button>Appliquer</button></div></div><div class="lcf-section"><h3>Note pour la cuisine (optionnel)</h3><textarea class="lc-notes" placeholder="Une précision ? Sauce à part, bien cuit, sans oignons…" maxlength="190" aria-label="Note pour la cuisine (optionnel)" aria-describedby="notes-counter" enterkeyhint="done" style=""></textarea><div id="notes-counter" aria-live="polite" style="font-size: 11px; color: var(--gray-3); text-align: right; margin-top: 2px;">0 / 190</div></div><div class="lcf-section"><h3>Lieu de retrait</h3><div style="background: var(--cream-2); border-radius: 14px; padding: 16px; display: flex; gap: 14px; align-items: center;"><div style="width: 44px; height: 44px; border-radius: 12px; background: var(--ink); color: var(--yellow); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">📍</div><div style="flex: 1 1 0%;"><div style="font-weight: 700; font-size: 14px;">Le Cayenne · Hénin-Beaumont</div><div style="font-size: 12px; color: var(--gray-3); margin-top: 2px;">437 Rue Élie Gruyelle · 62110</div></div><button style="background: var(--paper); border: 1px solid var(--gray-1); padding: 8px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;">Itinéraire</button></div></div><div id="lc-contact-block" class="lcf-section" style="margin-top: 10px; padding: 16px; background: var(--cream-2); border-radius: 14px;"><h3>Tes coordonnées</h3><div style="font-size: 12px; color: var(--gray-4); margin-bottom: 10px;">Ton <b>email</b> suffit : <b>tu reçois un code</b>, tu le valides ici, puis tu paies en bas de page. Si tu as déjà commandé chez nous, on retrouve ton compte et tes points.</div><div class="lcf-cardform-field"><label for="auth-email">Email</label><input id="auth-email" type="email" inputmode="email" autocomplete="email" placeholder="ton.email@exemple.fr" value="" style=""></div><button class="lc-btn lc-btn--ink" style="margin-top: 10px; width: 100%;">Recevoir le code par email</button></div><div class="lcf-section"><h3>Paiement</h3><div class="lcf-paymethods" role="radiogroup" aria-label="Mode de paiement"><button role="radio" aria-checked="true" class="lcf-paymethod is-on" style="position: relative;"><span class="lcf-recommended">★ Conseillé</span><div class="lcf-paymethod-icon lcf-paymethod-icon--cash" aria-hidden="true">💵</div><div class="lcf-paymethod-body"><div class="lcf-paymethod-name">Payer sur place</div><div class="lcf-paymethod-meta">Espèces ou carte au comptoir — ton plat t'attend</div></div><div class="lcf-paymethod-radio"><i></i></div></button><button role="radio" aria-checked="false" class="lcf-paymethod" style="position: relative;"><div class="lcf-paymethod-icon lcf-paymethod-icon--card" aria-hidden="true">VISA</div><div class="lcf-paymethod-body"><div class="lcf-paymethod-name">Carte bancaire (en ligne)</div><div class="lcf-paymethod-meta">Débit sécurisé (Mollie) — tu ne quittes pas le site</div></div><div class="lcf-paymethod-radio"><i></i></div></button></div><div class="lcf-cardform" style="display: none;"><div class="lcf-cardform-field"><label for="lc-mollie-card-holder" id="lc-mollie-holder-lbl">Titulaire de la carte</label><div class="lcf-field-hint" id="lc-mollie-holder-hint">Comme sur la carte</div><div id="lc-mollie-card-holder" class="lc-mollie-field" role="group" aria-labelledby="lc-mollie-holder-lbl" aria-describedby="lc-mollie-holder-hint"></div></div><div class="lcf-cardform-field" style="margin-top: 8px;"><label for="lc-mollie-card-number" id="lc-mollie-number-lbl">Numéro de carte</label><div class="lcf-field-hint" id="lc-mollie-number-hint">16 chiffres</div><div id="lc-mollie-card-number" class="lc-mollie-field" role="group" aria-labelledby="lc-mollie-number-lbl" aria-describedby="lc-mollie-number-hint"></div></div><div style="display: flex; gap: 10px; margin-top: 8px;"><div class="lcf-cardform-field" style="flex: 1 1 0%;"><label for="lc-mollie-expiry" id="lc-mollie-expiry-lbl">Expiration</label><div class="lcf-field-hint" id="lc-mollie-expiry-hint">MM/AA</div><div id="lc-mollie-expiry" class="lc-mollie-field" role="group" aria-labelledby="lc-mollie-expiry-lbl" aria-describedby="lc-mollie-expiry-hint"></div></div><div class="lcf-cardform-field" style="flex: 1 1 0%;"><label for="lc-mollie-verification" id="lc-mollie-cvc-lbl">Cryptogramme</label><div class="lcf-field-hint" id="lc-mollie-cvc-hint">3 chiffres au dos</div><div id="lc-mollie-verification" class="lc-mollie-field" role="group" aria-labelledby="lc-mollie-cvc-lbl" aria-describedby="lc-mollie-cvc-hint"></div></div></div><div role="note" style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; margin-top: 10px; background: rgba(31, 102, 83, 0.08); border: 1px solid rgba(31, 102, 83, 0.25); border-radius: 12px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0; margin-top: 1px; color: var(--green-text, #1FA653);"><path d="M12 3l8 3v6c0 4-3.5 7.5-8 9-4.5-1.5-8-5-8-9V6l8-3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg><div style="font-size: 12.5px; color: var(--gray-4); line-height: 1.5;"><b style="color: var(--ink);">Paiement sur cette page.</b> Tu ne quittes pas Le Cayenne : les champs carte sont chiffrés par notre prestataire Mollie (PCI-DSS). Si ta banque demande une vérification, elle s'ouvre automatiquement et tu reviens ici juste après.</div></div></div><div class="lcf-security"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3l8 3v6c0 4-3.5 7.5-8 9-4.5-1.5-8-5-8-9V6l8-3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg><span>Commande <b>envoyée en direct</b> à la caisse · Données protégées (RGPD)</span><span title="paiement réglé au comptoir au retrait" aria-label="paiement réglé au comptoir au retrait" style="display: inline-block; margin-left: 8px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; background: var(--yellow); color: var(--ink); padding: 3px 8px; border-radius: 6px;">Paiement au comptoir</span></div></div><div class="lcf-section"><h3>Compte (recommandé)</h3><div style="background: var(--yellow); border-radius: 16px; padding: 16px; display: flex; gap: 12px; align-items: center;"><div style="font-size: 32px;">🎁</div><div style="flex: 1 1 0%;"><div style="font-weight: 700; font-size: 14px;">Cumule +60 pts sur cette commande</div><div style="font-size: 12px; color: var(--gray-4); margin-top: 2px;">Tes points seront crédités sur le compte lié à ton email. Connecte-toi pour retrouver ton solde et tes commandes.</div></div><button class="lc-btn lc-btn--ink" style="padding: 12px 18px;">Compte</button></div></div><div class="lcf-cta-bar"><button class="lcf-cta-bar-back"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M11 18l-6-6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg> Retour</button><button class="lcf-cta-bar-next" aria-busy="false">Confirmer ma commande<b>6,00 €</b></button></div></div><div class="lcf-summary"><div class="lcf-summary-head"><h3>Récap</h3><span class="lcf-summary-count">1 article</span></div><div class="lcf-summary-rows"><div class="lcf-summary-row"><div class="lcf-summary-row-thumb"><img src="assets/menu/cheese-burger.webp" alt="" style="width: 100%; height: 100%; object-fit: contain;"><span style="display: none; align-items: center; justify-content: center; width: 100%; height: 100%;">🍔</span></div><div class="lcf-summary-row-body"><div class="lcf-summary-row-name">Cheese Burger</div><div class="lcf-summary-row-meta">+ Mexicanos, Algérienne</div><div class="lcf-summary-stepper"><button type="button" disabled="" aria-label="Diminuer la quantité de Cheese Burger">−</button><b>1</b><button type="button" aria-label="Augmenter la quantité de Cheese Burger">+</button></div></div><div class="lcf-summary-row-side"><span class="lcf-summary-row-price">6,00 €</span><button type="button" class="lcf-summary-remove" aria-label="Retirer Cheese Burger de la commande"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2M7 7v12a2 2 0 002 2h6a2 2 0 002-2V7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></button></div></div></div><div class="lcf-summary-totals"><div class="lcf-summary-totals-row"><span>Sous-total</span><span>6,00 €</span></div><div class="lcf-summary-totals-row is-total"><span>Total</span><b>6,00 €</b></div></div><div class="lcf-summary-loyalty"><span class="ic">🎁</span><div class="lcf-summary-loyalty-text">Tu gagnes <b>+60 pts</b> sur cette commande</div></div></div></div></div></div></main><footer class="lc-footer"><div class="lc-container"><div class="lc-footer-grid lc-footer-grid--4col"><div class="lc-footer-brand"><h3>Le <span>Cayenne</span></h3><p>Sandwich Cayenne signature, tacos M &amp; L, bols Frites/Riz, galettes — fait maison à Hénin-Beaumont. Du peuple, pour le peuple. Commande en ligne, retrait sur place.</p></div><div class="lc-footer-col"><h4>Navigation</h4><ul><li><a href="/">Accueil</a></li><li><a href="#menu">Menu complet</a></li><li><a href="#loyalty">Programme fidélité</a></li><li><a href="#avis">Avis clients</a></li><li><a href="#reseaux">Nos réseaux</a></li><li><a href="carte.html">La carte et les prix</a></li><li><a href="horaires.html">Horaires &amp; accès</a></li></ul></div><div class="lc-footer-col"><h4>Contact</h4><ul><li><a href="tel:0365678291">03 65 67 82 91</a></li><li><a href="mailto:contact@lecayenne.fr">contact@lecayenne.fr</a></li><li><span>437 Rue Élie Gruyelle<br>62110 Hénin-Beaumont</span></li><li><span>Ouvert 18h — 00h</span></li><li><a href="https://www.ubereats.com/fr/store/le-cayenne/C1s3XHn2V2m_D8d6IOVJQg" target="_blank" rel="noopener noreferrer">Aussi sur Uber Eats</a></li></ul></div><div class="lc-footer-col"><h4>Légal</h4><ul><li><a href="legal/mentions.html">Mentions légales</a></li><li><a href="legal/cgv.html">CGV</a></li><li><a href="legal/privacy.html">Politique de confidentialité</a></li><li><a href="legal/cookies.html">Politique de cookies</a></li><li><a href="legal/allergens.html">Allergènes</a></li></ul></div></div><div class="lc-footer-social"><span class="lc-footer-social-lbl">Suivez-nous</span><div class="lc-footer-social-liste"><a href="https://www.facebook.com/LeCayenne" target="_blank" rel="noopener noreferrer" class="lc-footer-social-lien" aria-label="Le Cayenne sur Facebook — nouvelle fenêtre"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9v-2.91h2.54V9.85c0-2.52 1.5-3.91 3.77-3.91 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.78-1.63 1.57v1.89h2.78l-.45 2.91h-2.33V22C18.34 21.24 22 17.08 22 12.06z"></path></svg></a><span class="lc-footer-social-lien est-bientot" title="Instagram — bientôt" aria-label="Instagram — bientôt" role="img"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" stroke-width="1.9"></rect><circle cx="12" cy="12" r="4.1" stroke="currentColor" stroke-width="1.9"></circle><circle cx="17.4" cy="6.6" r="1.2" fill="currentColor"></circle></svg></span><span class="lc-footer-social-lien est-bientot" title="TikTok — bientôt" aria-label="TikTok — bientôt" role="img"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.6 2h-3v13.2a2.6 2.6 0 11-2.6-2.6c.27 0 .53.04.78.12V9.6a5.8 5.8 0 00-.78-.05 5.65 5.65 0 105.65 5.65V8.9a6.9 6.9 0 004.05 1.3V7.14a3.9 3.9 0 01-4.1-3.72V2z"></path></svg></span><span class="lc-footer-social-lien est-bientot" title="Snapchat — bientôt" aria-label="Snapchat — bientôt" role="img"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.2c2.66 0 4.36 1.9 4.5 4.5.05.9-.03 1.86-.06 2.3.35.13.8.06 1.3-.16.5-.22 1.1.06 1.2.55.1.5-.24.86-.9 1.16-.66.3-1.36.5-1.4.86-.05.4.9 2.2 3.03 3.1.44.19.5.62.16.9-.5.4-1.5.66-2.1.76-.2.35-.14.94-.6 1.06-.4.1-1-.1-1.8-.1-.9 0-1.5.14-2.16.66-.66.5-1.3 1-2.17 1s-1.5-.5-2.17-1c-.66-.52-1.26-.66-2.16-.66-.8 0-1.4.2-1.8.1-.46-.12-.4-.71-.6-1.06-.6-.1-1.6-.36-2.1-.76-.34-.28-.28-.71.16-.9 2.13-.9 3.08-2.7 3.03-3.1-.04-.36-.74-.56-1.4-.86-.66-.3-1-.66-.9-1.16.1-.49.7-.77 1.2-.55.5.22.95.29 1.3.16-.03-.44-.11-1.4-.06-2.3C7.64 4.1 9.34 2.2 12 2.2z"></path></svg></span></div><span class="lc-footer-social-note">Instagram, TikTok et Snapchat arrivent bientôt.</span></div><div class="lc-footer-sante"><span aria-hidden="true">🥗</span><span>Pour votre santé, pratiquez une activité physique régulière. <a href="https://www.mangerbouger.fr" target="_blank" rel="noopener noreferrer">www.mangerbouger.fr</a></span></div><div class="lc-footer-end"><span>© 2026 LE CAYENNE</span></div></div></footer><div tabindex="-1" role="dialog" aria-modal="true" aria-label="Panier" class="lc-cart-drawer" inert=""><div class="lc-cart-head"><div class="lc-cart-title">Panier<span class="lc-cart-count">· 1 article</span></div><button class="lc-acc-form-back" aria-label="Fermer le panier" style="margin: 0px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M6 18L18 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path></svg></button></div><div class="lc-cart-body"><div class="lc-cart-row"><div class="lc-cart-row-thumb"><img src="assets/menu/cheese-burger.webp" alt="" style="width: 100%; height: 100%; object-fit: contain;"><span style="display: none; align-items: center; justify-content: center; width: 100%; height: 100%;">🍔</span></div><div class="lc-cart-row-body"><div class="lc-cart-row-name">Cheese Burger</div><div class="lc-cart-row-meta">+ Mexicanos, Algérienne</div><div class="lc-cart-stepper"><button aria-label="Diminuer la quantité de Cheese Burger">−</button><b>1</b><button aria-label="Augmenter la quantité de Cheese Burger">+</button></div></div><div class="lc-cart-row-side"><span class="lc-cart-row-price">6,00 €</span><button aria-label="Modifier Cheese Burger" style="background: transparent; border: 0px; color: var(--orange-text); font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; text-decoration: underline; min-height: 44px; padding: 0px 6px; cursor: pointer;">Modifier</button><button aria-label="Retirer Cheese Burger du panier" style="background: transparent; border: 0px; color: var(--gray-3); min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2M7 7v12a2 2 0 002 2h6a2 2 0 002-2V7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></button></div></div></div><div class="lc-cart-foot"><div class="lc-cart-totals"><div class="lc-cart-totals-row"><span>Sous-total</span><span>6,00 €</span></div><div class="lc-cart-totals-row"><span>+ Fidélité</span><span style="color: var(--green-text); font-weight: 700;">+60 pts</span></div><div class="lc-cart-totals-row is-total"><span>Total</span><b>6,00 €</b></div></div><button class="lc-btn lc-btn--orange" style="width: 100%; opacity: 1;">Passer commande <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button><div class="lc-cart-foot-hint">Heure de retrait, code promo et note cuisine (allergies) à l'étape suivante.</div></div></div></div></div>
+
+<!-- [SEO 2026-08-08] Ce bloc contenait un doublon du contenu d'accueil, avec son
+     propre <h1>. Depuis que le bloc PRÉ-RENDU écrit ce contenu directement dans
+     #root — donc visible par TOUS, robots comme humains, JavaScript ou pas —
+     ce doublon faisait DEUX <h1> sur la page pour un visiteur sans JavaScript
+     (détecté par tests-e2e/vue-moteurs-reponse.regression.js).
+     Il ne reste ici que ce que le pré-rendu ne peut pas dire : que la COMMANDE
+     en ligne, elle, a besoin de JavaScript. -->
+<noscript>
+  <p style="max-width:900px;margin:0 auto;padding:16px 20px;font-family:'Inter',system-ui,sans-serif;background:#FFF4E5;border-left:4px solid #F4501E;color:#1A1A1A">
+    <strong>La commande en ligne nécessite JavaScript.</strong> Toutes les informations
+    — carte, prix, horaires — restent lisibles sur cette page. Pour commander,
+    activez JavaScript ou appelez le <a href="tel:+33365678291">03 65 67 82 91</a>.
+  </p>
+</noscript>
+
+<!-- [ULTRA-AUDIT 2026-07-19 P3] React en build PRODUCTION (min) : ~10× plus léger + supprime les
+     warnings dev en console. SRI recalculé pour les fichiers .production.min.js.
+     [AUDIT 2026-08-28] Babel-standalone ne tourne PLUS dans le navigateur : le JSX est transpilé
+     à l'avance par tools/compile-jsx.mjs et la page ne charge que compiled/*.js. La CSP n'a donc
+     plus besoin de 'unsafe-eval' ni de unpkg.com — les deux ont été retirés de vercel.json. Ce
+     commentaire disait l'inverse et aurait fait rétablir la CSP permissive au prochain passage. -->
+<script src="vendor/react/react.production.min.js?v=20260809v5" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" crossorigin="anonymous"></script>
+<script src="vendor/react/react-dom.production.min.js?v=20260809v5" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" crossorigin="anonymous"></script>
+
+<!-- [GOAL LONG-TERM 2026-05-16] canonical data layer FIRST — exposes window.LC.menu + W_CATS + W_ITEMS + W_DIET -->
+<script src="data/menu.js?v=20261023liv1"></script>
+<!-- [B1-W 2026-06-10 D6=A] loyalty redeem helper (continu 100 pts = 1 €, min 100) — exposes window.LC.loyalty -->
+<script src="data/loyalty.js?v=20260929audit1"></script>
+<!-- [WEB-WIREUP 2026-06-26] couche réseau RÉELLE vers l'API/caisse — exposes window.LC.api (après data/menu.js) -->
+<script src="api.js?v=20261023liv3"></script>
+<!-- [APPS 2026-08-19] Pont natif iOS/Android. Totalement inerte dans un navigateur :
+     il détecte l'absence de Capacitor et ne fait qu'enregistrer le service worker. -->
+<script src="app-native.js?v=20260819app1"></script>
+<!-- [GOAL-SYNC 2026-07-08] Lib QR vendorisée LOCALE (aucun CDN) — expose window.qrcode ; chargée AVANT les .jsx (QR fidélité). -->
+<script defer="" src="vendor/qrcode.js?v=20260929audit1"></script>
+
+<!-- [T1-08 HEAL 2026-06-05] Dev-mode flag (mirror mobile/shared.jsx:8-17): true when URL has
+     ?dev OR localStorage.lecayenne.dev === 'true'. Gates demo-only affordances (OTP code hint). -->
+<script>
+  window.LC = window.LC || {};
+  window.LC.isDev = (function () {
+    try {
+      var hasParam = new URLSearchParams(window.location.search).has('dev');
+      var hasLS = window.localStorage && window.localStorage.getItem('lecayenne.dev') === 'true';
+      return hasParam || hasLS;
+    } catch (e) { return false; }
+  })();
+</script>
+
+<!-- [CACHE-BUST 2026-07-12] ?v=20260809v5 sur chaque source app pour éviter qu'un navigateur/edge serve
+     une version périmée (wizard cassé « chez le client mais pas en local »). BUMP ce token à
+     CHAQUE déploiement qui change un .jsx/.js app (ex: v=20260713). -->
+<script defer="" src="compiled/components.js?v=20260914ux1"></script>
+<script defer="" src="compiled/screens.js?v=20261023liv1"></script>
+<script defer="" src="compiled/screens-v3.js?v=20260929audit1"></script>
+<script defer="" src="compiled/loyalty-v2.js?v=20260819apps1"></script>
+<script defer="" src="compiled/orders.js?v=20260929audit1"></script>
+<script defer="" src="compiled/flows.js?v=20260929audit1"></script>
+<script defer="" src="compiled/wizard-v2.js?v=20261023liv1"></script>
+<script defer="" src="compiled/account-v2.js?v=20260902mail2"></script>
+<script defer="" src="compiled/funnel.js?v=20261023liv2"></script>
+<!-- [UPSELL 2026-06-27] funnel d'upsell (boissons → desserts → suggestions) avant règlement -->
+<script defer="" src="compiled/upsell.js?v=20260829aud2"></script>
+
+<script defer="" src="compiled/racine.js?v=20260929audit1"></script>
+
+
+</body></html>

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 
+use App\Services\Orders\QueueNumberAllocator;
 use Carbon\Carbon;
 use Exception;
 use App\Models\Tax;
@@ -63,6 +64,13 @@ class FrontendOrderService
     // [AUDIT-P2] Flag set to true when loyalty discount is successfully applied server-side.
     // Exposed in the API response so the kiosk can show a toast if points were silently dropped.
     public bool $loyaltyApplied = false;
+
+    /**
+     * [TICKET PROMO 2026-11-03] Frais de livraison offerts par un coupon « livraison offerte » sur la
+     * commande en cours (null = aucun). Tracé dans `order_coupons.delivery_waived`, jamais dans
+     * `discount` : ce n'est pas une remise sur les articles.
+     */
+    private ?float $freeDeliveryWaived = null;
 
     /**
      * [FIDÉLITÉ BORNE 2026-08-19] LE DÉBIT DES POINTS, EN ATTENTE DU SCEAU DU DEVIS.
@@ -154,6 +162,7 @@ class FrontendOrderService
     public function myOrderStore(OrderRequest $request): object
     {
         $this->loyaltyApplied = false;
+        $this->freeDeliveryWaived = null;
         $idempotencyLock = null;
         // [AUDIT-F-007] Resolve branch context for idempotency lock namespace.
         // Decision orchestrateur 2026-05-08: route /api/frontend/order is dual-purpose
@@ -335,6 +344,19 @@ class FrontendOrderService
                 // Prevents any client-manipulated value from persisting even transiently.
                 unset($validatedRequest['total'], $validatedRequest['subtotal'], $validatedRequest['discount']);
 
+                // [NOM-COMMANDE-BORNE 2026-10-19 · owner] Le nom saisi à la borne est du texte libre : il
+                // finit imprimé sur un ticket et affiché en caisse. Une seule définition du nettoyage
+                // (App\Support\NomClient), partagée avec le chemin caisse : caractères de contrôle,
+                // noms invisibles, longueur. Aucune lettre = aucun nom (jamais une chaîne vide).
+                if (array_key_exists('pos_customer_name', $validatedRequest)) {
+                    $nom = \App\Support\NomClient::nettoyer((string) $validatedRequest['pos_customer_name']);
+                    if ($nom === null) {
+                        unset($validatedRequest['pos_customer_name']);
+                    } else {
+                        $validatedRequest['pos_customer_name'] = $nom;
+                    }
+                }
+
                 // [DELIVERY hardening 2026-06-27] Non-DELIVERY orders MUST carry no delivery
                 // charge. delivery_charge is `nullable` for non-delivery in OrderRequest, so a
                 // crafted payload (e.g. order_type=TAKEAWAY + delivery_charge=99) would otherwise
@@ -344,6 +366,19 @@ class FrontendOrderService
                 // ("delivery_charge=0 sinon") actually hold.
                 if ((int) ($validatedRequest['order_type'] ?? 0) !== OrderType::DELIVERY) {
                     $validatedRequest['delivery_charge'] = 0;
+                }
+
+                // [CARTE À LA LIVRAISON 2026-10-24] `door_payment=card` (validé par OrderRequest : livraison +
+                // payment_method=1) devient le marqueur persistant `orders.door_payment_mode='card'`. Le champ de la requête
+                // n'est jamais une colonne : retiré dans tous les cas. Re-vérifié ICI (défense en profondeur, indépendante
+                // de la FormRequest) : jamais posé hors livraison payée à la livraison, jamais par une machine borne.
+                $doorPayment = $validatedRequest['door_payment'] ?? null;
+                unset($validatedRequest['door_payment']);
+                if ($doorPayment === 'card'
+                    && ! $isKioskMachineOrder
+                    && (int) ($validatedRequest['order_type'] ?? 0) === OrderType::DELIVERY
+                    && (int) ($validatedRequest['payment_method'] ?? 0) === PaymentGateway::CASH_ON_DELIVERY) {
+                    $validatedRequest['door_payment_mode'] = 'card';
                 }
 
                 $this->frontendOrder = FrontendOrder::create(
@@ -362,6 +397,38 @@ class FrontendOrderService
 
                 $requestItems = $this->safeJsonDecode($request->items);
                 $requestItems = is_array($requestItems) ? $requestItems : [];
+                // [AUDIT ABUSIF 2026-11-06 · W3-P1-1] Commande web : la cuisine ne lit une formule dans l'instruction que si
+                // elle est PAYÉE (addon menu_* facturé par le serveur). Sinon les revendications de formule sont retirées.
+                if (! $isKioskMachineOrder) {
+                    $requestItems = self::sansFormuleNonPayee($requestItems);
+                }
+
+                // [AUDIT ABUSIF 2026-11-06 · W3-P1-2] Un code promo NOMINATIF (ticket promo imprimé pour un client) n'est protégé que
+                // par son CODE. La commande web acceptait son seul numéro (coupon_id, séquentiel) : un inconnu consommait le ticket
+                // d'un autre client (−50 %), qui recevait ensuite « limite dépassée ». Le site envoie désormais le code tapé :
+                // sans lui, ou s'il ne correspond pas, la commande web est refusée. (Borne : chemin inchangé.)
+                if ((int) $request->coupon_id > 0 && ! $isKioskMachineOrder) {
+                    $brut = $request->input('coupon_code', '');
+                    $codeSaisi = is_scalar($brut) ? mb_strtolower(trim((string) $brut)) : '';   // tableau forgé → refus lisible (tour 3), pas d'erreur interne
+                    $codeReel = mb_strtolower(trim((string) \App\Models\Coupon::query()->whereKey((int) $request->coupon_id)->value('code')));
+                    if ($codeSaisi === '' || $codeReel === '' || ! hash_equals($codeReel, $codeSaisi)) {
+                        throw \Illuminate\Validation\ValidationException::withMessages(['coupon_id' => 'Ce code promo n\'est pas valable pour cette commande. Saisissez-le à nouveau.']);
+                    }
+                }
+
+                // [Test abusif final P3 · 2026-11-06] Un produit RÉSERVÉ À LA CAISSE (channels non vide sans « web » ni
+                // « kiosk », ex. « Sauce Ketchup » ["pos"] à 0,50 €) ne se commande ni par le site ni par la borne
+                // (reproduit : commande 9898). Seuls les produits COMMANDÉS sont contrôlés, jamais les composants
+                // internes d'une formule. channels NULL = toutes surfaces (rétrocompatibilité V1).
+                $reservesCaisse = \App\Models\Item::query()->whereIn('id', collect($requestItems)->map(fn ($it) => (int) (is_object($it) ? ($it->item_id ?? 0) : ($it['item_id'] ?? 0)))->filter()->unique()->values()->all())
+                    ->whereNotNull('channels')->get(['id', 'name', 'channels'])
+                    ->filter(fn ($i) => ! $i->isVisibleOn('web') && ! $i->isVisibleOn('kiosk'));
+                if ($reservesCaisse->isNotEmpty()) {
+                    throw \Illuminate\Validation\ValidationException::withMessages(['items' => sprintf(
+                        '« %s » ne se commande qu\'au comptoir. Retirez-le du panier.',
+                        (string) $reservesCaisse->first()->name
+                    )]);
+                }
 
                 if (config('pricing.use_ssot_service', true)) {
                     $kioskSsot = $this->pricingService->calculateOrder(
@@ -371,7 +438,9 @@ class FrontendOrderService
                             $requestItems,
                             (int) $request->coupon_id,
                             (int) Auth::id(),
-                            (float) ($this->frontendOrder->delivery_charge ?? 0)
+                            (float) ($this->frontendOrder->delivery_charge ?? 0),
+                            // [LOCK_COUPON_SURFACE_BRANCHE_AU_PAIEMENT_2026-11-05] surface réelle du code promo.
+                            $isKioskMachineOrder ? 'kiosk' : 'web'
                         ),
                         $this->couponService
                     );
@@ -416,6 +485,14 @@ class FrontendOrderService
                         ->filter()
                         ->unique()
                         ->toArray();
+
+                    $addonIds = collect($requestItems)
+                        ->pluck('item_addons')
+                        ->flatten(1)
+                        ->pluck('id')
+                        ->filter()
+                        ->unique()
+                        ->toArray();
                     
                     $dbVariations = !empty($variationIds)
                         ? \App\Models\ItemVariation::whereIn('id', $variationIds)->get()->keyBy('id')
@@ -423,6 +500,9 @@ class FrontendOrderService
                     
                     $dbExtras = !empty($extraIds)
                         ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
+                        : collect();
+                    $dbAddons = !empty($addonIds)
+                        ? \App\Models\ItemAddon::with('addonItem')->whereIn('id', $addonIds)->get()->keyBy('id')
                         : collect();
 
                     // [CAISSE-LOGIC-HEAL SYNC-P1 2026-07-11] Inclure les composants de menu
@@ -512,8 +592,26 @@ class FrontendOrderService
                                 }
                             }
 
+                            $calcAddonTotal = 0.0;
+                            if (!empty($item->item_addons)) {
+                                foreach ($item->item_addons as $addon) {
+                                    $addonId = $addon->id ?? 0;
+                                    $dbAddon = $dbAddons[$addonId] ?? null;
+                                    if (!$dbAddon || (int) $dbAddon->item_id !== (int) $item->item_id) {
+                                        throw new \InvalidArgumentException(
+                                            "Addon ID {$addonId} introuvable ou invalide pour l'article {$item->item_id}.",
+                                            422
+                                        );
+                                    }
+                                    $calcAddonTotal += $this->pricingService->menuRoleAdjustedAddonPrice(
+                                        (string) ($addon->role ?? ''),
+                                        (float) ($dbAddon->addonItem?->price ?? 0)
+                                    ) * max(1, (int) ($addon->quantity ?? 1));
+                                }
+                            }
+
                             $verifiedQuantity = max(1, (int) ($item->quantity ?? 1));
-                            $verifiedTotalPrice = round(($itemPrice + $calcVariationTotal + $calcExtraTotal) * $verifiedQuantity, 2);
+                            $verifiedTotalPrice = round(($itemPrice + $calcVariationTotal + $calcExtraTotal + $calcAddonTotal) * $verifiedQuantity, 2);
                             $realSubtotal += $verifiedTotalPrice;
 
                             $taxId = isset($items[$item->item_id]) ? $items[$item->item_id] : 0;
@@ -529,7 +627,7 @@ class FrontendOrderService
                             }
 
                             // [T07] NF525 immutable composition snapshot — written in same transaction as insert.
-                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras);
+                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras, null, $dbAddons);
 
                             $itemsArray[$i] = [
                                 'order_id' => $this->frontendOrder->id,
@@ -618,7 +716,20 @@ class FrontendOrderService
                 // lock-plan (same master flag as POS/admin: pos.manual_discount_enabled).
                 $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
 
-                $this->saveFrontendOrderWithQueueNumber(function () use ($request, $totalTax, $realSubtotal, $calculatedDiscount, $isKioskMachineOrder, $idempotencyKey): void {
+                // [Test abusif final P2-1 · 2026-11-06] Minimum de livraison contrôlé sur le sous-total RECALCULÉ par le
+                // serveur — jamais sur le `subtotal` envoyé par le client (subtotal:999 passait avec 7,40 € d'articles).
+                if ((int) ($validatedRequest['order_type'] ?? 0) === OrderType::DELIVERY) {
+                    $minimum = \App\Models\Branch::query()->whereKey((int) ($validatedRequest['branch_id'] ?? 0))->value('delivery_minimum_order');
+                    if ($minimum !== null && round((float) $realSubtotal, 2) < round((float) $minimum, 2)) {
+                        throw \Illuminate\Validation\ValidationException::withMessages(['subtotal' => sprintf(
+                            'Le montant minimum pour la livraison est de %s € (votre panier : %s €).',
+                            number_format((float) $minimum, 2, ',', ' '),
+                            number_format((float) $realSubtotal, 2, ',', ' ')
+                        )]);
+                    }
+                }
+
+                $this->saveFrontendOrderWithQueueNumber(function () use ($request, $totalTax, $realSubtotal, $calculatedDiscount, $isKioskMachineOrder, $idempotencyKey, $validatedCoupon): void {
                     $this->frontendOrder->order_serial_no = date('dmy') . $this->frontendOrder->id;
                     $this->frontendOrder->total_tax = round($totalTax, 2);
                     $this->frontendOrder->subtotal = round($realSubtotal, 2);
@@ -633,6 +744,12 @@ class FrontendOrderService
                         && (float) $realSubtotal >= $freeAbove
                         && (float) $this->frontendOrder->delivery_charge > 0) {
                         $this->frontendOrder->delivery_charge = 0;
+                    }
+                    // [TICKET PROMO 2026-11-03 · propriétaire] Coupon « livraison offerte » du ticket
+                    // promo : même mécanisme que le seuil ci-dessus (hors PricingService gelé, sur la
+                    // distance et le prix RECALCULÉS serveur), avec refus explicite hors conditions.
+                    if ($validatedCoupon instanceof Coupon && $validatedCoupon->free_delivery) {
+                        $this->applyFreeDeliveryCoupon($validatedCoupon);
                     }
                     // [TTC-MODE] In TTC mode, $realSubtotal already contains tax.
                     if ((bool) config('pricing.tax_inclusive_prices', false)) {
@@ -657,7 +774,14 @@ class FrontendOrderService
                     if ($request->filled('expected_total')) {
                         $expectedTotal = round((float) $request->input('expected_total'), 2);
                         $serverTotal = (float) $this->frontendOrder->total;
-                        if (abs($serverTotal - $expectedTotal) > 0.01) {
+                        // [TICKET PROMO 2026-11-03] Un client qui ne connaît pas encore le code « livraison
+                        // offerte » (ancienne version du site, application déjà installée) annonce un total
+                        // FRAIS COMPRIS. L'écart vaut alors exactement les frais offerts, en faveur du client :
+                        // c'est le seul écart toléré — tout autre écart reste refusé.
+                        $ecartLivraisonOfferte = $this->freeDeliveryWaived !== null
+                            && $this->freeDeliveryWaived > 0
+                            && abs(($expectedTotal - $serverTotal) - $this->freeDeliveryWaived) <= 0.01;
+                        if (abs($serverTotal - $expectedTotal) > 0.01 && ! $ecartLivraisonOfferte) {
                             throw new HttpException(
                                 422,
                                 'Le total ne correspond pas au montant attendu — certaines options sont peut-être indisponibles. Merci de recommencer votre commande.'
@@ -740,6 +864,8 @@ class FrontendOrderService
                         'apartment' => $address->apartment,
                         'latitude'  => $address->latitude,
                         'longitude' => $address->longitude,
+                        'city'        => $address->city,
+                        'postal_code' => $address->postal_code,
                     ]);
                 }
 
@@ -748,7 +874,8 @@ class FrontendOrderService
                         'order_id' => $this->frontendOrder->id,
                         'coupon_id' => $validatedCoupon->id,
                         'user_id' => Auth::user()->id,
-                        'discount' => $calculatedDiscount
+                        'discount' => $calculatedDiscount,
+                        'delivery_waived' => $this->freeDeliveryWaived,
                     ]);
                 }
 
@@ -866,6 +993,167 @@ class FrontendOrderService
     /**
      * @throws Exception
      */
+    /**
+     * [GOAL STORES T-3.1.3 · 2026-09-30] Annulation d'une commande PAR SON CLIENT, avant
+     * que la cuisine ne l'ait commencée — le corps exact de `changeStatus`, extrait pour
+     * être appelé aussi par la suppression de compte.
+     *
+     * Pourquoi : un examinateur Apple/Google commande « sur place » pour tester, ne vient
+     * jamais retirer, puis supprime son compte. `DeactivateController` refusait dès qu'une
+     * commande n'était ni livrée ni annulée (Apple 5.1.1(v), Play « Suppression du compte »).
+     * Plutôt que d'inventer un second chemin d'annulation, la suppression réutilise
+     * CELUI-CI : même verrou, même seuil, même refus si payée, même remboursement de points,
+     * même journal de transition avec raison obligatoire, mêmes événements KDS/OSS.
+     *
+     * @param  string|null $cancelReason  raison (obligatoire pour la machine à états)
+     * @param  int         $targetStatus  toujours CANCELED pour un client
+     */
+    public function cancelOwnOrderBeforeAcceptance(FrontendOrder $frontendOrder, ?string $cancelReason, int $targetStatus = OrderStatus::CANCELED): FrontendOrder
+    {
+        if (is_string($cancelReason)) {
+            $cancelReason = trim($cancelReason);
+            if ($cancelReason === '') {
+                $cancelReason = null;
+            }
+        }
+        return DB::transaction(function () use ($frontendOrder, $cancelReason, $targetStatus) {
+            $locked = FrontendOrder::query()->whereKey($frontendOrder->id)->lockForUpdate()->firstOrFail();
+
+            // Idempotent : déjà annulée par une requête concurrente → aucun re-remboursement.
+            if ((int) $locked->status === (int) OrderStatus::CANCELED) {
+                return $locked;
+            }
+            // Re-valide transition + seuil sur le status FRAIS (pas le stale route-bound).
+            if (!(new \App\Rules\ValidStatusTransition($locked->status))->passes('status', $targetStatus)) {
+                throw new Exception(trans('all.message.invalid_status_transition'), 422);
+            }
+            // [FIX] KIOSK (25) et TAKEAWAY (10) borne : même seuil (annulable jusqu'à PREPARING).
+            $isKioskOrder = in_array(
+                (int) $locked->order_type,
+                [OrderType::KIOSK, OrderType::TAKEAWAY],
+                true
+            );
+            $cancelableThreshold = $isKioskOrder ? OrderStatus::PREPARING : OrderStatus::ACCEPT;
+            if ($locked->status >= $cancelableThreshold) {
+                throw new Exception(trans('all.message.order_accept'), 422);
+            }
+
+            // [P1-6 SÉCU 2026-08-04] Un client ne peut PAS auto-annuler une commande
+            // DÉJÀ PAYÉE : le seuil ne testait que `status`. Une commande carte web PAYÉE
+            // restée PENDING (avant auto-cuisine, ou seal en échec) était annulable → le
+            // remboursement `cashBack` est conditionné à `$locked->transaction` (relation
+            // hasOne toujours VIDE pour Mollie, qui n'écrit que la colonne transaction_id)
+            // → annulation SANS remboursement = argent perdu. Le remboursement d'un
+            // paiement en ligne = geste comptoir/ops (dashboard Mollie), jamais un
+            // self-cancel silencieux. Refus 422.
+            if ((int) $locked->payment_status === PaymentStatus::PAID) {
+                throw new Exception(trans('all.message.order_accept'), 422);
+            }
+
+            if ($locked->transaction) {
+                // [F-CASH-REFUND-DRAWER 2026-07-15 / P1] slug = origine du paiement.
+                $refundGateway = ((int) $locked->pos_payment_method === \App\Enums\PosPaymentMethod::CASH) ? 'cash' : 'credit';
+                app(PaymentService::class)->cashBack(
+                    $locked,
+                    $refundGateway,
+                    'TXN-' . \Illuminate\Support\Str::random(12)
+                );
+            }
+            app(LoyaltyService::class)->refundPoints($locked, 'kiosk');
+            // [POINTS À LA VALIDATION 2026-11-06 · relecture adverse P1-3] Une commande déjà ACCEPTÉE (encore annulable
+            // par le client pour un retrait) a gagné ses points à la validation : l'annulation les reprend.
+            app(LoyaltyService::class)->clawbackEarnedForOrder($locked, 'Clawback fidélité — commande annulée par le client');
+            $oldStatus = $locked->status;
+            // [AUDIT-F-004] raison → transition row (invariant ORDER_FLOW §49).
+            if (is_string($cancelReason)) {
+                $cancelReason = trim($cancelReason);
+                if ($cancelReason === '') {
+                    $cancelReason = null;
+                }
+            }
+            if ($cancelReason !== null && $locked->isFillable('reason')) {
+                $locked->reason = $cancelReason;
+            }
+            $locked->status = $targetStatus;
+            $locked->save();
+            OrderStateMachine::recordTransition(
+                FrontendOrder::class,
+                (int) $locked->id,
+                (int) $oldStatus,
+                $targetStatus,
+                Auth::check() ? (int) Auth::id() : null,
+                $cancelReason
+            );
+            // Events DispatchableAfterCommit → déférés au commit de la tx (KDS/OSS retirent la tuile).
+            try {
+                OrderStatusChanged::dispatch($locked, $oldStatus, $targetStatus);
+            } catch (\Exception $e) {
+                Log::warning('[FrontendOrder] OrderStatusChanged on cancel failed: ' . $e->getMessage());
+            }
+            SendOrderMail::dispatch(['order_id' => $locked->id, 'status' => $targetStatus]);
+            SendOrderSms::dispatch(['order_id' => $locked->id, 'status' => $targetStatus]);
+            SendOrderPush::dispatch(['order_id' => $locked->id, 'status' => $targetStatus]);
+            // [F-01] Libération stock compensatoire (idempotent via released_qty).
+            try {
+                OrderCanceled::dispatch($locked); // allow: stock-release dispatch; recordTransition wrote the canonical audit row.
+            } catch (\Exception $e) {
+                Log::warning('[FrontendOrder] OrderCanceled on cancel failed: ' . $e->getMessage()); // allow: warning only
+            }
+            return $locked;
+        });
+    }
+
+    /**
+     * [GOAL STORES T-3.1.3 · 2026-09-30] Avant d'effacer un compte : annuler TOUTES les
+     * commandes que ce client aurait pu annuler lui-même (jamais acceptées / jamais
+     * commencées selon le seuil du service, jamais payées). Celles que la cuisine a
+     * commencées ou qui ont été encaissées sont laissées telles quelles — l'appelant
+     * décide alors de refuser, avec un message qui dit pourquoi.
+     *
+     * @return int nombre de commandes annulées
+     */
+    /**
+     * [supervision D1 · 2026-11-13] Vrai si une commande de ce client resterait en cours APRÈS les annulations permises (commencée
+     * par la cuisine ou déjà payée) : la suppression sera refusée — à vérifier AVANT d'annuler quoi que ce soit, sinon le client
+     * reçoit « commande annulée » pour une annulation ensuite défaite par le refus.
+     */
+    public function aUneCommandeBloquantePourSuppression(int $userId): bool
+    {
+        return FrontendOrder::query()
+            ->where('user_id', $userId)
+            ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED, OrderStatus::RETURNED, OrderStatus::REJECTED])
+            ->get(['id', 'status', 'order_type', 'payment_status'])
+            ->contains(function ($commande) {
+                $seuil = in_array((int) $commande->order_type, [OrderType::KIOSK, OrderType::TAKEAWAY], true)
+                    ? OrderStatus::PREPARING
+                    : OrderStatus::ACCEPT;
+
+                return (int) $commande->status >= $seuil || (int) $commande->payment_status === PaymentStatus::PAID;
+            });
+    }
+
+    public function cancelAllOwnCancellableForAccountDeletion(int $userId, string $reason): int
+    {
+        $annulees = 0;
+        $ouvertes = FrontendOrder::query()
+            ->where('user_id', $userId)
+            ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED, OrderStatus::RETURNED, OrderStatus::REJECTED])
+            ->orderBy('id')
+            ->get();
+        foreach ($ouvertes as $commande) {
+            $seuil = in_array((int) $commande->order_type, [OrderType::KIOSK, OrderType::TAKEAWAY], true)
+                ? OrderStatus::PREPARING
+                : OrderStatus::ACCEPT;
+            if ((int) $commande->status >= $seuil || (int) $commande->payment_status === PaymentStatus::PAID) {
+                continue; // la cuisine a commencé, ou de l'argent a été encaissé : pas à nous d'annuler
+            }
+            $this->cancelOwnOrderBeforeAcceptance($commande, $reason, OrderStatus::CANCELED);
+            $annulees++;
+        }
+
+        return $annulees;
+    }
+
     public function changeStatus(FrontendOrder $frontendOrder, OrderStatusRequest $request): FrontendOrder
     {
         try {
@@ -891,89 +1179,7 @@ class FrontendOrderService
                     // clawback points + double libération stock ; le middleware idempotency ne dédup que les
                     // clés IDENTIQUES). On sérialise via DB::transaction + re-fetch lockForUpdate + early-return
                     // idempotent sur le status FRAIS verrouillé (miroir du durcissement OrderService::changeStatus).
-                    return DB::transaction(function () use ($frontendOrder, $request) {
-                        $locked = FrontendOrder::query()->whereKey($frontendOrder->id)->lockForUpdate()->firstOrFail();
-
-                        // Idempotent : déjà annulée par une requête concurrente → aucun re-remboursement.
-                        if ((int) $locked->status === (int) OrderStatus::CANCELED) {
-                            return $locked;
-                        }
-                        // Re-valide transition + seuil sur le status FRAIS (pas le stale route-bound).
-                        if (!(new \App\Rules\ValidStatusTransition($locked->status))->passes('status', $request->status)) {
-                            throw new Exception(trans('all.message.invalid_status_transition'), 422);
-                        }
-                        // [FIX] KIOSK (25) et TAKEAWAY (10) borne : même seuil (annulable jusqu'à PREPARING).
-                        $isKioskOrder = in_array(
-                            (int) $locked->order_type,
-                            [OrderType::KIOSK, OrderType::TAKEAWAY],
-                            true
-                        );
-                        $cancelableThreshold = $isKioskOrder ? OrderStatus::PREPARING : OrderStatus::ACCEPT;
-                        if ($locked->status >= $cancelableThreshold) {
-                            throw new Exception(trans('all.message.order_accept'), 422);
-                        }
-
-                        // [P1-6 SÉCU 2026-08-04] Un client ne peut PAS auto-annuler une commande
-                        // DÉJÀ PAYÉE : le seuil ne testait que `status`. Une commande carte web PAYÉE
-                        // restée PENDING (avant auto-cuisine, ou seal en échec) était annulable → le
-                        // remboursement `cashBack` est conditionné à `$locked->transaction` (relation
-                        // hasOne toujours VIDE pour Mollie, qui n'écrit que la colonne transaction_id)
-                        // → annulation SANS remboursement = argent perdu. Le remboursement d'un
-                        // paiement en ligne = geste comptoir/ops (dashboard Mollie), jamais un
-                        // self-cancel silencieux. Refus 422.
-                        if ((int) $locked->payment_status === PaymentStatus::PAID) {
-                            throw new Exception(trans('all.message.order_accept'), 422);
-                        }
-
-                        if ($locked->transaction) {
-                            // [F-CASH-REFUND-DRAWER 2026-07-15 / P1] slug = origine du paiement.
-                            $refundGateway = ((int) $locked->pos_payment_method === \App\Enums\PosPaymentMethod::CASH) ? 'cash' : 'credit';
-                            app(PaymentService::class)->cashBack(
-                                $locked,
-                                $refundGateway,
-                                'TXN-' . \Illuminate\Support\Str::random(12)
-                            );
-                        }
-                        app(LoyaltyService::class)->refundPoints($locked, 'kiosk');
-                        $oldStatus = $locked->status;
-                        // [AUDIT-F-004] raison → transition row (invariant ORDER_FLOW §49).
-                        $cancelReason = $request->input('reason');
-                        if (is_string($cancelReason)) {
-                            $cancelReason = trim($cancelReason);
-                            if ($cancelReason === '') {
-                                $cancelReason = null;
-                            }
-                        }
-                        if ($cancelReason !== null && $locked->isFillable('reason')) {
-                            $locked->reason = $cancelReason;
-                        }
-                        $locked->status = $request->status;
-                        $locked->save();
-                        OrderStateMachine::recordTransition(
-                            FrontendOrder::class,
-                            (int) $locked->id,
-                            (int) $oldStatus,
-                            (int) $request->status,
-                            Auth::check() ? (int) Auth::id() : null,
-                            $cancelReason
-                        );
-                        // Events DispatchableAfterCommit → déférés au commit de la tx (KDS/OSS retirent la tuile).
-                        try {
-                            OrderStatusChanged::dispatch($locked, $oldStatus, (int) $request->status);
-                        } catch (\Exception $e) {
-                            Log::warning('[FrontendOrder] OrderStatusChanged on cancel failed: ' . $e->getMessage());
-                        }
-                        SendOrderMail::dispatch(['order_id' => $locked->id, 'status' => $request->status]);
-                        SendOrderSms::dispatch(['order_id' => $locked->id, 'status' => $request->status]);
-                        SendOrderPush::dispatch(['order_id' => $locked->id, 'status' => $request->status]);
-                        // [F-01] Libération stock compensatoire (idempotent via released_qty).
-                        try {
-                            OrderCanceled::dispatch($locked); // allow: stock-release dispatch; recordTransition wrote the canonical audit row.
-                        } catch (\Exception $e) {
-                            Log::warning('[FrontendOrder] OrderCanceled on cancel failed: ' . $e->getMessage()); // allow: warning only
-                        }
-                        return $locked;
-                    });
+                    return $this->cancelOwnOrderBeforeAcceptance($frontendOrder, $request->input('reason'), (int) $request->status);
                 }
             } else {
                 abort(403, 'Access denied: you do not own this order.');
@@ -1075,6 +1281,45 @@ class FrontendOrderService
      *
      * Mirrors OrderService::assertDiscretionaryDiscountAllowed pour le coupon.
      */
+    /**
+     * [TICKET PROMO 2026-11-03 · propriétaire] Applique un coupon « livraison offerte ».
+     *
+     * Règles du propriétaire : livraison offerte dès 10 € (le minimum est déjà vérifié par
+     * `CouponService`, sur le sous-total serveur) et jusqu'à 7 km — au-delà, ce n'est plus notre
+     * livraison. Hors de ces conditions, on REFUSE la commande (422) au lieu de l'accepter
+     * sans rien offrir : le code est à usage unique, l'accepter le brûlerait pour rien.
+     * Le site n'envoie de toute façon pas le code quand les conditions ne sont pas remplies ;
+     * ce refus est la défense serveur contre une requête forgée.
+     */
+    private function applyFreeDeliveryCoupon(Coupon $coupon): void
+    {
+        // Même interrupteur que tout code promo : `assertDiscretionaryDiscountAllowed` ne le
+        // consulte que pour une remise > 0, et celle-ci vaut 0 € sur les articles.
+        if (config('pos.coupon_codes_enabled') !== true && config('pos.manual_discount_enabled') !== true) {
+            throw new HttpException(422, 'Les codes promo sont désactivés pour le moment.');
+        }
+
+        if ((int) $this->frontendOrder->order_type !== OrderType::DELIVERY) {
+            throw new HttpException(422, 'Ce code offre la livraison : choisissez « Livraison » pour en profiter.');
+        }
+
+        $maxKm = $coupon->free_delivery_max_km !== null
+            ? (float) $coupon->free_delivery_max_km
+            : (float) config('delivery.free_delivery_coupon_max_km', 7);
+        $km = $this->frontendOrder->delivery_distance_km;
+
+        if ($km === null || ! is_numeric($km) || (float) $km > $maxKm) {
+            $affiche = rtrim(rtrim(number_format($maxKm, 1, ',', ''), '0'), ',');
+            throw new HttpException(
+                422,
+                "Ce code offre la livraison jusqu'à {$affiche} km : il ne s'applique pas à cette adresse et reste valable."
+            );
+        }
+
+        $this->freeDeliveryWaived = round((float) $this->frontendOrder->delivery_charge, 2);
+        $this->frontendOrder->delivery_charge = 0;
+    }
+
     private function assertDiscretionaryDiscountAllowed(float $discount): void
     {
         if ($discount <= 0.0) {
@@ -1242,7 +1487,8 @@ class FrontendOrderService
         }
 
         // Débit FRAIS : ICI SEULEMENT on vérifie le solde (le pré-rachat, lui, a déjà payé).
-        if ((int) $loyaltyUser->loyalty_points < $pointsRequired) {
+        // [DÉCISION PROPRIÉTAIRE 2026-11-06] Points d'une commande à distance pas encore remise : non dépensables.
+        if (\App\Services\LoyaltyService::pointsDepensables((int) $loyaltyUser->id, (int) $loyaltyUser->loyalty_points) < $pointsRequired) {
             Log::warning('[Loyalty] Solde insuffisant pour un débit frais — aucune remise', [
                 'user_id' => $loyaltyUser->id,
                 'order_id' => $this->frontendOrder->id,
@@ -1390,11 +1636,11 @@ class FrontendOrderService
         for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
             $businessDate = $this->resolveBusinessDate($this->frontendOrder->order_datetime ?? null);
             $this->frontendOrder->business_date = $businessDate;
-            $this->frontendOrder->queue_number = $this->allocateQueueNumber(
-                (int) $this->frontendOrder->branch_id,
-                $businessDate,
-                $context
-            );
+            // [VG-2026-10-21 M6-002] une reprise ne repasse pas par le Cache::lock : la vente tient déjà la ligne compteur
+            // (attendre le mutex tenu par une vente qui attend NOTRE ligne = blocage croisé de 15 s).
+            $this->frontendOrder->queue_number = $attempt === 1
+                ? $this->allocateQueueNumber((int) $this->frontendOrder->branch_id, $businessDate, $context)
+                : app(QueueNumberAllocator::class)->allocate((int) $this->frontendOrder->branch_id, $businessDate);
             $applyFields();
             $this->frontendOrder->business_date = $businessDate;
 
@@ -1427,23 +1673,8 @@ class FrontendOrderService
             $lock->block(15);
             $acquired = true;
 
-            $queueNumbers = DB::table('orders')
-                ->where('branch_id', $branchId)
-                ->where('business_date', $businessDate)
-                ->whereNotNull('queue_number')
-                ->where('queue_number', 'like', 'A%')
-                ->pluck('queue_number');
-
-            $maxQueueNum = (int) $queueNumbers
-                ->filter(static fn ($queueNumber): bool => preg_match('/^A\d+$/', (string) $queueNumber) === 1)
-                ->map(static fn ($queueNumber): int => (int) substr((string) $queueNumber, 1))
-                ->max();
-
-            // [owner 2026-07-07] Le compteur quotidien démarre à kiosk.queue_start_number
-            // (32 par défaut) : 1er ordre du jour = A0032, puis suit le max existant.
-            $startNumber = max(1, (int) config('kiosk.queue_start_number', 1));
-
-            return 'A' . str_pad(max($maxQueueNum + 1, $startNumber), 4, '0', STR_PAD_LEFT);
+            // [VG-2026-10-21 M6-002] lecture COURANTE d'un compteur verrouillé jusqu'au COMMIT (plus l'instantané périmé des commandes)
+            return app(QueueNumberAllocator::class)->allocate($branchId, $businessDate);
         } catch (LockTimeoutException $exception) {
             Log::warning(sprintf(
                 '[Queue] Lock timeout for branch %s on business_date %s during %s order creation; queue number fallback disabled by D-M13.',
@@ -1863,5 +2094,263 @@ class FrontendOrderService
         } catch (\Exception $e) {
             Log::warning('[Kiosk] OrderStatusChanged broadcast failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · W3-P1-1, tour 2] Instruction d'une commande WEB : LISTE BLANCHE.
+     *
+     * La cuisine (KitchenTicketSymbolicFormatter, KitchenBundledAddonCollapser, écran cuisine) lit la formule, la boisson et
+     * la sauce des frites dans le TEXTE de l'instruction — nécessaire pour la caisse. Une liste noire de motifs ne suffisait
+     * pas (tour 2 : « Me\u{200B}nu », « + Ménu (Frîtes + Boissön) », espace insécable, « + Drink », « [Note commande :
+     * Sauce frites : Mayonnaise] » faisaient encore annoncer une formule NON payée). Désormais, pour une commande web, seules
+     * les lignes que le site produit passent, normalisées (NFKC, caractères invisibles retirés, espaces simples) :
+     *   - « Viandes en plus : … », « Sauces en plus : … » (composition facturée) ;
+     *   - « Frites: … », « Boisson menu: … », « Sauce frites : … » SEULEMENT si la ligne porte un addon menu_* AVEC son
+     *     identifiant (contrôlé et facturé par le serveur), et selon le RÔLE payé (tour 3) : frites pour menu_full /
+     *     menu_frites, boisson pour menu_full / menu_boisson ;
+     *   - la note du client « [Note : …] » / « [Note commande : …] ».
+     * Le contenu de chaque ligne gardée est neutralisé comme le fait le site (aucun « : », crochets en parenthèses, « · • | »
+     * en virgules). Toute autre ligne est retirée.
+     *
+     * @param  array<int, mixed>  $items
+     * @return array<int, mixed>
+     */
+    public static function sansFormuleNonPayee(array $items): array
+    {
+        $bornes = self::bornesFacturees($items);
+        foreach ($items as $item) {
+            if (! is_object($item) || ! isset($item->instruction) || ! is_string($item->instruction) || $item->instruction === '') {
+                continue;
+            }
+            // [AUDIT ABUSIF tour 3 · R3-ADV-001] Chaque ligne suit le RÔLE payé (rôle lié au catalogue par
+            // ValidatesAddonRoles, ratio de prix appliqué par PricingService) : « frites seules » (menu_frites) ne
+            // donne pas droit à « Boisson menu », « boisson seule » (menu_boisson) ne donne pas droit aux frites.
+            $fritesPayees = false;
+            $boissonPayee = false;
+            foreach ((isset($item->item_addons) && is_array($item->item_addons)) ? $item->item_addons : [] as $a) {
+                $role = strtolower(trim(is_object($a) ? (string) ($a->role ?? '') : (is_array($a) ? (string) ($a['role'] ?? '') : '')));
+                $id = is_object($a) ? (int) ($a->id ?? 0) : (is_array($a) ? (int) ($a['id'] ?? 0) : 0);
+                if ($id <= 0 || ! str_starts_with($role, 'menu_')) {
+                    continue;
+                }
+                if ($role !== 'menu_boisson') {
+                    $fritesPayees = true;   // menu_full, menu_formule, menu_frites
+                }
+                if ($role !== 'menu_frites') {
+                    $boissonPayee = true;   // menu_full, menu_formule, menu_boisson
+                }
+            }
+            $ligne = $bornes['lignes'][spl_object_id($item)] ?? ['sauces' => 0, 'viandes' => 0, 'nom' => ''];
+            $item->instruction = self::instructionWebAssainie($item->instruction, $fritesPayees, $boissonPayee, [
+                'sauces'  => $ligne['sauces'],
+                'viandes' => $ligne['viandes'],
+                'boisson' => $bornes['boisson'],
+                'frites'  => static fn (string $style): bool => $style !== '' && $ligne['nom'] !== ''
+                    && str_contains($ligne['nom'], self::cleCatalogue($style)),
+            ]);
+        }
+
+        return $items;
+    }
+
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · tour 6 · P1 sauces gratuites / contenu de formule] Ce que la ligne a réellement PAYÉ,
+     * relu au catalogue (jamais le nom envoyé par le client) :
+     *   - sauces en plus = quantités des extras « Sauce supplémentaire » de CET article (même règle que PricingService :
+     *     max(1, (int) quantité)) — le site y cumule les sauces du sandwich au-delà de la 1ʳᵉ et celles des frites au-delà
+     *     de la 1ʳᵉ (api.js) ;
+     *   - viandes en plus = quantités des extras « Viande supplémentaire » / « Viande en plus » de CET article ;
+     *   - boisson de formule = UN produit actif et disponible d'une catégorie Boissons, nommé exactement.
+     *
+     * @param  array<int, mixed>  $items
+     * @return array{lignes: array<int, array{sauces: int, viandes: int, nom: string}>, boisson: \Closure(string): string}
+     */
+    private static function bornesFacturees(array $items): array
+    {
+        $lire = static fn ($o, string $k) => is_object($o) ? ($o->{$k} ?? null) : (is_array($o) ? ($o[$k] ?? null) : null);
+        $idsExtras = [];
+        $idsArticles = [];
+        foreach ($items as $item) {
+            if (! is_object($item)) {
+                continue;
+            }
+            $idsArticles[] = (int) ($item->item_id ?? 0);
+            foreach ((isset($item->item_extras) && is_array($item->item_extras)) ? $item->item_extras : [] as $e) {
+                $idsExtras[] = (int) $lire($e, 'id');
+            }
+        }
+        $extras = array_filter($idsExtras) === [] ? collect() : \App\Models\ItemExtra::query()
+            ->whereIn('id', array_values(array_unique(array_filter($idsExtras))))->get(['id', 'item_id', 'name'])->keyBy('id');
+        $noms = array_filter($idsArticles) === [] ? collect() : Item::query()
+            ->whereIn('id', array_values(array_unique(array_filter($idsArticles))))->pluck('name', 'id');
+
+        $lignes = [];
+        foreach ($items as $item) {
+            if (! is_object($item)) {
+                continue;
+            }
+            $sauces = 0;
+            $viandes = 0;
+            foreach ((isset($item->item_extras) && is_array($item->item_extras)) ? $item->item_extras : [] as $e) {
+                $ext = $extras[(int) $lire($e, 'id')] ?? null;
+                if ($ext === null || (int) $ext->item_id !== (int) ($item->item_id ?? 0)) {
+                    continue;
+                }
+                $q = max(1, (int) ($lire($e, 'quantity') ?? 1));
+                $nom = self::cleCatalogue((string) $ext->name);
+                if (preg_match('/^sauces? suppl/u', $nom)) {
+                    $sauces += $q;
+                } elseif (preg_match('/^viandes? (suppl|en plus)/u', $nom)) {
+                    $viandes += $q;
+                }
+            }
+            $lignes[spl_object_id($item)] = [
+                'sauces'  => $sauces,
+                'viandes' => $viandes,
+                'nom'     => self::cleCatalogue((string) ($noms[(int) ($item->item_id ?? 0)] ?? '')),
+            ];
+        }
+
+        $boissons = null;
+        $boisson = static function (string $nom) use (&$boissons): string {
+            if ($boissons === null) {
+                $boissons = [];
+                $rows = Item::query()
+                    ->join('item_categories', 'item_categories.id', '=', 'items.item_category_id')
+                    ->whereNull('item_categories.deleted_at')
+                    ->get(['items.name', 'items.status', 'items.is_available', 'item_categories.name as categorie']);
+                foreach ($rows as $r) {
+                    if (str_contains(self::cleCatalogue((string) $r->categorie), 'boisson')) {
+                        $boissons[self::cleCatalogue((string) $r->name)] = [
+                            'nom'   => (string) $r->name,
+                            'dispo' => (int) $r->status === \App\Enums\Status::ACTIVE && (bool) $r->is_available,
+                        ];
+                    }
+                }
+            }
+            $trouvee = $boissons[self::cleCatalogue(rtrim(trim($nom), '.'))] ?? null;
+            if ($trouvee === null) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['items' => 'La boisson de votre menu n\'est pas reconnue. Modifiez l\'article pour en choisir une autre.']);
+            }
+            if (! $trouvee['dispo']) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['items' => 'La boisson « '.$trouvee['nom'].' » de votre menu n\'est plus disponible. Modifiez l\'article pour en choisir une autre.']);
+            }
+
+            return $trouvee['nom'];
+        };
+
+        return ['lignes' => $lignes, 'boisson' => $boisson];
+    }
+
+    private static function cleCatalogue(string $nom): string
+    {
+        return (string) preg_replace('/\s+/', ' ', trim(mb_strtolower(\Illuminate\Support\Str::ascii($nom))));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function listeDeNoms(string $contenu): array
+    {
+        return array_values(array_filter(array_map(
+            static fn (string $n): string => trim(rtrim(trim($n), '.')),
+            explode(',', $contenu)
+        ), static fn (string $n): bool => $n !== ''));
+    }
+
+    /**
+     * @param  bool  $fritesPayees  frites de la formule payées (« Frites: », « Sauce frites : » gardées)
+     * @param  bool|null  $boissonPayee  boisson de la formule payée (« Boisson menu: » gardée) ; null = comme $fritesPayees
+     * @param  array{sauces?: int, viandes?: int, boisson?: \Closure(string): string, frites?: \Closure(string): bool}  $bornes
+     *         ce que la ligne a payé (sansFormuleNonPayee) ; clé absente = pas de borne (appel direct)
+     */
+    public static function instructionWebAssainie(string $instruction, bool $fritesPayees, ?bool $boissonPayee = null, array $bornes = []): string
+    {
+        $boissonPayee ??= $fritesPayees;
+        // Sauces payées : d'abord celles du produit (« Sauces en plus »), le reste aux frites (1ʳᵉ sauce frites offerte).
+        $saucesRestantes = $bornes['sauces'] ?? null;
+        $gardees = [];
+        foreach (preg_split('/\R/u', $instruction) ?: [] as $ligne) {
+            $t = self::texteNormalise((string) $ligne);
+            if ($t === '') {
+                continue;
+            }
+            if (preg_match('/^\[(Note|Note commande) : (.*)\]$/u', $t, $m)) {
+                $contenu = self::contenuNeutre($m[2]);
+                if ($contenu !== '') {
+                    $gardees[] = '['.$m[1].' : '.$contenu.']';
+                }
+                continue;
+            }
+            if (preg_match('/^(Viandes en plus|Sauces en plus) : (.+)$/u', $t, $m)) {
+                $plafond = $m[1] === 'Viandes en plus' ? ($bornes['viandes'] ?? null) : $saucesRestantes;
+                if ($plafond === null) {
+                    $gardees[] = $m[1].' : '.self::contenuNeutre($m[2]);
+                    continue;
+                }
+                // Jamais plus de noms que d'extras payés : le surplus n'est pas annoncé en cuisine.
+                $noms = array_slice(self::listeDeNoms(self::contenuNeutre($m[2])), 0, max(0, (int) $plafond));
+                if ($m[1] === 'Sauces en plus') {
+                    $saucesRestantes = max(0, (int) $saucesRestantes - count($noms));
+                }
+                if ($noms !== []) {
+                    $gardees[] = $m[1].' : '.implode(', ', $noms).'.';
+                }
+                continue;
+            }
+            if (preg_match('/^(Frites|Boisson menu): (.+)$/u', $t, $m)) {
+                if ($m[1] === 'Boisson menu' && $boissonPayee) {
+                    // UNE boisson, produit actif du catalogue (sinon refus lisible) — jamais une liste ni un texte libre.
+                    $contenu = self::contenuNeutre($m[2]);
+                    $gardees[] = 'Boisson menu: '.(isset($bornes['boisson']) ? self::contenuNeutre(($bornes['boisson'])($contenu)) : $contenu);
+                } elseif ($m[1] === 'Frites' && $fritesPayees) {
+                    // Le site n'a plus d'étape « style de frites » dans la formule (facturé 1 € au comptoir) : le style n'est
+                    // gardé que s'il est celui du produit commandé lui-même (« Grande Frites Cheddar fondu »).
+                    $contenu = self::contenuNeutre($m[2]);
+                    if (! isset($bornes['frites']) || ($bornes['frites'])($contenu)) {
+                        $gardees[] = 'Frites: '.$contenu;
+                    }
+                }
+                continue;
+            }
+            if ($fritesPayees && preg_match('/^Sauce frites : (.+)$/u', $t, $m)) {
+                $contenu = self::contenuNeutre($m[1]);
+                if ($saucesRestantes !== null) {
+                    $noms = array_slice(self::listeDeNoms($contenu), 0, 1 + max(0, (int) $saucesRestantes));
+                    $saucesRestantes = max(0, (int) $saucesRestantes - max(0, count($noms) - 1));
+                    $contenu = implode(', ', $noms);
+                }
+                if ($contenu !== '') {
+                    $gardees[] = 'Sauce frites : '.$contenu;
+                }
+            }
+            // Toute autre ligne est retirée (le site ne la produit pas).
+        }
+
+        return mb_substr(implode("\n", $gardees), 0, 500);
+    }
+
+    private static function texteNormalise(string $t): string
+    {
+        if (class_exists(\Normalizer::class)) {
+            $n = \Normalizer::normalize($t, \Normalizer::FORM_KC);
+            if (is_string($n)) {
+                $t = $n;
+            }
+        }
+        $t = (string) preg_replace('/[\p{Cf}\p{Cc}]+/u', '', $t);   // invisibles (U+200B, U+202E…) et contrôles
+        $t = (string) preg_replace('/[\p{Z}\s]+/u', ' ', $t);       // toutes les espaces Unicode → une espace
+
+        return trim($t);
+    }
+
+    private static function contenuNeutre(string $t): string
+    {
+        $t = self::texteNormalise($t);
+        $t = (string) preg_replace('/\s*[:：﹕]\s*/u', ' - ', $t);
+        $t = strtr($t, ['[' => '(', ']' => ')', '［' => '(', '］' => ')', '·' => ',', '•' => ',', '|' => ',']);
+        $t = (string) preg_replace('/\s+/u', ' ', $t);
+
+        return mb_substr(trim($t), 0, 300);
     }
 }

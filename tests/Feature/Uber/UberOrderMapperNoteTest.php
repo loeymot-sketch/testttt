@@ -73,10 +73,21 @@ class UberOrderMapperNoteTest extends TestCase
             $f->cleanInstruction($line['instruction'], 'Tacos M'),
             'la note capitale bracketée survit au sanitize cuisine'
         );
+        // [2026-11-04] Contrôle mis à jour. Depuis NOTES-EN-MAJUSCULES (2026-10-19, KitchenTicketSymbolicFormatter),
+        // une note en capitales portant un mot de consigne (« SANS … ») n'est PLUS effacée : elle disparaissait du
+        // ticket en silence. L'ancien contrôle (« SANS OIGNONS SVP » brut → '') affirmait donc l'inverse de la règle
+        // voulue. La règle anti-écho, elle, vaut toujours pour un ÉCHO de nom de produit en capitales :
         $this->assertSame(
             '',
+            $f->cleanInstruction('TACOS M', 'Tacos M'),
+            'contrôle : l\'écho du nom de produit en MAJUSCULES (pos-wizard) reste retiré (règle anti-écho)'
+        );
+        // [2026-11-04 · « Garder toute consigne »] Une consigne en capitales SANS mot de la liste n'est plus perdue.
+        $this->assertSame('PEU DE SAUCE', $f->cleanInstruction('PEU DE SAUCE', 'Tacos M'));
+        $this->assertSame(
+            'SANS OIGNONS SVP',
             $f->cleanInstruction('SANS OIGNONS SVP', 'Tacos M'),
-            'contrôle : la même note NON bracketée serait perdue (règle anti-écho)'
+            'une consigne client tapée en capitales n\'est jamais perdue, même sans crochets'
         );
     }
 

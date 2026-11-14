@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use Exception;
 use App\Models\Order;
+use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use App\Http\Requests\Kds\KdsOrderRecallRequest;
 use App\Http\Requests\Kds\KdsOrderStatusRequest;
@@ -41,7 +42,7 @@ class KitchenDisplaySystemController extends AdminController
          * ⛔ TOUTE action ajoutée à ce contrôleur qui MUTE une commande doit être ajoutée ici DANS
          * LE MÊME GESTE. Sentinelle : tests/Feature/KDS/KdsReopenPermissionGuardTest.php
          */
-        $this->middleware(['permission:kitchen-display-system'])->only('index', 'changeStatus', 'orderItems', 'historyToday', 'recall', 'reopen');
+        $this->middleware(['permission:kitchen-display-system'])->only('index', 'changeStatus', 'orderItems', 'historyToday', 'recall', 'reopen', 'itemBump', 'itemRecall');
     }
 
     public function index(Request $request): \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
@@ -227,6 +228,51 @@ class KitchenDisplaySystemController extends AdminController
                 'status'  => false,
                 'message' => trans('all.message.kds_reopen_invalid_state'),
             ], 422);
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    /**
+     * [KDS-ITEM-READY-SYNC 2026-09-23] Audit finding #4 : la pastille "prêt" par
+     * article vivait uniquement dans le localStorage du navigateur (kds.js) —
+     * un second écran/appareil affichait un état différent pour la même
+     * commande en cours. Ce SSOT serveur est INDÉPENDANT d'`OrderStatus` (frozen
+     * §7) : marquer un article prêt ne mute jamais le statut de la commande —
+     * c'est kds.js qui décide, une fois TOUS les articles marqués, d'appeler
+     * `changeStatus` séparément (inchangé).
+     *
+     * Idempotent : rebump un article déjà marqué prêt est un no-op silencieux.
+     *
+     * Route: `POST /api/admin/kds-order/items/{orderItem}/bump`
+     */
+    public function itemBump(OrderItem $orderItem): \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
+    {
+        try {
+            $result = $this->kitchenDisplaySystemOrderService->bumpItem($orderItem);
+            return response(['status' => true] + $result, 200);
+        } catch (HttpException $e) {
+            return response(['status' => false, 'message' => $e->getMessage()], $e->getStatusCode());
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    /**
+     * [KDS-ITEM-READY-SYNC 2026-09-23] Annule le bump d'un article — miroir du
+     * délai de grâce 60s déjà appliqué côté client (kds.js recallItem),
+     * désormais aussi vérifié serveur pour qu'un appel API direct ne puisse
+     * pas contourner la fenêtre.
+     *
+     * Route: `POST /api/admin/kds-order/items/{orderItem}/recall`
+     */
+    public function itemRecall(OrderItem $orderItem): \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
+    {
+        try {
+            $result = $this->kitchenDisplaySystemOrderService->recallItem($orderItem);
+            return response(['status' => true] + $result, 200);
+        } catch (HttpException $e) {
+            return response(['status' => false, 'message' => $e->getMessage()], $e->getStatusCode());
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

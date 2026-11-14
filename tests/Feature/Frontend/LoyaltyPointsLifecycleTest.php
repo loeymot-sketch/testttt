@@ -42,6 +42,7 @@ class LoyaltyPointsLifecycleTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seedSpatieRoles();
         Settings::group('loyalty_setup')->set([
             'loyalty_points_per_euro'            => self::TAUX,
             'loyalty_points_for_1_euro_discount' => 100,
@@ -79,10 +80,13 @@ class LoyaltyPointsLifecycleTest extends TestCase
      */
     private function client(int $soldeInitial = 0): User
     {
-        return User::factory()->create([
+        $u = User::factory()->create([
             'loyalty_points' => $soldeInitial,
             'loyalty_code'   => 'LOY' . strtoupper(substr(uniqid(), -6)),
         ]);
+        $u->assignRole('Customer'); // [POINTS À LA VALIDATION 2026-11-06] un client inscrit porte le rôle « Customer » (CustomerAccount::isCustomer) : le repli par user_id ne crédite qu'un client
+
+        return $u;
     }
 
     private function solde(User $user): int

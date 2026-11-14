@@ -13,7 +13,7 @@ const { test, expect } = require('@playwright/test');
 const { waitForLoyaltyReady, gotoLoyaltyScreen } = require('./utils/waitForLoyaltyReady');
 
 test('S04 — Panel redeem continu : pas de 100, confirm → POST réel, erreur FR, zéro débit client', async ({ page }) => {
-  await waitForLoyaltyReady(page, { seedAccount: { balance: 347 } });
+  await waitForLoyaltyReady(page, { seedAccount: { balance: 1347 } });
   await gotoLoyaltyScreen(page);
 
   await page.click('[data-testid="loyalty-tab-rewards"]');
@@ -22,13 +22,14 @@ test('S04 — Panel redeem continu : pas de 100, confirm → POST réel, erreur 
   // Règle du modèle continu affichée
   await expect(page.locator('[data-testid="redeem-rule"]')).toContainText('100 pts = 1 €');
 
-  // Sélection par multiples de 100, clampée au solde (347 → max 300)
-  await expect(page.locator('[data-testid="redeem-points-value"]')).toContainText('100 pts');
+  // Le backend impose un minimum de 1000 points (1347 → max 1300).
+  await expect(page.locator('[data-testid="redeem-points-value"]')).toContainText('1000 pts');
   await page.click('button[aria-label="Ajouter 100 points"]');
   await page.click('button[aria-label="Ajouter 100 points"]');
-  await expect(page.locator('[data-testid="redeem-points-value"]')).toContainText('300 pts');
+  await page.click('button[aria-label="Ajouter 100 points"]');
+  await expect(page.locator('[data-testid="redeem-points-value"]')).toContainText('1300 pts');
   await expect(page.locator('button[aria-label="Ajouter 100 points"]')).toBeDisabled(); // plafond solde
-  await expect(page.locator('[data-testid="redeem-euro-value"]')).toContainText('3,00');
+  await expect(page.locator('[data-testid="redeem-euro-value"]')).toContainText('13,00');
 
   // CTA → confirmation → submit = exactement 1 POST /loyalty/redeem
   const redeemPosts = [];
@@ -45,7 +46,7 @@ test('S04 — Panel redeem continu : pas de 100, confirm → POST réel, erreur 
 
   // Le client n'a RIEN débité localement (backend = SSOT des points)
   const balance = await page.evaluate(() => window.LC.loyalty.account.balance);
-  expect(balance).toBe(347);
+  expect(balance).toBe(1347);
   const redeems = await page.evaluate(() => window.LC.loyalty.history.filter(h => h.type === 'redeem').length);
   expect(redeems).toBe(0);
 

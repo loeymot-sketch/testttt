@@ -1,0 +1,503 @@
+{
+  "tag": "E2E-S-479446",
+  "startedAt": "2026-10-23T18:34:39.454Z",
+  "instrument": {
+    "miroirFunnelSha16": "a263ecac49f6f500",
+    "enLigneFunnelSha16": "a263ecac49f6f500",
+    "baliseFunnel": "compiled/funnel.js?v=20260929audit1",
+    "metas": {
+      "api-base-url": "http://127.0.0.1:8766",
+      "api-key-locale": true,
+      "feature-delivery": null,
+      "feature-online-card": "1",
+      "mollie-testmode": "0",
+      "uber-eats-url": "https://www.ubereats.com/fr/store/le-cayenne/C1s3XHn2V2m_D8d6IOVJQg"
+    },
+    "serveurLivraison": {
+      "status": true,
+      "enabled": true,
+      "grid": {
+        "home_city": "Hénin-Beaumont",
+        "home_fee": 3.9,
+        "tiers": [
+          {
+            "max_km": 5,
+            "fee": 4.9
+          },
+          {
+            "max_km": 8,
+            "fee": 5.9
+          },
+          {
+            "max_km": 10,
+            "fee": 6.9
+          }
+        ],
+        "max_km": 10
+      }
+    }
+  },
+  "states": [
+    {
+      "id": "D-02-carte",
+      "url": "/#menu",
+      "nbCaracteres": 3625,
+      "http4xx": [],
+      "consoleErrors": [],
+      "alertsVisibles": [],
+      "png": true
+    },
+    {
+      "id": "D-03-assistant-recap",
+      "url": "/#menu",
+      "recap": {
+        "title": "RÉCAP",
+        "next": "Ajouter au panier 7,90 €",
+        "disabled": false,
+        "on": [],
+        "total": 7.9
+      },
+      "nbCaracteres": 4230,
+      "http4xx": [],
+      "consoleErrors": [],
+      "alertsVisibles": [],
+      "png": true
+    },
+    {
+      "id": "D-04-panier",
+      "url": "/#menu",
+      "panierEuros": [
+        7.9,
+        7.9,
+        7.9
+      ],
+      "nbCaracteres": 3789,
+      "http4xx": [],
+      "consoleErrors": [],
+      "alertsVisibles": [],
+      "png": true
+    },
+    {
+      "id": "D-05-commande-mode",
+      "url": "/#payment",
+      "radios": [
+        "🛍️\nÀ emporter\nTu viens chercher"
+      ],
+      "lienUber": [
+        {
+          "txt": "🛵 Livraison Sur Uber Eats →",
+          "href": "https://www.ubereats.com/fr/store/le-cayenne/C1s3XHn2V2m_D8d6IOVJQg",
+          "target": "_blank"
+        }
+      ],
+      "nbCaracteres": 2194,
+      "http4xx": [],
+      "consoleErrors": [],
+      "alertsVisibles": [],
+      "png": true
+    },
+    {
+      "id": "D-06-avant-confirmer",
+      "url": "/#payment",
+      "ctaAvant": "Confirmer ma commande 7,90 €",
+      "nbCaracteres": 2310,
+      "http4xx": [
+        "POST /api/auth/guest-signup/email-login -> 422"
+      ],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 422 (Unprocessable Content)"
+      ],
+      "alertsVisibles": [
+        "Le code n'a pas pu être envoyé. Réessaie dans un instant."
+      ],
+      "png": false
+    },
+    {
+      "id": "D-07-confirmation",
+      "url": "/#confirm",
+      "nbCaracteres": 1097,
+      "http4xx": [],
+      "consoleErrors": [],
+      "alertsVisibles": [],
+      "png": true
+    },
+    {
+      "id": "D-08-suivi",
+      "url": "/#track",
+      "nbCaracteres": 1242,
+      "http4xx": [],
+      "consoleErrors": [],
+      "alertsVisibles": [],
+      "png": true
+    }
+  ],
+  "checks": [
+    {
+      "id": "D carte : produits affichés",
+      "ok": true,
+      "detail": 29
+    },
+    {
+      "id": "D carte : chaque produit affiché existe en base (items actifs)",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "D carte : aucune image cassée",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "D carte : console sans erreur",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "D assistant : une sauce réelle (Algérienne) a été choisie",
+      "ok": true,
+      "detail": [
+        "PAIN OU GALETTE ?: 🥖 Pain",
+        "CHOISIS 1 VIANDE: Mexicanos Inclus",
+        "SAUCE: Fromagère maison Incluse,Algérienne +0,50 €",
+        "CRUDITÉS: Salade,Tomate,Oignon",
+        "SUPPLÉMENTS GOURMANDS: ",
+        "FAIRE UN MENU ?: 🚫 Sans formule Juste le plat",
+        "RÉCAP: "
+      ]
+    },
+    {
+      "id": "D assistant : total du récap ≥ prix de la fiche",
+      "ok": true,
+      "detail": {
+        "recap": 7.9,
+        "fiche": 7.4
+      }
+    },
+    {
+      "id": "D panier : total du panier == total du récap de l’assistant",
+      "ok": true,
+      "detail": {
+        "panier": 7.9,
+        "recap": 7.9,
+        "euros": [
+          7.9,
+          7.9,
+          7.9
+        ]
+      }
+    },
+    {
+      "id": "D LIVRAISON (en ligne) : une seule tuile radio (À emporter) — pas de livraison propre",
+      "ok": true,
+      "detail": [
+        "🛍️\nÀ emporter\nTu viens chercher"
+      ]
+    },
+    {
+      "id": "D LIVRAISON (en ligne) : la tuile « Livraison » est un lien vers Uber Eats",
+      "ok": true,
+      "detail": [
+        {
+          "txt": "🛵 Livraison Sur Uber Eats →",
+          "href": "https://www.ubereats.com/fr/store/le-cayenne/C1s3XHn2V2m_D8d6IOVJQg",
+          "target": "_blank"
+        }
+      ]
+    },
+    {
+      "id": "D LIVRAISON (en ligne) : aucun champ adresse, aucun appel /delivery/* (status, suggest, quote)",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "D paiement : total du bouton == total du panier",
+      "ok": true,
+      "detail": {
+        "bouton": "Confirmer ma commande 7,90 €",
+        "panier": 7.9
+      }
+    },
+    {
+      "id": "D paiement : aucune ligne « Livraison/Offerte » dans le récap d’un retrait",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "id": "TOTAUX : panier == bouton == confirmation == API == base (orders.total)",
+      "ok": true,
+      "detail": {
+        "produit": "Cayenne",
+        "panier": 7.9,
+        "bouton": 7.9,
+        "confirmation": 7.9,
+        "api": 7.9,
+        "base": 7.9
+      }
+    },
+    {
+      "id": "BASE : commande à emporter (order_type=5 retrait ?) payée au comptoir, sans frais de livraison",
+      "ok": true,
+      "detail": {
+        "id": "8874",
+        "order_type": "10",
+        "payment_method": "1",
+        "payment_status": "10",
+        "status": "1",
+        "subtotal": "7.900000",
+        "discount": "0.000000",
+        "delivery_charge": "0.000000",
+        "total": "7.900000",
+        "source_surface": "web"
+      }
+    },
+    {
+      "id": "BASE : la ligne est bien le produit choisi",
+      "ok": true,
+      "detail": [
+        "22\tCayenne\t1\t7.400000\t7.900000\t[{\"id\":976,\"quantity\":1},{\"id\":450,\"quantity\":1},{\"id\":453,\"quantity\":1}]\t[{\"id\":428,\"quantity\":1,\"name\":\"Sauce suppl\\\\u00e9mentaire (Alg\\\\u00e9rienne)\"},{\"id\":49,\"quantity\":1},{\"id\":50,\"quantity\":1},{\"id\":51,\"quantity\":1}]\t{\"lines\": [{\"quantity\": 1, \"line_total\": 0, \"unit_price\": 0, \"attribute_id\": 1, \"variation_id\": 976, \"attribute_name\": \"Viande 1\", \"variation_name\": \"Mexicanos\"}, {\"quantity\": 1, \"line_total\": 0, \"unit_price\": 0, \"attribute_id\": 6, \"variation_id\": 450, \"attribute_name\": \"Type de Pain\", \"variation_na"
+      ]
+    },
+    {
+      "id": "CONFIRMATION : délai affiché plausible (≤ 120 min)",
+      "ok": true,
+      "detail": [
+        "~10–15 min"
+      ]
+    },
+    {
+      "id": "SUIVI : délai plausible (≤ 120 min)",
+      "ok": true,
+      "detail": [
+        "~10–15 min"
+      ]
+    },
+    {
+      "id": "D parcours complet : aucun appel /delivery/* sur la version en ligne",
+      "ok": true,
+      "detail": []
+    }
+  ],
+  "prodBloquees": [],
+  "origines": {
+    "http://127.0.0.1:8012": 109,
+    "http://127.0.0.1:8766": 13
+  },
+  "orders": [
+    {
+      "essai": "Cayenne",
+      "http": 201,
+      "id": 8874,
+      "serial": "2310268874",
+      "totalApi": 7.9,
+      "envoye": {
+        "clefs": [
+          "branch_id",
+          "order_type",
+          "source",
+          "is_advance_order",
+          "payment_method",
+          "items",
+          "expected_total"
+        ],
+        "payment_method": 1,
+        "order_type": 10,
+        "expected_total": 7.9,
+        "items": "\"[{\\\"item_id\\\":22,\\\"quantity\\\":1,\\\"item_variations\\\":[{\\\"id\\\":976,\\\"quantity\\\":1},{\\\"id\\\":450,\\\"quantity\\\":1},{\\\"id\\\":453,\\\"quantity\\\":1}],\\\"item_extras\\\":[{\\\"id\\\":428,\\\"quantity\\\":1,\\\"name\\\":\\\"Sauce supplémentaire (Algérienne)\\\"},{\\\"id\\\":49,\\\"quantity\\\":1},{\\\"id\\\":50,\\\"quantity\\\":1},{\\\"id\\\":51,\\\"quantity\\\":1}],\\\"instruction\\\":\\\"Sauces en plus : Algérienne.\\\"}]\""
+      },
+      "base": {
+        "id": "8874",
+        "order_type": "10",
+        "payment_method": "1",
+        "payment_status": "10",
+        "status": "1",
+        "subtotal": "7.900000",
+        "discount": "0.000000",
+        "delivery_charge": "0.000000",
+        "total": "7.900000",
+        "source_surface": "web"
+      },
+      "lignesBase": [
+        "22\tCayenne\t1\t7.400000\t7.900000\t[{\"id\":976,\"quantity\":1},{\"id\":450,\"quantity\":1},{\"id\":453,\"quantity\":1}]\t[{\"id\":428,\"quantity\":1,\"name\":\"Sauce suppl\\\\u00e9mentaire (Alg\\\\u00e9rienne)\"},{\"id\":49,\"quantity\":1},{\"id\":50,\"quantity\":1},{\"id\":51,\"quantity\":1}]\t{\"lines\": [{\"quantity\": 1, \"line_total\": 0, \"unit_price\": 0, \"attribute_id\": 1, \"variation_id\": 976, \"attribute_name\": \"Viande 1\", \"variation_name\": \"Mexicanos\"}, {\"quantity\": 1, \"line_total\": 0, \"unit_price\": 0, \"attribute_id\": 6, \"variation_id\": 450, \"attribute_name\": \"Type de Pain\", \"variation_na"
+      ],
+      "annulation": 200,
+      "statutApres": "16"
+    }
+  ],
+  "quotes": [],
+  "notes": [
+    "instrument : {\"miroirFunnelSha16\":\"a263ecac49f6f500\",\"enLigneFunnelSha16\":\"a263ecac49f6f500\",\"baliseFunnel\":\"compiled/funnel.js?v=20260929audit1\",\"metas\":{\"api-base-url\":\"http://127.0.0.1:8766\",\"api-key-locale\":true,\"feature-delivery\":null,\"feature-online-card\":\"1\",\"mollie-testmode\":\"0\",\"uber-eats-url\":\"https://www.ubereats.com/fr/store/le-cayenne/C1s3XHn2V2m_D8d6IOVJQg\"},\"serveurLivraison\":{\"status\":true,\"enabled\":true,\"grid\":{\"home_city\":\"Hénin-Beaumont\",\"home_fee\":3.9,\"tiers\":[{\"max_km\":5,\"fee\":4.9},{\"max_km\":8,\"fee\":5.9},{\"max_km\":10,\"fee\":6.9}],\"max_km\":10}}}",
+    "guest-signup/email-login -> HTTP 422",
+    "POST /api/frontend/order (Cayenne) -> HTTP 201 id=8874 total=7.9 corps=",
+    "annulation commande de test 8874 -> HTTP 200, status=16 "
+  ],
+  "carte": {
+    "nbProduits": 29,
+    "nomsCarte": [
+      "Cayenne",
+      "Suprême",
+      "Méga",
+      "Terminator",
+      "Sandwich Classique",
+      "Galette Classique",
+      "Galette Cayenne",
+      "Chicken Burger",
+      "Cheese Burger",
+      "Double Cheese",
+      "Fish Burger",
+      "Big Burger",
+      "Grill Burger",
+      "Tacos M",
+      "Tacos L",
+      "Tacos XL",
+      "Bol Frites",
+      "Bol Riz",
+      "Petite Frites",
+      "Grande Frites",
+      "Glace",
+      "Tarte Daim",
+      "Tiramisu",
+      "Menu Enfant Nuggets",
+      "Menu Enfant Chicken Burger",
+      "Coca-Cola Zero 33cl",
+      "Fanta Orange 33cl",
+      "Sprite 33cl",
+      "Oasis Tropical 33cl"
+    ],
+    "absentsDeLaBase": [],
+    "imagesCassees": []
+  },
+  "assistant": {
+    "fiche": "SIGNATURE FAIT MAISON CUIT À LA COMMANDE SANDWICHS CAYENNE Compose-le à ton goût à l’étape suivante. DANS TA COMMANDE Poulet mariné, cheddar, oignons rouges, tomates, salade, mélange maison de fromage et crème fraîche. ⏱ ~10 min de cuisson 📍 Retrait Hénin-Beaumont Gluten Voir les infos allergènes À",
+    "prixFiche": 7.4,
+    "journal": [
+      {
+        "title": "PAIN OU GALETTE ?",
+        "next": "Continuer 7,40 €",
+        "total": 7.4,
+        "on": [
+          "🥖 Pain"
+        ],
+        "consigne": null,
+        "desactiveAvantChoix": false
+      },
+      {
+        "title": "CHOISIS 1 VIANDE",
+        "next": "Continuer 7,40 €",
+        "total": 7.4,
+        "on": [
+          "Mexicanos Inclus"
+        ],
+        "consigne": "1 sélectionné · 1 minimum · 4 maximum",
+        "desactiveAvantChoix": true
+      },
+      {
+        "title": "SAUCE",
+        "next": "Continuer 7,90 €",
+        "total": 7.9,
+        "on": [
+          "Fromagère maison Incluse",
+          "Algérienne +0,50 €"
+        ],
+        "consigne": "2 sélectionnés · 1 minimum · 4 maximum",
+        "desactiveAvantChoix": false
+      },
+      {
+        "title": "CRUDITÉS",
+        "next": "Continuer 7,90 €",
+        "total": 7.9,
+        "on": [
+          "Salade",
+          "Tomate",
+          "Oignon"
+        ],
+        "consigne": null,
+        "desactiveAvantChoix": false
+      },
+      {
+        "title": "SUPPLÉMENTS GOURMANDS",
+        "next": "Continuer 7,90 €",
+        "total": 7.9,
+        "on": [],
+        "consigne": null,
+        "desactiveAvantChoix": false
+      },
+      {
+        "title": "FAIRE UN MENU ?",
+        "next": "Voir récap 7,90 €",
+        "total": 7.9,
+        "on": [
+          "🚫 Sans formule Juste le plat"
+        ],
+        "consigne": null,
+        "desactiveAvantChoix": false
+      },
+      {
+        "title": "RÉCAP",
+        "next": "Ajouter au panier 7,90 €",
+        "total": 7.9,
+        "on": []
+      }
+    ]
+  },
+  "panier": {
+    "texte": "PANIER · 1 article Cayenne + Mexicanos, Algérienne − 1 + 7,90 € MODIFIER Sous-total 7,90 € + Fidélité +79 pts Total 7,90 € Passer commande Heure de retrait, code promo et note cuisine (allergies) à l'étape suivante.",
+    "euros": [
+      7.9,
+      7.9,
+      7.9
+    ],
+    "totalPanier": 7.9,
+    "lignes": []
+  },
+  "modeCommande": {
+    "radios": [
+      "🛍️ À emporter Tu viens chercher"
+    ],
+    "lienUber": [
+      {
+        "txt": "🛵 Livraison Sur Uber Eats →",
+        "href": "https://www.ubereats.com/fr/store/le-cayenne/C1s3XHn2V2m_D8d6IOVJQg",
+        "target": "_blank"
+      }
+    ],
+    "champAdresse": 0,
+    "deliveryCallsJusquIci": []
+  },
+  "paiement": {
+    "modes": [
+      "★ CONSEILLÉ 💵 Payer sur place Espèces ou carte au comptoir — ton plat t'attend",
+      "VISA Carte bancaire (en ligne) Débit sécurisé (Mollie) — tu ne quittes pas le site"
+    ],
+    "ctaAvant": "Confirmer ma commande 7,90 €",
+    "totalCta": 7.9,
+    "creneaux": [
+      "Dès que prêt\n~10-15 min",
+      "Dans 30 min\n+30 min",
+      "Dans 40 min\n+40 min",
+      "Choisir une heure\n—"
+    ]
+  },
+  "confirmation": {
+    "qr": [
+      "QR de retrait — commande 2310268874"
+    ],
+    "boutons": [
+      "Suivre ma commande",
+      "Retour à l'accueil"
+    ],
+    "ticket": "C'EST PARTI ! Ta commande #2310268874 est envoyée. Présente ce QR à la caisse pour la récupérer. Tu paies sur place. TICKET RETRAIT HÉNIN-BEAUMONT 2310268874 PRÊT DANS ~10–15 min TOTAL 7,90 € ✓ ENVOYÉE EN CUISINE Suivre ma commande Retour à l'accueil",
+    "totalConfirmation": 7.9,
+    "nomClientBase": "E2E-S-479446 Client",
+    "delaisAffiches": [
+      "~10–15 min"
+    ]
+  },
+  "suivi": {
+    "texte": "Aller au contenu Commandes Fidélité Panier 👤 Mon compte Accueil Menu Avis Réseaux Itinéraire Suivi de ta commande COMMANDE REÇUE #2310268874 Prête dans ~10–15 min Ta commande est en caisse / cuisine. Le statut se met à jour automatiquement. ✓ Reçu 2 Cuisine 3 Prêt 4 Récupéré NUMÉRO 2310268874 TOTAL 7,90 € TA COMMANDE 1× Cayenne Voir le QR de retrait 🎁 +79 pts en attente Ils seront crédités après le retrait validé par la caisse. SUIVI EN DIRECT 📞 Une question ? 03 65 67 82 91 · réponse immédiate RETOUR À L'ACCUEIL LE CAYENNE Sandwich Cayenne signature, tacos M & L, bols Frites/Riz, galettes — fait maison à Hénin-Beaumont. Du peuple, pour le peuple. Commande en ligne, retrait sur place. NAVIGATION Accueil Menu complet Programme fidélité Avis clients Nos réseaux La carte et les prix Horaires & accès CONTACT 03 65 67 82 91 contact@lecayenne.fr 437 Rue Élie Gruyelle 62110 Hénin-Beaumont Ou",
+    "delais": [
+      "~10–15 min"
+    ]
+  },
+  "finishedAt": "2026-10-23T18:35:05.939Z",
+  "pngUtilises": 6
+}

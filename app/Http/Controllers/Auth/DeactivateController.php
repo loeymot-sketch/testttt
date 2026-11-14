@@ -18,6 +18,14 @@ class DeactivateController extends Controller
 
     function deleteAccount(Request $request): \Illuminate\Http\Response|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
     {
+        // [test-e2e stores F-005] Jeton Apple lu AVANT la transaction et révoqué APRÈS sa validation : un appel réseau ne tient
+        // plus la transaction ouverte, et une suppression refusée (commande en cuisine…) ne révoque rien chez Apple.
+        $jetonApple = null;
+        try {
+            $jetonApple = $request->user()?->apple_refresh_token;
+        } catch (\Throwable) {
+            $jetonApple = null;   // jeton illisible (clé de chiffrement changée) : rien à révoquer
+        }
         try {
             DB::transaction(function () use ($request) {
                 $user = $request->user();
@@ -44,17 +52,42 @@ class DeactivateController extends Controller
                  * d'exploitation ne puisse pas se supprimer par cette porte.
                  */
                 $premierRole = $user->roles->first();
-                $estClient = $premierRole && $premierRole->name === 'Customer';
+                // [test-e2e stores P20-001 · 2026-11-13] TOUS les rôles doivent être « Customer » (comme l'admin et le rattrapage) :
+                //   un compte qui porte aussi un rôle d'exploitation ne s'efface pas par cette porte.
+                $estClient = $premierRole && $premierRole->name === 'Customer' && $user->roles->every(fn ($r) => $r->name === 'Customer');
+
+                // [GOAL STORES T-3.1.3 · 2026-09-30] Ce que le client aurait pu annuler lui-même
+                // (jamais commencé par la cuisine, jamais payé) est annulé par le chemin
+                // d'annulation client existant — puis seulement on regarde s'il reste une
+                // commande qui bloque. Sans ça, un examinateur Apple/Google qui commande « sur
+                // place » sans jamais retirer ne pouvait plus supprimer son compte (5.1.1(v)).
+                // Tout se passe dans la transaction englobante : un refus plus bas annule aussi
+                // ces annulations — on ne supprime jamais « à moitié ».
+                // [supervision D1 · 2026-11-13] Verrou de la ligne du client, puis rôles et commande bloquante vérifiés AVANT toute
+                //   annulation : un refus n'envoie plus « commande annulée » pour une annulation aussitôt défaite.
+                \App\Models\User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->whereKey($user->id)->lockForUpdate()->first(['id']);
+                if (! $estClient) {
+                    throw new Exception(trans('all.message.only_customer_delete'), 422);
+                }
+                if (app(\App\Services\FrontendOrderService::class)->aUneCommandeBloquantePourSuppression((int) $user->id)) {
+                    throw new Exception(trans('all.message.account_not_delete_kitchen'), 422);
+                }
+                app(\App\Services\FrontendOrderService::class)->cancelAllOwnCancellableForAccountDeletion(
+                    (int) $user->id,
+                    'Suppression du compte par le client'
+                );
 
                 $checkOrder = Order::where('user_id', $user->id)->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED])->first();
 
                 if (! $estClient) {
                     throw new Exception(trans('all.message.only_customer_delete'), 422);
                 } else if ($checkOrder) {
-                    throw new Exception(trans('all.message.account_not_delete'), 422);
+                    throw new Exception(trans('all.message.account_not_delete_kitchen'), 422);
                 }
 
                 $user->addresses()->delete();
+
+                app(\App\Services\Account\AnonymisationCompte::class)->effacerResidus((int) $user->id);
 
                 /**
                  * [APPS 2026-08-19] EFFACEMENT RÉEL DES DONNÉES PERSONNELLES.
@@ -78,26 +111,7 @@ class DeactivateController extends Controller
                  * pendant six ans (NF525), et le RGPD prévoit explicitement ce cas. On efface
                  * le PROFIL, pas la comptabilité.
                  */
-                $user->name = 'Compte supprimé';
-                $user->email = null;
-                // `users.phone` est NOT NULL (migration 2026_05_16_140100) : on ne peut pas y
-                // écrire null. Le préfixe `PENDING_` est la convention déjà en place pour
-                // « ce n'est pas un vrai numéro » — `PhoneDisplay::safe()` le masque à
-                // l'affichage et `ValidPhone` le refuse. Réutiliser cette convention évite
-                // d'introduire un second vocabulaire que les gardes existantes ignoreraient.
-                $user->phone = 'PENDING_DELETED_' . bin2hex(random_bytes(6));
-                // [APPS 2026-08-19] Le numéro DÉCLARÉ (comptes ouverts par connexion
-                // Apple/Google) est une donnée personnelle au même titre que l'autre :
-                // l'oublier ici aurait laissé un numéro de téléphone en base après une
-                // suppression annoncée comme définitive.
-                $user->contact_phone = null;
-                $user->username = 'supprime-' . Str::random(12);
-                $user->apple_sub = null;
-                $user->google_sub = null;
-                $user->loyalty_code = null;
-                $user->device_token = null;
-                $user->web_token = null;
-                $user->save();
+                app(\App\Services\Account\AnonymisationCompte::class)->anonymiserIdentite($user);
 
                 // TOUS les jetons, pas seulement celui de l'appareil courant : un client qui
                 // supprime son compte depuis son téléphone ne doit pas laisser une session
@@ -111,6 +125,12 @@ class DeactivateController extends Controller
 
                 session()->flush();
             });
+
+            // [STORES 2026-11-12 · Apple 5.1.1(v)] Révocation chez Apple, comme Apple l'exige pour une suppression de compte.
+            // Non bloquante : un refus d'Apple est journalisé, la suppression chez nous est faite (le client l'a demandée).
+            if (filled($jetonApple)) {
+                app(\App\Services\Auth\AppleTokenRevoker::class)->revoquer((string) $jetonApple);
+            }
 
             return response(['status' => true, 'message' => trans("all.message.account_delete_success")]);
         } catch (Exception $exception) {

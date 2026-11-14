@@ -126,7 +126,7 @@ class CleanupTestFixturesCommand extends Command
             $deleted['order_addresses'] = $this->deleteWhereIn('order_addresses', 'order_id', $ids['order_ids']);
             $deleted['order_coupons'] = $this->deleteWhereIn('order_coupons', 'order_id', $ids['order_ids']);
             $deleted['orders'] = $this->deleteWhereIn('orders', 'id', $ids['order_ids']);
-            $deleted['stock_movements'] = $this->deleteWhereIn('stock_movements', 'id', $ids['stock_movement_ids']);
+            $deleted['stock_movements'] = 0; // ajout seul (trigger 45000) : jamais supprimé
             $deleted['stock_levels'] = $this->deleteWhereIn('stock_levels', 'id', $ids['stock_level_ids']);
             $deleted['item_branch_availability'] = $this->deleteWhereIn('item_branch_availability', 'item_id', $ids['item_ids']);
             $deleted['item_wizard_steps'] = $this->deleteWhereIn('item_wizard_steps', 'id', $ids['wizard_step_ids']);
@@ -153,6 +153,22 @@ class CleanupTestFixturesCommand extends Command
                 ->merge(DB::table('items')->whereIn('item_category_id', $categoryIds)->pluck('id'))
                 ->unique()
                 ->values();
+        }
+
+        // [2026-11-04] `stock_movements` est en AJOUT SEUL depuis le 2026-05-18 (trigger BEFORE DELETE SIGNAL
+        // 45000, migration add_stock_movements_immutability_triggers — qui visait précisément ce nettoyage).
+        // Cette commande n'avait jamais été adaptée : dès qu'un article de test avait bougé en stock, le DELETE
+        // levait l'exception et TOUT le nettoyage était annulé (transaction), ce qui faisait échouer les bancs
+        // e2e caisse→cuisine dès leur premier appel. Même règle que pour les commandes fiscalisées ci-dessous :
+        // ce qui porte une ligne immuable n'est PAS supprimé. Un article dont un niveau de stock a des
+        // mouvements reste en place (avec ses déclinaisons, son niveau de stock et sa catégorie).
+        $itemsProteges = $this->itemsAvecMouvementsDeStock($itemIds);
+        if ($itemsProteges->isNotEmpty()) {
+            $itemIds = $itemIds->reject(fn ($id) => $itemsProteges->contains($id))->values();
+            if (Schema::hasTable('items') && Schema::hasColumn('items', 'item_category_id')) {
+                $categoriesProtegees = DB::table('items')->whereIn('id', $itemsProteges)->pluck('item_category_id')->filter()->unique();
+                $categoryIds = $categoryIds->reject(fn ($id) => $categoriesProtegees->contains($id))->values();
+            }
         }
 
         $variationIds = $this->childIds('item_variations', 'item_id', $itemIds);
@@ -207,18 +223,9 @@ class CleanupTestFixturesCommand extends Command
         $orderItemIds = $this->childIds('order_items', 'order_id', $orderIds);
 
         $stockLevelIds = $this->stockLevelIds($itemIds, $variationIds, $extraIds);
+        // Jamais de suppression dans `stock_movements` (ajout seul, voir plus haut) : les niveaux de stock
+        // restants n'ont, par construction, aucun mouvement.
         $stockMovementIds = collect();
-        if (Schema::hasTable('stock_movements')) {
-            if ($stockLevelIds->isNotEmpty() && Schema::hasColumn('stock_movements', 'stock_level_id')) {
-                $stockMovementIds = $stockMovementIds->merge(DB::table('stock_movements')->whereIn('stock_level_id', $stockLevelIds)->pluck('id'));
-            }
-            if (Schema::hasColumn('stock_movements', 'reference_id')) {
-                $stockMovementIds = $stockMovementIds->merge(DB::table('stock_movements')->whereIn('reference_id', $orderIds)->pluck('id'));
-            }
-            if (Schema::hasColumn('stock_movements', 'idempotency_key')) {
-                $stockMovementIds = $stockMovementIds->merge(DB::table('stock_movements')->where('idempotency_key', 'like', $prefix.'%')->pluck('id'));
-            }
-        }
 
         $wizardProfileIds = $this->childIds('item_wizard_profiles', 'item_id', $itemIds);
         $wizardStepIds = $this->childIds('item_wizard_steps', 'profile_id', $wizardProfileIds);
@@ -249,6 +256,11 @@ class CleanupTestFixturesCommand extends Command
 
         $hasName = Schema::hasColumn($table, 'name');
         $hasSlug = Schema::hasColumn($table, 'slug');
+        // [2026-11-04] Même piège que stockLevelIds : sans colonne de nom ni de slug, le groupe `where` serait
+        // vide et la requête rendrait TOUTES les lignes de la table.
+        if (! $hasName && ! $hasSlug) {
+            return collect();
+        }
 
         return DB::table($table)
             ->where(function ($query) use ($prefix, $hasName, $hasSlug): void {
@@ -283,9 +295,53 @@ class CleanupTestFixturesCommand extends Command
      * @param  Collection<int,int>  $extraIds
      * @return Collection<int,int>
      */
+    /**
+     * Articles (parmi $itemIds) dont un niveau de stock — de l'article, d'une déclinaison ou d'un supplément —
+     * porte au moins un mouvement : ils ne peuvent pas être supprimés sans supprimer ces mouvements, interdit.
+     *
+     * @param  Collection<int,int>  $itemIds
+     * @return Collection<int,int>
+     */
+    private function itemsAvecMouvementsDeStock(Collection $itemIds): Collection
+    {
+        if ($itemIds->isEmpty() || ! Schema::hasTable('stock_movements') || ! Schema::hasTable('stock_levels')
+            || ! Schema::hasColumn('stock_movements', 'stock_level_id')) {
+            return collect();
+        }
+        $variationIds = $this->childIds('item_variations', 'item_id', $itemIds);
+        $extraIds = $this->childIds('item_extras', 'item_id', $itemIds);
+        $niveaux = $this->stockLevelIds($itemIds, $variationIds, $extraIds);
+        if ($niveaux->isEmpty()) {
+            return collect();
+        }
+        $niveauxAvecMouvements = DB::table('stock_movements')->whereIn('stock_level_id', $niveaux)->distinct()->pluck('stock_level_id');
+        if ($niveauxAvecMouvements->isEmpty()) {
+            return collect();
+        }
+        $proteges = collect();
+        foreach (DB::table('stock_levels')->whereIn('id', $niveauxAvecMouvements)->get(['stockable_type', 'stockable_id']) as $niveau) {
+            if ($niveau->stockable_type === Item::class) {
+                $proteges->push((int) $niveau->stockable_id);
+            } elseif ($niveau->stockable_type === ItemVariation::class) {
+                $proteges = $proteges->merge(DB::table('item_variations')->where('id', $niveau->stockable_id)->pluck('item_id'));
+            } elseif ($niveau->stockable_type === ItemExtra::class) {
+                $proteges = $proteges->merge(DB::table('item_extras')->where('id', $niveau->stockable_id)->pluck('item_id'));
+            }
+        }
+
+        return $proteges->map(fn ($id) => (int) $id)->unique()->values();
+    }
+
     private function stockLevelIds(Collection $itemIds, Collection $variationIds, Collection $extraIds): Collection
     {
         if (! Schema::hasTable('stock_levels')) {
+            return collect();
+        }
+        // [2026-11-04 · P0 latent] Trois listes vides → le groupe `where(function () {})` ci-dessous est VIDE,
+        // Laravel l'ignore, et la requête rendait TOUS les niveaux de stock de la base : le nettoyage aurait
+        // supprimé le stock réel de tout le catalogue. Seul l'échec du DELETE sur stock_movements (ajout seul)
+        // l'annulait jusqu'ici, par accident. Rien à chercher = rien à supprimer.
+        if ($itemIds->isEmpty() && $variationIds->isEmpty() && $extraIds->isEmpty()) {
             return collect();
         }
 

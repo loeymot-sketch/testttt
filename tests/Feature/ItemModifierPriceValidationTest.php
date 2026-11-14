@@ -45,6 +45,16 @@ class ItemModifierPriceValidationTest extends TestCase
         return env('MIX_API_KEY', 'test-api-key');
     }
 
+    // [ONB-02 T-2.1.3 2026-08-27] tax_id est désormais obligatoire (article sans taxe = facturé 0 % en silence)
+    private function taxeDeTest(): \App\Models\Tax
+    {
+        return \App\Models\Tax::firstOrCreate(
+            ['code' => 'TEST-VAT-10'],
+            ['name' => 'TVA 10 % (test)', 'tax_rate' => 10,
+             'type' => \App\Enums\TaxType::PERCENTAGE, 'status' => \App\Enums\Status::ACTIVE]
+        );
+    }
+
     private function makeItem(ItemCategory $category, string $name): Item
     {
         return Item::create([
@@ -134,6 +144,7 @@ class ItemModifierPriceValidationTest extends TestCase
 
         $resp = $this->withHeaders(['x-api-key' => $this->apiKey()])
             ->postJson("/api/admin/item/{$item->id}", $this->basePayload($item) + [
+                'tax_id' => $this->taxeDeTest()->id,
                 'variations' => json_encode([
                     ['id' => $variation->id, 'name' => 'Boeuf', 'price' => 2.50],
                 ]),

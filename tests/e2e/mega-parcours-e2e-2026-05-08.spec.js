@@ -52,7 +52,7 @@ const KDS_FILE = path.join(SHOT_DIR, 'kds-reception-trace.json');
 if (!fs.existsSync(SHOT_DIR)) fs.mkdirSync(SHOT_DIR, { recursive: true });
 
 const API_KEY = 'b6d68vy2-m7g5-20r0-5275-h103w73453q120';
-const BASE = 'http://localhost:8000';
+const BASE = (process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 const BRANCH_ID = 1;
 const TARGET_ITEM_OOS = 363; // Tacos M
 const TARGET_EXTRA_OOS = 172; // Salade

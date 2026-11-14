@@ -31,7 +31,7 @@
         <h3 class="font-semibold text-[18px] leading-7 mb-3 text-heading">{{ $t('label.quick_access') }}</h3>
         <div class="flex flex-wrap gap-2">
             <template v-for="link in quickAccessLinks" :key="link.to">
-                <a v-if="link.external" :href="link.to"
+                <a v-if="link.external" :href="link.to" :target="link.newTab ? '_blank' : null" :rel="link.newTab ? 'noopener' : null"
                     class="inline-flex items-center gap-2 rounded-xl border border-[#EFF0F6] bg-white px-4 py-2.5 text-sm font-medium text-heading shadow-xs transition hover:border-primary/40 hover:bg-primary/5">
                     <i :class="link.icon" class="text-primary" aria-hidden="true"></i>
                     <span>{{ link.label }}</span>
@@ -45,18 +45,20 @@
         </div>
     </nav>
 
-    <ErrorBoundary><OverviewComponent/></ErrorBoundary>
+    <!-- [VG-2026-10-21 M9-104] Données commerciales (CA, canal, audit, ventes) : `pos` ou `sales-report`
+         exigés côté serveur ; le chef (dashboard seul) ne monte plus ces cartes. -->
+    <ErrorBoundary><OverviewComponent :show-sales="canSeeCommercial"/></ErrorBoundary>
 
-    <ErrorBoundary><RealtimeReportComponent/></ErrorBoundary>
+    <ErrorBoundary v-if="canSeeCommercial"><RealtimeReportComponent/></ErrorBoundary>
     <div class="row">
         <ErrorBoundary><SlaAlertsComponent/></ErrorBoundary>
-        <ErrorBoundary><ChannelStatsComponent/></ErrorBoundary>
+        <ErrorBoundary v-if="canSeeCommercial"><ChannelStatsComponent/></ErrorBoundary>
     </div>
-    <ErrorBoundary><AuditTrailComponent/></ErrorBoundary>
+    <ErrorBoundary v-if="canSeeCommercial"><AuditTrailComponent/></ErrorBoundary>
 
     <ErrorBoundary><OrderStatisticsComponent/></ErrorBoundary>
     <div class="row">
-        <ErrorBoundary><SalesSummaryComponent/></ErrorBoundary>
+        <ErrorBoundary v-if="canSeeCommercial"><SalesSummaryComponent/></ErrorBoundary>
         <ErrorBoundary><OrderSummaryComponent/></ErrorBoundary>
         <ErrorBoundary><LastZReportWidget/></ErrorBoundary>
         <ErrorBoundary><FeaturedItemsComponent/></ErrorBoundary>
@@ -66,6 +68,8 @@
              (StockLowAlertsWidget.vue, endpoint admin/stock/low-alerts déjà câblé)
              mais n'était monté nulle part (grep repo-wide : aucun import). -->
         <ErrorBoundary><StockLowAlertsWidget/></ErrorBoundary>
+        <!-- [ETIQUETTES 2026-10-16 · owner] Les DLC à surveiller (lots expirés, du jour, sous 72 h) sur le tableau de bord. -->
+        <ErrorBoundary><DlcWatchWidget/></ErrorBoundary>
     </div>
 </template>
 
@@ -83,6 +87,7 @@ import SlaAlertsComponent from "./SlaAlertsComponent";
 import ChannelStatsComponent from "./ChannelStatsComponent";
 import AuditTrailComponent from "./AuditTrailComponent";
 import StockLowAlertsWidget from "./StockLowAlertsWidget";
+import DlcWatchWidget from "./DlcWatchWidget";
 import ErrorBoundary from "../components/ErrorBoundary";
 import ENV from "../../../config/env";
 
@@ -102,6 +107,7 @@ export default {
         ChannelStatsComponent,
         AuditTrailComponent,
         StockLowAlertsWidget,
+        DlcWatchWidget,
         ErrorBoundary
     },
     data() {
@@ -130,6 +136,11 @@ export default {
             const entry = perms.find((p) => p && p.url === 'pos/manage-fiscal');
             return entry ? entry.access === true : false;
         },
+        // [VG-2026-10-21 M9-104] Même porte que DashboardController (permission:pos|sales-report).
+        canSeeCommercial() {
+            const perms = this.normalizedPermissions();
+            return perms.some((p) => p && (p.url === 'pos' || p.url === 'sales-report') && p.access === true);
+        },
         quickAccessLinks() {
             const perms = this.normalizedPermissions();
             const has = (permissionUrl) => {
@@ -148,11 +159,11 @@ export default {
                 return entry.access === true;
             };
             const links = [];
-            const push = (to, label, icon, permUrl, external = false) => {
+            const push = (to, label, icon, permUrl, external = false, newTab = false) => {
                 if (!has(permUrl)) {
                     return;
                 }
-                links.push({ to, label, icon, external });
+                links.push({ to, label, icon, external, newTab });
             };
             push('/admin/pos', this.$t('menu.pos'), 'lab lab-pos-bold', 'pos', false);
             // [Wave V — POS-V4 menu cleanup 2026-05-21] Owner question :
@@ -173,7 +184,17 @@ export default {
             // (/admin/historique) so everything is reachable from the dashboard.
             push('/admin/encaissement', this.$t('menu.encaissement'), 'lab lab-pos-bold', 'pos-orders', false);
             push('/admin/historique', this.$t('menu.historique'), 'lab lab-pos-orders', 'pos-orders', false);
+            // [LIVRAISONS-PAGE 2026-10-23] Les commandes à livrer + la bascule nos livreurs ⇄ Uber, et l'écran du livreur (page autonome
+            // pour téléphone, nouvel onglet). Même porte que l'API de la planche (`pos`).
+            push('/admin/livraisons', this.$t('menu.livraisons'), 'fa-solid fa-motorcycle', 'pos', false);
+            push('/livreur', this.$t('menu.livreur_screen'), 'fa-solid fa-mobile-screen-button', 'pos', true, true);
             push('/admin/kitchen-display-system', this.$t('menu.k_d_s'), 'lab lab-kds', 'kitchen-display-system', false);
+            // [ETIQUETTES 2026-10-16 · owner « je ne trouve pas les fonctionnalités … en tableau de bord »] Imprimante
+            // d'étiquettes Brother : même porte que la barre latérale (`pos-orders`).
+            push('/admin/labels/orders', this.$t('menu.labels_orders'), 'fa-solid fa-tags', 'pos-orders', false);
+            push('/admin/labels/dlc', this.$t('menu.labels_dlc'), 'fa-solid fa-tags', 'pos-orders', false);
+            // [CAYENNE HYGIÈNE 2026-10-17] Relevés de température : même porte (`pos-orders`).
+            push('/admin/hygiene/home', this.$t('menu.hygiene'), 'fa-solid fa-temperature-half', 'pos-orders', false);
             push('/admin/order-status-screen', this.$t('menu.o_s_s'), 'lab lab-cds', 'order-status-screen', false);
             push('/admin/items/studio', this.$t('menu.catalog'), 'lab lab-list', 'items', false);
             push('/admin/ingredients', this.$t('menu.ingredients'), 'lab lab-item-attributes', 'ingredients_manage', false);

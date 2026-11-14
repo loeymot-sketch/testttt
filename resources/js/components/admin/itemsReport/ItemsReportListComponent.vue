@@ -122,7 +122,16 @@
                             <td class="db-table-body-td">{{ $t('label.total') }}</td>
                             <td></td>
                             <td></td>
-                            <td class="db-table-body-td"> {{ subTotal(itemsReports) }}</td>
+                            <!--
+                                [ONB-07 2026-08-28] Le total du PÉRIMÈTRE, pas de la page.
+                                `subTotal(itemsReports)` réduisait le tableau de la page
+                                courante (10 lignes) sous le même libellé que l'export,
+                                qui totalise tout le catalogue. Le serveur renvoie
+                                désormais le total du même périmètre filtré.
+                            -->
+                            <td class="db-table-body-td" data-testid="items-report-total">
+                                {{ totalUnitesVendues }}
+                            </td>
                         </tr>
                     </tfoot>
                 </table>
@@ -266,6 +275,22 @@ export default {
         });
     },
     computed: {
+
+        /**
+         * [ONB-07 2026-08-28] Le total renvoyé par le serveur, sur le périmètre
+         * filtré complet.
+         *
+         * Repli sur la somme de la page si le serveur ne l'envoie pas : mieux vaut
+         * un nombre incomplet que la case vide qui suivrait un `undefined`. Le repli
+         * est le comportement historique, il ne peut donc pas être une régression.
+         */
+        totalUnitesVendues() {
+            const duServeur = this.pagination?.total_unites_vendues;
+        
+            return Number.isFinite(duServeur)
+                ? duServeur
+                : this.subTotal(this.itemsReports);
+        },
         itemsReports: function () {
             return this.$store.getters['itemsReport/lists'];
         },

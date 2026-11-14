@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#D63D0B" android:pathData="M0,0h108v108h-108z" />
+    <!-- étiquette blanche + filet noir (la DLC) -->
+    <path android:fillColor="#FFFFFF" android:pathData="M24,30h60a4,4 0 0 1 4,4v40a4,4 0 0 1 -4,4h-60a4,4 0 0 1 -4,-4v-40a4,4 0 0 1 4,-4z" />
+    <path android:fillColor="#1A1A1A" android:pathData="M30,40h48v6h-48z" />
+    <path android:fillColor="#1A1A1A" android:pathData="M30,54h32v4h-32z" />
+    <path android:fillColor="#1A1A1A" android:pathData="M30,64h40v4h-40z" />
+</vector>

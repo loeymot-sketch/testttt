@@ -28,7 +28,9 @@ class LeCayenneRoleLandingUrlSeeder extends Seeder
             'Chef'           => 'kitchen-display-system',
             'Admin'          => 'dashboard',
             'Branch Manager' => 'dashboard',
-            'Delivery Boy'   => 'delivery-boys',
+            // [GOAL LIVRAISON-TICKETS 2026-11-10 · T-1.4.2] Son écran est la page autonome /livreur (route SPA
+            // `admin.livreur` → sortie dure). `delivery-boys` était la liste ADMIN des livreurs, qu'il ne peut pas ouvrir.
+            'Delivery Boy'   => 'livreur',
             'Waiter'         => 'waiters',
             'Stuff'          => 'dashboard',
             'Customer'       => '#',

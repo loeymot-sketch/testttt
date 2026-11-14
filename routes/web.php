@@ -81,6 +81,48 @@ Route::prefix('carnet')->name('daily-book.')->middleware(['installed'])->group(f
 // (inline vanilla JS) — PAS la SPA admin, PAS de Sanctum. Le toggle délègue au
 // SSOT AvailabilityService::toggle. Déclaré AVANT le catch-all. Fail-closed :
 // MOBILE_STOCK_PIN vide => accès entièrement refusé.
+// [LIVRAISON 2026-10-20] Écran du livreur (page autonome pour téléphone). L'authentification et les données
+// passent par l'API (/api/auth/login puis /api/frontend/delivery-run) ; la page elle-même est publique et vide.
+Route::get('/livreur', function () {
+    return view('livreur');
+})->middleware(['installed'])->name('livreur');
+
+// [LIVRAISON QR 2026-11-01] Page de REMISE par QR (adresse, mode encaissé, « Remis »). Le jeton est dans le FRAGMENT (`#…`) : le
+// serveur ne le voit jamais. Page STATIQUE et IDENTIQUE pour tout le monde (jeton valide, périmé ou absurde : même réponse 200,
+// aucune donnée) ; elle redemande TOUJOURS e-mail + mot de passe et ignore la session /livreur. Déclarée AVANT le catch-all.
+Route::get('/livreur/remise', function () {
+    return response()->view('livreur-remise')->withHeaders([
+        'Cache-Control'   => 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma'          => 'no-cache',
+        'Referrer-Policy' => 'no-referrer',
+        'X-Robots-Tag'    => 'noindex, nofollow, noarchive',
+        'X-Frame-Options' => 'DENY',
+        'Content-Security-Policy' => "frame-ancestors 'none'",
+    ]);
+})->middleware(['installed'])->name('livreur.remise');
+
+// [GOAL APP HYBRIDE · W4 · 2026-11-03] Retour de paiement de l'APPLICATION des stores (`client=app` au checkout Mollie).
+// Mollie y renvoie le client, dans le navigateur du système ouvert par l'application ; la page rouvre l'application par
+// `fr.lecayenne.app://paiement/retour?order=<id>` (+ bouton visible). Elle NE LIT PAS la base, NE PAIE RIEN, n'affiche
+// aucune donnée : seul le webhook fait foi. L'identifiant n'est recopié que s'il est fait de 1 à 10 chiffres.
+// Déclarée AVANT le catch-all. Test : tests/Feature/Payment/MollieAppReturnTest.php.
+Route::get('/paiement/retour-app', function (\Illuminate\Http\Request $request) {
+    $order = $request->query('order');
+    $lien = 'fr.lecayenne.app://paiement/retour';
+    if (is_string($order) && preg_match('/^[1-9][0-9]{0,9}$/', $order)) {
+        $lien .= '?order=' . $order;
+    }
+
+    return response()->view('paiement-retour-app', ['lienApplication' => $lien])->withHeaders([
+        'Cache-Control'   => 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma'          => 'no-cache',
+        'Referrer-Policy' => 'no-referrer',
+        'X-Robots-Tag'    => 'noindex, nofollow, noarchive',
+        'X-Frame-Options' => 'DENY',
+        'Content-Security-Policy' => "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+    ]);
+})->middleware(['installed', 'throttle:120,1,paiement-retour-app'])->name('paiement.retour-app');
+
 Route::prefix('m')->name('mobile-stock.')->middleware(['installed'])->group(function () {
     Route::get('/', function () {
         return view('mobile-stock');
@@ -187,7 +229,7 @@ Route::middleware(['installed', 'wheel.access'])->group(function () {
         
         ->name('admin.wheel.counter');
     Route::post('/admin/roue-validation', [\App\Http\Controllers\Admin\Wheel\WheelCounterController::class, 'issue'])
-        ->middleware(['throttle:60,1'])
+        ->middleware(['throttle:60,1,wheel-counter-issue']) // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('admin.wheel.counter.issue');
 
     /*
@@ -208,7 +250,7 @@ Route::middleware(['installed', 'wheel.access'])->group(function () {
     Route::get('/admin/roue-reglages', [\App\Http\Controllers\Admin\Wheel\WheelSettingsController::class, 'show'])
         ->name('admin.wheel.settings');
     Route::post('/admin/roue-reglages', [\App\Http\Controllers\Admin\Wheel\WheelSettingsController::class, 'save'])
-        ->middleware(['throttle:60,1'])->name('admin.wheel.settings.save');
+        ->middleware(['throttle:60,1,wheel-settings-save'])->name('admin.wheel.settings.save'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
 
     Route::get('/admin/roue-borne', [\App\Http\Controllers\Admin\Wheel\WheelCounterController::class, 'kiosk'])
         
@@ -218,7 +260,7 @@ Route::middleware(['installed', 'wheel.access'])->group(function () {
         
         ->name('admin.wheel.prize');
     Route::post('/admin/roue-lot/remettre', [\App\Http\Controllers\Admin\Wheel\WheelPrizeController::class, 'deliver'])
-        ->middleware(['throttle:120,1'])
+        ->middleware(['throttle:120,1,wheel-prize-deliver']) // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('admin.wheel.prize.deliver');
 
     /*
@@ -234,6 +276,15 @@ Route::middleware(['installed', 'wheel.access'])->group(function () {
 // doit répondre 404 — pas la SPA en 200 text/html (pages blanches « tout vert »,
 // classe de l'incident paiement borne 2026-07-07 ; les fichiers EXISTANTS sont
 // servis par le serveur web avant Laravel, seuls les manquants arrivent ici).
+// [S13-04] Désinscription des offres par e-mail (lien signé de chaque e-mail ; avant la route attrape-tout).
+// [S14-04] GET = page de confirmation (un lien OUVERT par l'antivirus d'une messagerie ne désinscrit personne) ;
+// POST = désinscription (bouton de la page, ou « un clic » RFC 8058 des messageries). Même signature dans les deux cas.
+Route::match(['get', 'post'], '/desinscription-offres', \App\Http\Controllers\Frontend\DesinscriptionOffresController::class)
+    ->middleware(['throttle:30,1,desinscription-offres'])->name('newsletter.desinscription'); // signature vérifiée dans le contrôleur (page FR) ; [supervision 2026-11-13] compteur propre (M1-002 : un throttle nu partage le seau IP)
+
 Route::get('/{any}', [RootController::class, 'index'])
     ->middleware(['installed'])
-    ->where(['any' => '^(?i)(?!.*\.(?:js|mjs|css|map|png|jpe?g|webp|gif|svg|ico|woff2?|ttf|otf|eot|mp4|webm|json|txt)$).*$']);
+    // [W7-D D-011 · cycle C 2026-11-04] Un chemin `/api/…` qui ne matche aucune route API (jeton de suivi mal formé,
+    // faute de frappe) répondait la coquille SPA en 200 text/html à un client JSON : il tombe désormais sur le
+    // repli JSON 404 de routes/api.php.
+    ->where(['any' => '^(?i)(?!api(?:/|$))(?!.*\.(?:js|mjs|css|map|png|jpe?g|webp|gif|svg|ico|woff2?|ttf|otf|eot|mp4|webm|json|txt)$).*$']);

@@ -165,7 +165,7 @@ class AntiGravityTest extends TestCase
             'total' => 10,
             'delivery_charge' => 0,
             'is_advance_order' => 0,
-            'source' => 1,
+            'source' => 5,
             'items' => json_encode([['item_id' => $item->id, 'price' => 10, 'quantity' => 1]])
         ];
 
@@ -199,7 +199,7 @@ class AntiGravityTest extends TestCase
             'subtotal' => 0.01,
             'total' => 0.01,
             'is_advance_order' => 0,
-            'source' => 1,
+            'source' => 5,
             'items' => json_encode([['item_id' => $item->id, 'price' => 0.01, 'quantity' => 1]])
         ]);
 
@@ -224,7 +224,7 @@ class AntiGravityTest extends TestCase
             'subtotal' => 10,
             'total' => 0.01,
             'is_advance_order' => 0,
-            'source' => 1,
+            'source' => 5,
             'items' => json_encode([['item_id' => $item->id, 'price' => 10, 'quantity' => 1]])
         ]);
         $this->assertTrue(in_array($response->status(), [200, 201, 400, 422]));
@@ -248,7 +248,7 @@ class AntiGravityTest extends TestCase
             'subtotal' => 10,
             'total' => 10,
             'is_advance_order' => \App\Enums\Ask::NO,
-            'source' => 1,
+            'source' => 5,
             'coupon_id' => 99999, // Non-existent coupon
             'items' => json_encode([['item_id' => $item->id, 'price' => 10, 'quantity' => 1]])
         ]);

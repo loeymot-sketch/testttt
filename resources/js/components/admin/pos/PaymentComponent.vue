@@ -35,7 +35,7 @@
                 <!-- Méthode de paiement -->
                 <div class="mb-4">
                     <p class="pos-v5-payment-section-title">{{ $t('label.select_payment_method') }}</p>
-                    <nav class="pos-v4-payment-methods pos-v5-payment-methods pos-v5-payment-methods--3col" role="tablist">
+                    <nav class="pos-v4-payment-methods pos-v5-payment-methods pos-v5-payment-methods--4col" role="tablist">
                         <button
                             data-tab="#cash"
                             type="button"
@@ -60,15 +60,30 @@
                             @click="setPaymentMode('card')"
                         >
                             <span class="pos-v5-payment-method-icon" aria-hidden="true">💳</span>
-                            <span class="pos-v5-payment-method-label">{{ $t("label.card") }} (TPE)</span>
+                            <span class="pos-v5-payment-method-label">{{ $t('pos.pay_card_blue') }}</span>
+                        </button>
+                        <!-- [GOAL #2 2026-10-02, LOCK_PAYMENT_COMPONENT_TITRES_RESTO_CB_PARTIELLE] Titres-resto :
+                             une tranche Titres-resto du total, prête à confirmer (réutilise le multi-paiement). -->
+                        <button
+                            data-tab="#ticket"
+                            type="button"
+                            role="tab"
+                            :aria-selected="isTicketMode"
+                            class="other-tabBtn pos-v4-payment-method pos-v5-payment-method"
+                            :class="{ 'active is-active': isTicketMode }"
+                            data-testid="pos-payment-mode-ticket"
+                            @click="setPaymentMode('ticket')"
+                        >
+                            <span class="pos-v5-payment-method-icon" aria-hidden="true">🎟️</span>
+                            <span class="pos-v5-payment-method-label">{{ $t('pos.pay_mode_ticket') }}</span>
                         </button>
                         <button
                             data-tab="#multi"
                             type="button"
                             role="tab"
-                            :aria-selected="paymentMode === 'multi'"
+                            :aria-selected="paymentMode === 'multi' && !isTicketMode"
                             class="other-tabBtn pos-v4-payment-method pos-v5-payment-method"
-                            :class="{ 'active is-active': paymentMode === 'multi' }"
+                            :class="{ 'active is-active': paymentMode === 'multi' && !isTicketMode }"
                             data-testid="pos-payment-mode-multi"
                             @click="setPaymentMode('multi')"
                         >
@@ -137,6 +152,33 @@
                         <p v-if="paymentTerminals.length === 0" class="pos-v5-payment-input-hint" role="alert">
                             {{ $t('pos.no_terminal_configured_hint') || 'Aucun TPE actif sur cette filiale. Ajoutez-en un depuis Paramètres → Terminaux de paiement avant d’encaisser par carte.' }}
                         </p>
+                    </div>
+                    <!-- [GOAL #2 2026-10-02] CB partielle : « Si je choisis CB avec un montant inférieur au
+                         total, le reste se règle avec un autre moyen ». Un montant entre 0 et le total ouvre
+                         le multi-paiement (carte + reste modifiable). Montant vide = carte pour le total. -->
+                    <div v-if="paymentMode === 'card'" class="mb-3" data-testid="pos-payment-card-partial">
+                        <label for="cardPartialInput" class="pos-v5-payment-input-label">{{ $t('pos.card_partial_label') }}</label>
+                        <div class="pos-v5-split-divider__row">
+                            <input
+                                id="cardPartialInput"
+                                v-model="cardAmountRaw"
+                                type="text"
+                                inputmode="decimal"
+                                v-on:keypress="floatNumber($event)"
+                                @keyup.enter="splitCardRemainder"
+                                class="pos-v5-payment-input pos-v5-tabular"
+                                :placeholder="$t('pos.card_partial_placeholder')"
+                                data-testid="pos-payment-card-amount"
+                            />
+                            <button
+                                type="button"
+                                class="pos-v5-split-divider__btn"
+                                :disabled="!canSplitCardRemainder"
+                                @click="splitCardRemainder"
+                                data-testid="pos-payment-card-split"
+                            >{{ $t('pos.card_partial_button') }}</button>
+                        </div>
+                        <p class="pos-v5-payment-input-hint">{{ $t('pos.card_partial_hint') }}</p>
                     </div>
                     <!--
                       [LOCK-PAY-NO-CARD4 2026-08-19, owner-gated] Le champ
@@ -422,6 +464,8 @@ export default {
             // 'cash' / 'card' map 1:1 to existing pos_payment_method paths (untouched).
             // 'multi' is fully local: tranches[] are not bubbled into props.form.
             paymentMode: 'cash',
+            // [GOAL #2 2026-10-02] Montant saisi pour une carte PARTIELLE (vide = carte pour le total).
+            cardAmountRaw: '',
             tranches: [],
             splitCount: 2,
             // [2026-05-18 PR-A V1 GO-LIVE blocker heal] CARD-mode terminal
@@ -468,6 +512,20 @@ export default {
         },
         canConfirmMulti: function () {
             return splitCanConfirm(this.totalCents, this.tranches);
+        },
+        // [GOAL #2 2026-10-02] Onglet « Titres-resto » actif : multi-paiement réduit à UNE tranche Titres-resto.
+        isTicketMode: function () {
+            return this.paymentMode === 'multi'
+                && this.tranches.length === 1
+                && Number(this.tranches[0].mode) === this.posPaymentMethodEnum.TICKET_RESTAURANT;
+        },
+        // Montant carte partiel valide : strictement entre 0 et le total (en centimes).
+        cardAmountCents: function () {
+            const v = parseFloat(String(this.cardAmountRaw || '').replace(',', '.'));
+            return Number.isFinite(v) ? splitToCents(v) : 0;
+        },
+        canSplitCardRemainder: function () {
+            return this.cardAmountCents > 0 && this.cardAmountCents < this.totalCents;
         },
         canSplitEqually: function () {
             return Number(this.splitCount) >= 2 && this.totalCents > 0;
@@ -621,6 +679,7 @@ export default {
             // [CV1-POS-SPLIT-PAYMENT-001] Reset multi-tender local state on modal close.
             this.tranches = [];
             this.splitCount = 2;
+            this.cardAmountRaw = '';
             this.paymentMode = 'cash';
             this.emitPaymentFormPatch({ pos_payment_note: "" });
             // [iter15-BUG-SESSION-EXPIRED 2026-05-10] Mirror beforeUnmount cleanup:
@@ -664,7 +723,21 @@ export default {
         // (zero behavior change for the existing single-tender flow).
         // For 'multi' we leave props.form untouched and submit() builds payload directly.
         setPaymentMode: function (mode) {
-            if (mode !== 'cash' && mode !== 'card' && mode !== 'multi') return;
+            if (mode !== 'cash' && mode !== 'card' && mode !== 'multi' && mode !== 'ticket') return;
+            this.cardAmountRaw = '';
+            if (mode === 'ticket') {
+                // [GOAL #2 2026-10-02] Titres-resto = multi-paiement à UNE tranche du total (prête à
+                // confirmer) : même chemin `payment_breakdown` que le multi existant, aucun nouveau contrat.
+                this.paymentMode = 'multi';
+                this.tranches = [{
+                    id: makeTrancheId(0),
+                    mode: this.posPaymentMethodEnum.TICKET_RESTAURANT,
+                    amount: splitFromCents(this.totalCents),
+                    tendered: null,
+                    note: null,
+                }];
+                return;
+            }
             this.paymentMode = mode;
             if (mode === 'cash') {
                 this.paymentMethod(this.posPaymentMethodEnum.CASH, 'cashInput');
@@ -672,6 +745,32 @@ export default {
                 this.paymentMethod(this.posPaymentMethodEnum.CARD, 'cardInput');
             }
             // Multi: do not mutate props.form; tranches[] is the source of truth.
+        },
+        // [GOAL #2 2026-10-02] CB partielle : tranche 1 = carte (montant saisi, TPE présélectionné),
+        // tranche 2 = RESTE (espèces par défaut ; le sélecteur de moyen de la tranche permet carte,
+        // Titres-resto, mobile…). La somme couvre le total au centime ; le prix reste celui du devis scellé.
+        splitCardRemainder: function () {
+            if (!this.canSplitCardRemainder) return;
+            const card = {
+                id: makeTrancheId(0),
+                mode: this.posPaymentMethodEnum.CARD,
+                amount: splitFromCents(this.cardAmountCents),
+                tendered: null,
+                note: null,
+            };
+            if (this.selectedTerminalId) card.terminal_id = this.selectedTerminalId;
+            const restEur = splitFromCents(this.totalCents - this.cardAmountCents);
+            this.tranches = [card, {
+                id: makeTrancheId(1),
+                mode: this.posPaymentMethodEnum.CASH,
+                amount: restEur,
+                // Espèces : un montant reçu est requis pour qu'une tranche soit valide — appoint par défaut
+                // (comme « Diviser à parts égales »), le caissier l'ajuste s'il rend la monnaie.
+                tendered: restEur,
+                note: null,
+            }];
+            this.cardAmountRaw = '';
+            this.paymentMode = 'multi';
         },
         addTranche: function (mode = null, amount = null, tendered = null) {
             const total = this.totalCents;
@@ -945,13 +1044,20 @@ export default {
         },
         handleOrderSuccess: async function (orderResponse, submittedForm) {
             // [POS-9.1.12] Open the physical cash drawer the moment a CASH
-            // payment is accepted. The hardware bridge is a no-op when no
-            // bridge is exposed (web-only POS), so this is safe in dev.
-            // Audit POS-GA-F-19.
+            // payment is accepted. A failed local bridge must not undo a
+            // sealed payment, but it must be visible to the cashier: silently
+            // swallowing it left a real till closed while the sale looked OK.
             if (submittedForm.pos_payment_method === this.posPaymentMethodEnum.CASH) {
                 try {
-                    Promise.resolve(openDrawer()).catch(() => {});
-                } catch (e) { /* defensive: never block the receipt path */ }
+                    const drawerResult = await openDrawer();
+                    if (!drawerResult || drawerResult.ok === false) {
+                        alertService.error(this.$t('pos.cash_drawer_bridge_offline'));
+                    }
+                } catch (_e) {
+                    // Never block the fiscal receipt after payment, while still
+                    // telling the operator that the physical action failed.
+                    alertService.error(this.$t('pos.cash_drawer_bridge_offline'));
+                }
             }
 
             appService.modalHide('#orderpayment');

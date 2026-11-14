@@ -35,6 +35,27 @@ final class PosParkedOrderService
 
         $items = $payload['lists'] ?? $payload['items'] ?? [];
 
+        // [QA 2026-09-28 · P1-18] Aucun brouillon VIDE ne doit exister.
+        //
+        // L'écran est déjà gardé depuis le 2026-04-21 (`promptParkOrder` refuse et
+        // affiche `pos.park_requires_items`), mais l'API ne l'était PAS : `payload`
+        // n'avait qu'à être un tableau non vide, et la snapshot du store porte
+        // toujours ses clés (`lists`, `subtotal`, `total`…), donc `{lists: []}`
+        // passait la validation et créait une ligne `items_count = 0` en 201.
+        // Un rejeu, un client non-UI ou un futur écran pouvait donc fabriquer des
+        // brouillons fantômes dans la file « Commandes en attente ».
+        //
+        // Le contrôle est ici et pas dans la règle de validation du contrôleur
+        // parce que le service accepte DEUX formes (`lists` ET `items`) : une règle
+        // sur la seule clé `lists` laisserait passer l'autre forme.
+        // Message en clair (comme `ValidJsonOrder`) plutôt qu'une nouvelle clé de
+        // traduction : cela évite d'alourdir la dette i18n suivie par cliquet.
+        if (! is_array($items) || count($items) === 0) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'payload' => ['Ajoutez au moins un article avant de mettre cette commande en attente.'],
+            ]);
+        }
+
         $attributes = [
             'branch_id' => $branchId,
             'user_id' => $userId,

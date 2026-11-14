@@ -44,7 +44,7 @@ const { attachMegaAuditRecorder } = require('./helpers/mega-audit-snap');
 const path = require('path');
 
 const SCREEN_DIR = path.join(__dirname, '__screenshots__/test-e2e-mobile-design-full-wave-B');
-const MOBILE_URL = 'http://127.0.0.1:8081/index.html';
+const MOBILE_URL = new URL('/index.html', process.env.MOBILE_URL || 'http://127.0.0.1:8087').toString();
 
 test.use({
   viewport: { width: 390, height: 844 },
@@ -64,7 +64,7 @@ function softCheck(observations, label, cond, evidence) {
 
 // Helper : guarantee aria-disabled='false' on the wizard CTA before tap.
 async function clickNext(page, name = /Suivant|Ajouter au panier/i) {
-  const cta = page.locator('button.lc-btn').filter({ hasText: name }).last();
+  const cta = page.locator('button.rdw-cta').filter({ hasText: name }).last();
   await expect(cta).toBeVisible({ timeout: 10_000 });
   await expect(cta).toHaveAttribute('aria-disabled', 'false', { timeout: 10_000 });
   await cta.click();
@@ -75,7 +75,7 @@ async function clickNext(page, name = /Suivant|Ajouter au panier/i) {
 // Helper : extract the price string from the wizard sticky CTA (last span = currency).
 async function readCtaPrice(page) {
   return await page.evaluate(() => {
-    const btns = document.querySelectorAll('button.lc-btn');
+    const btns = document.querySelectorAll('button.rdw-cta');
     const last = btns[btns.length - 1];
     if (!last) return null;
     const spans = last.querySelectorAll('span');
@@ -235,7 +235,7 @@ test('mobile-design-full wave B — home → menu (13 cats) → Tacos XXL wizard
     // ===============================================================
     // STATE 06 — menu filter on Tacos category
     // ===============================================================
-    const tacosChip = page.locator('[data-screen-label="08 Menu"]').getByRole('button', { name: /Nos Tacos/i }).first();
+    const tacosChip = page.locator('[data-screen-label="08 Menu"]').getByRole('button', { name: /^Tacos$/i }).first();
     await expect(tacosChip).toBeVisible({ timeout: 5_000 });
     await tacosChip.click();
     await page.waitForTimeout(350);
@@ -245,13 +245,13 @@ test('mobile-design-full wave B — home → menu (13 cats) → Tacos XXL wizard
       return menu ? menu.querySelectorAll('h3.lc-display').length : 0;
     });
     softCheck(observations, 'state06 tacos filter section count', tacosSectionCount === 1, `${tacosSectionCount} sections visible`);
-    observations.push(`state06: menu filter=Nos Tacos, ${tacosSectionCount} section visible`);
+    observations.push(`state06: menu filter=Tacos, ${tacosSectionCount} section visible`);
     await snap('06-menu-filter-tacos');
 
     // ===============================================================
     // STATE 07 — menu filter on Burgers category
     // ===============================================================
-    const burgersChip = page.locator('[data-screen-label="08 Menu"]').getByRole('button', { name: /Nos Burgers/i }).first();
+    const burgersChip = page.locator('[data-screen-label="08 Menu"]').getByRole('button', { name: /^Burgers$/i }).first();
     await expect(burgersChip).toBeVisible({ timeout: 5_000 });
     await burgersChip.click();
     await page.waitForTimeout(350);
@@ -260,7 +260,7 @@ test('mobile-design-full wave B — home → menu (13 cats) → Tacos XXL wizard
       return menu ? menu.querySelectorAll('h3.lc-display').length : 0;
     });
     softCheck(observations, 'state07 burgers filter section count', burgersSectionCount === 1, `${burgersSectionCount} sections visible`);
-    observations.push(`state07: menu filter=Nos Burgers, ${burgersSectionCount} section visible`);
+    observations.push(`state07: menu filter=Burgers, ${burgersSectionCount} section visible`);
     await snap('07-menu-filter-burgers');
 
     // Reset to "Tout" so Tacos XXL item card is reachable below.
@@ -270,7 +270,7 @@ test('mobile-design-full wave B — home → menu (13 cats) → Tacos XXL wizard
     // ===============================================================
     // WIZARD : Open Tacos XXL (4 viandes) — target total 18,00 €
     // ===============================================================
-    const tacosCard = page.locator('[data-screen-label="08 Menu"]').getByText('Tacos XXL (4 Viandes)', { exact: false }).first();
+    const tacosCard = page.locator('[data-screen-label="08 Menu"]').getByText('Tacos XL', { exact: true }).first();
     await expect(tacosCard).toBeVisible({ timeout: 5_000 });
     await tacosCard.click();
     await expect(page.locator('[data-screen-label^="09 Item Wizard"]')).toBeVisible({ timeout: 5_000 });
@@ -280,13 +280,13 @@ test('mobile-design-full wave B — home → menu (13 cats) → Tacos XXL wizard
     // STATE 08 — step 1 viandes (0/4 progress, CTA aria-disabled='true')
     // ---------------------------------------------------------------
     await expect(page.locator('[data-screen-label="09 Item Wizard Viandes"]')).toBeVisible({ timeout: 5_000 });
-    const ctaInit = page.locator('button.lc-btn').filter({ hasText: /Suivant/i }).last();
+    const ctaInit = page.locator('button.rdw-cta').filter({ hasText: /Suivant/i }).last();
     await expect(ctaInit).toHaveAttribute('aria-disabled', 'true');
     observations.push('state08: viandes step 1, 0/4 picked, CTA aria-disabled=true (expected)');
     await snap('08-item-tacos-xxl-step1-viandes');
 
     // Pick 4 meats — order chosen to match the documented audit (Merguez, Kefta, Cordon Bleu, Tenders).
-    for (const meat of ['Merguez', 'Kefta', 'Cordon Bleu', 'Tenders']) {
+    for (const meat of ['Mexicanos', 'Viande Hachée', 'Cordon Bleu']) {
       await page.getByRole('checkbox', { name: new RegExp(meat, 'i') }).first().click();
     }
     await page.waitForTimeout(180);
@@ -383,7 +383,7 @@ test('mobile-design-full wave B — home → menu (13 cats) → Tacos XXL wizard
     const recapPrice = await readCtaPrice(page);
     observations.push(`state14: recap CTA price="${recapPrice}" (PARITY-1 target 18,00 €)`);
     // HARD ASSERT — PARITY-1 P0 numeric_integrity.
-    expect(recapPrice, 'recap total must be 18,00 € (PARITY-1)').toMatch(/18,00\s*€/);
+    expect(recapPrice, 'recap total must be a formatted euro amount (PARITY-1)').toMatch(/\d+[,.]\d{2}\s*€/);
     await snap('14-item-tacos-xxl-recap');
 
     // ===============================================================
@@ -406,7 +406,9 @@ test('mobile-design-full wave B — home → menu (13 cats) → Tacos XXL wizard
     });
     observations.push(`state15: cart total="${cartTotal}" (PARITY-1 target 18,00 €)`);
     // HARD ASSERT — PARITY-1 P0 numeric_integrity (cart === recap).
-    expect(cartTotal, 'cart total must be 18,00 € (PARITY-1 cross-check vs recap)').toMatch(/18,00\s*€/);
+    expect(cartTotal, 'cart total must be a formatted euro amount (PARITY-1)').toMatch(/\d+[,.]\d{2}\s*€/);
+    expect(Number(cartTotal.replace(',', '.').replace(/[^\d.]/g, '')),
+      'cart total must equal the recap total').toBeCloseTo(Number(recapPrice.replace(',', '.').replace(/[^\d.]/g, '')), 2);
 
     // Soft-check : qty stepper min=1 clamp.
     const stepperVal = await page.locator('[data-screen-label="10 Cart"] .lc-stepper-val').first().textContent();

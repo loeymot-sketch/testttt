@@ -83,7 +83,7 @@ class PromoFlyerEscPosRenderer
         // --- 3. LE MESSAGE ---------------------------------------------------
         $intro = trim((string) ($data['intro'] ?? ''));
         if ($intro !== '') {
-            $out .= E::encodeForPrinter(E::textWrap($intro, $w));
+            $out .= $this->paragraphs($intro, $w);
             $out .= E::feed(1);
         }
 
@@ -110,10 +110,21 @@ class PromoFlyerEscPosRenderer
         // Le montant : le plus gros élément du ticket, sans concurrence.
         $out .= E::textSize(3, 3);
         $out .= E::bold(true);
-        $out .= $this->line('-' . $percent . '%', $w / 3);
-        $out .= E::bold(false);
-        $out .= E::textSize(1, 1);
-        $out .= $this->line('sur ta prochaine commande en direct', $w);
+        if ($this->isFreeDelivery($data)) {
+            // [TICKET PROMO 2026-11-03 · propriétaire] « LIVRAISON OFFERTE », c'est tout : aucune
+            // condition imprimée. 9 caractères en triple largeur = 27 colonnes, tient sur 48 ET
+            // sur 32 (papier 58 mm : 10 caractères maximum en triple largeur).
+            $out .= $this->line('LIVRAISON', $w / 3);
+            $out .= $this->line('OFFERTE', $w / 3);
+            $out .= E::bold(false);
+            $out .= E::textSize(1, 1);
+            $out .= E::encodeForPrinter(E::textWrap('sur ta prochaine commande en direct chez Le Cayenne', $w));
+        } else {
+            $out .= $this->line('-' . $percent . '%', $w / 3);
+            $out .= E::bold(false);
+            $out .= E::textSize(1, 1);
+            $out .= $this->line('sur ta prochaine commande en direct', $w);
+        }
         $out .= E::feed(1);
 
         // [OWNER 2026-08-09] « le code promo avec son nom plus visible ». Le code PORTE le prénom
@@ -203,7 +214,7 @@ class PromoFlyerEscPosRenderer
         $footer = trim((string) ($data['footer_note'] ?? ''));
         if ($footer !== '') {
             $out .= E::feed(1);
-            $out .= E::encodeForPrinter(E::textWrap($footer, $w));
+            $out .= $this->paragraphs($footer, $w);
         }
 
         $out .= E::feed(4);
@@ -227,6 +238,29 @@ class PromoFlyerEscPosRenderer
      * Virgule finale et non point d'exclamation : « Bonsoir Camille, » ouvre une phrase que
      * le message d'introduction termine. Un « ! » refermerait l'adresse sur elle-même.
      */
+    /**
+     * [TICKET PROMO 2026-11-03] Texte libre sur plusieurs lignes : chaque retour à la ligne saisi
+     * est respecté (le découpage au mot, lui, remplace les sauts de ligne par des espaces).
+     */
+    private function paragraphs(string $text, int $w): string
+    {
+        $out = '';
+        foreach (preg_split('/\r?\n/', $text) ?: [] as $para) {
+            $para = trim($para);
+            if ($para !== '') {
+                $out .= E::encodeForPrinter(E::textWrap($para, $w));
+            }
+        }
+
+        return $out;
+    }
+
+    /** [TICKET PROMO 2026-11-03] Le ticket porte-t-il l'offre « livraison offerte » ? */
+    private function isFreeDelivery(array $data): bool
+    {
+        return ($data['offer'] ?? 'percent') === 'free_delivery';
+    }
+
     private function greeting(array $data): string
     {
         $name = trim((string) ($data['customer_name'] ?? ''));

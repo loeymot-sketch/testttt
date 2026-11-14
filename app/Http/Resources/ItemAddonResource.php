@@ -73,7 +73,21 @@ class ItemAddonResource extends JsonResource
             "caution" => optional($this->addonItem?->caution) == null ? '' : optional(
                 $this->addonItem
             )->caution,
-            "offer" => SimpleOfferResource::collection($offer)
+            "offer" => SimpleOfferResource::collection($offer),
+            // [GOAL CAISSE/CUISINE #6 2026-10-02] Extras ACTIFS de l'article de formule (ex. « Grande
+            // Portion », « Cheddar Fondu » de « Menu (Frites + Boisson) »). Le wizard caisse affiche
+            // ces options payantes mais ne les envoyait que comme TEXTE : sans leur id, la ligne addon
+            // partait avec `item_extras: []` et le backend ne pouvait pas les facturer. Lecture seule,
+            // aucun prix n'est décidé ici : le client renvoie des IDS, PricingService facture.
+            'addon_item_extras' => $this->addonItem
+                ? $this->addonItem->extras->map(fn ($extra) => [
+                    'id' => $extra->id,
+                    'name' => $extra->name,
+                    'group_label' => $extra->group_label,
+                    'price' => $extra->price,
+                    'convert_price' => AppLibrary::convertAmountFormat($extra->price),
+                ])->values()->all()
+                : [],
         ];
     }
 

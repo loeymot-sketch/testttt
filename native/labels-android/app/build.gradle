@@ -1,0 +1,40 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace = "fr.lecayenne.etiquettes"
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId "fr.lecayenne.etiquettes"
+        minSdk 24
+        targetSdk 36
+        versionCode 3
+        versionName "1.2.0"
+        // Adresse de l'application web (back-office). Surchargeable : -PstartUrl=... ou, en test, `am start -e url ...`.
+        buildConfigField "String", "START_URL", "\"" + (project.findProperty('startUrl') ?: 'https://vps-418872ac.vps.ovh.net/admin/labels/dlc') + "\""
+    }
+
+    buildFeatures {
+        buildConfig = true
+    }
+
+    buildTypes {
+        debug {
+            // L'émulateur joint le Mac par http://10.0.2.2 : le clair n'est permis QUE dans la version de test.
+            manifestPlaceholders = [usesCleartext: "true"]
+        }
+        release {
+            manifestPlaceholders = [usesCleartext: "false"]
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// Aucune dépendance : WebView, Bluetooth et sockets sont dans le système Android.

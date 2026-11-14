@@ -25,6 +25,28 @@
                 <span class="csn-ico" aria-hidden="true">📋</span>
                 <span>{{ $t('pos.tracker.title') }}</span>
             </router-link>
+            <!-- [LIVRAISONS-PAGE 2026-10-23] Les commandes à livrer et la bascule nos livreurs ⇄ Uber, à un clic de chaque page caisse ;
+                 l'écran livreur (page autonome pour téléphone) s'ouvre dans un nouvel onglet : on ne quitte pas la caisse. -->
+            <router-link
+                :to="{ name: 'admin.livraisons' }"
+                class="csn-link"
+                :class="{ active: current === 'livraisons' }"
+                :aria-current="current === 'livraisons' ? 'page' : null"
+                data-testid="csn-livraisons"
+            >
+                <span class="csn-ico" aria-hidden="true">🛵</span>
+                <span>{{ $t('menu.livraisons') }}</span>
+            </router-link>
+            <a
+                href="/livreur"
+                target="_blank"
+                rel="noopener"
+                class="csn-link"
+                data-testid="csn-livreur"
+            >
+                <span class="csn-ico" aria-hidden="true">📱</span>
+                <span>{{ $t('menu.livreur_screen') }}</span>
+            </a>
             <router-link
                 :to="{ name: 'admin.historique.list' }"
                 class="csn-link"

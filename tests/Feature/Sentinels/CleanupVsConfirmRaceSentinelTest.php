@@ -28,6 +28,9 @@ class CleanupVsConfirmRaceSentinelTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // [AUDIT ABUSIF 2026-11-06 · W2-P1-1] Ces tests couvrent le PLAN A (borne avec terminal) : en Plan B (défaut,
+        // tout au comptoir), payment-confirm est désormais refusé (voir KioskPaymentConfirmPlanBTest).
+        config(['kiosk.payment_route_all_to_counter' => false]);
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
         // [TRAP-2 2026-06-04] Pin TTL to 15 min so the 30-min stale order is

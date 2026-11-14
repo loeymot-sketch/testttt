@@ -65,7 +65,8 @@ final class PosCartRedemption
             return $vide + ['reason' => 'customer_not_found'];
         }
 
-        $solde = (int) $client->loyalty_points;
+        // [DÉCISION PROPRIÉTAIRE 2026-11-06 · relecture adverse P2-2] Seuls les points DÉPENSABLES sont proposés au panier.
+        $solde = \App\Services\LoyaltyService::pointsDepensables((int) $client->id, (int) $client->loyalty_points);
 
         // Ce que ce solde permet vraiment : plancher effectif + multiple du taux (SSOT LoyaltyRules).
         $utilisables = $this->regles->usablePoints($solde);

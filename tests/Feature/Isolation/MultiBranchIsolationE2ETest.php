@@ -58,6 +58,8 @@ class MultiBranchIsolationE2ETest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // [AUDIT ABUSIF 2026-11-06] PLAN A (borne avec terminal) : en Plan B, reconcile-pending et payment-confirm sont refusés.
+        config(['kiosk.payment_route_all_to_counter' => false]);
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
 

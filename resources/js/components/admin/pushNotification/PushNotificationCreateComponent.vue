@@ -187,8 +187,23 @@ export default {
                 }).then((res) => {
                     appService.sideDrawerHide();
                     this.loading.isActive = false;
-                    alertService.successFlip((tempId === null ? 0 : 1), this.$t(
-                        'label.push_notification'));
+                    // [ONB-09 2026-08-28] MEME DEFAUT QUE L'ENVOI AUX ABONNES, autre
+                    // ecran. Cette bulle etait INCONDITIONNELLE : le commercant lisait
+                    // un succes meme quand aucun appareil n'avait recu la notification
+                    // — liste de jetons vide, cle Firebase revoquee, chaque envoi
+                    // avale par un `catch` vide. Mon correctif du 2026-08-28 sur les
+                    // abonnes s'etait arrete au controleur ; l'agent adverse a signale
+                    // que le jumeau n'avait pas ete traite. Le voici.
+                    const rapport = res?.data?.envoi;
+                    const dit = res?.data?.message;
+
+                    if (rapport && Number(rapport.envoyes) === 0) {
+                        // Rien n'est parti : ce n'est pas un succes, et le dire en vert
+                        // serait le pire des mensonges.
+                        alertService.warning(dit || this.$t('message.push_no_device'));
+                    } else {
+                        alertService.successInfo(0, dit || this.$t('label.push_notification'));
+                    }
                     this.form = {
                         title: "",
                         description: "",

@@ -3,7 +3,7 @@
 // pastille +N — aux deux résolutions (1920×1080 + 1366×768, G-4 défaut documenté).
 const { test, expect } = require('@playwright/test');
 
-const BASE = 'http://127.0.0.1:8000';
+const BASE = (process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
 const SHOTS = 'reports/goal-8axes-2026-08-05/wave5';
 
 async function login(page) {

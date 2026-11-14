@@ -1,0 +1,41 @@
+{
+  "round": 4,
+  "wave": "adv",
+  "head": "f74b6bc5f",
+  "date": "2026-11-06",
+  "verdict": "P0=0 P1=0 P2=0 P3=3",
+  "findings": [
+    {
+      "id": "R4-ADV-001",
+      "severity": "P3",
+      "title": "Clé d'encaissement non oubliée quand le panier a été vidé EN PLACE (lignes retirées une à une) puis remis à zéro",
+      "files": ["resources/js/components/admin/pos/PosComponent.vue:8232", "resources/js/store/modules/posCart.js:606", "resources/js/store/modules/posCart.js:624"],
+      "detail": "Watcher `carts` non deep (Vue 3.5) : splice en place (deleteCartItem / quantité 1→0) ne le déclenche pas ; au resetCart suivant, oldCarts est le MÊME tableau, désormais vide → la condition oldCarts.length>0 est fausse → `pos.cle-encaissement` survit. Un panier identique recomposé dans les 2 h reprend la clé. Nuisible seulement si l'envoi précédent avait réellement abouti côté serveur (réponse perdue) : rejeu de l'ancienne vente au lieu d'une nouvelle. Avant f74b6bc5f, « Vider » sur panier vide effaçait la clé ; le cas « lignes retirées puis nouvelles lignes ajoutées » était déjà non couvert.",
+      "repro": "Vitest jetable (vrai Vuex posCart + vrai handler/computed/cleStablePourPanier de PosComponent, montage @vue/test-utils) : A) hydrate [] → lists push → clé → resetCart ⇒ clé effacée (OK). B) idem puis deleteCartItem(0) → resetCart ⇒ clé toujours présente, et cleStablePourPanier sur panier identique renvoie la MÊME clé (true). Fichier supprimé après exécution."
+    },
+    {
+      "id": "R4-ADV-002",
+      "severity": "P3",
+      "title": "refusHorsService ignore delivery_slot_at : un jour de fermeture exceptionnelle, une livraison programmée pour le lendemain (créneau valide de DeliveryWaveService, horizon 2 j) est refusée",
+      "files": ["app/Http/Requests/OrderRequest.php:294", "app/Http/Requests/OrderRequest.php:450"],
+      "detail": "La garde ne regarde que scheduled_at ; le site envoie le créneau de livraison dans delivery_slot_at et force scheduledAt=null (funnel.jsx:1779). Sans impact sur le site actuel : il bloque déjà toute commande quand fermé pour la journée (funnel.jsx:2574). Incohérence d'API, pas de perte client mesurée.",
+      "repro": "Lecture de code uniquement (non exécutée) — hypothèse."
+    },
+    {
+      "id": "R4-ADV-003",
+      "severity": "P3",
+      "title": "Planche Tournées : un arrêt LIVRÉ puis annulé afficherait « Annulée · rien à encaisser » alors que cash.collected le compte",
+      "files": ["resources/js/components/admin/pos/PosDeliveryBoard.vue:85", "app/Http/Controllers/Admin/PosDeliveryController.php:234"],
+      "detail": "v-if s.cancelled prime sur delivered_at ; collected filtre seulement delivered_at. Ne se produit que si une commande livrée peut passer en CANCELED/REJECTED (non vérifié dans la machine à états).",
+      "repro": "Lecture de code uniquement — hypothèse."
+    }
+  ],
+  "attacked_without_finding": [
+    "(a) contournement formule : rôle MAJUSCULES/espaces, menu_frites+menu_boisson même id (payé 0,6+0,4 ≥ complet), menu_component en payload (ValidatesAddonRoles stage 3 OK, PricingService default 1.0 = plein tarif, cohérent), menu_formule (rejeté : hors liste blanche), id 0, quantité 0 (max(1)), addon d'un autre article (enforceCrossItemGuards + FrontendOrderService:585), « Sauce frites » cachée dans la note (NBSP, deux-points pleine chasse, saut de ligne) — sortie réelle passée par fritesSauceNames / claimedFormuleBadge / cleanInstruction : aucune formule non payée n'atteint la cuisine. sauce_destinations dérivé de l'instruction DÉJÀ assainie. Extras : noms DB dans l'instantané, pas le name du payload.",
+    "(a) régression : instructions réelles du site (api.js:1253-1395) — frites seules garde Frites/Sauce frites/note, boisson seule garde Boisson menu/note ; cascade_frites_sauce n'existe que pour full/frites (wizard-v2.jsx:444). sansFormuleNonPayee n'est appelé que si !isKioskMachineOrder (FrontendOrderService:402) ; caisse sur un autre chemin.",
+    "(b) CustomerRequest email 'required' (pas de déconnexion parasite d'un client sans e-mail) ; auto-modification exclue (id === auth id) ; changePassword des 6 services, ProfileService::changePassword et ForgotPassword révoquent déjà ; SPA en Bearer.",
+    "(c) coupon_code tableau → '' → refus lisible.",
+    "(4) vente normale (panier rempli en place puis resetCart) : clé bien effacée, prouvé avec vrai Vue/Vuex ; F5 : premier appel immediate sans oldCarts, hydrate [] → [] n'efface pas.",
+    "(5) git diff --stat b6afaf015..f74b6bc5f sur les zones gelées (y compris kiosk/pos-wizard/PosV5TrancheRow) : vide. fiscal:verify-chain --all : CHAIN OK (7 branches)."
+  ]
+}

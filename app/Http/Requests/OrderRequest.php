@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Domain\Kds\KitchenReleaseRule;
 use App\Enums\Activity;
 use App\Enums\OrderType;
+use App\Enums\Source;
 use App\Enums\Status;
 use App\Exceptions\Delivery\GeocodeUnavailableException;
 use App\Http\Requests\Concerns\NormalizesAdvanceOrder;
@@ -22,6 +23,7 @@ class OrderRequest extends FormRequest
 {
     use NormalizesAdvanceOrder;
     use ValidatesAddonRoles;
+    use \App\Http\Requests\Concerns\ValidatesDeliverySlot;
     use ValidatesOrderItemVariations;
 
     /**
@@ -96,15 +98,13 @@ class OrderRequest extends FormRequest
 
         $isDelivery = (int) $this->input('order_type', 0) === OrderType::DELIVERY;
 
-        if ($isDelivery && $this->filled('delivery_distance_km') && $this->filled('address_id') && $this->user() && ! $this->filled('branch_id')) {
-            throw new GeocodeUnavailableException();
-        }
-
-        if ($isDelivery
-            && $this->filled('delivery_distance_km')
-            && $this->filled('branch_id')
-            && $this->filled('address_id')
-            && $this->user()) {
+        // [LIVRAISON 2026-10-20] Le prix d'une livraison est TOUJOURS dérivé de l'adresse
+        // enregistrée du client (coordonnées + commune posées par le géocodeur serveur) : plus
+        // aucune distance ni aucun montant venus du navigateur ne sont crus.
+        if ($isDelivery && $this->filled('address_id')) {
+            if (! $this->user() || ! $this->filled('branch_id')) {
+                throw new GeocodeUnavailableException();
+            }
             $quote = app(DeliveryQuoteService::class)->quoteForSavedAddress(
                 (int) $this->input('branch_id'),
                 (int) $this->input('address_id'),
@@ -113,19 +113,15 @@ class OrderRequest extends FormRequest
             $this->merge([
                 'delivery_distance_km' => $quote['distance_km'],
                 'delivery_charge' => $quote['delivery_charge'],
+                'delivery_tier' => $quote['delivery_tier'],
             ]);
-        } elseif ($isDelivery && $this->filled('delivery_distance_km')) {
-            // [GOAL-COMPLEMENT-2026-05-18 Z-4 LIVREUR-Z4-ARCH-02 P0] DEL-5 wire-up.
-            // Legacy-fallback branch (no saved address) must also honour the
-            // per-branch fee config when branch_id is supplied. Branch::find
-            // is null-safe: an unknown branch_id falls back to the legacy
-            // `max(5, ceil(d/5)*5)` formula (DeliveryFeeService:33).
-            $branchId = (int) $this->input('branch_id', 0);
-            $branch = $branchId > 0 ? \App\Models\Branch::find($branchId) : null;
-            $this->merge([
-                'delivery_charge' => app(DeliveryFeeService::class)
-                    ->fromDistanceKm($this->input('delivery_distance_km'), $branch),
-            ]);
+        } elseif ($isDelivery) {
+            // Pas d'adresse : la validation `address_id` requis refusera. En attendant on neutralise
+            // tout montant client pour qu'il ne survive nulle part.
+            $this->merge(['delivery_charge' => 0, 'delivery_distance_km' => 0]);
+        } else {
+            // Hors livraison : aucun créneau de tournée ne doit survivre.
+            $this->merge(['delivery_slot_at' => null, 'delivery_tier' => null]);
         }
     }
 
@@ -142,9 +138,15 @@ class OrderRequest extends FormRequest
 
         return [
             // Kiosk branch_id is always server-resolved from KioskMachine; web/app legacy clients may still send it.
-            'branch_id' => ($isDelivery || $isKioskMachineOrder)
-                ? ['nullable', 'numeric']
-                : ['required', 'numeric'],
+            // [W7-D D-004 2026-11-04] La branche doit EXISTER et être ACTIVE (status = 5) : sinon la commande était
+            // persistée, orpheline, puis la requête finissait en 500 silencieux (OrderMailNotificationBuilder).
+            // [cycle C] « != INACTIVE » acceptait TOUT statut ; convention du dépôt (BranchFactory) : ACTIVE = 5 ou 1 (ancien seed).
+            'branch_id' => array_merge(
+                ($isDelivery || $isKioskMachineOrder) ? ['nullable', 'numeric'] : ['required', 'numeric'],
+                [\Illuminate\Validation\Rule::exists('branches', 'id')
+                    ->whereNull('deleted_at')
+                    ->whereIn('status', [Status::ACTIVE, 1])]
+            ),
             // [GAP-31-1] subtotal is recalculated server-side — nullable here, backend ignores client value
             // [P7] Reject negative client-sent amounts (symmetry with P5–P6).
             'subtotal' => ['nullable', 'numeric', 'min:0'],
@@ -154,9 +156,10 @@ class OrderRequest extends FormRequest
                 'numeric',
                 'min:0',
             ] : ['nullable', 'numeric', 'min:0'],
-            'delivery_distance_km' => $isDelivery
-                ? ['required', 'numeric', 'min:0']
-                : ['nullable', 'numeric', 'min:0'],
+            'delivery_distance_km' => ['nullable', 'numeric', 'min:0'],
+            // [LIVRAISON 2026-10-20] Créneau de départ choisi par le client (grille 30 min) ; vérifié dans withValidator.
+            'delivery_slot_at' => ['nullable', 'date_format:Y-m-d H:i:s'],
+            'delivery_tier' => ['nullable', 'string', 'max:24'],
             // [P9.5.8] Frontend kiosk payload no longer sends client totals; server recomputes via PricingService SSOT.
             // [P5] If a client still sends total, reject negatives (align PosOrderRequest / audit P50-4).
             'total' => ['nullable', 'numeric', 'min:0'],
@@ -168,7 +171,11 @@ class OrderRequest extends FormRequest
             // « drop de prix » web, DIAG reports/goal-drop-prix-2026-07-19). Absent →
             // aucune garde (rétro-compat, additif). Négatif rejeté (symétrie avec `total`).
             'expected_total' => ['nullable', 'numeric', 'min:0'],
-            'order_type' => ['required', 'numeric'],
+            // [W7-D D-015 2026-11-04] `numeric` seul laissait un client forger `order_type` 15 (POS), 99 ou n'importe
+            // quoi : la commande était persistée, ABSENTE de son historique (`FrontendOrderService` exclut POS),
+            // invisible à l'écran d'attente, mais suivie et cuisinée. Les seuls types qu'un client peut déclarer :
+            // livraison, à emporter, table, borne. Le POS a son propre point d'entrée (`PosOrderRequest`).
+            'order_type' => ['required', 'numeric', 'in:' . implode(',', [OrderType::DELIVERY, OrderType::TAKEAWAY, OrderType::DINING_TABLE, OrderType::KIOSK])],
             'is_advance_order' => ['required', 'numeric'],
             // [E4 SCHEDULED-INTAKE 2026-07-20] Créneau programmé OPTIONNEL (web/app).
             // NULL/absent = ASAP — comportement historique intact. Les gardes métier
@@ -200,14 +207,24 @@ class OrderRequest extends FormRequest
             'quote_signature' => $this->isKioskOrderToken()
                 ? ['required', 'string', 'size:64']
                 : ['nullable', 'string', 'size:64'],
-            'source' => ['required', 'numeric'],
+            // [W7-D D-015 2026-11-04] Même garde : `source` 15 faisait compter une commande web comme une vente POS au
+            // tableau de bord (`DashboardService`). Un client vient du site ou de l'application, rien d'autre.
+            'source' => ['required', 'numeric', 'in:' . implode(',', [Source::WEB, Source::APP])],
             // [SEC MISSION-16 2026-07-31] Défense-en-profondeur : seules les valeurs frontend LÉGITIMES
             // (CASH_ON_DELIVERY=1, CARD=4, TICKET_RESTAURANT=5 — ce que borne ET web envoient) sont
             // acceptées. Un payload forgé payment_method=99/2/3 créait une commande UNPAID sans marqueur
             // COUNTER_DEFERRED = orpheline INENCAISSABLE dont le ticket cuisine s'imprimait (M16-P1). Le
             // nullable reste (le backend traite l'absence) ; toute valeur EXPLICITE hors {1,4,5} → 422.
             'payment_method' => ['nullable', 'numeric', 'in:1,4,5'],
+            // [CARTE À LA LIVRAISON 2026-10-24 · décision propriétaire] « Payer par carte à la livraison » : le livreur
+            // encaisse au terminal de paiement qu'il porte. Seule valeur autorisée : `card`. L'absence du champ = espèces
+            // à la porte (inchangé). Les contraintes croisées (livraison + payment_method=1) vivent dans withValidator.
+            'door_payment' => ['nullable', 'string', 'in:card'],
             'token' => ['nullable', 'string'],
+            // [NOM-COMMANDE-BORNE 2026-10-19 · owner] Nom donné par le client à la borne, avant de
+            // confirmer : « j'ai la commande au nom de X » — la caisse retrouve la commande sans
+            // parcourir la liste. Texte libre court, nettoyé côté service ; jamais monétaire.
+            'pos_customer_name' => ['nullable', 'string', 'max:60'],
             'items' => ['required', 'json', new ValidJsonOrder]
         ];
     }
@@ -222,16 +239,25 @@ class OrderRequest extends FormRequest
     {
         return [
             'scheduled_at.date_format' => 'Le créneau doit être au format AAAA-MM-JJ HH:MM:SS (ex. 2026-07-21 19:30:00).',
+            'door_payment.in' => 'Le paiement à la porte n\'accepte que la carte (« card »).',
+            'door_payment.string' => 'Le paiement à la porte n\'accepte que la carte (« card »).',
         ];
     }
 
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
+            // [CARTE À LA LIVRAISON 2026-10-24] Anti-forgeage : `door_payment` n'a de sens que pour une LIVRAISON payée
+            // « à la livraison » (payment_method=1). Posé ailleurs (à emporter, carte en ligne, titre-restaurant, borne), il
+            // fabriquerait une commande dont le marqueur contredit le mode réel — même famille que le titre-restaurant forgé
+            // du 2026-10-21 (P0). Placé AVANT les retours anticipés borne pour couvrir toutes les surfaces.
+            $this->validateDoorPaymentAfter($validator);
+
             // [E4 SCHEDULED-INTAKE 2026-07-20] Gardes métier du créneau programmé —
             // placées AVANT les early-returns kiosk pour couvrir toutes les surfaces
             // (web/app/borne). Champ absent = ASAP, no-op strict.
             $this->validateScheduledAtAfter($validator);
+            $this->validateDeliverySlotAfter($validator);
 
             $orderType = request('order_type');
             $orderTypeInt = (int) $orderType;
@@ -250,6 +276,29 @@ class OrderRequest extends FormRequest
             if ($orderTypeInt === OrderType::KIOSK && ! $isKioskToken) {
                 $validator->errors()->add('order_type', 'Le service borne nécessite une machine enregistrée.');
                 return;
+            }
+
+            // [W7-D D-018 2026-11-04] Même invariant pour la TABLE (20) : un jeton client (site/application) sans table
+            // créait une commande « sur place » sans `dining_table_id`, invisible à l'écran d'attente. Le site n'envoie
+            // jamais 20 ; seule une borne (service sur place activé, garde ci-dessous) peut le déclarer.
+            if ($orderTypeInt === OrderType::DINING_TABLE && ! $isKioskToken) {
+                $validator->errors()->add('order_type', 'Le service à table se commande à la borne ou en caisse.');
+                return;
+            }
+
+            // [AUDIT ABUSIF 2026-11-06 · W3-P2-1 / W5-P2-1] Commande IMMÉDIATE (sans scheduled_at) venue du site / de l'app :
+            // le serveur ne protégeait pas les horaires, seul le site le faisait. Refusée (1) un jour de FERMETURE
+            // EXCEPTIONNELLE, quel que soit le mode — sinon elle partait des jours plus tard en silence ; (2) en RETRAIT quand
+            // le restaurant ne sert pas (la livraison « au plus tôt » reste acceptée : la prochaine tournée est annoncée).
+            // Borne : inchangée (machine physique dans le restaurant).
+            // [tour 4 · R4-ADV-002] Une livraison avec CRÉNEAU de tournée choisi (delivery_slot_at) n'est pas « immédiate » :
+            // le créneau est contrôlé par les tournées (DeliveryWaveService, mêmes horaires et fermetures).
+            if (! $isKioskToken && blank($this->input('scheduled_at')) && blank($this->input('delivery_slot_at'))) {
+                $refus = self::refusHorsService($orderTypeInt, now());
+                if ($refus !== null) {
+                    $validator->errors()->add('order_type', $refus);
+                    return;
+                }
             }
 
             if ($isKioskToken) {
@@ -293,11 +342,11 @@ class OrderRequest extends FormRequest
             }
 
             if ($orderTypeInt === OrderType::DELIVERY && Settings::group('order_setup')->get("order_setup_delivery") == Activity::DISABLE) {
-                $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
+                $validator->errors()->add('order_type', trans('all.message.type_de_commande_desactive'));
             } else if ($orderTypeInt === OrderType::TAKEAWAY && Settings::group('order_setup')->get("order_setup_takeaway") == Activity::DISABLE) {
-                $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
+                $validator->errors()->add('order_type', trans('all.message.type_de_commande_desactive'));
             } else if (blank($orderType)) {
-                $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
+                $validator->errors()->add('order_type', trans('all.message.type_de_commande_desactive'));
             }
 
             // [Sprint 2B / DEL-4] DELIVERY orders require a reachable phone on
@@ -310,7 +359,14 @@ class OrderRequest extends FormRequest
             // require an off-site phone callback.
             if ($orderTypeInt === OrderType::DELIVERY) {
                 $this->validateAuthenticatedUserPhoneForDelivery($validator);
-                $this->validateDeliveryMinimumOrder($validator);
+                // [Test abusif final P2-1 · 2026-11-06] Le minimum de livraison n'est PLUS contrôlé ici sur le `subtotal`
+                // ENVOYÉ par le client (subtotal:999 le contournait ; un client qui ne l'envoie pas était bloqué) : il l'est
+                // dans FrontendOrderService, sur le sous-total RECALCULÉ par le serveur (PricingService).
+
+                // [VG-2026-10-21 L2 · décision propriétaire 2026-10-22] Titre-restaurant ACCEPTÉ en livraison. Le refus
+                // posé le 2026-10-21 (P0 : flip « non-espèces → PAYÉ » au départ du livreur, vente scellée sans paiement)
+                // est levé parce que la cause est corrigée : OrderService::deliveryBoyOrderChangeStatus ne passe un
+                // titre-restaurant en PAYÉ qu'à la REMISE, avec sa tranche order_payments (DeliveryMealVoucherDoorstepTest).
             }
 
             $this->validateOrderItemVariationsAfter($validator);
@@ -319,6 +375,27 @@ class OrderRequest extends FormRequest
             // ratio injection on non-menu_component addons.
             $this->validateAddonRolesAfter($validator);
         });
+    }
+
+    /**
+     * [CARTE À LA LIVRAISON 2026-10-24] `door_payment=card` exige une livraison (order_type=5) ET payment_method=1.
+     * Une valeur autre que `card` est déjà refusée par la règle `in:card` (message sur la même clé).
+     */
+    private function validateDoorPaymentAfter($validator): void
+    {
+        if (! $this->filled('door_payment') || $validator->errors()->has('door_payment')) {
+            return;
+        }
+
+        if ((int) $this->input('order_type', 0) !== OrderType::DELIVERY) {
+            $validator->errors()->add('door_payment', 'Le paiement par carte à la livraison n\'existe que pour une livraison.');
+
+            return;
+        }
+
+        if ((int) $this->input('payment_method', 0) !== \App\Enums\PaymentGateway::CASH_ON_DELIVERY) {
+            $validator->errors()->add('door_payment', 'Le paiement par carte à la livraison n\'est possible que pour une commande à payer à la livraison.');
+        }
     }
 
     /**
@@ -369,6 +446,32 @@ class OrderRequest extends FormRequest
      * Le format lui-même est déjà rejeté par la règle date_format — un parse
      * raté ici sort en silence pour ne pas doubler l'erreur.
      */
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · W3-P2-1] Message de refus d'une commande web IMMÉDIATE quand le restaurant ne sert pas, ou
+     * null. Refus : un jour de fermeture exceptionnelle (tout mode), ou un retrait hors service. La livraison « au plus tôt »
+     * hors service reste acceptée (prochaine tournée annoncée). Réglable : config horaires.refuser_hors_service.
+     */
+    public static function refusHorsService(int $orderType, \Carbon\CarbonInterface $maintenant): ?string
+    {
+        if (! (bool) config('horaires.refuser_hors_service', true)) {
+            return null;
+        }
+        $horaires = app(\App\Services\Horaires\HorairesService::class);
+        if ($horaires->estEnService($maintenant)) {
+            return null;
+        }
+        $fermeture = $horaires->fermetureDu($maintenant->toDateString());
+        if ($fermeture === null && $orderType !== OrderType::TAKEAWAY) {
+            return null;
+        }
+        $prochaine = $horaires->prochaineOuverture($maintenant);
+        $quand = $prochaine
+            ? ' Réouverture ' . \App\Services\Horaires\HorairesService::JOURS[(int) $prochaine['debut']->isoWeekday()] . ' à ' . $prochaine['debut']->format('H:i') . '.'
+            : '';
+
+        return ($fermeture && $fermeture['message'] !== '' ? $fermeture['message'] . '.' : 'Le restaurant est fermé pour le moment.') . $quand;
+    }
+
     private function validateScheduledAtAfter($validator): void
     {
         $raw = $this->input('scheduled_at');
@@ -390,16 +493,16 @@ class OrderRequest extends FormRequest
             );
         }
 
-        $open = (string) config('kds.scheduled_window_open', '18:00');
-        $close = (string) config('kds.scheduled_window_close', '00:30');
-        $hm = $target->format('H:i');
-        $inWindow = $open <= $close
-            ? ($hm >= $open && $hm <= $close)
-            : ($hm >= $open || $hm <= $close);
-        if (! $inWindow) {
+        // [HORAIRES 2026-11-05] Les horaires viennent du réglage admin (HorairesService : jour par jour, fermetures
+        // exceptionnelles) ; sans réglage, la même plage `kds.scheduled_window_*` qu'avant.
+        $horaires = app(\App\Services\Horaires\HorairesService::class);
+        if (! $horaires->estEnService($target)) {
+            $fermeture = $horaires->fermetureDu($target->toDateString());
             $validator->errors()->add(
                 'scheduled_at',
-                sprintf('Horaire hors service — les commandes programmées sont possibles entre %s et %s.', $open, $close)
+                $fermeture
+                    ? 'Le restaurant est fermé ce jour-là' . ($fermeture['message'] !== '' ? ' (' . $fermeture['message'] . ')' : '') . '. Choisissez un autre jour.'
+                    : 'Horaire hors service — ' . $horaires->resume() . '.'
             );
         }
 

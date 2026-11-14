@@ -6,6 +6,8 @@ use App\Models\Branch;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\Hardware\OrderReceiptEscPosRenderer;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Feature\Delivery\Concerns\HandoverFixtures;
 use Tests\TestCase;
 
 /**
@@ -18,6 +20,9 @@ use Tests\TestCase;
  */
 class TicketWidthSafeTest extends TestCase
 {
+    use RefreshDatabase;
+    use HandoverFixtures;
+
     /** @return array<int,array{text:string,width:int}> lignes avec leur largeur EFFECTIVE (×2 si double-largeur) */
     private function decodeLines(string $bytes): array
     {
@@ -32,6 +37,18 @@ class TicketWidthSafeTest extends TestCase
                 $n = ord($bytes[$i + 2]);
                 $wmul = (($n >> 4) & 0x07) + 1;
                 $i += 3;
+                continue;
+            }
+            // [GOAL REMARQUES 2026-10-03] GS B n = lecture inversée (blanc sur noir) : 3 octets, 0 colonne.
+            // Le décodeur ne le connaissait pas et comptait le « B » comme un caractère imprimé.
+            if ($c === "\x1D" && $i + 2 < $len && $bytes[$i + 1] === 'B') {
+                $i += 3;
+                continue;
+            }
+            // [LIVRAISON QR 2026-11-01] GS ( k pL pH <données> = symbole QR : (5 + pL + 256·pH) octets, ZÉRO colonne de texte.
+            // Le décodeur ne le connaissait pas et comptait l'URL du QR comme une ligne de 91 caractères.
+            if ($c === "\x1D" && $i + 4 < $len && $bytes[$i + 1] === '(' && $bytes[$i + 2] === 'k') {
+                $i += 5 + ord($bytes[$i + 3]) + 256 * ord($bytes[$i + 4]);
                 continue;
             }
             if ($c === "\x1D" && $i + 1 < $len && $bytes[$i + 1] === 'V') { // coupe
@@ -209,16 +226,20 @@ class TicketWidthSafeTest extends TestCase
 
         $lines = $this->decodeLines($bytes);
         $joined = implode("\n", array_map(static fn ($l) => $l['text'], $lines));
-        $this->assertStringContainsString('* Cheddar', $joined, 'supplément doit porter une étoile « * »');
-        $this->assertStringNotContainsString('+ Cheddar', $joined, 'plus de « + » : c\'est « * » maintenant');
+        // [GOAL CAISSE/CUISINE #7 2026-10-02] Le supplément est désormais imprimé en vidéo INVERSE
+        // (GS B 1 … GS B 0, blanc sur noir) : plus d'étoile, plus de « + ». Le décodeur du test lit
+        // l'octet de commande « B » comme un caractère — on vérifie donc l'encadrement sur les octets bruts.
+        $this->assertStringContainsString("\x1dB\x01 Cheddar \x1dB\x00", $bytes, 'supplément en vidéo inverse');
+        $this->assertStringNotContainsString('* Cheddar', $joined, 'plus d\'étoile : le supplément est inversé');
+        $this->assertStringNotContainsString('+ Cheddar', $joined, 'jamais de « + »');
 
         $headDoubleSize = false;
         foreach ($lines as $l) {
-            if (str_contains($l['text'], 'TAC') && $l['width'] === mb_strlen($l['text']) * 2) {
+            if (str_contains($l['text'], 'Tacos') && $l['width'] === mb_strlen($l['text']) * 2) {
                 $headDoubleSize = true;
             }
         }
-        $this->assertTrue($headDoubleSize, 'la ligne produit cuisine (TAC) doit être en double taille (2×)');
+        $this->assertTrue($headDoubleSize, 'la ligne produit cuisine (Tacos) doit être en double taille (2×)');
     }
 
     public function test_client_name_printed_on_client_and_kitchen_tickets_when_set(): void
@@ -272,6 +293,33 @@ class TicketWidthSafeTest extends TestCase
         $bytesNoPhone = (new OrderReceiptEscPosRenderer)->renderClientTicket($orderNoPhone, ['width_chars' => 42]);
         $decodedNoPhone = iconv('CP858', 'UTF-8//IGNORE', preg_replace('/[\x00-\x09\x0B-\x1F]/', '', $bytesNoPhone));
         $this->assertStringNotContainsString('Tel :', $decodedNoPhone, 'pas de ligne Tel si téléphone vide');
+    }
+
+    /**
+     * [LIVRAISON QR 2026-11-01] Le ticket d'une LIVRAISON porte le QR de remise : le décodeur saute le symbole `GS ( k` (zéro colonne),
+     * et aucune ligne de TEXTE du ticket ne dépasse la largeur, à 32 comme à 48 colonnes.
+     */
+    public function test_delivery_ticket_with_handover_qr_never_exceeds_width(): void
+    {
+        $this->setUpHandover();
+        config(['delivery.handover.qr_print_enabled' => true]);
+        try {
+            $stop = $this->departed($this->delivery());
+            $this->assertNotNull($this->qrToken($stop));
+            $order = Order::query()->withoutGlobalScopes()->with(['branch', 'orderItems', 'user'])->findOrFail($stop->order_id);
+            foreach ([32, 48] as $w) {
+                $bytes = app(OrderReceiptEscPosRenderer::class)->renderClientTicket($order, ['width_chars' => $w]);
+                $this->assertStringContainsString("\x1D(k", $bytes, "QR présent à $w col");
+                $this->assertNoLineExceeds($bytes, $w, "livraison + QR à $w col");
+                $texts = array_column($this->decodeLines($bytes), 'text');
+                $this->assertContains('REMISE LIVREUR', $texts);
+                foreach ($texts as $t) {
+                    $this->assertStringNotContainsString('/livreur/remise', $t, 'l\'URL du QR n\'est jamais comptée comme une ligne de texte');
+                }
+            }
+        } finally {
+            $this->tearDownHandover();
+        }
     }
 
     public function test_price_stays_atomic_on_one_line(): void

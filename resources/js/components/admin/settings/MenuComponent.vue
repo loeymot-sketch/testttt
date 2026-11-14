@@ -80,6 +80,11 @@
                 <i class="lab lab-theme text-sm"></i>
                 {{ $t("menu.theme") }}
             </router-link>
+            <!-- [HORAIRES 2026-11-05] Horaires d'ouverture et fermetures exceptionnelles. -->
+            <router-link :to="{ name: 'admin.settings.horaires' }" class="db-tab-btn" data-testid="settings-tab-horaires">
+                <i class="lab lab-time-slots text-sm"></i>
+                Horaires
+            </router-link>
             <router-link v-if="!isSettingHidden('timeSlots')" :to="{ name: 'admin.settings.timeSlot' }" class="db-tab-btn">
                 <i class="lab lab-time-slots text-sm"></i>
                 {{ $t("menu.time_slots") }}
@@ -158,12 +163,8 @@ const HIDDEN_KEY_TO_LOCAL_SETTING = Object.freeze({
     'settings.theme': 'theme',
     'settings.item-categories': 'itemCategories',
     'settings.item-attributes': 'itemAttributes',
-    'settings.permission': 'permission',
     'settings.role': 'role',
     'settings.tax': 'tax',
-    'settings.charge': 'charge',
-    'settings.translation': 'translation',
-    'settings.activity-log': 'activityLog',
     'settings.languages': 'languages',
     'settings.otp': 'otp',
     'settings.notification-alert': 'notificationAlert',

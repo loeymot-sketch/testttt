@@ -124,4 +124,95 @@ export function creerSequenceurDeSonnerie(options = {}) {
     };
 }
 
-export default { creerSequenceurDeSonnerie, SONNERIES_PAR_ARRIVEE, INTERVALLE_ENTRE_SONNERIES_MS };
+/**
+ * [RAPPEL-COMMANDES 2026-10-19 · owner] « Parfois on les oublie. »
+ *
+ * Les 3 sonneries d'arrivée s'arrêtent au bout de 20 secondes : une commande web laissée
+ * « à traiter » devient silencieuse, et se perd derrière le comptoir. Ce rappel sonne UNE fois
+ * toutes les `INTERVALLE_RAPPEL_MS` TANT QU'IL RESTE au moins une commande à traiter, puis se
+ * tait de lui-même dès que le compteur retombe à zéro.
+ *
+ * Même doctrine que le séquenceur : aucune connaissance de l'audio, du DOM ni de Vue — il
+ * ordonnance des appels (minuteries injectables → testable sans navigateur).
+ */
+export const INTERVALLE_RAPPEL_MS = 120000;
+
+/**
+ * @param {object}   [options]
+ * @param {number}   [options.intervalleMs]
+ * @param {Function} [options.setIntervalFn]   injectable pour les bancs d'essai
+ * @param {Function} [options.clearIntervalFn] injectable pour les bancs d'essai
+ * @returns {{actualiser: Function, arreter: Function, actif: Function}}
+ */
+export function creerRappelPeriodique(options = {}) {
+    const intervalleMs = Math.max(
+        1000,
+        Number.isFinite(Number(options.intervalleMs)) ? Number(options.intervalleMs) : INTERVALLE_RAPPEL_MS
+    );
+    const poser = options.setIntervalFn || ((fn, ms) => setInterval(fn, ms));
+    const retirer = options.clearIntervalFn || ((id) => clearInterval(id));
+
+    let minuterie = null;
+    let compte = 0;
+    let rappeler = null;
+
+    const arreter = () => {
+        if (minuterie !== null) {
+            try {
+                retirer(minuterie);
+            } catch (e) {
+                /* défensif */
+            }
+        }
+        minuterie = null;
+    };
+
+    return {
+        /**
+         * @param {number}   n       nombre de commandes encore à traiter
+         * @param {Function} jouer   émet UN son de rappel, reçoit le nombre en attente
+         */
+        actualiser(n, jouer) {
+            const precedent = compte;
+            compte = Math.max(0, Number(n) || 0);
+            if (typeof jouer === 'function') {
+                rappeler = jouer;
+            }
+            if (compte === 0 || typeof rappeler !== 'function') {
+                arreter();
+                return;
+            }
+            if (minuterie !== null) {
+                // [REVUE ADVERSE 2026-10-19] Une commande qui ARRIVE repart d'un intervalle plein : sans
+                // ça, le rappel pouvait tomber 1 s après la sonnerie d'arrivée (deux bips collés). Un
+                // compteur stable ou en baisse garde la minuterie (le prochain rappel lit le nombre à jour).
+                if (compte <= precedent) {
+                    return;
+                }
+                arreter();
+            }
+            minuterie = poser(() => {
+                if (compte === 0) {
+                    arreter();
+                    return;
+                }
+                try {
+                    rappeler(compte);
+                } catch (e) {
+                    /* un son bloqué ne doit pas tuer les rappels suivants */
+                }
+            }, intervalleMs);
+        },
+        /** À appeler à la destruction du composant. */
+        arreter,
+        /** Lisible par les bancs d'essai. */
+        actif() {
+            return minuterie !== null;
+        },
+    };
+}
+
+export default {
+    creerSequenceurDeSonnerie, SONNERIES_PAR_ARRIVEE, INTERVALLE_ENTRE_SONNERIES_MS,
+    creerRappelPeriodique, INTERVALLE_RAPPEL_MS,
+};

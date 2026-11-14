@@ -1,0 +1,38 @@
+{
+ "round": 11,
+ "reviewer": "adversarial",
+ "closure": {
+  "R8-01": "CLOSED: B02-apres-wizard.dom.html strip img src=/storage/69/conversions/g-cayenne-preview.png (galette) ; PNG shows galette thumb under 'Cayenne'; lines without item_id fall back to item.image (kioskLinePhoto(null) -> fallback)",
+  "R8-02": "CLOSED: B02-galette-etape-05.png header thumb and 'Type de pain: Galette' row show the galette photo; DOM img data-v-69099624 src=g-cayenne-preview.png x2. Only the step-bar 'RECAP' thumb (frozen KioskWizardComponent) remains sandwich, accepted. KioskOrderSummary only mounted by KioskWizardComponent, store guarded (`this.$store &&`), no broken header thumb possible (falls back to item.thumb)",
+  "R8-03": "CLOSED in code (Retour disabled while submitting; every error path resets submitting) - see R11-02 for residual",
+  "R8-04": "NOT effectively closed: message exists in DOM but not visible in D09b.png (R11-01)",
+  "tests": "vitest kioskCartPhotoGalette (13) + rateLimitRetry: 25/25 green (Node 22)"
+ },
+ "p0_p1_open": 1,
+ "findings": [
+  {
+   "id": "R11-01",
+   "severity": "P1",
+   "category": "visual/claimed-fix-not-visible",
+   "where": "/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne/funnel.jsx (new block before .lcf-cta-bar, data-testid=lcf-submit-slow) ; styles-v4.css:434-438 (.lcf-cta-total: non-sticky, 13px, gray-3, right-aligned) ; round-11/waveD/D09b-message-envoi-en-cours.png",
+   "proof": "R8-04 closure claimed by DOM only: D09b DOM contains <div class=lcf-cta-total role=status>Ta commande est en cours d'envoi...</div>, but the PNG named 'message-envoi-en-cours' shows NO such text: the node sits in normal flow at the END of the long checkout form while only the sticky CTA bar is on screen (D09b shows 'Confirmation...' and the recap, nothing else). On a 390x844 phone the customer never sees it unless he scrolls to the page bottom.",
+   "fix": "Render the message inside/over the sticky bar (or scrollIntoView / aria-live toast at top), >=14 px dark text; re-capture D09b and read it."
+  },
+  {
+   "id": "R11-02",
+   "severity": "P2",
+   "category": "regression-risk (unproven)",
+   "where": "/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne/funnel.jsx:2455 (Retour disabled={submitting}) ; :972-983, :1424 (setThreeDs, submitting stays true)",
+   "proof": "All error paths reset submitting (1441,1463,1497,1504,1549,1637,1642,1728,1735,1829) so no permanent lock on errors. But on the 3-DS/wallet redirect submitting intentionally stays true until a `pageshow` (:983). If the store app opens Mollie in an in-app browser overlay (Capacitor) pageshow does not fire: Retour is now disabled too (only the payment-method chips, :2217, release it). Not reproduced.",
+   "fix": "Do not disable Retour when threeDs is set; or release on App 'resume'."
+  },
+  {
+   "id": "R11-03",
+   "severity": "P3",
+   "category": "edge",
+   "where": "resources/js/components/frontend/kiosk/KioskOrderSummaryComponent.vue (galettePhoto) / helpers/kioskMedia.js kioskChoseGalette",
+   "proof": "selections.pain can be a NAME when a pain has no id (KioskStepPain selectPain uses `pain.id ?? pain.name`); Number(name) is NaN -> silent fallback to the sandwich photo. Real data has ids (B02-galette-etape-05 correct), so no live defect.",
+   "fix": "none required"
+  }
+ ]
+}

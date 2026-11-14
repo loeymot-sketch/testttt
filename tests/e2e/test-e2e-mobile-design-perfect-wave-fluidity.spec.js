@@ -56,8 +56,7 @@ test.describe('Wave-Fluidity — motion + scroll + thumb-reach', () => {
     if (recorder && recorder.dispose) recorder.dispose();
   });
 
-  test('F01 — step transition viandes→sauce < 200ms', async ({ page, context }) => {
-    await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
+  test('F01 — step transition viandes→sauce < 200ms', async ({ page }) => {
     await bootstrapMobile(page);
     await gotoItemTacosXxl(page);
     const cards = page.locator('[role="checkbox"]');
@@ -67,14 +66,12 @@ test.describe('Wave-Fluidity — motion + scroll + thumb-reach', () => {
     await page.waitForSelector('[data-screen-label*="Sauce"]', { timeout: 1500 });
     const t1 = await page.evaluate(() => performance.now());
     await recorder.snap('01-step-viandes-to-sauce');
-    await context.tracing.stop({ path: path.join(OUT, '01-step-viandes-to-sauce.trace.zip') });
     const elapsed = t1 - t0;
     writePerf('01-step-viandes-to-sauce', { test_id: 'F01', threshold_ms: 200, measured_ms: elapsed, result: elapsed < 200 ? 'PASS' : 'FAIL' });
     expect(elapsed).toBeLessThan(200);
   });
 
-  test('F02 — step transition sauce→crudités < 200ms', async ({ page, context }) => {
-    await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
+  test('F02 — step transition sauce→crudités < 200ms', async ({ page }) => {
     await bootstrapMobile(page);
     await gotoItemTacosXxl(page);
     const cards = page.locator('[role="checkbox"]');
@@ -86,7 +83,6 @@ test.describe('Wave-Fluidity — motion + scroll + thumb-reach', () => {
     await page.waitForSelector('[data-screen-label*="Crudités"]', { timeout: 1500 });
     const t1 = await page.evaluate(() => performance.now());
     await recorder.snap('02-step-sauce-to-crudites');
-    await context.tracing.stop({ path: path.join(OUT, '02-step-sauce-to-crudites.trace.zip') });
     const elapsed = t1 - t0;
     writePerf('02-step-sauce-to-crudites', { test_id: 'F02', threshold_ms: 200, measured_ms: elapsed, result: elapsed < 200 ? 'PASS' : 'FAIL' });
     expect(elapsed).toBeLessThan(200);

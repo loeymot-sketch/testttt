@@ -99,6 +99,9 @@ class CustomerService
 
         try {
             if (!in_array(EnumRole::CUSTOMER, $this->blockRoles)) {
+                // [AUDIT ABUSIF 2026-11-06 · tour 3 · R3-ADV-002] Même règle que EmployeeService::update : mot de passe ou e-mail
+                // changé par un tiers → les sessions ouvertes du compte sont fermées (sinon il reste connecté jusqu'à 8 h).
+                $identifiantsChanges = $request->password || mb_strtolower((string) $request->email) !== mb_strtolower((string) $customer->email);
                 DB::transaction(function () use ($customer, $request) {
                     $this->user               = $customer;
                     $this->user->name         = $request->name;
@@ -111,6 +114,9 @@ class CustomerService
                     }
                     $this->user->save();
                 });
+                if ($identifiantsChanges && (int) $customer->id !== (int) optional(auth()->user())->id) {
+                    $customer->tokens()->delete();
+                }
                 return $this->user;
             } else {
                 throw new Exception(trans('all.message.permission_denied'), 422);
@@ -154,11 +160,52 @@ class CustomerService
     {
         try {
             if (!in_array(EnumRole::CUSTOMER, $this->blockRoles) && $customer->id != 2) {
-                if ($customer->hasRole(EnumRole::CUSTOMER)) {
+                // [S18-001] Rôle PRINCIPAL reconnu par son NOM (« Customer »), comme DeactivateController : comparer l'identifiant
+                //   (EnumRole::CUSTOMER = 2) casse dès que les rôles n'ont pas été semés dans l'ordre d'origine.
+                $premierRole = $customer->roles->first();
+                // [test-e2e stores P19-001 · 2026-11-13] Un compte qui porte AUSSI un rôle d'exploitation (Admin + Customer…) n'est pas
+                //   anonymisé par cette porte : l'effacement est irréversible. Seul un compte dont TOUS les rôles sont « Customer ».
+                $seulementClient = $premierRole && $premierRole->name === 'Customer'
+                    && $customer->roles->every(fn ($r) => $r->name === 'Customer');
+                if ($seulementClient) {
+                    // [P19-003] Même règle que la suppression faite par le client : une commande encore en cours (livraison en route,
+                    //   cuisine…) bloque — sinon le code d'entrée et le téléphone disparaissaient pendant la livraison.
+                    // [P19-002 / S19-001] Jeton Apple lu AVANT la transaction, révoqué chez Apple APRÈS — comme DeactivateController.
+                    $jetonApple = null;
+                    try { $jetonApple = $customer->apple_refresh_token; } catch (\Throwable) { $jetonApple = null; }
+                    // [test-e2e stores S18-001 · 2026-11-13] Supprimer un client depuis l'administration (demande d'effacement reçue à
+                    //   rgpd@…) EFFACE réellement ses données, comme la suppression faite par le client lui-même : avant, une simple
+                    //   suppression douce laissait nom, e-mail, téléphone, identifiants Apple/Google et abonnement aux offres — et la
+                    //   connexion invité suivante le « ressuscitait ». Même service que DeactivateController : les deux ne divergent plus.
+                    // [P20-002] Annulations et contrôle DANS la transaction : un refus annule aussi les annulations.
                     DB::transaction(function () use ($customer) {
+                        // [P20-002] Comme pour le client : ce qu'il aurait pu annuler lui-même (jamais commencé, jamais payé) est annulé
+                        //   d'abord ; seule une commande réellement en cours (commencée ou réglée) bloque.
+                        // [supervision D1] Verrou du client, puis refus AVANT toute annulation (aucune notification pour rien).
+                        \App\Models\User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->whereKey($customer->id)->lockForUpdate()->first(['id']);
+                        if (app(\App\Services\FrontendOrderService::class)->aUneCommandeBloquantePourSuppression((int) $customer->id)) {
+                            throw new Exception('Ce client a une commande en cours (en préparation ou déjà réglée) : supprimez son compte une fois la commande remise.', 422);
+                        }
+                        app(\App\Services\FrontendOrderService::class)->cancelAllOwnCancellableForAccountDeletion(
+                            (int) $customer->id,
+                            'Suppression du compte par l\'administration'
+                        );
+                        $enCours = \App\Models\Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('user_id', $customer->id)
+                            ->whereNotIn('status', [\App\Enums\OrderStatus::DELIVERED, \App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED, \App\Enums\OrderStatus::RETURNED])
+                            ->exists();
+                        if ($enCours) {
+                            throw new Exception('Ce client a une commande en cours (en préparation ou déjà réglée) : supprimez son compte une fois la commande remise.', 422);
+                        }
                         $customer->addresses()->delete();
+                        $anonymisation = app(\App\Services\Account\AnonymisationCompte::class);
+                        $anonymisation->effacerResidus((int) $customer->id);
+                        $anonymisation->anonymiserIdentite($customer);
+                        $customer->tokens()->delete();
                         $customer->delete();
                     });
+                    if (filled($jetonApple)) {
+                        app(\App\Services\Auth\AppleTokenRevoker::class)->revoquer((string) $jetonApple);
+                    }
                 } else {
                     throw new Exception(trans('all.message.permission_denied'), 422);
                 }

@@ -18,6 +18,21 @@
                             <small class="db-field-alert" v-if="errors.file">{{ errors.file[0] }}</small>
                         </div>
 
+                        <!-- [ONB-02 2026-08-28] Le compte rendu de l'import.
+                             Avant, l'ecran affichait une bulle verte figee et fermait
+                             la fenetre : le commercant ne savait pas si 0, 12 ou 45 de
+                             ses lignes etaient passees, ni laquelle corriger. -->
+                        <div class="form-col-12" v-if="echecs.length">
+                            <div class="db-alert-warning">
+                                <p class="font-medium">{{ resume }}</p>
+                                <ul class="list-disc pl-6 mt-2 max-h-60 overflow-y-auto">
+                                    <li v-for="(e, i) in echecs" :key="i">
+                                        {{ $t('label.import_line', { n: e.ligne }) }} — {{ e.raison }}
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
                         <div class="form-col-12">
                             <div class="modal-btns">
                                 <button type="button" class="modal-btn-outline modal-close" :aria-label="$t('button.close')" @click="reset">
@@ -49,6 +64,8 @@ export default {
     emits:['list'],
     data() {
         return {
+            echecs: [],
+            resume: "",
             loading: {
                 isActive: false,
             },
@@ -68,7 +85,14 @@ export default {
             appService.modalHide();
             this.file = "";
             this.errors = {};
-            this.$refs.fileProperty.value = null;
+            // [ONB-02 2026-08-28] Sans ces deux lignes, le compte rendu de l'import
+            // precedent reapparaitrait a la reouverture de la fenetre, au-dessus d'un
+            // fichier qui n'a pas encore ete depose.
+            this.echecs = [];
+            this.resume = "";
+            if (this.$refs.fileProperty) {
+                this.$refs.fileProperty.value = null;
+            }
         },
         changeFile: function (e) {
             this.file = e.target.files[0];
@@ -86,14 +110,31 @@ export default {
                     search: this.search
                 }).then((res) => {
                     this.loading.isActive = false;
-                    appService.modalHide();
-                    alertService.successFlip(0,
-                        this.$t("menu.items")
-                    );
-                    this.file = "";
-                    this.errors = {};
-                    this.$refs.fileProperty.value = null;
+
+                    // [ONB-02 2026-08-28] La bulle etait FIGEE : `successFlip(0, ...)`
+                    // annoncait un succes quoi qu'il arrive, et le serveur repondait
+                    // « 202 » vide. Le commercant deposait 45 lignes et lisait
+                    // « succes » meme quand rien n'avait ete cree.
+                    //
+                    // Le serveur dit maintenant ce qu'il a fait. On le repete, et on
+                    // GARDE LA FENETRE OUVERTE tant qu'il reste des lignes a corriger :
+                    // fermer la fenetre sur une liste d'erreurs reviendrait a les
+                    // cacher.
+                    this.echecs = res?.data?.echecs || [];
+                    this.resume = res?.data?.message || "";
                     this.$emit('list');
+
+                    if (this.echecs.length === 0) {
+                        appService.modalHide();
+                        alertService.successInfo(0, this.resume || this.$t("menu.items"));
+                        this.file = "";
+                        this.errors = {};
+                        if (this.$refs.fileProperty) {
+                            this.$refs.fileProperty.value = null;
+                        }
+                    } else {
+                        alertService.warning(this.resume);
+                    }
                 }).catch((err) => {
                     this.loading.isActive = false;
                     if(err.response.data?.message){

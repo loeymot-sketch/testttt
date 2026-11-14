@@ -11,7 +11,9 @@ async function waitForLoyaltyReady(page, options = {}) {
     clearFirst: true,
   }, options);
 
-  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+  // Dev helpers are intentionally excluded from the normal production boot.
+  // Test-only state seeding must opt into that mode explicitly.
+  await page.goto('/index.html?dev', { waitUntil: 'domcontentloaded' });
 
   // Wait for data-layer + dev helpers (loaded by index.html before babel scripts)
   await page.waitForFunction(

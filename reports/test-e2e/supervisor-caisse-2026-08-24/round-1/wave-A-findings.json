@@ -1,0 +1,173 @@
+{
+  "wave": "A",
+  "round": 1,
+  "states_reviewed": 10,
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "test-e2e-waveA/04-voir-tout-ouvert.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Le rapport de capture écrit : « Snaps 02 -> 10 : console vide, réseau vide (aucune erreur, aucune mutation) — y compris pendant l'ouverture de Voir tout, ce qui confirme le zéro appel réseau revendiqué. » Cette inférence est INVALIDE. Le collecteur commun `tests/e2e/helpers/mega-audit-snap.js:77` ne retient une réponse que si `status >= 400 || (duration !== null && duration > 2000) || isMutation` avec `MUTATION_METHODS = new Set(['POST','PUT','PATCH','DELETE'])`. Un GET 200 rapide n'est JAMAIS écrit. Or le suivi sonde en GET : la Debugbar visible en bas des captures montre le compteur XHR passer de « #15 pos-order?paginate=1 · 68.97ms » (01, 03, 10) à « #16 · 118ms » (05, 06, 07, 08) puis « #17 · 119ms » (09) — des GET ont donc bien eu lieu pendant la course et aucun n'apparaît dans les `.network.json`, tous à `[]` de 02 à 10. Un `network.json` vide est l'état PAR DÉFAUT de ce collecteur, pas une preuve d'absence d'appel. La revendication elle-même reste vraie, mais elle repose uniquement sur le compteur interne de la spec (`audit-supervisor-waveA.spec.js:354-356`, `page.on('request', onReq)` puis `requetes.filter((u) => /\\/api\\/admin\\//.test(u))`) — pas sur l'artefact offert au relecteur. Note additionnelle : ce filtre est borné à `/api/admin/` ; un appel vers `/api/frontend/` ou `/broadcasting/auth` pendant l'ouverture ne serait pas compté.",
+      "fix_hint": "tests/e2e/helpers/mega-audit-snap.js:77 — soit élargir le sink (garder tous les XHR/fetch, pas seulement >=400/lent/mutation) pour que « zéro appel » devienne vérifiable sur artefact, soit sérialiser le compteur `page.on('request')` de la spec dans un 5e fichier `.requests.json`. En attendant, corriger la phrase du rapport : l'absence de preuve n'est pas une preuve d'absence.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "test-e2e-waveA/06-carte-telephone.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "La revendication « la commande téléphone est distinguable » ne tient pas à l'œil. Sur 06 je vois trois cartes simultanément — #AUDA-COMPO, #AUDA-UBER, #AUDA-TEL — et le SEUL marqueur de canal est un emoji de 14 px dans une pastille de 26 px, en haut à droite, IDENTIQUE en forme et en couleur pour les trois. Preuve dans la CSS embarquée du DOM : `.pos-tracker-card-source { width: 26px; height: 26px; border-radius: 8px; background: var(--pos-tracker-muted-soft); font-size: 14px; }` puis SEULEMENT deux variantes colorées — `.pos-tracker-card-source--kiosk { background: #EEF2FF; }` et `.pos-tracker-card-source--online { background: #FDECEA; color: #d32f2f; }`. Il n'existe AUCUNE règle `--phone`, `--pos` ni `--platform` : caisse, téléphone et plateforme retombent tous sur le même gris neutre. Borne et web sont colorés, le téléphone ne l'est pas. Côté accessibilité le canal n'a par ailleurs aucun texte : `<span class=\"pos-tracker-card-source pos-tracker-card-source--phone\" title=\"Téléphone\">📞</span>` — pas d'`aria-label`, pas de `sr-only` ; `title` n'est ni annoncé de façon fiable ni atteignable au doigt sur une caisse tactile. Ambiguïté aggravante confirmée visuellement sur 06 : le même glyphe 🛵 sert à la fois de pastille canal sur #AUDA-UBER (y≈259) et d'icône du couloir « EN LIVRAISON » (y≈188), dans le même écran.",
+      "fix_hint": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:258-261 — ajouter un texte accessible (`<span class=\"sr-only\">Téléphone</span>` ou `:aria-label`) au lieu du seul `:title`, et ajouter en CSS (autour de la ligne 3020, à côté de `--kiosk` / `--online`) des variantes `--phone` / `--platform` / `--pos` avec fond ET couleur distincts. Idéalement remplacer la pastille emoji par une puce texte courte (« TÉL », « UBER ») lisible sans survol.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "test-e2e-waveA/09-panneau-souffrance.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Le bouton de rafraîchissement du panneau « En souffrance » n'a AUCUN nom accessible : ni `aria-label`, ni `title`, ni texte, et son icône est masquée. DOM exact (09-panneau-souffrance.dom.html) : `<button data-v-551500c8=\"\" type=\"button\" class=\"pos-tracker-card-btn\"><i data-v-551500c8=\"\" class=\"fa-solid fa-arrows-rotate\" aria-hidden=\"true\"></i></button>`. Un balayage de tous les `<button>` du document ne remonte qu'UN seul bouton sans nom du tout, et c'est celui-là. Son voisin immédiat dans le même groupe est correct : `<button ... class=\"pos-tracker-card-btn\" aria-label=\"Fermer\">✕</button>`. Visible sur l'image en haut à droite du panneau (y≈345, x≈1255), entre « 50 affichées sur 581 » et la croix de fermeture. Le reste des boutons à icône seule de l'écran (`tracker-reprint-*`, `tracker-cancel-*`, lien œil « Voir le détail », `tracker-stale-cancel-*`) n'a qu'un `title` — non atteignable au doigt sur tactile — alors que le bouton frère `tracker-voir-tout-*` porte, lui, un vrai `aria-label=\"Voir tout le contenu de la commande AUDA-COMPO\"` : le motif correct existe dans le fichier, il n'est simplement pas appliqué partout.",
+      "fix_hint": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:591-593 — ajouter `aria-label=\"Rafraîchir la liste des commandes en souffrance\"` sur le bouton `@click=\"fetchStaleOrders\"`. Puis propager le motif déjà utilisé en L~349 (`aria-label` sur `tracker-voir-tout-*`) aux boutons à icône seule des cartes et des rangs (reprint, cancel, œil), en gardant `title` comme complément et non comme unique porteur.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "test-e2e-waveA/01-tableau-1366x768.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Le kanban — le conteneur dont TOUT le métier est de changer d'état — n'est pas une région live. DOM : `<div data-v-551500c8=\"\" class=\"pos-tracker-grid\" aria-busy=\"false\">`, sans `aria-live`, sans `role`. Un balayage complet de la section `pos-tracker-shell` ne remonte qu'UNE seule région live dans tout l'écran, et elle ne couvre que la santé système : `<div class=\"pos-health-pill pos-health-pill--warn\" role=\"status\" aria-live=\"polite\" ...>`. Conséquence : quand une commande passe « En préparation » -> « Prêts à servir » au rafraîchissement, ou quand le caissier clique un onglet canal et que les cinq couloirs se recomposent entièrement (comparer 01 : « 3 En préparation / 1 Prêts à servir / 8 Livrés » et 08 : « 1 / 0 / 0 »), rien n'est annoncé. C'est précisément le cas nommé par la catégorie 8 du protocole (« live region missing on dynamic-status containers »).",
+      "fix_hint": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:184 — ajouter `role=\"region\"` + `aria-label` sur `.pos-tracker-grid`, et publier les transitions dans un `<span class=\"sr-only\" role=\"status\" aria-live=\"polite\">` dédié (ex. « Commande N°A0032 prête à servir », « Filtre Téléphone : 1 commande active »).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-005",
+      "state_artifact": "test-e2e-waveA/09-panneau-souffrance.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "La pilule déclencheuse est en HAUT de page (visible sur 01 à y≈188 : « ⏳ 581 en souffrance ») et le panneau qu'elle ouvre est rendu tout en BAS, après la fermeture du kanban. Le DOM le confirme : `<section data-v-551500c8=\"\" id=\"pos-tracker-stale-panel\" class=\"pos-tracker-stale\" ...>` apparaît à l'offset ~563 000 d'un document de 777 KB, après le `</div>` du `.pos-tracker-grid`. Sur l'image 09 on voit les restes des couloirs (fragment de la carte #AUDA-COMPO, cartes N°A0057 / N°A0053) AU-DESSUS du panneau, qui ne commence qu'à y≈310. La spec elle-même a dû défiler par programme pour le photographier. Les attributs de divulgation sont pourtant corrects (`aria-expanded=\"true\"` / `aria-controls=\"pos-tracker-stale-panel\"` sur `tracker-stale-pill`) : le défaut n'est pas la sémantique, c'est que le focus n'est ni déplacé ni le panneau amené dans le champ de vision. Un caissier qui clique la pilule ne voit RIEN se produire ; un lecteur d'écran reste sur la pilule sans annonce.",
+      "fix_hint": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue — dans `toggleStalePanel` (déclaré L~60), après `staleOpen = true` faire un `$nextTick()` puis `scrollIntoView({ block: 'nearest' })` sur `#pos-tracker-stale-panel` et déplacer le focus sur son `<h2>` (`tabindex=\"-1\"`). Alternative plus sûre en plein service : rendre le panneau en superposition (même motif que `tracker-contenu-overlay`, qui lui est déjà correctement `role=\"dialog\" aria-modal=\"true\"`).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "test-e2e-waveA/03-carte-composition-riche.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Sur l'image, la ligne de composition de « 2× Cayenne » se lit « Galette · Algerienne · Bien cuit ·… » (y≈568) : l'ellipse est visible à l'écran. Le DOM porte le texte complet DEUX fois, en contenu et en attribut : `<span class=\"pos-tracker-card-compo\" data-testid=\"tracker-compo-6721-0\" title=\"Galette · Algerienne · Bien cuit · +2 Cheddar · +Salade\">Galette · Algerienne · Bien cuit · +2 Cheddar · +Salade</span>`. La coupe vient de la CSS : `.pos-tracker-card-compo { ... font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }`. `+2 Cheddar` et `+Salade` — deux extras PAYANTS — sont donc invisibles à l'écran et récupérables uniquement au survol souris. Sur une caisse TACTILE il n'y a pas de survol : le `title` n'est atteignable par aucun geste. Le protocole ne compte la troncature que « sans infobulle » ; je signale quand même parce que l'infobulle existe sur un support où elle ne peut pas être déclenchée. Contrôles menés en parallèle et NÉGATIFS : contraste mesuré sur les pixels de cette ligne = #5A5A5A sur #FFFFFF, soit 6,90:1 — conforme AA, ce n'est donc pas un problème de contraste mais de largeur.",
+      "fix_hint": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:3228 (`.pos-tracker-card-compo`) — remplacer `white-space: nowrap` + ellipse par un `display: -webkit-box; -webkit-line-clamp: 2` (deux lignes suffisent au cas semé) ou rendre la ligne tapable pour ouvrir « Voir tout ». Ne pas se reposer sur `title=` comme seul recours sur une surface tactile.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "test-e2e-waveA/02-tableau-1024x600.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "À 1024×600, PAS UNE SEULE carte n'est exploitable. Sur l'image je vois : l'en-tête (titre, 5 compteurs, pilule santé, recherche, 6 onglets canal, 4 boutons d'action sur deux rangées) occuper jusqu'à y≈365, la bannière d'encaissement jusqu'à y≈420, les titres de couloirs à y≈461, et la PREMIÈRE ligne de carte (« #AUDA-SIMPLE », « #AUDA-UBER ») à y≈522 — soit 87 % de la hauteur consommée avant le premier contenu utile. Aucun total, aucun bouton d'action, aucun « Voir tout » n'est atteignable sans défiler. De plus la grille à 5 couloirs se replie en 3 + 2 : « EN LIVRAISON » et « LIVRÉS » passent entièrement sur une seconde rangée hors champ (comparer avec 01 à 1366×768 où les 5 couloirs tiennent en une rangée). Catégorie du schéma la plus proche ; le défaut est une densité d'en-tête, pas une ellipse CSS. RÉSERVE HONNÊTE : les artefacts n'établissent pas que 1024×600 soit une résolution réellement déployée au comptoir — c'est un choix de la spec. Si elle l'est, ce point mérite P1 ; en l'état je le laisse P2.",
+      "fix_hint": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue — sous ~1100 px de large ou ~700 px de haut, replier l'en-tête : compteurs secondaires (« service en cours », « en rupture », « en retard ») dans la pilule santé, boutons « Sortie stock / Historique / Écran client / Retour caisse » dans un menu, et rendre `.pos-tracker-bar` collant-compact. Objectif mesurable : au moins une carte ENTIÈRE (total + actions) visible à 1024×600.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-008",
+      "state_artifact": "test-e2e-waveA/09-panneau-souffrance.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Le panneau annonce honnêtement « 50 affichées sur 581 » (`<span class=\"pos-tracker-stale-truncated\">`), mais les 531 restantes ne sont atteignables par AUCUN geste de cet écran : un balayage du `<section id=\"pos-tracker-stale-panel\">` ne remonte aucun marqueur de pagination (« Suivant », « Précédent », « Charger », `pagination`) — zéro occurrence. Aggravant, l'ordre de tri enterre exactement les pires cas : les 50 dates extraites du panneau vont de « 01:57, 21-08-2026 » (1er rang) à « 10:51, 05-08-2026 » (50e rang), soit du PLUS RÉCENT au plus ancien. Les commandes coincées les plus anciennes — les plus urgentes à solder — sont donc celles que la troncature supprime. Sur l'image, les rangs visibles descendent bien 21-08, 19-08, 19-08, 19-08, 17-08, 14-08, 14-08, 14-08, 14-08. Il s'agit d'une troncature de DONNÉES, pas d'une ellipse CSS ; catégorie du schéma la plus proche.",
+      "fix_hint": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:605 (`.pos-tracker-stale-list`) et son `fetchStaleOrders` — (1) inverser le tri par défaut en plus-ancien-d'abord, ou offrir une bascule de tri ; (2) ajouter une pagination ou un « Charger 50 de plus » ; (3) à défaut, faire pointer « 50 affichées sur 581 » vers /admin/historique préfiltré sur les non-terminées.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-009",
+      "state_artifact": "test-e2e-waveA/08-filtre-telephone.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "Sous le filtre « 📞 Téléphone », deux compteurs de portées DIFFÉRENTES sont collés sur la même ligne, dans la même typographie, sans rien pour les distinguer. DOM de 08 : `<div class=\"pos-tracker-status-row\"><span><strong>1</strong> actives</span> ... <span>41 service en cours</span>`. DOM de 01 (sans filtre) : `<span><strong>4</strong> actives</span> ... <span>41 service en cours</span>`. Le premier nombre SUIT le filtre (4 -> 1), le second NE LE SUIT PAS (41 -> 41). Sur l'image de 08 ils sont séparés de 16 px et rien ne signale que l'un est filtré et l'autre non ; « 41 service en cours » ne porte même pas de `title` explicatif, contrairement à ses voisins « 581 en souffrance », « 1 en rupture » et « 492 en retard » qui en ont un. Source : `PosOrdersTrackerComponent.vue:17` rend `stats.active` (filtré) et `:43` rend `stats.todayCount` (non filtré) côte à côte. Précision d'honnêteté : j'ai vérifié que chaque nombre est individuellement défendable — 4 actives = 3 « En préparation » + 1 « Prêts à servir » d'après les `aria-label` des compteurs de couloir de 01 — donc ce n'est PAS une donnée fausse et je ne le classe pas P0 ; c'est un défaut de présentation qui fait lire deux populations comme une seule.",
+      "fix_hint": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:43 — soit appliquer le filtre courant à `stats.todayCount`, soit le désambiguïser visiblement quand `filters.source !== 'all'` (ex. « 41 service en cours (tous canaux) » + `title`), et griser/atténuer tous les compteurs non filtrés tant qu'un onglet canal est actif.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-010",
+      "state_artifact": "test-e2e-waveA/04-voir-tout-ouvert.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "La MÊME instruction d'allergie est présentée à deux portées différentes sur le même écran. Sur la carte (03) elle est un bandeau de niveau COMMANDE, rendu avant la liste des produits et identifié par l'id de la commande : `<div class=\"pos-tracker-card-instruction\" data-testid=\"tracker-instruction-6721\" role=\"note\"><span aria-hidden=\"true\">⚠️</span><span>Sans oignons - allergie arachide</span></div>`. Dans le panneau « Voir tout » (04) la même phrase est rendue À L'INTÉRIEUR de la ligne 0 : `<li class=\"pos-tracker-contenu-ligne\" data-testid=\"tracker-contenu-ligne-0\"> ... 2× Cayenne ... <p class=\"pos-tracker-contenu-instruction\" data-testid=\"tracker-contenu-instruction\">⚠️ Sans oignons - allergie arachide</p></li>`, et les lignes 1 à 3 (Tacos M, Sandwich Classique, Big Tacos) n'en portent aucune. La vérité est celle du panneau : le semis n'écrit l'instruction que sur la LIGNE (`audit-supervisor-waveA.spec.js:74`, `$i->instruction = '...'` sur l'`OrderItem`) et ne pose jamais de champ d'instruction au niveau `Order`. La carte généralise donc une note portée par un seul des quatre produits en avertissement pour toute la commande. Sur une allergie à l'arachide, savoir si « sans oignons » vaut pour le Cayenne ou pour les quatre lignes n'est pas cosmétique. Le sens de l'erreur est le sens PRUDENT (la carte sur-avertit), d'où P2 et non P1. NON COUVERT par ces captures : le cas où DEUX lignes portent chacune une instruction différente — impossible de dire ici si la carte les joint, n'affiche que la première, ou en perd une.",
+      "fix_hint": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:297 (`.pos-tracker-card-instruction`) — préfixer la note du produit concerné (« Cayenne : Sans oignons - allergie arachide ») ou déplacer la note sous sa ligne dans `.pos-tracker-card-items`, comme le fait déjà le panneau. Ajouter au passage un cas de test à deux lignes instruites pour figer le comportement.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-011",
+      "state_artifact": "test-e2e-waveA/08-filtre-telephone.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Sous un filtre actif, les couloirs vides affirment des ABSOLUS qui sont faux. Sur l'image 08 (onglet « 📞 Téléphone » actif, `aria-selected=\"true\"`) je lis « Aucune commande prête. », « Aucune commande en livraison. » et surtout « Aucune commande livrée pour l'instant. » — DOM : `<div class=\"pos-tracker-col-empty\"><span class=\"pos-tracker-col-empty-icon\" aria-hidden=\"true\">—</span><p>Aucune commande livrée pour l'instant.</p></div>` avec `<span class=\"pos-tracker-col-count\" aria-label=\"0 Livrés\">0</span>`. Or sans filtre, en 01, ce même couloir porte `aria-label=\"8 Livrés\"` et affiche 8 cartes. Huit commandes ont donc bien été livrées ; la phrase dit le contraire, et « pour l'instant » ajoute une lecture TEMPORELLE (« rien encore aujourd'hui ») là où la cause réelle est le filtre. Un caissier qui filtre puis lit cette phrase peut conclure que le service n'a rien livré. Aucune des quatre phrases ne mentionne le filtre actif. Ces états passent la lettre de la règle du protocole (copie ≥ 20 caractères) — le défaut est la véracité du texte, pas sa longueur. Accessoirement l'icône d'état vide est un simple tiret cadratin `—` sur trois des quatre couloirs, contre `✓` sur « À encaisser » : à côté du ✓, le — se lit comme un gabarit non fini.",
+      "fix_hint": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:564-566 et les `emptyLabel` de :1355-1399 — quand `filters.source !== 'all'` (ou qu'une recherche est active), substituer une copie qui nomme le filtre : « Aucune commande téléphone livrée. » + un lien « Voir tous les canaux » qui remet `filters.source = 'all'`. Cela fournit du même coup la CTA que ces états vides n'ont pas.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-012",
+      "state_artifact": "test-e2e-waveA/06-carte-telephone.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "La carte téléphone affiche l'ordre « Rappeler avant de preparer » et ne donne aucun numéro pour le faire. Vérifié indépendamment : dans `06-carte-telephone.dom.html`, `0612345678` apparaît 0 fois, `tracker-customer-phone` 0 fois, `href=\"tel:` 0 fois — le numéro ne voyage même pas jusqu'au client. Il était pourtant bien scellé sur la commande : `audit-supervisor-waveA.spec.js:167` sème `posPhone: '0612345678'` et `:91` écrit `$o->pos_customer_phone`. La cause est en clair dans le code serveur, `app/Http/Resources/SimpleOrderResource.php:216` : `$autorise = ((int) $this->order_type === OrderType::DELIVERY) || $this->source_surface === 'web'; if (! $autorise) { return null; }` — une commande de canal `phone` qui n'est pas une livraison ne passe ni l'une ni l'autre des portes. Le canal dont la raison d'être est que le client n'est PAS là est le seul qu'on ne peut pas rappeler. CONTRADICTION À ARBITRER, ce n'est pas un simple bug : la carte porte en commentaire la demande propriétaire inverse (« [OWNER 2026-07-31] Identité client VISIBLE avant l'accept/encaissement : nom + téléphone. ... le caissier DOIT pouvoir rappeler le client »), tandis que le docbloc de la ressource invoque une décision propriétaire de sens opposé (« Reste réservé aux LIVRAISONS et aux commandes WEB (minimisation des données, Z9-P0-03 + décision owner 2026-07-31) »). Je maintiens P2 et NON P1 précisément parce que l'exclusion est délibérée et documentée : per CLAUDE.md §12 je remonte la contradiction plutôt que de trancher à la place du propriétaire.",
+      "fix_hint": "app/Http/Resources/SimpleOrderResource.php:216 — décision propriétaire requise. Si le rappel téléphone est voulu, ajouter `|| $this->source_surface === 'phone'` à `$autorise` (le numéro d'une commande téléphone est saisi par le caissier lui-même, la minimisation des données ne s'y applique pas de la même façon), puis afficher un `<a href=\"tel:...\">` sur la carte à PosOrdersTrackerComponent.vue:~290. Si l'exclusion est maintenue, retirer/reformuler l'attente inverse dans le commentaire de la carte pour que les deux sources cessent de se contredire.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-013",
+      "state_artifact": "test-e2e-waveA/10-couloir-vide.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "Le rapport annonce « 10 états, 10 quartets » et leur consacre dix lignes de tableau, mais deux d'entre eux ne documentent aucun état applicatif nouveau. Empreintes MD5 des DOM : 01, 03 et 10 partagent `2c997fa32d489c109d843c39286552e6` ; 05, 06 et 07 partagent `7c24b959040edff07094e428e60d7747`. Pour 03 la redondance est légitime (même DOM, défilement différent, contenu nouveau à l'image). Pour 10 et 07 elle ne l'est pas : mesure pixel à pixel, `01` vs `10` = 3 300 pixels différents sur 1 048 992, soit 0,315 %, et `06` vs `07` = 1,686 % confinés à l'encadré (535,147)-(1066,523), c'est-à-dire un simple anneau de focus sur la carte plateforme. Les deux couloirs vides « prouvés » par 10 sont déjà entièrement lisibles sur 01 (« À ENCAISSER 0 / Aucune commande à encaisser. » et « EN LIVRAISON 0 / Aucune commande en livraison. »), et la carte plateforme « prouvée » par 07 est déjà entièrement lisible sur 06, 05 et 03. Le code de la spec le confirme : le bloc ÉTAT 10 s'exécute immédiatement après `rec.snap('01-tableau-1366x768')`, avant toute interaction, et son `scrollIntoViewIfNeeded()` ne défile pas puisque la cible est déjà à l'écran. La base d'évidence réelle de la vague A est de 8 états distincts, pas 10.",
+      "fix_hint": "tests/e2e/audit-supervisor-waveA.spec.js — fusionner le bloc ÉTAT 10 dans les constats de l'ÉTAT 01 (aucune capture séparée) et faire de l'ÉTAT 07 un vrai état distinct (défiler/centrer la carte plateforme, ou ouvrir son « Voir tout ») sans quoi le retirer. Ajouter au harnais un garde-fou qui refuse d'écrire deux quartets dont le DOM a le même MD5 sans défilement ni viewport différents.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-014",
+      "state_artifact": "test-e2e-waveA/08-filtre-telephone.png",
+      "category": "i18n_leak",
+      "severity": "P3",
+      "evidence": "Aucune clé i18n brute ne fuit — j'ai balayé les dix DOM, nœuds de texte ET attributs (`title`, `placeholder`, `aria-label`, `alt`), avec le motif `^[a-z]+(\\.[a-z_]+){1,4}$` : zéro occurrence sur les dix fichiers. La revendication « aucun libellé brut » tient. En revanche deux libellés français ne s'accordent pas au singulier, et les deux sont visibles à l'image. (1) Sur 08, l'en-tête affiche « **1** actives » (DOM : `<span><strong>1</strong> actives</span>`) — devrait être « 1 active ». Source : `PosOrdersTrackerComponent.vue:17-19`, `{{ stats.active }} {{ $t('pos.tracker.active_orders') }}` sans pluralisation. Ce défaut-ci a échappé au rapport de capture. (2) Sur 03/05/06/07, la carte #AUDA-COMPO affiche « + 1 autres » (DOM : `<li class=\"pos-tracker-card-more\"> + 1 autres</li>`) — devrait être « + 1 autre ». Source : `:346-348`, `+ {{ extraItemsCount(order) }} {{ $t('pos.tracker.more_items') }}`. Catégorie du schéma la plus proche : c'est un défaut d'internationalisation (pluralisation absente), pas une clé exposée.",
+      "fix_hint": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:18 et :347 — utiliser la pluralisation vue-i18n (`$tc('pos.tracker.active_orders', stats.active)` / `$tc('pos.tracker.more_items', extraItemsCount(order))`) et déclarer les formes « active | actives » et « autre | autres » dans les fichiers de langue FR.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 12,
+    "P3": 2,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 12,
+    "open_P3": 2
+  },
+  "verdict": "GREEN",
+  "notes": "GREEN au sens STRICT du protocole (0 P0, 0 P1 = rien ne bloque la boucle). Ce n'est PAS « bon pour la prod » : 12 P2 ouverts, dont trois qui touchent le geste quotidien du caissier (A-002 canal indiscernable, A-007 aucune carte lisible à 1024×600, A-012 téléphone injoignable). VOICI CE QUE J'AI SINCÈREMENT TENTÉ DE CASSER SANS Y ARRIVER. (1) « Le panneau Voir tout montre TOUTES les personnalisations » — je l'ai compté ligne par ligne contre le semis et la revendication TIENT. Panneau : ligne 0 Cayenne = Pain Galette + Sauce Algerienne + Cuisson Bien cuit + Extras « 2× Cheddar, Salade » + instruction ; ligne 1 Tacos M = Viande Poulet marine + Suppléments Frites ; ligne 2 Sandwich Classique = Sauce Blanche ; ligne 3 Big Tacos 3× = rien. J'ai soupçonné la ligne 3 d'être amputée : le semis (`audit-supervisor-waveA.spec.js:139`, `{ itemId: 27, qty: 3 }`) ne lui donne effectivement NI option NI extra NI instruction, et le DOM porte bien quatre `<!--v-if-->` à cet endroit. Le panneau est un sur-ensemble strict de la carte, jamais l'inverse. (2) Intégrité numérique — rien à redire : « 4 articles · 7 au total » = 2+1+1+3 = 7 ; le total 19,40 € est IDENTIQUE sur la carte (visible sur 06 à y≈481) et dans le panneau (04, y≈163) ; « 4 actives » = 3 « En préparation » + 1 « Prêts à servir » d'après les `aria-label` des compteurs de couloir ; « 581 en souffrance » = « 50 affichées sur 581 ». Aucun écart trouvé. (3) Contraste — j'ai mesuré les pixels au lieu de deviner : le texte atténué (composition 11 px, sous-titre de couloir, « 41 service en cours ») sort à #5A5A5A sur #FFFFFF = 6,90:1, et le texte principal à #1A1A1A = 17,40:1. Tout passe AA, aucun défaut de contraste à signaler. (4) Dérive de palette — j'ai cru tenir un bouton primaire BLEU dans un POS de marque orange (`.pos-tracker-contenu-ok { background: var(--pos-tracker-blue, #1d4ed8) }`). Vérification faite, `--pos-tracker-blue` est un JETON DÉCLARÉ du composant, utilisé 12 fois de façon cohérente pour les actions secondaires, aux côtés d'un `--pos-tracker-primary: var(--pos-v5-brand-red)`. C'est un choix de système, pas une dérive : je RETIRE ce grief. (5) Accessibilité du panneau « Voir tout » — je m'attendais à une superposition bâclée, elle est correcte : `role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"pos-tracker-contenu-title\"`, bouton de fermeture avec `aria-label=\"Fermer\"`, icônes en `aria-hidden`, fermeture à Échap. Idem pour la pilule « en souffrance » : `aria-expanded` + `aria-controls` corrects (le défaut A-005 porte sur le focus, pas sur la sémantique). (6) Chevauchements d'éléments cliquables — cherchés à 1366×768 ET à 1024×600, y compris sur les deux rangées d'outils repliées : aucun. (7) Erreurs silencieuses / 4xx inattendus — les seuls signaux sont les 4 × 404 sur `/storage/1/english.png` et les `ERR_CONNECTION_REFUSED` sur `:9100`/`:9101`, tous deux dans la liste blanche ; les états 02 à 10 ont console ET réseau à `[]` ; aucune `pageerror` sur les dix états. (8) La violation CSP `connect-src` sur `http://127.0.0.1:9101/health` (`public/js/pos-wizard.js:203`) est réelle et je l'ai confirmée, mais elle est de niveau `info` et non `error`, la politique est en `report-only`, la sonde vise un fichier de ZONE GELÉE hors de la surface de la vague A, et l'équipe de capture l'a déjà consignée : je ne la re-dépose pas en constat. RÉSERVES DE COUVERTURE, à ne créditer à personne : le scénario « Voir tout sur une commande à une seule ligne sans personnalisation » n'est PAS couvert — le bouton n'existe pas sur ce type de carte et l'artefact `05-voir-tout-ligne-simple.png` montre en réalité la carte #AUDA-COMPO avec son bouton en focus, pas un panneau (l'équipe l'a dit franchement dans sa prose, mais le nom de fichier, lui, continue d'affirmer un état jamais atteint). Le bouton « Ticket promo » de l'état 07 n'a jamais été rendu (permission `pos-flyer-print` absente du compte utilisé) : ces captures ne disent RIEN de son état, ni en bien ni en mal. Enfin le cas « deux lignes portant chacune une instruction différente » n'est pas semé, donc la perte éventuelle d'instructions sur la carte (cf. A-010) reste non mesurée."
+}

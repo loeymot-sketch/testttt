@@ -42,3 +42,15 @@ rendu serveur, sans fenêtre, sans charabia.
 
 Zéro dépendance npm (http + winspool RAW via PowerShell intégré). Le ticket cuisine
 suit le format symbolique (`G | SANDWICH | P | STO | SAM` + suppléments + MENU/F).
+
+## Imprimante débranchée : plus de vieux tickets (2026-10-20)
+Avant, une imprimante éteinte laissait le spouleur Windows empiler les tickets, tous réimprimés
+au retour. Le pont :
+- **refuse** un ticket (`503 printer_offline`) quand Windows déclare l'imprimante hors ligne —
+  le caissier voit l'échec, rien n'entre dans le spouleur ; au moindre doute il imprime quand même ;
+- **supprime** toutes les 5 s les jobs du spouleur de CETTE imprimante plus vieux que 120 s
+  (`CAISSE_STALE_JOB_SECONDS`, `0` = désactivé) et, au démarrage, ceux de plus de 30 s ;
+- `CAISSE_OFFLINE_GATE=0` désactive le refus.
+Un ticket bloqué plus de 2 min (papier épuisé non rechargé) est donc PERDU, volontairement : mieux
+vaut un ticket manquant qu'un ticket vieux d'une heure. Reprendre le pont : télécharger
+`https://vps-418872ac.vps.ovh.net/dl/caisse-bridge.js`, remplacer le fichier, relancer le pont.

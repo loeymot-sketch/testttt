@@ -152,6 +152,8 @@ class CouponSurfaceEnforcedAtCommitTest extends TestCase
             'source' => Source::WEB,
             'payment_method' => PaymentGateway::CASH_ON_DELIVERY,
             'coupon_id' => $couponId,
+            // [AUDIT ABUSIF W3-P1-2] Le site envoie le code tapé avec son numéro.
+            'coupon_code' => (string) \App\Models\Coupon::query()->whereKey($couponId)->value('code'),
             'items' => json_encode([[
                 'item_id' => $this->item->id,
                 'quantity' => 1,

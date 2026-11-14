@@ -1,0 +1,14 @@
+{
+  "_doc": "Décision propriétaire 2026-11-04 « Garder toute consigne » : une ligne en capitales n'est retirée que si c'est l'écho du produit. Table jouée à l'identique par tests/js/kdsConsignesMajuscules.spec.js et tests/Unit/KitchenConsignesMajusculesTest.php (jumeaux stricts).",
+  "cas": [
+    { "ligne": "TACOS M", "produit": "Tacos M", "garde": false },
+    { "ligne": "SANDWICH CAYENNE", "produit": "Cayenne", "garde": false },
+    { "ligne": "LE SUPRÊME", "produit": "Suprême", "garde": false },
+    { "ligne": "BOL FRITES", "produit": "Bol Frites", "garde": false },
+    { "ligne": "PEU DE SAUCE", "produit": "Tacos M", "garde": true },
+    { "ligne": "DOUBLE FROMAGE", "produit": "Double Cheese", "garde": true },
+    { "ligne": "BEAUCOUP DE SALADE", "produit": "Cayenne", "garde": true },
+    { "ligne": "SANS OEUF", "produit": "Méga", "garde": true },
+    { "ligne": "COUPÉ EN DEUX", "produit": "Galette Classique", "garde": true }
+  ]
+}

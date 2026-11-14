@@ -99,6 +99,9 @@ class ChefService
 
         try {
             if (!in_array(EnumRole::CHEF, $this->blockRoles)) {
+                // [AUDIT ABUSIF 2026-11-06 · tour 3 · R3-ADV-002] Même règle que EmployeeService::update : mot de passe ou e-mail
+                // changé par un tiers → les sessions ouvertes du compte sont fermées (sinon il reste connecté jusqu'à 8 h).
+                $identifiantsChanges = $request->password || mb_strtolower((string) $request->email) !== mb_strtolower((string) $chef->email);
                 DB::transaction(function () use ($chef, $request) {
                     $this->chef               = $chef;
                     $this->chef->name         = $request->name;
@@ -112,6 +115,9 @@ class ChefService
                     $this->chef->branch_id     = $this->effectiveBranchId(auth()->user(), $request->branch_id);
                     $this->chef->save();
                 });
+                if ($identifiantsChanges && (int) $chef->id !== (int) optional(auth()->user())->id) {
+                    $chef->tokens()->delete();
+                }
                 return $this->chef;
             } else {
                 throw new Exception(trans('all.message.permission_denied'), 422);

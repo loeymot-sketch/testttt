@@ -44,7 +44,9 @@ class PosFreeDeliveryQuoteSealTest extends TestCase
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
 
-        $branch = Branch::factory()->create();
+        // [LIVRAISON 2026-10-20] Le serveur dérive désormais le prix de l'adresse enregistrée : la branche et
+        // l'adresse doivent donc être géocodées (Hénin-Beaumont → 3,90 €, que la livraison offerte annule ≥ 30 €).
+        $branch = Branch::factory()->create(['latitude' => '50.4215667', 'longitude' => '2.9549060']);
         $operator = User::factory()->create(['branch_id' => $branch->id]);
         $operator->assignRole('POS Operator');
         $operator->givePermissionTo('pos');
@@ -53,7 +55,8 @@ class PosFreeDeliveryQuoteSealTest extends TestCase
         $customer->assignRole('Customer');
         $address = \App\Models\Address::create([
             'user_id' => $customer->id, 'label' => 'Home', 'address' => '1 rue de Test',
-            'apartment' => '2', 'latitude' => '50.45', 'longitude' => '2.65',
+            'apartment' => '2', 'latitude' => '50.4300', 'longitude' => '2.9600',
+            'city' => 'Hénin-Beaumont', 'postal_code' => '62110', 'geocode_status' => 'OK',
         ]);
 
         $tax = Tax::factory()->create(['tax_rate' => 0, 'type' => TaxType::PERCENTAGE, 'status' => Status::ACTIVE]);
@@ -99,5 +102,14 @@ class PosFreeDeliveryQuoteSealTest extends TestCase
         $o = Order::first();
         $this->assertEqualsWithDelta(0.0, (float) $o->delivery_charge, 0.001, 'order delivery free');
         $this->assertEqualsWithDelta(32.00, (float) $o->total, 0.001, 'order total excludes delivery');
+
+        // [LIVRAISON 2026-10-20] La commande de CAISSE entre aussi dans une tournée de 30 minutes, et le palier
+        // appliqué (piste d'audit du prix) est conservé sur la commande. L'adresse (commune, position) est déjà
+        // persistée quand l'événement part : l'ordre de passage peut donc être calculé.
+        $this->assertSame('home', $o->fresh()->delivery_tier);
+        $stop = \App\Models\DeliveryStop::query()->where('order_id', $o->id)->first();
+        $this->assertNotNull($stop, 'La commande de caisse doit être rattachée à une tournée.');
+        $this->assertSame(1, $stop->sequence);
+        $this->assertSame('Hénin-Beaumont', \App\Models\OrderAddress::query()->where('order_id', $o->id)->value('city'));
     }
 }

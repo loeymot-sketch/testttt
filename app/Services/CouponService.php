@@ -113,6 +113,47 @@ class CouponService
         }
     }
 
+    /**
+     * [W6 cycle E · E1 2026-11-03] Utilisations RÉELLES d'un coupon (commandes vivantes — annulées / refusées / retournées
+     * exclues, même filtre que limit_per_user). Source unique du quota global : lue au paiement ET par la vitrine distante,
+     * qui ne doit pas promettre un code épuisé. `Coupon::isUsableNow` lit `usage_count`, colonne jamais incrémentée.
+     * `$toutesBranches` : la vitrine est PUBLIQUE — elle compte comme le paiement d'un client (branche 0 → BranchScope
+     * inopérant), quel que soit le jeton qui l'interroge. Le paiement garde sa lecture inchangée (false).
+     */
+    public function liveRedemptions(Coupon $coupon, bool $toutesBranches = false, bool $verrouiller = false): int
+    {
+        if ($verrouiller) {
+            return $this->utilisationsVerrouillees($coupon->id, null);
+        }
+
+        return OrderCoupon::where('coupon_id', $coupon->id)
+            ->whereHas('order', function ($o) use ($toutesBranches) {
+                if ($toutesBranches) {
+                    $o->withoutGlobalScope(\App\Models\Scopes\BranchScope::class);
+                }
+                $o->whereNotIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED]);
+            })
+            ->count();
+    }
+
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · ADV2-002] Utilisations VIVANTES du coupon, en lecture VERROUILLANTE par JOINTURE (toutes
+     * branches : le quota est global). Un `whereHas('order')` est une sous-requête que MySQL lit dans l'instantané de la
+     * transaction même sous FOR UPDATE : la commande d'une transaction concurrente, validée entre-temps, y était invisible
+     * et le ticket à usage unique passait deux fois. La jointure verrouillée lit la dernière valeur validée des deux tables.
+     */
+    private function utilisationsVerrouillees(int $couponId, ?int $userId): int
+    {
+        return (int) DB::table('order_coupons')
+            ->join('orders', 'orders.id', '=', 'order_coupons.order_id')
+            ->where('order_coupons.coupon_id', $couponId)
+            ->when($userId !== null, fn ($q) => $q->where('order_coupons.user_id', $userId))
+            ->whereNotIn('orders.status', [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED])
+            ->whereNull('orders.deleted_at')
+            ->lockForUpdate()
+            ->count();
+    }
+
     private function sanitizeOrderColumn(string $requestedColumn): string
     {
         return in_array($requestedColumn, $this->allowedOrderColumns, true) ? $requestedColumn : 'id';
@@ -443,7 +484,10 @@ class CouponService
 
         $now = Carbon::now();
         if ($coupon->start_date && $now->lt(Carbon::parse($coupon->start_date))) {
-            throw new Exception(trans('all.message.coupon_not_yet_active'), 422);
+            // [W6 cycle G · G1 2026-11-03] La phrase attend :date — sans elle, le client lisait « valide à partir du :date ».
+            throw new Exception(trans('all.message.coupon_not_yet_active', [
+                'date' => Carbon::parse($coupon->start_date)->timezone(config('app.timezone'))->format('d/m/Y à H:i'),
+            ]), 422);
         }
         if ($coupon->end_date && $now->gt(Carbon::parse($coupon->end_date))) {
             throw new Exception(trans('all.message.coupon_date_expired'), 422);
@@ -460,12 +504,25 @@ class CouponService
             });
         };
 
+        // [AUDIT ABUSIF 2026-11-06 · ADV2-002] Ticket promo à usage unique consommé DEUX fois par deux commandes simultanées
+        // (MySQL REPEATABLE READ) : la lecture ordinaire du coupon ouvrait l'instantané, le verrou venait ensuite et le comptage
+        // ordinaire lisait un état périmé ; la limite PAR CLIENT était même comptée avant tout verrou. Le verrou est posé
+        // AVANT les deux contrôles, et les deux comptages sont des lectures VERROUILLANTES (dernière valeur validée).
+        $verrouCoupon = DB::transactionLevel() > 0
+            && ((int) ($coupon->limit_per_user ?? 0) > 0 || (int) ($coupon->max_uses_global ?? 0) > 0);
+        if ($verrouCoupon) {
+            Coupon::withTrashed()->whereKey($coupon->id)->lockForUpdate()->first();
+        }
+
         $limitPerUser = (int) ($coupon->limit_per_user ?? 0);
         if ($limitPerUser > 0) {
             $orderedCouponCount = OrderCoupon::where([
                 'user_id' => $userId,
                 'coupon_id' => $coupon->id,
             ])->where($liveOrderCoupon)->count();
+            if ($verrouCoupon) {
+                $orderedCouponCount = $this->utilisationsVerrouillees($coupon->id, $userId);
+            }
 
             if ($orderedCouponCount >= $limitPerUser) {
                 throw new Exception(trans('all.message.coupon_limit_exceeded'), 422);
@@ -509,7 +566,7 @@ class CouponService
                     ->first();
             }
 
-            $globalUsed = OrderCoupon::where('coupon_id', $coupon->id)->where($liveOrderCoupon)->count();
+            $globalUsed = $this->liveRedemptions($coupon, false, $verrouCoupon);
             if ($globalUsed >= $maxUsesGlobal) {
                 throw new Exception(trans('all.message.coupon_limit_exceeded'), 422);
             }

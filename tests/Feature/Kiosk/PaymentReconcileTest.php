@@ -42,6 +42,13 @@ class PaymentReconcileTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // [AUDIT ABUSIF 2026-11-06] PLAN A (borne avec terminal) : en Plan B, reconcile-pending et payment-confirm sont refusés.
+        config(['kiosk.payment_route_all_to_counter' => false]);
+    }
+
     public function test_reconcile_endpoint_marks_unpaid_order_as_paid(): void
     {
         $ctx = $this->createKioskContext();
@@ -304,6 +311,30 @@ class PaymentReconcileTest extends TestCase
     /* ------------------------------------------------------------------ */
     /* Helpers */
     /* ------------------------------------------------------------------ */
+
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · tour 2] Plan B : aucune transaction carte de la borne n'existe → reconcile-pending refuse,
+     * la commande n'est ni payée ni fiscalisée. Plan A : la commande d'un AUTRE compte (client du site) n'est jamais
+     * rapprochée par la borne.
+     */
+    public function test_abus_reconcile_refuse_en_plan_b_et_sur_la_commande_d_un_autre(): void
+    {
+        $ctx = $this->createKioskContext();
+        $order = $this->createKioskCardOrder($ctx, 12.50);
+        $entree = fn ($o) => ['entries' => [['order_id' => $o->id, 'transaction_id' => 'TX-INVENTE-'.uniqid(), 'amount_cents' => 1250, 'card_type' => 'VISA', 'payment_method' => PaymentGateway::CARD]]];
+
+        config(['kiosk.payment_route_all_to_counter' => true]);
+        $this->postJson('/api/frontend/payment/reconcile-pending', $entree($order))->assertStatus(422);
+        $this->assertNotEquals(PaymentStatus::PAID, $order->fresh()->payment_status);
+        $this->assertNull($order->fresh()->fiscal_sequence_no);
+
+        config(['kiosk.payment_route_all_to_counter' => false]);
+        $client = User::factory()->create(['branch_id' => 0]);
+        $commandeClient = $this->createKioskCardOrder(['user' => $client, 'branch' => $ctx['branch']], 12.50);
+        $r = $this->postJson('/api/frontend/payment/reconcile-pending', $entree($commandeClient))->assertStatus(200);
+        $this->assertSame('unauthorized', $r->json('data.0.status'));
+        $this->assertNotEquals(PaymentStatus::PAID, $commandeClient->fresh()->payment_status);
+    }
 
     private function createKioskContext(): array
     {

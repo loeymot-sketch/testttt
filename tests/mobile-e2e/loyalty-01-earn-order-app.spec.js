@@ -7,19 +7,16 @@ test('S01 — Earn via purchase_app updates balance + history entry visible', as
   await waitForLoyaltyReady(page, { seedAccount: { balance: 100, lifetime_earned: 100 } });
   await gotoLoyaltyScreen(page);
 
-  // [GOAL-SYNC 2026-07-08] DEC-02 rate guard — earn_ratio = 1 pt/€ (canon backend
-  // points_per_euro=1, floor du total TTC — contrat §2). L'ancien 10 pt/€ était
-  // un drift mock : le verrou pointe désormais sur la valeur RÉELLE du backend.
+  // [PHASE11] Le contrat backend live est 10 pt/€ (réglage loyalty_setup).
   const earnRatio = await page.evaluate(() => window.LC.loyalty.config.earn_ratio);
-  expect(earnRatio).toBe(1);
+  expect(earnRatio).toBe(10);
   const ppe = await page.evaluate(() => window.LC.loyalty.config.points_per_euro);
-  expect(ppe).toBe(1);
+  expect(ppe).toBe(10);
 
   const before = await page.locator('[data-testid="loyalty-balance"]').innerText();
   expect(before).toBe('100');
 
-  // Trigger earn — order app gives +33 pts (33 € à 1 pt/€ — fallback local hors-ligne ;
-  // l'EARN réel est crédité par le backend au statut PREPARED/DELIVERED)
+  // Trigger earn — 33 € donnent 330 points au taux backend live.
   await page.evaluate(() => window.LC.dev.earnPoints(33, 'purchase_app', { order_id: 'C-9000', serial: 9000 }));
   await page.waitForTimeout(150);
 

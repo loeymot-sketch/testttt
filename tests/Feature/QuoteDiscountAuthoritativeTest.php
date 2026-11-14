@@ -22,6 +22,12 @@ class QuoteDiscountAuthoritativeTest extends TestCase
 
     public function test_quote_discount_uses_backend_subtotal_not_forged_client_total(): void
     {
+        // [AUDIT CAISSE 2026-09-29] Ce banc vérifie que la remise est calculée sur le
+        // sous-total SERVEUR, pas sur un total client forgé. Il suppose qu'une remise est
+        // acceptée au devis : depuis que le coupe-circuit V1 des remises manuelles
+        // (défaut false) s'applique AU DEVIS, il faut l'ouvrir ici — c'est bien le calcul
+        // qu'on teste, pas le coupe-circuit (couvert par ManualDiscountDisabledV1SentinelTest).
+        config(['pos.manual_discount_enabled' => true]);
         [$operator, $payload] = $this->fixture();
 
         $payload['subtotal'] = 1000.00;

@@ -6,7 +6,7 @@
                 <p class="pos-v5-floorplan__eyebrow">Caisse Le Cayenne · Plan de salle</p>
                 <h2 class="pos-v5-floorplan__title">{{ $t('label.floorplan') }}</h2>
                 <p class="pos-v5-floorplan__meta">
-                    <span class="pos-v5-tabular">{{ tables.length }}</span> tables
+                    <span class="pos-v5-tabular">{{ tables.length }}</span> {{ tables.length > 1 ? 'tables' : 'table' }}
                 </p>
             </div>
             <div class="pos-v5-floorplan__actions">
@@ -43,7 +43,10 @@
                 <div class="flex items-start justify-between gap-3">
                     <div>
                         <h3 class="pos-v5-floorplan-table__name">{{ table.name }}</h3>
-                        <p class="pos-v5-floorplan-table__seats">{{ table.size || 0 }} seats</p>
+                        <!-- [AUDIT-SUPERVISEUR 2026-08-25 - AB-005/AB-006] « 0 seats » etait de l'anglais en
+                             dur, et « 1 tables » un pluriel concatene, sur un plan de salle
+                             entierement francais par ailleurs (ADR-007 : locale FR immuable). -->
+                        <p class="pos-v5-floorplan-table__seats">{{ libelleCouverts(table.size || 0) }}</p>
                     </div>
                     <span class="pos-v5-floorplan-table__status">
                         {{ statusLabel(table.occupancy_status) }}
@@ -127,6 +130,19 @@ export default {
         }
     },
     methods: {
+        /**
+         * [AUDIT-SUPERVISEUR 2026-08-25 - AB-005] Le nombre de places d'une table, en francais.
+         *
+         * Le gabarit ecrivait « {{ table.size || 0 }} seats » : de l'anglais en dur sur une
+         * surface caisse, dans une application dont la locale est immuable (ADR-007). On dit
+         * « couvert », le mot du metier en salle, et on accorde.
+         */
+        libelleCouverts(nombre) {
+            const n = Number(nombre) || 0;
+
+            return n > 1 ? `${n} couverts` : `${n} couvert`;
+        },
+
         async fetchState(options = {}) {
             const silent = options.silent === true;
             if (!silent) {

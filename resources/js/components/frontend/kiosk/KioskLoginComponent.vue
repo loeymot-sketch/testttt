@@ -160,6 +160,16 @@ export default {
     },
 
     retryAutoLogin() {
+      // The configuration object is rendered by Laravel only when the page is
+      // loaded. If this public screen was reached during a network/config
+      // transition, retrying the same in-memory null object can never recover;
+      // closing then reopening the kiosk worked only because it reloaded the
+      // document. Make the visible retry perform that safe, user-triggered
+      // reload instead. A non-provisioned browser remains on this public page.
+      if (this.setupRequired) {
+        window.location.reload();
+        return;
+      }
       this.retryAttempts = 0;
       this.startAutoLogin();
     },

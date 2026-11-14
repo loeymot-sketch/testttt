@@ -42,6 +42,9 @@ class KitchenTicketQueueTest extends TestCase
     {
         parent::setUp();
         $this->seedSpatieRoles();
+        // Ces tests décrivent la MÉCANIQUE de la file : ils l'allument pour la caisse. Le défaut
+        // éteint (plus de papier auto à la caisse) est prouvé par CaisseSansPapierAutoTest.
+        config(['kds.counter_auto_print' => true]);
         $this->branch = Branch::factory()->create();
         $this->cashier = User::factory()->create(['branch_id' => $this->branch->id]);
         $this->cashier->assignRole('POS Operator');

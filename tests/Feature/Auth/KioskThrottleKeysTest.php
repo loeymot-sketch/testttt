@@ -146,10 +146,41 @@ class KioskThrottleKeysTest extends TestCase
             ]);
         }
 
-        $response->assertStatus(429)->assertExactJson([
-            'message' => 'Too many login attempts. Please try again later.',
-            'retry_after' => 600,
-        ]);
+        // [ONB-11 2026-08-28] Le message a CHANGÉ délibérément : il était en anglais
+        // et ne disait pas le délai, alors que `retry_after` était calculé juste à
+        // côté. On n'épingle plus la phrase — une formulation se retouche — mais les
+        // deux choses qui comptent : le délai machine, et le fait que le commerçant
+        // SOIT informé de la durée. Épingler la phrase ferait rougir ce banc à chaque
+        // reformulation, et il finirait par être neutralisé.
+        $response->assertStatus(429);
+        $this->assertSame(600, $response->json('retry_after'));
+        $this->assertStringContainsString(
+            '10',
+            (string) $response->json('message'),
+            "Le message doit DIRE combien de temps attendre. Sans la durée, le\n"
+            . "commerçant ne sait pas s'il patiente une minute ou s'il rappelle\n"
+            . 'quelqu\'un. Reçu : ' . $response->json('message')
+        );
+        // ⚠️ La suite tourne en locale `en` : l'anglais y est donc CORRECT. Ce qu'on
+        // vérifie n'est pas « ce n'est pas de l'anglais » — ma première version
+        // affirmait cela et se trompait — mais que le message SUIT LA LOCALE, au lieu
+        // d'être écrit en dur. En production la locale est `fr` (ADR-007), et c'est
+        // ce que le commerçant lira.
+        $this->assertStringNotContainsString(
+            ':minutes',
+            (string) $response->json('message'),
+            "Le paramètre n'est pas substitué : le commerçant lirait « :minutes » "
+            . 'en toutes lettres.'
+        );
+
+        app()->setLocale('fr');
+        $this->assertStringContainsString(
+            'Trop de tentatives',
+            trans('auth.trop_de_tentatives', ['minutes' => 10]),
+            "Le message n'existe pas en français : il serait écrit en dur, ce qui est "
+            . 'le défaut corrigé ici.'
+        );
+        app()->setLocale('en');
     }
 
     /** @test */
@@ -166,10 +197,41 @@ class KioskThrottleKeysTest extends TestCase
             $response = $this->postLogin([]);
         }
 
-        $response->assertStatus(429)->assertExactJson([
-            'message' => 'Too many login attempts. Please try again later.',
-            'retry_after' => 600,
-        ]);
+        // [ONB-11 2026-08-28] Le message a CHANGÉ délibérément : il était en anglais
+        // et ne disait pas le délai, alors que `retry_after` était calculé juste à
+        // côté. On n'épingle plus la phrase — une formulation se retouche — mais les
+        // deux choses qui comptent : le délai machine, et le fait que le commerçant
+        // SOIT informé de la durée. Épingler la phrase ferait rougir ce banc à chaque
+        // reformulation, et il finirait par être neutralisé.
+        $response->assertStatus(429);
+        $this->assertSame(600, $response->json('retry_after'));
+        $this->assertStringContainsString(
+            '10',
+            (string) $response->json('message'),
+            "Le message doit DIRE combien de temps attendre. Sans la durée, le\n"
+            . "commerçant ne sait pas s'il patiente une minute ou s'il rappelle\n"
+            . 'quelqu\'un. Reçu : ' . $response->json('message')
+        );
+        // ⚠️ La suite tourne en locale `en` : l'anglais y est donc CORRECT. Ce qu'on
+        // vérifie n'est pas « ce n'est pas de l'anglais » — ma première version
+        // affirmait cela et se trompait — mais que le message SUIT LA LOCALE, au lieu
+        // d'être écrit en dur. En production la locale est `fr` (ADR-007), et c'est
+        // ce que le commerçant lira.
+        $this->assertStringNotContainsString(
+            ':minutes',
+            (string) $response->json('message'),
+            "Le paramètre n'est pas substitué : le commerçant lirait « :minutes » "
+            . 'en toutes lettres.'
+        );
+
+        app()->setLocale('fr');
+        $this->assertStringContainsString(
+            'Trop de tentatives',
+            trans('auth.trop_de_tentatives', ['minutes' => 10]),
+            "Le message n'existe pas en français : il serait écrit en dur, ce qui est "
+            . 'le défaut corrigé ici.'
+        );
+        app()->setLocale('en');
     }
 
     /**

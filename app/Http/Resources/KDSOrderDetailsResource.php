@@ -38,7 +38,9 @@ class KDSOrderDetailsResource extends JsonResource
             'order_datetime'                      => AppLibrary::datetime($this->order_datetime),
             'order_date'                          => AppLibrary::date($this->order_datetime),
             'order_time'                          => AppLibrary::time($this->order_datetime),
-            'delivery_date'                       => $this->is_advance_order == Ask::YES ? AppLibrary::increaseDate($this->order_datetime, 1) : AppLibrary::date($this->order_datetime),
+            // [E2E stores · F-B2 · 2026-10-01] Heure programmée prioritaire (App\Support\CreneauRetrait) ;
+            // à défaut, comportement historique inchangé (date de commande).
+            'delivery_date'                       => \App\Support\CreneauRetrait::date($this) ?? AppLibrary::date($this->order_datetime),
             'delivery_time'                       => $this->is_advance_order == Ask::YES ? AppLibrary::deliveryTime($this->delivery_time) : AppLibrary::deliveryTimeCheck($this->delivery_time),
             'is_advance_order'                    => $this->is_advance_order,
             // [E4 SCHEDULED-INTAKE 2026-07-20] Commande programmée : heure cible ISO
@@ -58,7 +60,11 @@ class KDSOrderDetailsResource extends JsonResource
                 ? $this->scheduled_at->copy()
                     ->subMinutes(\App\Domain\Kds\KitchenReleaseRule::scheduledLeadMinutes())
                     ->toIso8601String()
-                : null,
+                // [VG-2026-10-21 M2-101] Livraison retenue jusqu'à départ − marge : même ancrage à
+                // la libération (sinon « en retard » de 20 h à son entrée). ASAP → null, inchangé.
+                : ($this->resource instanceof \App\Models\Order && $this->delivery_slot_at
+                    ? \App\Domain\Kds\KitchenReleaseRule::kitchenReleaseAt($this->resource)?->toIso8601String()
+                    : null),
             'preparation_time'                    => $this->preparation_time,
             // [KITCHEN-TIMING 2026-07-03] horodatages RÉELS du parcours cuisine (vs l'estimé
             // preparation_time) + temps de préparation réel mesuré en secondes (accepted→prepared).
@@ -126,7 +132,15 @@ class KDSOrderDetailsResource extends JsonResource
         );
 
         $utilisateur = $this->relationLoaded('user') ? $this->user : null;
-        $nom = $nomCommande !== '' ? $nomCommande : trim((string) ($utilisateur->name ?? ''));
+        // [NOM-COMMANDE-BORNE 2026-10-19] La borne n'emprunte JAMAIS le compte porteur (technique :
+        // « Compte Borne… ») : sans nom saisi, l'écran cuisine n'affiche aucun client plutôt qu'un faux
+        // — même règle que le ticket et la caisse. Un nom de substitution invité n'est pas une personne.
+        $nomCompte = trim((string) ($utilisateur->name ?? ''));
+        if (strtolower(trim((string) ($this->source_surface ?? ''))) === 'kiosk'
+            || \App\Support\NomClient::estGenerique($nomCompte)) {
+            $nomCompte = '';
+        }
+        $nom = $nomCommande !== '' ? $nomCommande : $nomCompte;
 
         if ($nom === '') {
             return null;

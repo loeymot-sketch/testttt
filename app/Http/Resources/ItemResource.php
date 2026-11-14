@@ -12,6 +12,7 @@ use App\Services\Stock\ChoiceAvailabilityResolver;
 use App\Support\Menu\SauceCatalog;
 use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Support\Menu\IncludedSauceCount;
 
 class ItemResource extends JsonResource
 {
@@ -78,6 +79,8 @@ class ItemResource extends JsonResource
             "id"               => $this->id,
             "name"             => $this->name,
             "slug"             => $this->slug,
+            // [OWNER 2026-11-11] Sauces offertes (sandwichs : 2) — lu par le wizard caisse. Voir IncludedSauceCount.
+            "sauce_included"   => IncludedSauceCount::forItem($this->resource),
             "item_category_id" => $this->item_category_id,
             "tax_id"           => $this->tax_id,
             "flat_price"       => AppLibrary::flatAmountFormat($this->price),
@@ -86,6 +89,13 @@ class ItemResource extends JsonResource
             "price"            => $this->price,
             "item_type"        => $this->item_type,
             "is_featured"      => $this->is_featured,
+            // [ONB-02 2026-08-28] Le rang manquait ICI AUSSI.
+            //
+            // La liste passe par `SimpleItemResource`, la fiche par celle-ci : les
+            // deux hydratent le meme formulaire. Corriger l'une et laisser l'autre
+            // aurait reproduit le defaut sur un chemin sur deux — c'est le motif
+            // « jumeau oublie », rencontre quatre fois cette semaine.
+            "order"            => $this->order,
             // [GAP-27-1] Expose is_upsell so admin UI can read/write it (Ask::NO=10 default)
             "is_upsell"        => $this->is_upsell ?? 10,
             // [v1-0-1-h5 Z5-P1-01 2026-05-17] Expose channels so the admin

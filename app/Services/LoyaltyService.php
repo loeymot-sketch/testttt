@@ -156,6 +156,122 @@ class LoyaltyService
      * race conditions where partial redemptions / expirations might
      * have already drawn the balance below the awarded amount.
      */
+    /**
+     * [POINTS À LA VALIDATION 2026-11-06 · relecture adverse P0-1/P1-3] Reprend les points GAGNÉS par une commande
+     * qu'on annule, en résolvant le client EXACTEMENT comme l'attribution (`AwardLoyaltyPointsOnDelivery::award`) :
+     * `loyalty_customer_code` d'abord, sinon le propriétaire de la commande s'il porte un `loyalty_code`.
+     *
+     * Depuis que les points tombent à la VALIDATION (et non plus à la remise), une commande acceptée puis annulée
+     * — purge des impayés, annulation par le client — porte des points gagnés : chaque chemin d'annulation doit
+     * les reprendre. Idempotent (NOOP si déjà repris) ; sans effet si rien n'a été crédité (sentinelle ≤ 0).
+     *
+     * @param \App\Models\Order|\App\Models\FrontendOrder $order
+     */
+    public function clawbackEarnedForOrder($order, string $reason): void
+    {
+        $awarded = (int) ($order->loyalty_points_awarded ?? 0);
+        if ($awarded <= 0) {
+            return;
+        }
+        // [Relecture adverse tour 2 · P2] Le client RÉELLEMENT crédité (ligne `earn` du registre) fait foi : un code
+        // rattaché APRÈS le crédit ne doit pas faire reprendre les points à quelqu'un d'autre.
+        $creditePour = (int) DB::table('loyalty_transactions')
+            ->where('order_id', $order->id)->where('type', 'earn')->value('user_id');
+        if ($creditePour > 0) {
+            $this->clawbackEarnedPoints($creditePour, $awarded, (int) $order->id, $reason);
+
+            return;
+        }
+        $user = null;
+        if (! empty($order->loyalty_customer_code)) {
+            $user = User::where('loyalty_code', $order->loyalty_customer_code)->first();
+        }
+        if (! $user && $order->user_id) {
+            $candidate = User::find($order->user_id);
+            if ($candidate && $candidate->loyalty_code) {
+                $user = $candidate;
+            }
+        }
+        if (! $user) {
+            return;
+        }
+        $this->clawbackEarnedPoints((int) $user->id, $awarded, (int) $order->id, $reason);
+    }
+
+    /**
+     * [Relecture adverse tour 2 · P3 · 2026-11-06] Points NETS qu'une commande rapporte encore au client, pour
+     * l'AFFICHAGE : crédit (`loyalty_points_awarded`) moins les reprises déjà écrites au registre pour cette commande
+     * (`manual_deduct`, source « refund »). Un remboursement après clôture laisse la commande payée et dans son statut :
+     * sans ce net, le client lisait « +X points crédités » pour des points repris. Commande annulée/refusée/retournée,
+     * ou sentinelle en cours (-1) : 0.
+     *
+     * @param \App\Models\Order|\App\Models\FrontendOrder $order
+     */
+    public static function pointsNetsCommande($order): int
+    {
+        if (in_array((int) $order->status, [\App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED, \App\Enums\OrderStatus::RETURNED], true)) {
+            return 0;
+        }
+        $credite = (int) ($order->loyalty_points_awarded ?? 0);
+        if ($credite <= 0) {
+            return 0;
+        }
+        $repris = (int) DB::table('loyalty_transactions')
+            ->where('order_id', $order->id)->where('type', 'manual_deduct')->where('source_surface', 'refund')
+            ->sum('points'); // négatif
+
+        return max(0, $credite + $repris);
+    }
+
+    /** Surfaces d'une commande À DISTANCE (site, application, livraison) : payée avant d'être remise. */
+    public const SURFACES_A_DISTANCE = ['web', 'delivery', 'mobile', 'app'];
+
+    /** Filet : une commande validée jamais marquée « remise » ne bloque pas ses points plus de 24 h. */
+    public const ATTENTE_REMISE_MAX_HEURES = 24;
+
+    /**
+     * [DÉCISION PROPRIÉTAIRE 2026-11-06 · « Bloquer jusqu'à la remise »] Points GAGNÉS par des commandes À DISTANCE
+     * déjà validées mais PAS ENCORE REMISES (acceptée, en préparation, prête, en livraison). Ils sont crédités et
+     * visibles dès la validation, mais pas dépensables avant la remise : sinon un client dépensait aussitôt les
+     * points d'une commande payée, puis en obtenait l'annulation + le remboursement (la reprise plafonnée au solde
+     * lui laissait la remise). Les ventes au comptoir (caisse, borne, téléphone) sont remises en même temps
+     * qu'elles sont réglées : non concernées. Filet de 24 h pour une commande jamais marquée remise.
+     */
+    public static function pointsEnAttenteDeRemise(int $userId): int
+    {
+        if ($userId <= 0) {
+            return 0;
+        }
+
+        $seuil = now()->subHours(self::ATTENTE_REMISE_MAX_HEURES);
+
+        return max(0, (int) DB::table('loyalty_transactions as lt')
+            ->join('orders as o', 'o.id', '=', 'lt.order_id')
+            ->where('lt.user_id', $userId)
+            // Net de la commande : gain moins reprises déjà écrites (relecture adverse P3-5 : une reprise sans
+            // changement de statut ne doit pas bloquer d'autres points légitimes).
+            ->where(fn ($q) => $q->where('lt.type', 'earn')
+                ->orWhere(fn ($r) => $r->where('lt.type', 'manual_deduct')->where('lt.source_surface', 'refund')))
+            ->whereIn('o.status', [\App\Enums\OrderStatus::ACCEPT, \App\Enums\OrderStatus::PREPARING, \App\Enums\OrderStatus::PREPARED, \App\Enums\OrderStatus::OUT_FOR_DELIVERY])
+            ->whereIn('o.source_surface', self::SURFACES_A_DISTANCE)
+            // [Relecture adverse P3-4] Payée SUR PLACE ou À LA PORTE : le règlement EST la remise — rien à bloquer.
+            // Seule une commande PRÉPAYÉE (remboursable avant d'être remise) porte l'abus visé.
+            ->where('o.payment_method', '!=', \App\Enums\PaymentGateway::CASH_ON_DELIVERY)
+            // [Relecture adverse P2-1] Filet de 24 h compté depuis le plus tardif du crédit et du CRÉNEAU programmé :
+            // une commande pour J+5 acceptée aujourd'hui garde ses points bloqués jusqu'à sa remise.
+            ->where(fn ($q) => $q->where('lt.created_at', '>=', $seuil)->orWhere('o.scheduled_at', '>=', $seuil))
+            // [Relecture adverse P3-1] Lecture verrouillée en partage : un crédit validé par une transaction concurrente
+            // n'échappe pas à l'instantané de la transaction de rachat.
+            ->sharedLock()
+            ->sum('lt.points'));
+    }
+
+    /** Points que le client peut DÉPENSER maintenant : solde moins les points en attente de remise. */
+    public static function pointsDepensables(int $userId, int $solde): int
+    {
+        return max(0, $solde - self::pointsEnAttenteDeRemise($userId));
+    }
+
     public function clawbackEarnedPoints(int $userId, int $amount, int $orderId, string $reason): void
     {
         if ($amount <= 0) {

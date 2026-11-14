@@ -29,7 +29,7 @@ describe('pos-wizard — oignon cru↔cuit (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8)',
         const { wizard } = await mountPosWizard({ itemData: cayenneLikeItem() });
         expect(wizard).toBeTruthy();
         expect(garnBtn(wizard, KEY_CRU).classList.contains('included')).toBe(true);
-        expect(garnBtn(wizard, KEY_CUIT).classList.contains('removed')).toBe(true);
+        expect(garnBtn(wizard, KEY_CUIT).classList.contains('optin')).toBe(true);  // [OWNER 2026-11-11] au choix non choisi = neutre (« + Oignons cuits »), plus rouge
         expect(garnBtn(wizard, KEY_CUIT).classList.contains('included')).toBe(false);
     });
 
@@ -44,7 +44,7 @@ describe('pos-wizard — oignon cru↔cuit (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8)',
         garnBtn(wizard, KEY_CRU).click();
         await tick(10);
         expect(garnBtn(wizard, KEY_CRU).classList.contains('included')).toBe(true);
-        expect(garnBtn(wizard, KEY_CUIT).classList.contains('removed')).toBe(true);
+        expect(garnBtn(wizard, KEY_CUIT).classList.contains('optin')).toBe(true);  // [OWNER 2026-11-11] au choix non choisi = neutre (« + Oignons cuits »), plus rouge
     });
 
     it('les autres crudités (Salade/Tomates) restent incluses par défaut et insensibles à l\'exclusivité', async () => {
@@ -79,7 +79,7 @@ describe('pos-wizard — oignon cru↔cuit (LOCK_POSWIZARD_KIOSKWIZARD_OWNER8)',
         await tick(10);
         garnBtn(wizard, KEY_CUIT).click(); // off
         await tick(10);
-        expect(garnBtn(wizard, KEY_CUIT).classList.contains('removed')).toBe(true);
+        expect(garnBtn(wizard, KEY_CUIT).classList.contains('optin')).toBe(true);  // [OWNER 2026-11-11] au choix non choisi = neutre (« + Oignons cuits »), plus rouge
         expect(garnBtn(wizard, KEY_CRU).classList.contains('removed')).toBe(true);
     });
 

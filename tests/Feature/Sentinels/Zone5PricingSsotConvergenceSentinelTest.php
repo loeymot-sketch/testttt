@@ -233,6 +233,14 @@ class Zone5PricingSsotConvergenceSentinelTest extends TestCase
                 if (preg_match_all($rx, $contents, $m)) {
                     foreach ($m[0] as $hit) {
                         // Skip false positive: comments / docstrings mentioning UPDATE
+                        //
+                        // [2026-09-02] Le motif était `'#^\s*[*/#]#'` : délimiteur `#` ET `#`
+                        // dans la classe de caractères. PHP coupe donc le motif à ce `#` et lit
+                        // `]#` comme modificateurs → « preg_match(): Unknown modifier ']' ».
+                        // Cette sentinelle garde un invariant NF525 (`composition_snapshot` figé
+                        // à la création d'une commande, JAMAIS réécrit — CLAUDE.md §8) : elle
+                        // LEVAIT une exception au lieu de contrôler quoi que ce soit. Un
+                        // garde-fou qui plante ne garde rien. Délimiteur changé pour `~`.
                         if (preg_match('~^\s*[*/#]~', $hit)) continue;
                         $offenders[] = [
                             'file' => str_replace($appPath . DIRECTORY_SEPARATOR, '', $file->getPathname()),

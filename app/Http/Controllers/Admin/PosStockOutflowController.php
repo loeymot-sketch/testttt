@@ -69,13 +69,26 @@ class PosStockOutflowController extends Controller
             );
 
             // La TRACE, toujours enregistrée (valable même pour les composites sans stock direct).
+            // [Test abusif final P3 · 2026-11-06] Article suivi en stock : la trace porte ce qui a RÉELLEMENT été retiré
+            // (plafonné au stock, comme le mouvement) — une saisie de 999 sur un stock de 2 gonflait le rapport des
+            // pertes. La quantité demandée reste lisible dans la note. Composites sans stock direct : inchangé.
+            $quantiteTrace = (int) $data['quantity'];
+            $note = $data['note'] ?? null;
+            if ($decremented) {
+                $retire = (int) abs((int) \App\Models\StockMovement::query()->where('idempotency_key', $idempotencyKey)->value('delta'));
+                $retire = $retire > 0 ? $retire : $quantiteTrace;
+                if ($retire < $quantiteTrace) {
+                    $note = trim(($note ? $note.' · ' : '').'demandé '.$quantiteTrace.', retiré '.$retire.' (stock)');
+                    $quantiteTrace = $retire;
+                }
+            }
             return StockOutflow::create([
                 'branch_id'         => $branchId,
                 'item_id'           => (int) $data['item_id'],
                 'item_name'         => (string) $item->name,
-                'quantity'          => (int) $data['quantity'],
+                'quantity'          => $quantiteTrace,
                 'type'              => $data['type'],
-                'note'              => $data['note'] ?? null,
+                'note'              => $note,
                 'user_id'           => $userId,
                 'stock_decremented' => $decremented,
                 'created_at'        => now(),

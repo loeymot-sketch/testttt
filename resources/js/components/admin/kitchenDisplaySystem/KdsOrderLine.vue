@@ -8,7 +8,7 @@
     header        — qty + name + ⚠ if hasAllergen
     variation     — "Pain : Baguette traditionnelle"
     variation-flat— "Avec : 2 Merguez, 1 Brochette"
-    supplement    — "+ Cheddar" in yellow italic
+    supplement    — "Cheddar" bold white on black (inverted)
     addon         — generic indented "▸ Label"
     menu_child    — "▸ Frites Moyennes" (menu_full/menu_frites/menu_boisson)
     instruction   — italic note, classified note/exclusion/allergen
@@ -19,8 +19,9 @@
     <!-- header — qty + name + allergen icon -->
     <template v-if="line.type === 'header'">
       <div class="kds-line__header">
-        <span class="kds-line__qty">{{ line.qty }}<span class="kds-line__qty-x">×</span></span>
+        <span class="kds-line__qty" :class="{ 'kds-line__qty--multi': isMulti }">{{ line.qty }}<span class="kds-line__qty-x">×</span></span>
         <span v-if="line.hasAllergen" class="kds-line__allergen-icon" :aria-label="$t('label.kds_line_allergen_icon_aria')">⚠</span>
+        <span v-if="line.hasSupplement" class="kds-line__hash" aria-hidden="true">#</span>
         <span class="kds-line__name">{{ line.label }}</span>
       </div>
     </template>
@@ -28,8 +29,9 @@
     <!-- symbolic-main — qty + "G | SANDWICH | P | STO | SAM" (kitchen shorthand) -->
     <template v-else-if="line.type === 'symbolic-main'">
       <div class="kds-line__symbolic">
-        <span class="kds-line__qty">{{ line.qty }}<span class="kds-line__qty-x">×</span></span>
+        <span class="kds-line__qty" :class="{ 'kds-line__qty--multi': isMulti }">{{ line.qty }}<span class="kds-line__qty-x">×</span></span>
         <span v-if="line.hasAllergen" class="kds-line__allergen-icon" :aria-label="$t('label.kds_line_allergen_icon_aria')">⚠</span>
+        <span v-if="line.hasSupplement" class="kds-line__hash" aria-hidden="true">#</span>
         <span class="kds-line__symbolic-text">{{ line.label }}</span>
       </div>
     </template>
@@ -57,9 +59,9 @@
       </div>
     </template>
 
-    <!-- supplement: "+ Cheddar" in yellow italic -->
+    <!-- supplement: "Cheddar" bold WHITE on a BLACK box (inverted reading, never yellow) -->
     <template v-else-if="line.type === 'supplement'">
-      <div class="kds-line__supplement">{{ line.label }}</div>
+      <div class="kds-line__supplement">{{ supplementText }}</div>
     </template>
 
     <!-- menu_child: "▸ Frites Moyennes" (formule child) -->
@@ -107,6 +109,15 @@ export default {
     },
   },
   computed: {
+    // [GOAL REMARQUES 2026-10-03 · R-054] « 2 × » doit sauter aux yeux : fond noir dès qu'il y en a plus d'un.
+    isMulti() {
+      return Number(this.line.qty) > 1;
+    },
+    // [GOAL #7 2026-10-02] Le gras blanc sur noir porte à lui seul le signal « supplément » :
+    // l'étoile emoji (jaune) n'est plus affichée — jamais de jaune sur la fiche cuisine.
+    supplementText() {
+      return String(this.line.label || '').replace(/^\s*⭐\s*/u, '');
+    },
     groupLabel() {
       const key = `label.kds_group_${this.line.group || 'other'}`;
       // Fallback to raw group key if i18n misses (defensive — i18n parity
@@ -162,8 +173,19 @@ export default {
   opacity: 0.55;
   margin-inline-start: 2px;
 }
+/* [GOAL REMARQUES 2026-10-03 · R-054] Propriétaire : « fois deux […] avec une arrière-plan en noir ».
+   Quantité > 1 en blanc sur noir ; le « × » reste lisible (opacité neutralisée). */
+.kds-line__qty--multi {
+  background: #000000;
+  color: #FFFFFF;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+.kds-line__qty--multi .kds-line__qty-x {
+  opacity: 1;
+}
 .kds-line__allergen-icon {
-  color: #F97316;
+  color: #7C2D12;
   font-size: 20px;
   line-height: 1;
   margin-top: -2px;
@@ -193,6 +215,13 @@ export default {
   display: flex;
   align-items: baseline;
   gap: 8px;
+}
+.kds-line__hash {
+  /* [GOAL #7 2026-10-02] « # » gras en tête d'une ligne produit qui porte un supplément. */
+  color: #000000;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.2;
 }
 .kds-line__symbolic-text {
   flex: 1;
@@ -228,7 +257,7 @@ export default {
 /* VARIATION — "Pain : Baguette" */
 .kds-line__variation,
 .kds-line__variation--flat {
-  color: #4B5563;
+  color: #374151; /* ≥ 7:1 sur tous les fonds de carte (#4B5563 tombait à 6,2 sur fond d'alerte) */
   font-size: 16px;
   line-height: 1.3;
   padding-inline-start: 56px;
@@ -238,18 +267,20 @@ export default {
 }
 .kds-line__group {
   font-weight: 600;
-  color: #374151;
+  color: #1F2937;
   text-transform: capitalize;
 }
 .kds-line__sep {
-  color: #6B7280;
+  color: #374151;
 }
 .kds-line__value {
-  color: #4B5563;
+  color: #374151;
 }
 
-/* SUPPLEMENT — jaune gras, EN LIGNE (côte à côte). [KDS-INLINE-SUPP 2026-07-05] Owner :
-   les suppléments s'affichent l'un À CÔTÉ de l'autre (pas chacun sur sa ligne), en jaune. */
+/* SUPPLEMENT — EN LIGNE (côte à côte). [KDS-INLINE-SUPP 2026-07-05] Les suppléments
+   s'affichent l'un À CÔTÉ de l'autre (pas chacun sur sa ligne).
+   [GOAL #7 2026-10-02] LECTURE INVERSÉE : gras BLANC sur cadre NOIR (21:1), JAMAIS jaune —
+   le jaune (#CA8A04) tombait à 2,7:1 sur le fond jaune de la fiche. */
 .kds-line--supplement {
   display: inline-block;
   vertical-align: top;
@@ -257,15 +288,26 @@ export default {
 .kds-line--supplement:first-of-type {
   padding-inline-start: 44px; /* aligne le groupe suppléments sous le produit */
 }
+/* [GOAL REMARQUES 2026-10-03 · R-071] Propriétaire, 03/10 : « agrandir les suppléments ». En 15 px ils
+   restaient PLUS PETITS que le produit (18 px symbolique, 22 px en-tête) : on passe à 22 px, au moins
+   la taille du nom. `nowrap` faisait déborder un nom long hors d'une fiche étroite (8 colonnes) : on
+   revient à la ligne ENTRE les mots seulement (jamais dans un mot — régression C4-001), borné à la fiche. */
 .kds-line__supplement {
-  display: inline;
-  color: #CA8A04;
-  font-size: 15px;
+  display: inline-block;
+  background: #000000;
+  color: #FFFFFF;
+  padding: 3px 10px;
+  border-radius: 5px;
+  font-size: 22px;
   font-style: normal;
-  font-weight: 800; /* [K2-KDS 2026-07-05] supplément en GRAS + étoile ⭐ (owner) */
-  margin-inline-end: 12px;
-  line-height: 1.3;
-  white-space: nowrap;
+  font-weight: 900;
+  margin-inline-end: 8px;
+  margin-bottom: 4px;
+  line-height: 1.25;
+  max-width: 100%;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 /* MENU CHILD — formule member */
@@ -282,21 +324,29 @@ export default {
   line-height: 1.3;
 }
 .kds-line__menu-arrow {
-  color: #6B7280;
+  color: #374151;
   font-weight: 700;
   flex-shrink: 0;
 }
 
-/* INSTRUCTION — italic note with class-based emphasis */
+/* INSTRUCTION — note du client, GRANDE et GRASSE.
+   [NOTES-EN-GRAND 2026-10-19 · owner] « Les notes sont toujours en écriture très fine sur l'écran
+   cuisine, on oublie de les lire » (ex. : « sans œuf » sur une formule). Avant : 16 px italique,
+   la taille d'un détail. Maintenant : 24 px gras 800 droit (l'italique fin se lit mal à un mètre),
+   barre pleine à gauche pour que l'œil la trouve sans chercher. Les couleurs ne changent pas :
+   leur contraste ≥ 7:1 est déjà verrouillé par kdsLisibiliteCuisine.spec.js. */
 .kds-line__instruction {
   display: flex;
   align-items: baseline;
-  gap: 6px;
-  font-size: 16px;
-  font-style: italic;
-  padding-inline-start: 56px;
-  margin-top: 4px;
-  line-height: 1.3;
+  gap: 8px;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 800;
+  margin-inline-start: 44px;
+  padding-inline-start: 10px;
+  border-inline-start: 6px solid currentColor;
+  margin-top: 6px;
+  line-height: 1.25;
 }
 .kds-line__instruction-prefix {
   opacity: 0.55;
@@ -307,17 +357,21 @@ export default {
    2 notes distinctes se lisaient d'un seul bloc à l'écran. */
 .kds-line__instruction-text {
   white-space: pre-line;
+  /* [REVUE ADVERSE 2026-10-19] En 24 px gras, un mot long (« compréhension ») était coupé net par
+     le débordement masqué de la carte, dans une carte étroite (écran cuisine de 1024 px). */
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 .kds-instruction--note {
-  color: #4B5563;
+  color: #111827;
 }
 .kds-instruction--exclusion {
-  color: #92400E;
-  font-weight: 600;
+  color: #7C2D12;
+  font-weight: 900;
 }
 .kds-instruction--allergen {
-  color: #C2410C;
-  font-weight: 700;
+  color: #7C2D12;
+  font-weight: 900;
 }
 
 /* ALLERGEN BLOCK — "⚠ Allergènes : gluten · lait" */
@@ -326,7 +380,7 @@ export default {
   align-items: baseline;
   gap: 6px;
   flex-wrap: wrap;
-  color: #C2410C;
+  color: #7C2D12;
   font-size: 16px;
   font-style: italic;
   font-weight: 700;

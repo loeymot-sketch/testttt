@@ -1,0 +1,682 @@
+<?php
+
+namespace App\Services\Storefront;
+
+use App\Exceptions\Storefront\StorefrontConflictException;
+use App\Enums\Status;
+use App\Models\Branch;
+use App\Models\Coupon;
+use App\Models\Scopes\BranchScope;
+use App\Models\StorefrontBanner;
+use App\Models\StorefrontSetting;
+use App\Models\StorefrontVersion;
+use App\Models\User;
+use App\Services\Delivery\DeliveryAvailability;
+use App\Services\Fiscal\AuditLogService;
+use App\Support\Storefront\Contrast;
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use Smartisan\Settings\Facades\Settings;
+
+/**
+ * [APP HYBRIDE W2a · 2026-11-03] Vitrine distante : brouillon → publication versionnée → lecture publique.
+ *
+ * Une seule fonction construit ce que l'application reçoit (`payloadFromSnapshot`) : l'API publique l'appelle sur la
+ * version publiée, l'écran d'administration l'appelle sur le brouillon pour son aperçu. L'aperçu ne peut donc pas
+ * mentir sur ce que l'application affichera.
+ */
+class StorefrontService
+{
+    public const TZ = 'Europe/Paris';
+
+    public function __construct(private readonly DeliveryAvailability $delivery)
+    {
+    }
+
+    // ------------------------------------------------------------------ branche
+
+    /** Branche servie au public : celle du site (`site_default_branch`), sinon la première branche. */
+    public function branchForPublic(): int
+    {
+        try {
+            $id = (int) Settings::group('site')->get('site_default_branch');
+        } catch (\Throwable) {
+            $id = 0;
+        }
+        if ($id > 0 && Branch::query()->whereKey($id)->exists()) {
+            return $id;
+        }
+
+        return (int) (Branch::query()->orderBy('id')->value('id') ?? 1);
+    }
+
+    /** Branche éditée : celle du responsable ; un administrateur sans branche (0) édite la branche du site. */
+    public function branchForUser(?User $user): int
+    {
+        $id = (int) ($user?->branch_id ?? 0);
+
+        return $id > 0 ? $id : $this->branchForPublic();
+    }
+
+    // ------------------------------------------------------------------ lecture
+
+    public function settings(int $branch): ?StorefrontSetting
+    {
+        return StorefrontSetting::query()->where('branch_id', $branch)->first();
+    }
+
+    public function banners(int $branch)
+    {
+        return StorefrontBanner::query()->where('branch_id', $branch)->orderBy('id')->get();
+    }
+
+    public function published(int $branch): ?StorefrontVersion
+    {
+        return StorefrontVersion::query()->where('branch_id', $branch)->orderByDesc('version')->first();
+    }
+
+    /** Le brouillon courant, sous la forme exacte d'un instantané publié. */
+    public function draftSnapshot(int $branch): array
+    {
+        $s = $this->settings($branch);
+
+        return [
+            'enabled' => (bool) ($s?->enabled ?? false),
+            'theme' => $s?->theme ? $this->normalizeTheme($s->theme) : null,
+            // [T-3.1.1 2026-11-10] thèmes programmés (fêtes) : toujours une liste, jamais null, pour une empreinte stable
+            'scheduled_themes' => $this->normalizeScheduledThemes($s?->scheduled_themes),
+            'delivery_on_message' => $s?->delivery_on_message,
+            'delivery_off_message' => $s?->delivery_off_message,
+            'banners' => $this->banners($branch)->map(fn (StorefrontBanner $b) => $this->bannerSnapshot($b))->values()->all(),
+        ];
+    }
+
+    public function bannerSnapshot(StorefrontBanner $b): array
+    {
+        return [
+            'id' => $b->id,
+            'type' => $b->type,
+            'title' => $b->title,
+            'body' => $b->body,
+            'button_label' => $b->button_label,
+            'button_link' => $b->button_link,
+            'coupon_code' => $b->coupon_code,
+            'starts_at' => $this->iso($b->starts_at),
+            'ends_at' => $this->iso($b->ends_at),
+            'priority' => (int) $b->priority,
+            'active' => (bool) $b->active,
+        ];
+    }
+
+    /** Ce que l'application reçoit. `$snapshot` null = rien de publié : vitrine éteinte, l'application garde son contenu embarqué. */
+    public function payloadFromSnapshot(?array $snapshot, int $version, ?CarbonInterface $publishedAt, ?CarbonInterface $now = null, ?int $branch = null): array
+    {
+        $now = $now ?? Carbon::now(self::TZ);
+        $enabled = (bool) ($snapshot['enabled'] ?? false);
+        $deliveryOn = $this->delivery->isEnabled();
+
+        $live = [];
+        $nextChange = null;
+        if ($enabled) {
+            foreach ($snapshot['banners'] ?? [] as $b) {
+                if (empty($b['active'])) {
+                    continue;
+                }
+                $start = $b['starts_at'] ? Carbon::parse($b['starts_at']) : null;
+                $end = $b['ends_at'] ? Carbon::parse($b['ends_at']) : null;
+                if ($end && $end->lessThanOrEqualTo($now)) {
+                    continue; // terminé (fin exclue)
+                }
+                if ($start && $start->greaterThan($now)) {
+                    $nextChange = $this->earliest($nextChange, $start); // à venir : l'application relira à temps
+                    continue;
+                }
+                if ($end) {
+                    $nextChange = $this->earliest($nextChange, $end);
+                }
+                $live[] = $b;
+            }
+            usort($live, fn ($a, $b) => [$b['priority'], $a['id']] <=> [$a['priority'], $b['id']]);
+            $live = $this->withUsableCoupons($live, $now, $nextChange, $branch);
+        }
+
+        $custom = $enabled ? ($deliveryOn ? ($snapshot['delivery_on_message'] ?? null) : ($snapshot['delivery_off_message'] ?? null)) : null;
+
+        // [T-3.1.1 2026-11-10] Thème programmé en cours (fêtes) : il remplace les couleurs de base entre ses deux dates,
+        // même si le restaurant garde par ailleurs les couleurs embarquées ; ses bornes entrent dans `next_change_at`
+        // pour que l'application relise exactement au début et à la fin, et le thème de base reprend seul.
+        $theme = $enabled && ! empty($snapshot['theme']) ? $this->normalizeTheme($snapshot['theme']) : null;
+        $actif = $enabled ? $this->activeScheduledTheme($snapshot['scheduled_themes'] ?? [], $now, $nextChange) : null;
+        if ($actif) {
+            $theme = $this->normalizeTheme($actif['theme']);
+        }
+
+        return [
+            'version' => $version,
+            'enabled' => $enabled,
+            'published_at' => $this->iso($publishedAt),
+            'theme' => $theme,
+            'theme_name' => $actif['name'] ?? null,
+            'banners' => array_map(fn ($b) => [
+                'id' => (int) $b['id'],
+                'type' => $b['type'],
+                'title' => $b['title'],
+                'body' => $b['body'],
+                'button' => $b['button_label'] && $b['button_link'] ? ['label' => $b['button_label'], 'link' => $b['button_link']] : null,
+                'coupon_code' => $b['coupon_code'],
+                'starts_at' => $b['starts_at'],
+                'ends_at' => $b['ends_at'],
+                'priority' => (int) $b['priority'],
+            ], $live),
+            'delivery' => [
+                'enabled' => $deliveryOn,
+                'message' => $custom ?: (string) config('storefront.delivery_messages.'.($deliveryOn ? 'on' : 'off')),
+                // [RED cycle 3 · P2-4] vrai si le message a été SAISI en admin : l'application ne remplace son texte d'origine
+                // (« La livraison est lancée ! … ») que par un message choisi, jamais par le message générique.
+                'custom' => (bool) $custom,
+            ],
+            'next_change_at' => $this->iso($nextChange),
+        ];
+    }
+
+    /**
+     * [W6 cycle C · C2 2026-11-03] Le code promo d'un bandeau n'est servi que si le coupon est utilisable MAINTENANT (même
+     * règle que la saisie admin : actif, dans ses dates). Avant, la validité n'était vérifiée qu'à l'enregistrement : un coupon
+     * coupé ou expiré ensuite restait promis « pré-rempli au paiement » par l'application. Le bandeau reste, sans le code.
+     * Les bornes du coupon entrent dans `next_change_at` pour que l'application relise au bon moment.
+     * [W6 cycle D · D1 + D3] « Utilisable » = EXACTEMENT ce que le paiement de l'application acceptera : l'interrupteur général
+     * des codes promo (miroir de Frontend\CouponController::couponChecking) puis `Coupon::isUsableNow($branch, 'web')` — la
+     * règle appliquée par CouponService au moment de payer (jours, heures, branche, canal, quota). Avant, un code réservé à
+     * la borne, hors de ses heures ou au quota épuisé était promis « pré-rempli au paiement » puis refusé.
+     */
+    private function withUsableCoupons(array $live, CarbonInterface $now, ?CarbonInterface &$nextChange, ?int $branch): array
+    {
+        $codes = array_values(array_unique(array_filter(array_map(
+            fn ($b) => ! empty($b['coupon_code']) ? mb_strtoupper(trim((string) $b['coupon_code'])) : null,
+            $live
+        ))));
+        if (! $codes) {
+            return $live;
+        }
+        $usable = [];
+        $couponsAllowed = config('pos.coupon_codes_enabled') === true || config('pos.manual_discount_enabled') === true;
+        foreach ($couponsAllowed ? Coupon::query()->whereIn(DB::raw('UPPER(code)'), $codes)->get() : [] as $c) {
+            $start = $c->start_date ? Carbon::parse($c->start_date) : null;
+            $end = $c->end_date ? Carbon::parse($c->end_date) : null;
+            if ((int) $c->status === Status::ACTIVE && $start && $start->greaterThan($now) && ! ($end && $end->lessThan($now))) {
+                $nextChange = $this->earliest($nextChange, $start);
+                continue;
+            }
+            // [W6 cycle E] Deux lectures, car la commande en fait deux : le contrôle du code au paiement (branche + canal 'web')
+            // ET le calcul des prix à l'enregistrement (zone gelée DiscountCalculator::couponDiscount → resolveCouponById SANS
+            // branche ni canal : un coupon restreint y est refusé — défaut connu, CouponSurfaceEnforcedAtCommitTest ignoré).
+            // La seconde lecture tombera d'elle-même le jour où le calcul des prix relaiera branche et canal.
+            if (! $c->isUsableNow($branch, 'web', Carbon::instance($now)) || ! $c->isUsableNow(null, null, Carbon::instance($now))) {
+                continue;
+            }
+            // [W6 cycle E · E1] Quota global compté comme au paiement (isUsableNow lit usage_count, jamais incrémentée).
+            if ((int) ($c->max_uses_global ?? 0) > 0 && app(\App\Services\CouponService::class)->liveRedemptions($c, true) >= (int) $c->max_uses_global) {
+                continue;
+            }
+            if ($end) {
+                $nextChange = $this->earliest($nextChange, $end);
+            }
+            // Plage horaire / jours : relire quand la fenêtre du jour se ferme.
+            if (! empty($c->valid_hours_start) && ! empty($c->valid_hours_end)) {
+                $close = Carbon::instance($now)->setTimeFromTimeString((string) $c->valid_hours_end);
+                $nextChange = $this->earliest($nextChange, $close->lessThanOrEqualTo($now) ? $close->addDay() : $close);
+            } elseif (is_array($c->valid_days_of_week) && ! empty($c->valid_days_of_week)) {
+                $nextChange = $this->earliest($nextChange, Carbon::instance($now)->addDay()->startOfDay());
+            }
+            $usable[mb_strtoupper((string) $c->code)] = true;
+        }
+
+        return array_map(function ($b) use ($usable) {
+            if (! empty($b['coupon_code']) && ! isset($usable[mb_strtoupper(trim((string) $b['coupon_code']))])) {
+                $b['coupon_code'] = null;
+            }
+
+            return $b;
+        }, $live);
+    }
+
+    /**
+     * Lecture PUBLIQUE : sans BranchScope, branche explicite (même règle que les recherches pré-authentification).
+     * Le site et l'application envoient parfois le jeton d'un client connecté : avec le scope, un compte rattaché à une
+     * autre branche recevrait une vitrine vide (constaté par StorefrontAdminTest::test_isolation_par_branche).
+     */
+    public function publicPayload(int $branch): array
+    {
+        $v = StorefrontVersion::query()->withoutGlobalScope(BranchScope::class)
+            ->where('branch_id', $branch)->orderByDesc('version')->first();
+
+        return $this->payloadFromSnapshot($v?->snapshot, (int) ($v?->version ?? 0), $v?->published_at, null, $branch);
+    }
+
+    public function hasUnpublishedChanges(int $branch): bool
+    {
+        $published = $this->published($branch)?->snapshot ?? ['enabled' => false, 'theme' => null, 'scheduled_themes' => [], 'delivery_on_message' => null, 'delivery_off_message' => null, 'banners' => []];
+        // Une version publiée AVANT les thèmes programmés n'a pas la clé : même valeur qu'une liste vide.
+        $published += ['scheduled_themes' => []];
+
+        return $this->comparable($this->draftSnapshot($branch)) !== $this->comparable($published);
+    }
+
+    /**
+     * [RED-W2a P2-2 2026-11-03] Empreinte du brouillon (même forme normalisée que `hasUnpublishedChanges`, insensible à
+     * l'ordre des clés JSON de MySQL). L'écran la reçoit avec l'état et la renvoie à « Publier ».
+     */
+    public function draftHash(int $branch): string
+    {
+        return sha1((string) json_encode($this->comparable($this->draftSnapshot($branch))));
+    }
+
+    // ------------------------------------------------------------------ thème
+
+    /** @return array<string,string> erreurs en français, clé `theme` ou `theme.<jeton>` */
+    public function themeErrors(mixed $theme): array
+    {
+        if ($theme === null) {
+            return [];
+        }
+        $tokens = (array) config('storefront.theme_tokens');
+        if (! is_array($theme)) {
+            return ['theme' => 'Le thème doit être une liste de couleurs.'];
+        }
+        $errors = [];
+        $unknown = array_diff(array_keys($theme), array_keys($tokens));
+        if ($unknown) {
+            $errors['theme'] = 'Jeton de couleur inconnu : '.implode(', ', $unknown).'. Seuls ces jetons sont acceptés : '.implode(', ', array_keys($tokens)).'.';
+        }
+        foreach ($tokens as $key => $label) {
+            if (! array_key_exists($key, $theme) || $theme[$key] === null || $theme[$key] === '') {
+                $errors["theme.{$key}"] = "« {$label} » est obligatoire.";
+            } elseif (! Contrast::isHex($theme[$key])) {
+                $errors["theme.{$key}"] = "« {$label} » doit être une couleur au format #RRGGBB (par exemple #FF5A1F).";
+            }
+        }
+        $min = (float) config('storefront.min_contrast', 4.5);
+        foreach ((array) config('storefront.contrast_pairs') as [$fg, $bg]) {
+            if (isset($errors["theme.{$fg}"]) || isset($errors["theme.{$bg}"])) {
+                continue;
+            }
+            $ratio = Contrast::ratio($theme[$fg], $theme[$bg]);
+            if ($ratio < $min) {
+                $errors["theme.{$fg}"] = sprintf(
+                    'Contraste insuffisant entre « %s » (%s) et « %s » (%s) : %s. Il faut au moins %s pour que le texte reste lisible.',
+                    $tokens[$fg], strtoupper($theme[$fg]), $tokens[$bg], strtoupper($theme[$bg]),
+                    Contrast::format($ratio), number_format($min, 1, ',', '').':1'
+                );
+            }
+        }
+        // [RED cycle 3 · P2-3] couples contre une couleur FIXE des feuilles de style du site (config storefront.fixed_contrast)
+        foreach ((array) config('storefront.fixed_contrast') as [$token, $fixe, $seuil, $phrase]) {
+            if (isset($errors["theme.{$token}"]) || ! isset($theme[$token])) {
+                continue;
+            }
+            $ratio = Contrast::ratio($theme[$token], $fixe);
+            if ($ratio < (float) $seuil) {
+                $errors["theme.{$token}"] = sprintf(
+                    'Contraste insuffisant entre « %s » (%s) et %s (%s) : %s. Il faut au moins %s pour que le texte reste lisible.',
+                    $tokens[$token], strtoupper($theme[$token]), $phrase, $fixe === '#FFFFFF' ? 'blanc' : 'noir',
+                    Contrast::format($ratio), number_format((float) $seuil, 1, ',', '').':1'
+                );
+            }
+        }
+
+        return $errors;
+    }
+
+    public function normalizeTheme(array $theme): array
+    {
+        $out = [];
+        foreach (array_keys((array) config('storefront.theme_tokens')) as $key) {
+            if (isset($theme[$key]) && Contrast::isHex($theme[$key])) {
+                $out[$key] = strtoupper($theme[$key]);
+            }
+        }
+
+        return $out;
+    }
+
+    // ------------------------------------------------------------ thèmes programmés (« design d'un jour »)
+
+    /**
+     * [T-3.1.1 2026-11-10] Liste normalisée (ce qui est stocké et publié) : identifiant entier, nom nettoyé, dates en ISO 8601
+     * (heure de Paris si la saisie n'a pas de fuseau), priorité 0-100, actif, couleurs passées par `normalizeTheme`.
+     * Une entrée illisible (pas un tableau) est ignorée ; une date illisible devient null et sera refusée par `scheduledThemeErrors`.
+     *
+     * @return list<array{id:int,name:string,starts_at:?string,ends_at:?string,priority:int,active:bool,theme:array<string,string>}>
+     */
+    public function normalizeScheduledThemes(mixed $list): array
+    {
+        if (! is_array($list)) {
+            return [];
+        }
+        // [SUPERVISION 2026-11-10] Identifiants UNIQUES quoi qu'envoie le client : un doublon (ou une position qui tombe sur
+        // un identifiant explicite) reçoit le premier numéro libre au-dessus du plus grand — sinon l'écran admin modifie le
+        // mauvais thème et « Retirer » en enlève deux.
+        $explicites = [];
+        foreach ($list as $t) {
+            if (is_array($t) && isset($t['id']) && is_numeric($t['id']) && (int) $t['id'] > 0) {
+                $explicites[(int) $t['id']] = true;
+            }
+        }
+        $suivant = ($explicites === [] ? 0 : max(array_keys($explicites))) + 1;
+        $pris = [];
+        $out = [];
+        $i = 0;
+        foreach (array_values($list) as $t) {
+            $i++;
+            if (! is_array($t)) {
+                continue;
+            }
+            $id = isset($t['id']) && is_numeric($t['id']) && (int) $t['id'] > 0 ? (int) $t['id'] : null;
+            if ($id === null && ! isset($explicites[$i]) && ! isset($pris[$i])) {
+                $id = $i; // sans identifiant : sa position, si elle est libre
+            } elseif ($id === null || isset($pris[$id])) {
+                while (isset($pris[$suivant]) || isset($explicites[$suivant])) {
+                    $suivant++; // jamais un numéro déjà donné par position ni réservé par un identifiant explicite à venir
+                }
+                $id = $suivant++;
+            }
+            $pris[$id] = true;
+            $out[] = [
+                'id' => $id,
+                'name' => trim(strip_tags(is_scalar($t['name'] ?? null) ? (string) $t['name'] : '')),
+                'starts_at' => $this->isoOrNull($t['starts_at'] ?? null),
+                'ends_at' => $this->isoOrNull($t['ends_at'] ?? null),
+                'priority' => max(0, min(100, (int) ($t['priority'] ?? 0))),
+                'active' => ! array_key_exists('active', $t) || filter_var($t['active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== false,
+                'theme' => is_array($t['theme'] ?? null) ? $this->normalizeTheme($t['theme']) : [],
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Erreurs en français, clés `scheduled_themes.<i>.<champ>` (i = position affichée, à partir de 0) — même contrat que
+     * `themeErrors`. `$strict` (enregistrement du brouillon) refuse en plus un thème ACTIF déjà terminé — sauf s'il est DÉJÀ
+     * stocké tel quel (`$existing`, même identifiant et même fin) : un Noël passé ne doit pas empêcher, en janvier, d'enregistrer
+     * un simple message de livraison (supervision 2026-11-10). La publication et le retour arrière ne le refusent pas (un thème
+     * passé publié ne s'affiche simplement jamais).
+     *
+     * @param  array<int, array<string,mixed>>  $existing  liste déjà stockée (normalisée)
+     * @return array<string,string>
+     */
+    public function scheduledThemeErrors(mixed $list, bool $strict = false, ?CarbonInterface $now = null, array $existing = []): array
+    {
+        $dejaStockes = [];
+        foreach ($existing as $e) {
+            if (is_array($e) && isset($e['id']) && is_numeric($e['id'])) {
+                $dejaStockes[(int) $e['id']] = $this->isoOrNull($e['ends_at'] ?? null);
+            }
+        }
+        if ($list === null) {
+            return [];
+        }
+        if (! is_array($list)) {
+            return ['scheduled_themes' => 'Les thèmes programmés doivent être une liste.'];
+        }
+        $max = (int) config('storefront.max_scheduled_themes', 12);
+        if (count($list) > $max) {
+            return ['scheduled_themes' => "{$max} thèmes programmés au plus : supprimez-en un avant d'en ajouter un autre."];
+        }
+        $now = $now ?? Carbon::now(self::TZ);
+        $errors = [];
+        foreach (array_values($list) as $i => $t) {
+            $k = "scheduled_themes.{$i}";
+            if (! is_array($t)) {
+                $errors[$k] = 'Thème illisible.';
+                continue;
+            }
+            $name = trim(strip_tags(is_scalar($t['name'] ?? null) ? (string) $t['name'] : ''));
+            if ($name === '') {
+                $errors["{$k}.name"] = 'Donnez un nom au thème (par exemple « Noël »).';
+            } elseif (mb_strlen($name) > 40) {
+                $errors["{$k}.name"] = 'Le nom du thème ne doit pas dépasser 40 caractères.';
+            }
+            $start = $this->isoOrNull($t['starts_at'] ?? null);
+            $end = $this->isoOrNull($t['ends_at'] ?? null);
+            if ($start === null) {
+                $errors["{$k}.starts_at"] = 'Indiquez le début du thème (date et heure).';
+            }
+            if ($end === null) {
+                $errors["{$k}.ends_at"] = 'Indiquez la fin du thème : il se défait seul à cette heure.';
+            } elseif ($start !== null && Carbon::parse($end)->lessThanOrEqualTo(Carbon::parse($start))) {
+                $errors["{$k}.ends_at"] = 'La fin doit être après le début.';
+            } elseif ($strict && (! array_key_exists('active', $t) || filter_var($t['active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== false)
+                && Carbon::parse($end)->lessThanOrEqualTo($now)
+                && ! (isset($t['id']) && is_numeric($t['id']) && array_key_exists((int) $t['id'], $dejaStockes) && $dejaStockes[(int) $t['id']] === $end)) {
+                $errors["{$k}.ends_at"] = 'La date de fin est déjà passée : ce thème ne s\'afficherait jamais. Désactivez-le ou changez ses dates.';
+            }
+            $theme = $t['theme'] ?? null;
+            if (! is_array($theme) || $theme === []) {
+                $errors["{$k}.theme"] = 'Choisissez les couleurs du thème (toutes sont obligatoires).';
+            } else {
+                foreach ($this->themeErrors($theme) as $key => $message) {
+                    $errors["{$k}.{$key}"] = $message;
+                }
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Le thème programmé qui s'applique à `$now` : actif, commencé (début inclus), pas terminé (fin exclue) ; en cas de
+     * chevauchement, la plus grande priorité puis le début le plus récent puis le plus petit identifiant. Les bornes à venir
+     * (début d'un thème futur, fin d'un thème en cours) nourrissent `$nextChange`.
+     */
+    public function activeScheduledTheme(array $list, CarbonInterface $now, ?CarbonInterface &$nextChange): ?array
+    {
+        $candidats = [];
+        foreach ($this->normalizeScheduledThemes($list) as $t) {
+            if (! $t['active'] || $t['starts_at'] === null || $t['ends_at'] === null || $t['theme'] === []) {
+                continue;
+            }
+            $start = Carbon::parse($t['starts_at']);
+            $end = Carbon::parse($t['ends_at']);
+            if ($end->lessThanOrEqualTo($now)) {
+                continue;
+            }
+            if ($start->greaterThan($now)) {
+                $nextChange = $this->earliest($nextChange, $start);
+                continue;
+            }
+            $nextChange = $this->earliest($nextChange, $end);
+            $candidats[] = $t;
+        }
+        if (! $candidats) {
+            return null;
+        }
+        usort($candidats, fn ($a, $b) => [$b['priority'], $b['starts_at'], $a['id']] <=> [$a['priority'], $a['starts_at'], $b['id']]);
+
+        return $candidats[0];
+    }
+
+    private function isoOrNull(mixed $value): ?string
+    {
+        if ($value === null || $value === '' || ! is_scalar($value)) {
+            return null;
+        }
+        try {
+            return Carbon::parse((string) $value, self::TZ)->setTimezone(self::TZ)->toIso8601String();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    // ------------------------------------------------------------------ publication
+
+    /**
+     * Publie le brouillon : version +1, instantané gardé, trace d'audit.
+     * `$baseVersion` = la version que l'écran avait sous les yeux ; si elle a changé entre-temps (double clic,
+     * deuxième publication), rien n'est écrit (409). `$draftHash` (exigé par l'écran admin) = l'empreinte du BROUILLON
+     * affiché : si un autre administrateur l'a modifié depuis, rien n'est écrit non plus (409) — on ne publie jamais
+     * à l'aveugle ce qu'on n'a pas vu.
+     */
+    public function publish(int $branch, ?int $userId, int $baseVersion, ?string $draftHash = null): StorefrontVersion
+    {
+        return $this->writeVersion($branch, $userId, $baseVersion, 'publish', null, $draftHash);
+    }
+
+    /** Republie l'instantané `$target` (par défaut : la version juste avant la courante) sous un NOUVEAU numéro, et remet le brouillon dessus. */
+    public function rollback(int $branch, ?int $userId, int $baseVersion, ?int $target = null): StorefrontVersion
+    {
+        $current = (int) ($this->settings($branch)?->version ?? 0);
+        $target = $target ?? $current - 1;
+        $source = $target > 0 && $target !== $current
+            ? StorefrontVersion::query()->where('branch_id', $branch)->where('version', $target)->first()
+            : null;
+        if (! $source) {
+            throw ValidationException::withMessages(['version' => 'Aucune version précédente à republier.'])->status(422);
+        }
+
+        return $this->writeVersion($branch, $userId, $baseVersion, 'rollback', $source);
+    }
+
+    private function writeVersion(int $branch, ?int $userId, int $baseVersion, string $action, ?StorefrontVersion $source, ?string $draftHash = null): StorefrontVersion
+    {
+        $before = $this->published($branch)?->snapshot;
+
+        $version = DB::transaction(function () use ($branch, $userId, $baseVersion, $action, $source, $draftHash) {
+            $settings = StorefrontSetting::query()->where('branch_id', $branch)->lockForUpdate()->first()
+                ?? StorefrontSetting::query()->create(['branch_id' => $branch]);
+            $current = (int) $settings->version;
+            if ($current !== $baseVersion) {
+                throw new StorefrontConflictException($current);
+            }
+            if ($draftHash !== null && ! hash_equals($this->draftHash($branch), $draftHash)) {
+                throw new StorefrontConflictException($current, true);
+            }
+
+            if ($source) {
+                $this->restoreDraft($settings, $source->snapshot);
+            }
+
+            $snapshot = $this->draftSnapshot($branch);
+            $errors = $this->themeErrors($snapshot['theme'] === null ? null : $settings->theme)
+                + $this->scheduledThemeErrors($snapshot['scheduled_themes']);
+            if ($errors) {
+                throw ValidationException::withMessages($errors);
+            }
+
+            $now = Carbon::now();
+            $v = StorefrontVersion::query()->create([
+                'branch_id' => $branch,
+                'version' => $current + 1,
+                'action' => $action,
+                'source_version' => $source?->version,
+                'snapshot' => $snapshot,
+                'published_by' => $userId,
+                'published_at' => $now,
+            ]);
+            $settings->forceFill(['version' => $current + 1, 'published_by' => $userId, 'published_at' => $now])->save();
+
+            return $v;
+        });
+
+        $this->audit($branch, $userId, $action, $version, $before, $source);
+
+        return $version;
+    }
+
+    private function restoreDraft(StorefrontSetting $settings, array $snapshot): void
+    {
+        $settings->forceFill([
+            'enabled' => (bool) ($snapshot['enabled'] ?? false),
+            'theme' => $snapshot['theme'] ?? null,
+            'scheduled_themes' => $this->normalizeScheduledThemes($snapshot['scheduled_themes'] ?? []),
+            'delivery_on_message' => $snapshot['delivery_on_message'] ?? null,
+            'delivery_off_message' => $snapshot['delivery_off_message'] ?? null,
+        ])->save();
+
+        StorefrontBanner::query()->where('branch_id', $settings->branch_id)->get()->each->delete(); // suppression douce : rien ne disparaît
+        foreach ($snapshot['banners'] ?? [] as $b) {
+            StorefrontBanner::query()->create([
+                'branch_id' => $settings->branch_id,
+                'type' => $b['type'],
+                'title' => $b['title'],
+                'body' => $b['body'],
+                'button_label' => $b['button_label'],
+                'button_link' => $b['button_link'],
+                'coupon_code' => $b['coupon_code'],
+                'starts_at' => $b['starts_at'] ? Carbon::parse($b['starts_at'])->setTimezone(config('app.timezone')) : null,
+                'ends_at' => $b['ends_at'] ? Carbon::parse($b['ends_at'])->setTimezone(config('app.timezone')) : null,
+                'priority' => (int) $b['priority'],
+                'active' => (bool) $b['active'],
+            ]);
+        }
+    }
+
+    /** Journal d'audit chaîné EXISTANT, par son API publique (AuditLogService gelé, non modifié). */
+    private function audit(int $branch, ?int $userId, string $action, StorefrontVersion $v, ?array $before, ?StorefrontVersion $source): void
+    {
+        try {
+            $request = request();
+            app(AuditLogService::class)->write([
+                'branch_id' => $branch,
+                'user_id' => (int) $userId,
+                'action' => $action === 'rollback' ? 'storefront.rolled_back' : 'storefront.published',
+                'resource' => 'storefront',
+                'resource_id' => $v->version,
+                'payload' => array_filter([
+                    'from_version' => $v->version - 1,
+                    'to_version' => $v->version,
+                    'restored_version' => $source?->version,
+                    'before' => $before,
+                    'after' => $v->snapshot,
+                ], fn ($value, $key) => $key !== 'restored_version' || $value !== null, ARRAY_FILTER_USE_BOTH),
+                'ip' => (string) ($request?->ip() ?? ''),
+                'user_agent' => substr((string) $request?->userAgent(), 0, 512),
+            ]);
+        } catch (\Throwable $e) {
+            // La publication a eu lieu (et reste dans storefront_versions) ; une trace manquante est signalée, jamais avalée.
+            Log::error('storefront.audit_failed', ['branch_id' => $branch, 'version' => $v->version, 'error' => $e->getMessage()]);
+        }
+    }
+
+    // ------------------------------------------------------------------ outils
+
+    public function iso(?CarbonInterface $at): ?string
+    {
+        return $at ? $at->copy()->setTimezone(self::TZ)->toIso8601String() : null;
+    }
+
+    private function earliest(?CarbonInterface $a, CarbonInterface $b): CarbonInterface
+    {
+        return $a && $a->lessThanOrEqualTo($b) ? $a : $b;
+    }
+
+    private function comparable(array $snapshot): string
+    {
+        $snapshot['banners'] = array_map(function ($b) {
+            unset($b['id']);
+
+            return $b;
+        }, $snapshot['banners'] ?? []);
+        $snapshot['theme'] = $snapshot['theme'] ? $this->normalizeTheme($snapshot['theme']) : null;
+
+        // Tri RÉCURSIF des clés : une colonne JSON MySQL réordonne les clés des objets à l'écriture (longueur puis alphabet).
+        // Sans ce tri, la comparaison disait « modifications non publiées » juste après une publication (constaté en navigateur).
+        return json_encode($this->sortKeysDeep($snapshot));
+    }
+
+    private function sortKeysDeep(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+        $value = array_map(fn ($v) => $this->sortKeysDeep($v), $value);
+        if (! array_is_list($value)) {
+            ksort($value);
+        }
+
+        return $value;
+    }
+}

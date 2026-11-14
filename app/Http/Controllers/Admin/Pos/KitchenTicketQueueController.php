@@ -127,13 +127,37 @@ class KitchenTicketQueueController extends Controller
             })
             ->whereIn('source_surface', $destination === 'kitchen' ? self::SURFACES_CUISINE : self::SURFACES_COMPTOIR)
             ->whereIn('status', KitchenReleaseRule::visibleStatuses())
-            ->where('created_at', '>=', now()->subMinutes($fenetreMinutes))
+            // [VG-2026-10-21 M1-103] Fenêtre sur l'ENTRÉE EN CUISINE, pas sur la création : une
+            // commande retenue (programmée, livraison différée) sort à sa libération, pas jamais.
+            ->tap(fn ($q) => KitchenReleaseRule::applyKitchenEntrySince($q, now()->subMinutes($fenetreMinutes)))
             ->when($branchId > 0, fn ($q) => $q->where('branch_id', $branchId))
             ->orderBy('created_at');
 
         KitchenReleaseRule::applyBoardReleaseFilter($query);
+        // [AUDIT AVAL 2026-09-29 · P1] Seul chemin sur six à ne PAS appliquer le filtre
+        // des commandes programmées : une commande téléphone prise à 18 h pour 21 h
+        // sortait sur papier à 18 h 00, puis JAMAIS à l'heure (hors de la fenêtre
+        // `created_at` à 20 h 40). Même SSOT que le board et le mur client.
+        KitchenReleaseRule::applyScheduledBoardFilter($query, now());
 
-        $candidates = $query->limit(self::MAX_PAR_CYCLE)->get();
+        // [CAISSE-SANS-PAPIER-AUTO 2026-10-19 · owner] Plus de papier AUTOMATIQUE à la caisse.
+        // Seule la destination « counter » est coupée : la cuisine imprime comme avant. On filtre
+        // ICI, côté serveur, et non dans le poste : un navigateur resté sur l'ancien paquet
+        // continuerait sinon d'interroger la file et de sortir le papier. La réimpression
+        // demandée à la main (plus bas) reste servie — un humain l'a voulue.
+        $impressionAutoCoupee = $destination === self::DESTINATION_COMPTOIR
+            && ! config('kds.counter_auto_print', false);
+
+        // [CAISSE-SANS-PAPIER-AUTO 2026-10-19 · revue adverse] Rallumée, la caisse ne sert que les
+        // commandes arrivées APRÈS l'allumage : jamais l'arriéré des 30 dernières minutes d'un coup.
+        if (! $impressionAutoCoupee && $destination === self::DESTINATION_COMPTOIR) {
+            $depuis = $this->allumageCaisseDepuis();
+            if ($depuis !== null) {
+                $query->where('created_at', '>=', $depuis);
+            }
+        }
+
+        $candidates = $impressionAutoCoupee ? collect() : $query->limit(self::MAX_PAR_CYCLE)->get();
 
         $reclamees = [];
         foreach ($candidates as $order) {
@@ -182,6 +206,18 @@ class KitchenTicketQueueController extends Controller
         }
 
         return response()->json(['orders' => $reclamees, 'destination' => $destination]);
+    }
+
+    /** Date d'allumage de l'impression automatique caisse (interrupteur), null si jamais datée. */
+    private function allumageCaisseDepuis(): ?\Illuminate\Support\Carbon
+    {
+        try {
+            $brut = \Smartisan\Settings\Facades\Settings::group('pilotage')->get('kds.counter_auto_print_since', null);
+
+            return $brut ? \Illuminate\Support\Carbon::parse((string) $brut) : null;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     /**

@@ -66,9 +66,16 @@ final class OrderReceiptEscPosRenderer
         // celle-ci débordait le papier 58mm → ré-enroulement). Toutes les lignes sont
         // word-wrappées à la largeur pour ne JAMAIS être coupées par l'imprimante.
         $b .= EscPosCommandBuilder::alignCenter();
-        $b .= EscPosCommandBuilder::doubleHeight(true).EscPosCommandBuilder::bold(true);
-        $b .= EscPosCommandBuilder::textWrap(optional($branch)->name ?: 'LE CAYENNE', $w);
-        $b .= EscPosCommandBuilder::doubleHeight(false).EscPosCommandBuilder::bold(false);
+        // [ONB-01 2026-08-28] Le repli valait `'LE CAYENNE'` en dur. Un ticket est
+        // un document fiscal : il ne doit jamais porter le nom d'un autre
+        // etablissement. On prend le nom de la branche, sinon le repli configure,
+        // sinon RIEN — un en-tete absent se corrige, un en-tete faux trompe.
+        $enTete = (string) (optional($branch)->name ?: config('printing.receipt.name', ''));
+        if (trim($enTete) !== '') {
+            $b .= EscPosCommandBuilder::doubleHeight(true).EscPosCommandBuilder::bold(true);
+            $b .= EscPosCommandBuilder::textWrap($enTete, $w);
+            $b .= EscPosCommandBuilder::doubleHeight(false).EscPosCommandBuilder::bold(false);
+        }
         // [TICKET-ADRESSE 2026-07-03] Adresse = branche si renseignée, SINON défaut config
         // (`printing.receipt.address`) → design pro (nom/adresse/tél) même sans adresse en base.
         $address = (string) (optional($branch)->address ?: config('printing.receipt.address', ''));
@@ -76,8 +83,9 @@ final class OrderReceiptEscPosRenderer
             $b .= EscPosCommandBuilder::textWrap($address, $w);
         }
         // [TICKET-PHONE 2026-07-03] Téléphone = branche si renseigné, SINON défaut config
-        // (`printing.receipt.phone`, ex. 03 65 67 82 91) → le n° apparaît TOUJOURS sur le
-        // ticket même quand la branche V1 n'a pas de téléphone en base.
+        // (`printing.receipt.phone`). [ONB-01 2026-08-28] Ce defaut valait le numero
+        // de Le Cayenne : il est desormais VIDE, et la ligne est simplement omise
+        // quand l'etablissement n'a pas renseigne le sien.
         $phone = (string) (optional($branch)->phone ?: config('printing.receipt.phone', ''));
         if (trim($phone) !== '') {
             $b .= EscPosCommandBuilder::textWrap('Tél : '.$this->formatPhone($phone), $w);
@@ -85,7 +93,30 @@ final class OrderReceiptEscPosRenderer
         if (optional($branch)->email) {
             $b .= EscPosCommandBuilder::textWrap('E-mail : '.$branch->email, $w);
         }
-        $website = (string) config('printing.receipt.website', '');
+        // [ONB-05 2026-08-28] Le site web allait DIRECTEMENT a la configuration, dont
+        // le defaut vaut `lecayenne.fr` (`config/printing.php:83`). Les deux lignes
+        // au-dessus — adresse et telephone — font pourtant « etablissement d'abord,
+        // configuration ensuite ». Le champ « Site web » que le commercant remplit
+        // dans Reglages > Entreprise n'etait relu par personne, et son client
+        // repartait avec un ticket portant l'adresse web d'un AUTRE restaurant.
+        //
+        // Meme defaut que celui corrige pour la borne le 2026-08-28 (`ef2cc618c`,
+        // telephone + adresse), reste en place ici. On aligne le site web sur le
+        // meme ordre de priorite.
+        // ⚠️ Le rendu d'un ticket ne doit dependre d'AUCUNE table. Ce service tourne
+        // dans des contextes ou `settings` n'existe pas — 41 bancs de rendu l'ont
+        // montre des ma premiere version, qui appelait `Settings::group()` a nu et
+        // levait `no such table: settings`. Un ticket doit sortir meme si la base de
+        // reglages est absente ou en panne : c'est un document fiscal, pas un ecran.
+        $siteCommercant = rescue(
+            static fn (): string => (string) (
+                \Smartisan\Settings\Facades\Settings::group('company')->all()['company_website'] ?? ''
+            ),
+            '',
+            false
+        );
+
+        $website = (string) ($siteCommercant ?: config('printing.receipt.website', ''));
         if ($website !== '') {
             $b .= EscPosCommandBuilder::textWrap('Web : '.$website, $w);
         }
@@ -122,16 +153,30 @@ final class OrderReceiptEscPosRenderer
             $b .= EscPosCommandBuilder::doubleHeight(false).EscPosCommandBuilder::bold(false);
         }
         // [C2-CAISSE 2026-07-05] Nom du client (optionnel) → appeler la commande par le nom.
-        $clientName = trim((string) ($order->pos_customer_name ?? ''));
+        // [NOM-COMMANDE-BORNE 2026-10-19 · owner] « Quand un client vient, il me dit : j'ai la commande
+        // au nom de X. » Le NOM est donc en double hauteur + gras (lisible d'un coup d'œil par le
+        // caissier), comme le numéro de commande juste au-dessus.
+        $clientName = $this->nomClientPourTicket($order);
         if ($clientName !== '') {
-            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('Client : '.$clientName, $w).EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::doubleHeight(true).EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('Client : '.$clientName, $w).EscPosCommandBuilder::bold(false).EscPosCommandBuilder::doubleHeight(false);
         }
         // [C4-CAISSE-TELEPHONE FIX-3 2026-07-07] Téléphone du client (commande téléphone
         // différée surtout) → rappeler/reconnaître le client au comptoir. Ligne propre
         // width-safe (textWrap ≤ $w) ; champ absent = aucune ligne (0 régression ticket normal).
-        $clientPhone = trim((string) ($order->pos_customer_phone ?? ''));
+        // [LIVRAISON-TICKETS 2026-11-10 · T-1.1.2] Une commande du SITE n'a pas de saisie caisse : le téléphone est
+        // celui du compte client (même périmètre que le nom, par surface). Le livreur doit pouvoir appeler.
+        $clientPhone = \App\Support\CoordonneesClientTicket::telephone($order);
         if ($clientPhone !== '') {
             $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('Tel : '.$clientPhone, $w).EscPosCommandBuilder::bold(false);
+        }
+        // [LIVRAISON-TICKETS 2026-11-10 · T-1.1.3] Adresse de livraison de nos tournées (jamais retrait/borne/Uber) :
+        // le ticket client part avec le livreur, c'est lui qui lit où aller.
+        $lignesAdresse = \App\Support\CoordonneesClientTicket::lignesAdresseLivraison($order);
+        if ($lignesAdresse !== []) {
+            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textLine('LIVRER A :').EscPosCommandBuilder::bold(false);
+            foreach ($lignesAdresse as $ligne) {
+                $b .= EscPosCommandBuilder::textWrap($ligne, $w);
+            }
         }
         if ($counterCopy) {
             $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textLine('*** COMMANDE BORNE - COPIE CAISSE ***').EscPosCommandBuilder::bold(false);
@@ -196,7 +241,11 @@ final class OrderReceiptEscPosRenderer
         } elseif ((float) ($order->total ?? 0) > 0) {
             $b .= EscPosCommandBuilder::lineKV('A REGLER TTC :', $this->money((float) $order->total), $w);
             $b .= EscPosCommandBuilder::alignCenter();
-            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textLine('** A REGLER EN CAISSE **').EscPosCommandBuilder::bold(false);
+            // [LIVRAISON-TICKETS 2026-11-10 · T-1.1.4] Une livraison s'encaisse À LA PORTE, avec le moyen que le
+            // client a choisi sur le site (espèces / carte au livreur / titre-restaurant) — jamais « en caisse ».
+            $porte = \App\Support\CoordonneesClientTicket::reglementALaPorte($order);
+            $mention = $porte !== null ? '** A REGLER A LA LIVRAISON : '.$porte.' **' : '** A REGLER EN CAISSE **';
+            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap($mention, $w).EscPosCommandBuilder::bold(false);
             $b .= EscPosCommandBuilder::alignLeft();
         }
 
@@ -216,6 +265,9 @@ final class OrderReceiptEscPosRenderer
             $b .= EscPosCommandBuilder::textWrap((string) $head['pos_legal_footer'], $w);
         }
         $b .= EscPosCommandBuilder::textWrap('Prix nets en euros TTC', $w);
+
+        // [LIVRAISON QR 2026-11-01] QR de remise à usage unique (livraisons seulement, jamais bloquant).
+        $b .= $this->deliveryHandoverQrBlock($order, $w);
 
         // ── Bloc opération (gauche, infos techniques discrètes) ─────────────
         $b .= EscPosCommandBuilder::separator('-', $w);
@@ -284,7 +336,7 @@ final class OrderReceiptEscPosRenderer
         // cuisson — il ne doit plus lire la commande produit par produit pour cela.
         // Les mêmes portions alimentent la consommation de stock : un seul moteur, jamais deux.
         $cuisson = $this->portions->forOrder(array_map(static fn ($oi): array => [
-            'name' => (string) ($oi->name ?? optional($oi->orderItem)->name ?? ''),
+            'name' => (string) ($oi->manual_label ?? $oi->name ?? optional($oi->orderItem)->name ?? ''),
             'snapshot' => is_array($oi->composition_snapshot) ? $oi->composition_snapshot : [],
             'quantity' => max(1, (int) ($oi->quantity ?? 1)),
             'instruction' => (string) ($oi->instruction ?? ''),
@@ -306,11 +358,15 @@ final class OrderReceiptEscPosRenderer
         // [AUDIT F1] Same call number as the client ticket (queue, not the long serial),
         // big so the cook can match it when handing the order over.
         $callNo = (string) ($order->queue_number ?: ($order->order_serial_no ?? $order->id));
-        // [TICKET-WIDTHSAFE] n° court → double taille ; sinon double hauteur (jamais déborder).
-        if (mb_strlen($callNo) <= max(1, (int) floor($w / 2))) {
-            $b .= EscPosCommandBuilder::doubleSize(true).EscPosCommandBuilder::bold(true);
+        // [TICKET-WIDTHSAFE] n° court → grand ; sinon double hauteur (jamais déborder).
+        // [GOAL REMARQUES 2026-10-03 · R-052] Propriétaire : « 4 cm ou 3 cm de la page ». Hauteur au
+        // MAXIMUM de l'ESC/POS (×8 ≈ 2,4 cm, police A) et la plus grande largeur qui tient sur une
+        // ligne (largeur × caractères ≤ colonnes). Au-delà de ×8 : image tramée (porte G4).
+        $largeurNo = min(8, intdiv($w, max(1, mb_strlen($callNo))));
+        if ($largeurNo >= 2) {
+            $b .= EscPosCommandBuilder::textSize($largeurNo, 8).EscPosCommandBuilder::bold(true);
             $b .= EscPosCommandBuilder::textLine($callNo);
-            $b .= EscPosCommandBuilder::doubleSize(false).EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::textSize(1, 1).EscPosCommandBuilder::bold(false);
         } else {
             $b .= EscPosCommandBuilder::doubleHeight(true).EscPosCommandBuilder::bold(true);
             $b .= EscPosCommandBuilder::textWrap($callNo, $w);
@@ -333,15 +389,21 @@ final class OrderReceiptEscPosRenderer
             $b .= $headerLine('*** '.mb_strtoupper($orderType).' ***');
         }
         // [C2-CAISSE 2026-07-05] Nom du client aussi en cuisine (appel de commande).
-        $kClientName = trim((string) ($order->pos_customer_name ?? ''));
+        $kClientName = $this->nomClientPourTicket($order);
         if ($kClientName !== '') {
             $b .= $headerLine('Client : '.$kClientName);
         }
         // [C4-CAISSE-TELEPHONE FIX-3 2026-07-07] Téléphone client aussi en cuisine (rappel/
         // reconnaissance d'une commande téléphone). Width-safe ; absent = rien.
-        $kClientPhone = trim((string) ($order->pos_customer_phone ?? ''));
+        // [LIVRAISON-TICKETS 2026-11-10 · T-1.1.2/3] Même téléphone que le ticket client (compte du client du site à
+        // défaut de saisie caisse) ; adresse de livraison sur UNE ligne d'en-tête (le détail est sur le ticket client).
+        $kClientPhone = \App\Support\CoordonneesClientTicket::telephone($order);
         if ($kClientPhone !== '') {
             $b .= $headerLine('Tel : '.$kClientPhone);
+        }
+        $kAdresse = \App\Support\CoordonneesClientTicket::adresseLivraisonUneLigne($order);
+        if ($kAdresse !== '') {
+            $b .= $headerLine('Livrer : '.$kAdresse);
         }
         $dt = $order->order_datetime ?? $order->created_at;
         if ($dt) {
@@ -372,14 +434,40 @@ final class OrderReceiptEscPosRenderer
         // Filtre d'affichage uniquement : la ligne comptable reste intacte en base.
         $blocks = [];
         foreach ($this->bundledAddons->collapse($order->orderItems ?? collect()) as $oi) {
-            $name = (string) ($oi->name ?? optional($oi->orderItem)->name ?? 'Article');
+            $name = (string) ($oi->manual_label ?? $oi->name ?? optional($oi->orderItem)->name ?? 'Article');
             $snap = is_array($oi->composition_snapshot) ? $oi->composition_snapshot : [];
+            // [GOAL REMARQUES 2026-10-03 · R-072] Extras lus comme l'écran (instantané, sinon ancienne
+            // colonne) : les options d'une formule repliée sous un sandwich sans extra propre
+            // n'étaient pas imprimées. Vue d'affichage, rien n'est écrit.
+            $snap = $this->symbolic->avecExtrasEffectifs($snap, $oi);
             $qty = max(1, (int) ($oi->quantity ?? 1));
             // [KITCHEN-QTY 2026-07-15 owner] Préfixe quantité affiché UNIQUEMENT si > 1
             // (« 2 x … »). À 1 exemplaire (cas courant) → nom SEUL, le « 1 x » allongeait
             // la ligne pour rien. À 2/3 le préfixe reste utile au cuisinier.
             $qtyPrefix = $qty > 1 ? $qty.' x ' : '';
             $instruction = (string) ($oi->instruction ?? '');
+
+            // [AUDIT AVAL 2026-09-29 · P0] SUPPLÉMENT LIBRE : libellé COMPLET, jamais le moteur
+            // symbolique — et AVANT la branche menu (« Supplément — Formule du midi » y devenait
+            // « MENU »). `produitCode()` réduit un nom à ses 3 premières lettres significatives ;
+            // or tout supplément libre commence par « Supplément — … » (PricingService), donc
+            // le papier cuisine imprimait « SUP » pour « Supplément — Sauce blanche maison »
+            // comme pour « Supplément — Viande hachée en plus », et « Supplément — Tacos en
+            // plus » devenait « Tacos » : le cuisinier préparait un taco entier. Le ticket
+            // CLIENT, lui, imprimait déjà le libellé complet — c'est la cuisine qui le perdait.
+            // Jumeau STRICT : kdsSymbolic.js renderItemSymbolic(), branche manual_supplement.
+            if ((string) ($oi->line_type ?? 'catalog') === \App\Models\OrderItem::LINE_TYPE_MANUAL_SUPPLEMENT) {
+                $suppNote = $this->symbolic->cleanInstruction($instruction, $name, []);
+                $blocks[] = [
+                    'head' => $qtyPrefix.trim($name),
+                    'menu' => null,
+                    'supps' => [],
+                    'drinks' => [],
+                    'notes' => array_values(array_filter(array_map('trim', explode("\n", $suppNote)))),
+                ];
+
+                continue;
+            }
 
             if ($this->symbolic->isMenuItem($name)) {
                 // Item Menu/Formule = SKU séparé → ligne propre, claire et symbolique :
@@ -389,7 +477,28 @@ final class OrderReceiptEscPosRenderer
                 $menuLine = $sym !== '' ? 'MENU : '.$sym : 'MENU';
                 // [W3-FIX-C 2026-07-06] La boisson de la formule sort AUSSI en cuisine
                 // (owner : le cuisinier prépare les boissons).
-                $blocks[] = ['head' => $qtyPrefix.$menuLine, 'menu' => null, 'supps' => [], 'drinks' => $this->symbolic->drinkLines($snap), 'notes' => []];
+                // [FIX-1 2026-08-25 · P0 cuisine, constat E-002] Les SUPPLÉMENTS de cette ligne
+                // sortent enfin. `'supps' => []` était écrit EN DUR : un cheddar facturé sur une
+                // ligne « Menu (Frites + Boisson) » n'était imprimé nulle part, et l'écran V2
+                // avait exactement le même trou. La règle owner [KITCHEN-MENU 2026-06-30] visait
+                // le DÉTAIL de la formule et le PRIX — jamais un extra payé, qui est du travail
+                // en plus à faire. Le repli des formules revendiquées (KitchenBundledAddonCollapser)
+                // ne déplace aucun extra : aucun doublon possible avec le bloc du parent.
+                // Jumeau STRICT : kdsSymbolic.js renderItemSymbolic(), branche isMenuItem.
+                // [GOAL REMARQUES 2026-10-03 · revue F3] La note du CLIENT d'une formule commandée seule
+                // (« [sans sel] ») sortait à l'écran mais jamais sur le papier (`'notes' => []` en dur).
+                // Même nettoyage que la branche produit ; la sauce frites reste sur la ligne MENU.
+                $menuSupps = $this->symbolic->supplementLines($snap, $instruction);
+                $menuDrinks = $this->symbolic->drinkLines($snap);
+                $menuNote = $this->symbolic->sansMarqueurUber($this->symbolic->sansOptionsDejaAffichees(
+                    $this->symbolic->cleanInstruction($instruction, $name, $menuDrinks),
+                    $menuSupps
+                ));
+                $blocks[] = [
+                    'head' => $qtyPrefix.$menuLine, 'menu' => null, 'supps' => $menuSupps, 'drinks' => $menuDrinks,
+                    'notes' => array_values(array_filter(array_map('trim', explode("\n", $menuNote)))),
+                    'hash' => $this->symbolic->porteUnSupplement($snap), 'cadre' => true,
+                ];
 
                 continue;
             }
@@ -410,10 +519,21 @@ final class OrderReceiptEscPosRenderer
             $head = $this->symbolic->isDrinkItem($name)
                 ? $qtyPrefix.trim($name)
                 : $qtyPrefix.$this->symbolic->mainLine($name, $snap, $instruction);
+            $supps = $this->symbolic->supplementLines($snap, $instruction);
+            // [GOAL REMARQUES 2026-10-03 · R-049] « ↳ Grande Portion » ne ressort pas en note quand
+            // l'option est déjà imprimée en supplément (cadre noir) : une seule mention.
+            $note = $this->symbolic->sansOptionsDejaAffichees($note, $supps);
+            // [GOAL REMARQUES 2026-10-03 · R-075] Le titre Uber non reconnu EST la ligne produit : son
+            // marqueur technique ne se répète pas en note (la note du client, elle, reste).
+            $note = $this->symbolic->sansMarqueurUber($note);
             $blocks[] = [
                 'head' => $head,
                 'menu' => $menu !== '' ? $menu : null,
-                'supps' => $this->symbolic->supplementLines($snap, $instruction),
+                'supps' => $supps,
+                'hash' => $this->symbolic->porteUnSupplement($snap),
+                // [Revue vague 1 · P1 R-053] « lorsqu'il y a une frite » : des frites vendues comme
+                // PRODUIT (et le Menu Enfant, qui en contient) sont encadrées en noir comme le badge.
+                'cadre' => $this->symbolic->estProduitAFrites($name),
                 'drinks' => $drinks,
                 'notes' => array_values(array_filter(array_map('trim', explode("\n", $note)))),
             ];
@@ -426,27 +546,73 @@ final class OrderReceiptEscPosRenderer
             // en général sur une ligne. Enroulée à la MOITIÉ de la largeur (double-largeur = 2 col
             // physiques/caractère) → JAMAIS coupée par l'imprimante, elle passe à la ligne proprement.
             $b .= EscPosCommandBuilder::doubleSize(true).EscPosCommandBuilder::bold(true);
-            foreach (EscPosCommandBuilder::wrapIndented($blk['head'], $halfW, '  ') as $headLine) {
-                $b .= EscPosCommandBuilder::textLine($headLine);
+            // [GOAL CAISSE/CUISINE #7 2026-10-02] La ligne produit qui porte au moins un supplément
+            // COMMENCE par un « # » gras : le cuisinier voit d'un coup d'œil qu'il y a un extra à
+            // lire dessous (jumeau écran : KdsOrderLine « kds-line__hash »).
+            // [GOAL REMARQUES 2026-10-03 · R-072] … ET dès qu'un extra payant ou offert existe, même replié
+            // dans la ligne produit (sauce en plus) ou sur le badge (2ᵉ sauce frites).
+            $headText = ($blk['supps'] !== [] || ! empty($blk['hash'])) ? '# '.$blk['head'] : $blk['head'];
+            // [GOAL REMARQUES 2026-10-03 · R-054] « 2 x » sur fond NOIR (lecture inversée), même largeur
+            // visible que le texte d'origine : aucun risque de débordement.
+            $qtyMark = preg_match('/^(\d+ x )/u', (string) $blk['head'], $mq) ? $mq[1] : '';
+            // [GOAL REMARQUES 2026-10-03 · R-053] Une formule commandée SEULE (« MENU : MAY ») est
+            // encadrée en noir comme le badge MENU / FRITES : un espace de chaque côté fait le bandeau.
+            $cadre = ! empty($blk['cadre']);
+            foreach (EscPosCommandBuilder::wrapIndented($headText, $cadre ? $halfW - 2 : $halfW, '  ') as $i => $headLine) {
+                // Les octets GS B ne passent PAS par textLine() (sanitize() les détruirait) : la ligne,
+                // déjà assainie par wrapIndented(), est émise brute puis terminée par textLine('').
+                // [revue F5] wrapIndented() rogne la fin de ligne : quand la ligne s'enroule juste après
+                // « 2 x », l'espace final disparaît — on accepte « 2 x » seul et on remet l'espace s'il suit.
+                $qtyCore = rtrim($qtyMark);
+                if ($i === 0 && $qtyMark !== '' && ! $cadre
+                    && preg_match('/^(\s*(?:#\s)?)'.preg_quote($qtyCore, '/').'(?: (.*))?$/us', $headLine, $hm)) {
+                    $reste = $hm[2] ?? '';
+                    $b .= $hm[1].EscPosCommandBuilder::invert(true).$qtyCore.($reste !== '' ? ' ' : '').EscPosCommandBuilder::invert(false).$reste.EscPosCommandBuilder::textLine('');
+                } elseif ($cadre) {
+                    $b .= '  '.EscPosCommandBuilder::invert(true).' '.ltrim($headLine).' '.EscPosCommandBuilder::invert(false).EscPosCommandBuilder::textLine('');
+                } else {
+                    $b .= EscPosCommandBuilder::textLine($headLine);
+                }
             }
             // Retour en double HAUTEUR (grand mais pleine largeur) pour le détail menu/suppléments.
             $b .= EscPosCommandBuilder::bold(false).EscPosCommandBuilder::doubleSize(false).EscPosCommandBuilder::doubleHeight(true);
             if ($blk['menu'] !== null) {
                 $b .= EscPosCommandBuilder::bold(true);
-                foreach (EscPosCommandBuilder::wrapIndented($blk['menu'], $w - 2, '  ') as $menuLine) {
-                    $b .= EscPosCommandBuilder::textLine('  '.$menuLine);
+                // [GOAL REMARQUES 2026-10-03 · R-053] Propriétaire : « lorsqu'il y a une frite […] soit menu
+                // soit frites ça doit être encadré en noir ». MENU / FRITES / F en lecture inversée, même
+                // gabarit que les suppléments ; la BOISSON seule (aucune frite) reste en gras simple.
+                $encadre = (bool) preg_match('/^(MENU|FRITES|F)\b/u', (string) $blk['menu']);
+                foreach (EscPosCommandBuilder::wrapIndented($blk['menu'], $encadre ? $w - 6 : $w - 2, $encadre ? '' : '  ') as $menuLine) {
+                    $b .= $encadre
+                        ? '  '.EscPosCommandBuilder::invert(true).' '.$menuLine.' '.EscPosCommandBuilder::invert(false).EscPosCommandBuilder::textLine('')
+                        : EscPosCommandBuilder::textLine('  '.$menuLine);
                 }
                 $b .= EscPosCommandBuilder::bold(false);
             }
             // [T3-CUISINE 2026-07-05] Suppléments en GRAS + étoile « * » → le cuisinier voit tout
             // de suite qu'il y a un extra (owner). Étoile ASCII (les emojis ne s'encodent pas CP858).
             foreach ($blk['supps'] as $sup) {
-                $star = preg_replace('/^\+\s*/', '* ', (string) $sup);
-                $b .= EscPosCommandBuilder::bold(true);
-                foreach (EscPosCommandBuilder::wrapIndented($star, $w - 2, '  ') as $supLine) {
-                    $b .= EscPosCommandBuilder::textLine('  '.$supLine);
+                // [GOAL CAISSE/CUISINE #7 2026-10-02] LECTURE INVERSÉE : gras BLANC sur cadre NOIR
+                // (GS B). Le cadre ne couvre que les caractères imprimés → un espace de chaque côté
+                // fait le bandeau. Plus d'étoile : le cadre noir est le signal.
+                // [GOAL REMARQUES 2026-10-03 · R-071] Propriétaire, 02/10 : « c'est pas écrit en grand ».
+                // DOUBLE TAILLE (2×2), comme la ligne produit, au lieu de la double hauteur seule. En
+                // double largeur un caractère prend 2 colonnes : enroulé à la moitié de la largeur,
+                // moins l'indentation et les deux espaces du bandeau → jamais coupé par l'imprimante.
+                $label = trim((string) preg_replace('/^\+\s*/', '', (string) $sup));
+                // Garde « jamais un mot coupé » (régression C4-001) : sur papier étroit (58 mm, 32 col.)
+                // un mot plus long que la place en double largeur (« supplémentaire ») serait scindé.
+                // Ce supplément reste alors en double HAUTEUR, pleine largeur : grand, jamais coupé.
+                // [revue 2 · P2-1] Décidé sur le LIBELLÉ ENTIER : un bandeau = un supplément. Enroulé en
+                // double largeur, « Viande supplémentaire : Poulet » faisait trois bandeaux et « Poulet »
+                // seul se lisait comme un autre supplément.
+                $placeDouble = max(4, $halfW - 4);
+                $double = mb_strlen($label) <= $placeDouble;
+                $b .= ($double ? EscPosCommandBuilder::doubleSize(true) : '').EscPosCommandBuilder::bold(true);
+                foreach (EscPosCommandBuilder::wrapIndented($label, $double ? $placeDouble : $w - 6, '') as $supLine) {
+                    $b .= '  '.EscPosCommandBuilder::invert(true).' '.$supLine.' '.EscPosCommandBuilder::invert(false).EscPosCommandBuilder::textLine('');
                 }
-                $b .= EscPosCommandBuilder::bold(false);
+                $b .= EscPosCommandBuilder::bold(false).($double ? EscPosCommandBuilder::doubleSize(false).EscPosCommandBuilder::doubleHeight(true) : '');
             }
             // [W3-FIX-C 2026-07-06] Boissons (addon drink / menu_boisson) en GRAS,
             // même gabarit width-safe que menu/suppléments (jamais coupées à 32 col).
@@ -457,10 +623,18 @@ final class OrderReceiptEscPosRenderer
                 }
                 $b .= EscPosCommandBuilder::bold(false);
             }
-            foreach ($blk['notes'] as $n) {
-                foreach (EscPosCommandBuilder::wrapIndented('** '.$n, $w - 2, '  ') as $noteLine) {
-                    $b .= EscPosCommandBuilder::textLine('  '.$noteLine);
+            // [NOTES-EN-GRAND 2026-10-19 · owner] La note du client (« sans œuf », « bien cuit »…) sort en
+            // GRAS et en DOUBLE TAILLE, comme la ligne produit : « on oublie de les lire » quand elle
+            // est écrite plus petit que tout le reste. Enroulée à la MOITIÉ de la largeur (un
+            // caractère double largeur prend 2 colonnes) pour ne jamais être coupée par l'imprimante.
+            if ($blk['notes'] !== []) {
+                $b .= EscPosCommandBuilder::doubleSize(true).EscPosCommandBuilder::bold(true);
+                foreach ($blk['notes'] as $n) {
+                    foreach (EscPosCommandBuilder::wrapIndented('** '.$n, $halfW, '  ') as $noteLine) {
+                        $b .= EscPosCommandBuilder::textLine($noteLine);
+                    }
                 }
+                $b .= EscPosCommandBuilder::bold(false).EscPosCommandBuilder::doubleSize(false).EscPosCommandBuilder::doubleHeight(true);
             }
             $b .= EscPosCommandBuilder::textLine('');
         }
@@ -473,6 +647,39 @@ final class OrderReceiptEscPosRenderer
         $b .= EscPosCommandBuilder::cut($this->cutIsPartial());
 
         return EscPosCommandBuilder::encodeForPrinter($b, $this->encodingFor($codePage));
+    }
+
+    /**
+     * [NOM-COMMANDE-BORNE 2026-10-19 · owner] Le nom imprimé sur les tickets.
+     *
+     * Un nom SAISI pour cette commande (`pos_customer_name` : borne, caisse, téléphone, agrégateur)
+     * prime toujours. À défaut, seules les commandes du SITE (client absent, titulaire du compte =
+     * le client) reprennent le nom du compte, comme l'écran caisse. La borne et le comptoir ne
+     * l'empruntent JAMAIS : leur compte porteur est technique (« Admin Le Cayenne ») — un nom faux
+     * fait chercher quelqu'un qui n'existe pas (cf. SimpleOrderResource::displayCustomerName).
+     */
+    private function nomClientPourTicket(BroadcastableOrder $order): string
+    {
+        $saisi = trim((string) ($order->pos_customer_name ?? ''));
+        if ($saisi !== '') {
+            return $saisi;
+        }
+
+        // Le site (web / en ligne) ET la LIVRAISON du site : le client est absent, le titulaire du compte
+        // EST le client. Même périmètre que l'écran caisse (SimpleOrderResource), moins le téléphone
+        // dont le compte porteur est un client « de passage » choisi par le caissier.
+        // (par SURFACE, jamais par type de commande : une commande de CAISSE de type livraison, sans nom
+        // saisi, n'imprime aucune ligne client — cf. KitchenTicketCustomerNameTest.)
+        $clientAbsent = in_array((string) ($order->source_surface ?? ''), ['web', 'online', 'delivery'], true);
+        if (! $clientAbsent) {
+            return '';
+        }
+
+        $user = $order->relationLoaded('user') ? $order->getRelation('user') : null;
+        $nom = trim((string) ($user->name ?? ''));
+
+        // « Guest User » est un nom de substitution de compte invité, pas une personne.
+        return \App\Support\NomClient::estGenerique($nom) ? '' : $nom;
     }
 
     /** [TICKET-FEED] Nb de lignes vierges (hauteur normale) avancées avant la coupe. */
@@ -495,7 +702,7 @@ final class OrderReceiptEscPosRenderer
         $items = $order->orderItems ?? collect();
         $out = [];
         foreach ($items as $oi) {
-            $name = (string) ($oi->name ?? optional($oi->orderItem)->name ?? 'Article');
+            $name = (string) ($oi->manual_label ?? $oi->name ?? optional($oi->orderItem)->name ?? 'Article');
             $snap = is_array($oi->composition_snapshot) ? $oi->composition_snapshot : [];
             $comps = [];
             foreach (($snap['lines'] ?? []) as $l) {
@@ -516,7 +723,13 @@ final class OrderReceiptEscPosRenderer
                 // recovered sauce name(s) so the 2nd+ sauce is visible on the client ticket
                 // (parity with the payment screen). Price-neutral — amount unchanged.
                 $en = $this->symbolic->extraDisplayName($en, (string) ($oi->instruction ?? ''));
-                $extras[] = ['name' => $en, 'amount' => (float) ($e['line_total'] ?? $e['unit_price'] ?? 0)];
+                $extras[] = [
+                    'name' => $en,
+                    'amount' => (float) ($e['line_total'] ?? $e['unit_price'] ?? 0),
+                    // [GOAL #5 2026-10-02] « OFFERT » : la ligne reste visible à 0 € avec la mention.
+                    'offered' => ! empty($e['offered']),
+                    'quantity' => max(1, (int) ($e['quantity'] ?? 1)),
+                ];
             }
             $addons = [];
             foreach (($snap['addons'] ?? []) as $a) {
@@ -575,8 +788,12 @@ final class OrderReceiptEscPosRenderer
             $compo[] = $pos !== false ? mb_substr($c, $pos + 2) : $c;
         }
         $paid = [];
+        $offered = [];
         foreach ($line['extras'] as $e) {
-            if (($e['amount'] ?? 0) > 0) {
+            if (! empty($e['offered'])) {
+                // Jamais fondue dans la compo : une ligne offerte doit se VOIR, avec « OFFERT ».
+                $offered[] = $e;
+            } elseif (($e['amount'] ?? 0) > 0) {
                 $paid[] = $e;
             } else {
                 $compo[] = $e['name'];
@@ -592,6 +809,10 @@ final class OrderReceiptEscPosRenderer
         foreach ($paid as $e) {
             $b .= EscPosCommandBuilder::lineItemKV('   + '.$e['name'], $this->money((float) $e['amount']), $w);
         }
+        foreach ($offered as $e) {
+            $qtyLabel = ((int) ($e['quantity'] ?? 1)) > 1 ? ' x'.(int) $e['quantity'] : '';
+            $b .= EscPosCommandBuilder::lineItemKV('   + '.$e['name'].$qtyLabel, 'OFFERT', $w);
+        }
         foreach ($line['addons'] as $a) {
             // [MENU-ROLE-CLIENT 2026-07-23] Pour un addon de formule (role menu_*), imprime un
             // libellé role-aware (« Menu Frites » / « Menu Boisson » / « Menu Frites + Boisson »)
@@ -600,7 +821,7 @@ final class OrderReceiptEscPosRenderer
             // Miroir de KitchenTicketSymbolicFormatter::menuLine() (role→MENU/FRITES/BOISSON).
             // Tout autre addon (role vide/non-menu) garde son nom brut. Le PRIX reste le
             // line_total SCELLÉ (jamais recalculé) — on ne corrige QUE le libellé.
-            $label = $this->menuClientLabel((string) ($a['role'] ?? '')) ?: $a['name'];
+            $label = \App\Support\Order\MenuFormulaLabel::forAddon((string) ($a['role'] ?? ''), (string) $a['name']);
             if (($a['amount'] ?? 0) > 0) {
                 $b .= EscPosCommandBuilder::lineItemKV('   + '.$label, $this->money((float) $a['amount']), $w);
             } else {
@@ -631,8 +852,8 @@ final class OrderReceiptEscPosRenderer
      * pas par addon_name (identique pour les 3). Le ticket CUISINE décode déjà ce rôle
      * ({@see KitchenTicketSymbolicFormatter::menuLine()} → MENU / FRITES / BOISSON) ; ce
      * miroir donne au ticket CLIENT le même libellé fidèle, en clair FR :
-     *   menu_frites                             → « Menu Frites »
-     *   menu_boisson                            → « Menu Boisson »
+     *   menu_frites                             → « Frites seules »
+     *   menu_boisson                            → « Boisson seule »
      *   menu_full / menu_formule / autre menu_* → « Menu Frites + Boisson »
      * Rôle vide ou non-menu → '' (l'appelant garde alors le nom d'addon brut, ex. un
      * addon « drink »/upsell hors formule). N'affecte QUE le LIBELLÉ : le prix imprimé
@@ -640,17 +861,9 @@ final class OrderReceiptEscPosRenderer
      */
     private function menuClientLabel(string $role): string
     {
-        $role = strtolower(trim($role));
-        if ($role === '' || ! str_starts_with($role, 'menu_')) {
-            return '';
-        }
-
-        return match ($role) {
-            'menu_frites' => 'Menu Frites',
-            'menu_boisson' => 'Menu Boisson',
-            // menu_full / menu_formule / futur menu_* = formule complète.
-            default => 'Menu Frites + Boisson',
-        };
+        // [LIBELLÉ-FORMULE 2026-11-02] Définition unique partagée avec l'écran de suivi et le ticket
+        // à l'écran : « Menu Frites + Boisson » / « Frites seules » / « Boisson seule ».
+        return \App\Support\Order\MenuFormulaLabel::forRole($role);
     }
 
     /** "0365678291" → "03 65 67 82 91" (French 10-digit); otherwise unchanged. */
@@ -751,6 +964,61 @@ final class OrderReceiptEscPosRenderer
      * ReceiptRemboursementMarker.vue (qui clé sur parent_order_id) : un miroir de contre-passation
      * NF525 est status=RETURNED avec un parent_order_id.
      */
+    /**
+     * Longueur maximale (octets) de l'URL encodée dans le QR. La commande `GS ( k` écrit la longueur sur un octet
+     * (`EscPosCommandBuilder::qrCode`, `chr($len % 256)`) et le flux entier est ensuite transcodé en CP858 (`iconv //IGNORE`) :
+     * un octet >= 0x80 serait supprimé et décalerait tout le symbole. 124 + 3 octets d'en-tête = 127 = 0x7F, la dernière
+     * valeur sûre. Au-delà, on N'IMPRIME PAS de QR (plutôt qu'un QR faux).
+     */
+    public const QR_MAX_URL_BYTES = 124;
+
+    /**
+     * [LIVRAISON QR 2026-11-01] Bloc « REMISE LIVREUR » : le QR à usage unique que le livreur scanne à la porte.
+     * Seulement pour une LIVRAISON de nos tournées dont un jeton peut être émis ; sinon chaîne vide. Ne lève JAMAIS :
+     * imprimer le ticket ne doit pas dépendre du QR (panne de base, URL trop longue, imprimante sans `GS ( k` → le ticket sort).
+     * Le QR est émis en octets BRUTS (jamais par `textLine`, qui retire 0x00-0x1F) puis suivi d'un saut de ligne qui le déclenche.
+     * Le jeton n'est PAS imprimé en clair à côté : le papier ne porte que le QR.
+     */
+    private function deliveryHandoverQrBlock(BroadcastableOrder $order, int $w): string
+    {
+        try {
+            // Interrupteur d'impression (config/delivery.php, défaut FAUX) : fermé = aucun octet de QR, AUCUN jeton créé.
+            if (! (bool) config('delivery.handover.qr_print_enabled', false)) {
+                return '';
+            }
+            if ((int) ($order->order_type ?? 0) !== \App\Enums\OrderType::DELIVERY
+                || (int) ($order->id ?? 0) <= 0
+                || $this->isRefundReceipt($order)
+                || $this->isUberOrder($order)) {
+                return '';
+            }
+            $url = app(\App\Services\Delivery\DeliveryHandoverService::class)->qrUrlForOrder((int) $order->id);
+            if ($url === null) {
+                return '';
+            }
+            if (strlen($url) > self::QR_MAX_URL_BYTES || preg_match('/[^\x20-\x7E]/', $url) === 1) {
+                \Illuminate\Support\Facades\Log::warning('delivery.handover.qr_url_unprintable', ['order_id' => (int) $order->id, 'bytes' => strlen($url)]);
+
+                return '';
+            }
+
+            $b = EscPosCommandBuilder::separator('-', $w);
+            $b .= EscPosCommandBuilder::alignCenter();
+            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('REMISE LIVREUR', $w).EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::textWrap('Livreur : scannez ce QR pour valider la remise.', $w);
+            $b .= EscPosCommandBuilder::feed(1);
+            $b .= EscPosCommandBuilder::qrCode($url, 6, 'M'); // octets bruts, jamais via textLine
+            $b .= EscPosCommandBuilder::textLine('');          // déclenche l'impression du symbole stocké
+            $b .= EscPosCommandBuilder::textWrap('QR a usage unique.', $w);
+
+            return $b;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('delivery.handover.qr_block_failed', ['error' => $e->getMessage()]);
+
+            return '';
+        }
+    }
+
     private function isRefundReceipt(BroadcastableOrder $order): bool
     {
         return (int) ($order->status ?? 0) === \App\Enums\OrderStatus::RETURNED
@@ -795,7 +1063,12 @@ final class OrderReceiptEscPosRenderer
             $rate = (string) (0 + (float) ($oi->tax_rate ?? 0));
             $name = (string) ($oi->tax_name ?? 'TVA');
             $type = (int) ($oi->tax_type ?? 0);
-            $key = $type.'|'.$rate.'|'.$name;
+            // [AUDIT AVAL 2026-09-29 · P1] Par (type, taux) — plus par NOM. Les lignes
+            // catalogue portent le nom de taxe du catalogue (« VAT » en base) et le
+            // supplément libre « TVA 10% » (config) : même taux, deux groupes, et le
+            // ticket imprimait DEUX lignes « TVA 10% : … » indiscernables (seul le taux
+            // est imprimé, ligne ~205). Un ticket fiscal français ventile par TAUX.
+            $key = $type.'|'.$rate;
             if (! isset($groups[$key])) {
                 $groups[$key] = ['name' => $name, 'rate' => $rate, 'ht' => 0.0, 'tax' => 0.0];
             }

@@ -106,7 +106,15 @@
             </div>
 
             <div class="db-table-responsive">
-                <table class="db-table stripe" :dir="direction">
+                <!-- [AUDIT-SUPERVISEUR 2026-08-25 · C-002] `hist-table` : marges internes
+                     resserrées SUR CETTE TABLE SEULEMENT. Dix colonnes à `px-4` coûtaient
+                     320 px de marges, et la table débordait de son conteneur — 181 px
+                     mesurés à 1280, 95 px à 1366. La colonne ACTION étant `sticky right`,
+                     ce débordement lui faisait RECOUVRIR les colonnes DATE et STATUT :
+                     mesuré à ZÉRO pixel rendu sur un état, et une date coupée en plein
+                     glyphe sur un autre. Une colonne épinglée n'a rien à masquer si la
+                     table tient — c'est le débordement qu'on supprime, pas le symptôme. -->
+                <table class="db-table stripe hist-table" :dir="direction">
                     <thead class="db-table-head">
                         <tr class="db-table-head-tr">
                             <th class="db-table-head-th">{{ $t('label.order_id') }}</th>
@@ -117,7 +125,7 @@
                             <th class="db-table-head-th">{{ $t('label.payment') }}</th>
                             <th class="db-table-head-th">{{ $t('label.fiscal_number') }}</th>
                             <th class="db-table-head-th">{{ $t('label.date') }}</th>
-                            <th class="db-table-head-th">{{ $t('label.status') }}</th>
+                            <th class="db-table-head-th hist-statut-col">{{ $t('label.status') }}</th>
                             <th class="db-table-head-th hist-action-col" v-if="permissionChecker('pos-orders')">{{ $t('label.action') }}</th>
                         </tr>
                     </thead>
@@ -136,8 +144,12 @@
                             <td class="db-table-body-td">{{ order.customer_name || '—' }}</td>
                             <td class="db-table-body-td">{{ formatPrice(order.total) }}</td>
                             <td class="db-table-body-td">
-                                <span class="hist-pay-badge" :class="paymentBadgeClass(order.payment_status)">
-                                    {{ paymentLabel(order.payment_status) }}
+                                <!-- [AUDIT-SUPERVISEUR 2026-08-25 · C-002] On passe la COMMANDE,
+                                     pas seulement son statut de paiement : une commande annulée
+                                     ne peut pas être « à encaisser », et le badge ne pouvait pas
+                                     le savoir tant qu'il ignorait `order.status`. -->
+                                <span class="hist-pay-badge" :class="paymentBadgeClass(order.payment_status, order)">
+                                    {{ paymentLabel(order.payment_status, order) }}
                                 </span>
                                 <span v-if="order.parent_order_id" class="hist-refund-tag" :title="$t('label.refunded')">
                                     ↩ #{{ order.parent_order_id }}
@@ -148,7 +160,7 @@
                                 <span v-else class="text-[#6E7191]">—</span>
                             </td>
                             <td class="db-table-body-td">{{ order.order_datetime }}</td>
-                            <td class="db-table-body-td">
+                            <td class="db-table-body-td hist-statut-col">
                                 <span :class="orderStatusClass(order.status)">
                                     {{ enums.orderStatusEnumArray[order.status] || order.status_name }}
                                 </span>
@@ -414,7 +426,29 @@ export default {
             }
             return { label: this.$t('label.online'), cls: 'origin-online' };
         },
-        paymentLabel: function (ps) {
+        /**
+         * [AUDIT-SUPERVISEUR 2026-08-25 · C-002] LE BADGE DE PAIEMENT DOIT REGARDER LA COMMANDE.
+         *
+         * Mesure : SEPT lignes de l'historique portaient SIMULTANEMENT « À encaisser » et le
+         * statut « Annulée ». Une commande annulée ne peut pas etre a encaisser — et l'ecran
+         * d'encaissement capture huit secondes plus tot ne contenait AUCUNE de ces sept
+         * commandes. C'est donc bien le libelle qui mentait, pas la file.
+         *
+         * Cause : cette methode ne recevait que `payment_status` et ne consultait jamais
+         * `status`. Deux verites sur la meme ligne, calculees separement, qui se contredisent.
+         *
+         * Aggravant, et c'est ce qui rendait le defaut si couteux : la colonne qui
+         * desambiguise — « Annulée » — est precisement celle que C-001 rendait illisible. A
+         * l'ecran, le caissier ne lisait QUE « À encaisser », sept fois.
+         *
+         * Le second parametre est optionnel : les appels qui ne passent que le statut de
+         * paiement gardent exactement leur comportement d'avant.
+         */
+        paymentLabel: function (ps, order) {
+            if (order && this.commandeSansObjetDePaiement(order)) {
+                return this.$t('label.payment_moot');
+            }
+
             switch (parseInt(ps)) {
                 case paymentStatusEnum.PAID: return this.$t('label.paid');
                 case paymentStatusEnum.UNPAID: return this.$t('label.unpaid');
@@ -423,7 +457,24 @@ export default {
                 default: return '—';
             }
         },
-        paymentBadgeClass: function (ps) {
+        /**
+         * Vrai quand la commande ne peut plus donner lieu a un encaissement : annulee ou
+         * rejetee. On ne se fie pas a une valeur en dur — l'enumeration est la source.
+         */
+        commandeSansObjetDePaiement: function (order) {
+            const s = parseInt(order && order.status);
+            if (!Number.isFinite(s)) {
+                return false;
+            }
+
+            return s === orderStatusEnum.CANCELED || s === orderStatusEnum.REJECTED;
+        },
+        paymentBadgeClass: function (ps, order) {
+            if (order && this.commandeSansObjetDePaiement(order)) {
+                // Gris neutre : ni une dette a recouvrer, ni un encaissement reussi.
+                return 'pay-moot';
+            }
+
             switch (parseInt(ps)) {
                 case paymentStatusEnum.PAID: return 'pay-paid';
                 case paymentStatusEnum.PENDING_COUNTER: return 'pay-pending';
@@ -623,6 +674,10 @@ export default {
 .pay-pending { background: #fffbeb; color: #92400e; }
 .pay-unpaid { background: #fef2f2; color: #991b1b; }
 .pay-refunded { background: #f1f5f9; color: #475569; }
+/* [AUDIT-SUPERVISEUR 2026-08-25 · C-002] Commande annulée ou rejetée : le paiement est
+   sans objet. Gris barré d'un ton plus froid que « Remboursé » — ni une dette à
+   recouvrer (rouge), ni un encaissement réussi (vert), ni un remboursement effectué. */
+.pay-moot { background: #f3f4f6; color: #6b7280; }
 .hist-refund-tag { margin-left: 0.35rem; font-size: 0.72rem; color: #475569; font-weight: 600; }
 .hist-fiscal-chip {
     display: inline-flex;
@@ -674,15 +729,151 @@ export default {
    couture au milieu du tableau). `inherit` recopie la couleur RÉELLE de la
    ligne, quelle qu'elle soit — zébrure, survol, futur surlignage. Et l'ombre
    ne se justifie que lorsqu'il y a réellement quelque chose à masquer,
-   c'est-à-dire quand le tableau déborde (≤1439px, même seuil que pos-v5.css). */
+   c'est-à-dire quand le tableau déborde (≤1439px, même seuil que pos-v5.css).
+
+   [C-002 2026-08-25 · supervisor-caisse round-1 wave C] `inherit` ÉTAIT LA
+   RACINE DU DÉFAUT, pas la solution. Il recopie le fond du `<tr>` parent — or
+   la zébrure du design system (`resources/css/app.css:464`) ne peint QUE les
+   rangs IMPAIRS. Conséquences mesurées au pixel sur la colonne DATE (x=1170) :
+     • rang IMPAIR → #f9fafb opaque : la date est REPEINTE et disparaît
+       (mesures (249,250,251) à y=385/499/613) ;
+     • rang PAIR   → le `<tr>` n'a AUCUN fond à hériter, la cellule est donc
+       TRANSPARENTE : la date s'imprime À TRAVERS les boutons
+       (mesures (26,26,26) à y=442/556/670, « 02:18, 08 » barré par l'icône) ;
+     • `<thead>`   → aucun fond non plus : DATE et ACTION s'impriment l'un sur
+       l'autre et le mot rendu est « DACTIEON ».
+   Une cellule collante qui recouvre du contenu doit être OPAQUE dans TOUS ses
+   états. On déclare donc explicitement les quatre — en-tête, rang pair, rang
+   impair, survol — chacun avec la couleur EXACTE de sa ligne, ce qui donne à
+   la fois l'opacité (rien ne transparaît) et l'absence de couture (aucun
+   rectangle d'une autre couleur au milieu du tableau). Verrouillé par
+   `tests/js/historiqueActionColumnOpaque.spec.js`, qui évalue la cascade
+   réelle via `getComputedStyle`. */
+/* [AUDIT-SUPERVISEUR 2026-08-25 · C-002] LA VRAIE CAUSE : la table débordait.
+   Dix colonnes à `px-4` (16 px de chaque côté) = 320 px de marges internes. Mesuré :
+   181 px de débordement à 1280, 95 px à 1366. Une colonne `sticky right` sur une table
+   qui déborde se pose FORCÉMENT sur ce qui est à sa gauche : c'est son rôle. Rendre la
+   cellule opaque, comme au round précédent, supprime la bavure mais pas le recouvrement.
+   On resserre donc les marges SUR CETTE TABLE UNIQUEMENT — jamais sur `.db-table-head-th`
+   global, qui habille toutes les tables du produit. */
+.hist-table .db-table-head-th,
+.hist-table .db-table-body-td {
+    /* 8 px laissait encore 21 px de débordement à 1280 — mesuré, pas estimé.
+       6 px les absorbe (4 px gagnés par cellule × 10 colonnes = 40 px) et la
+       table tient sur les deux gabarits du parc. */
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
+/*
+ * [AUDIT-SUPERVISEUR 2026-08-25 · C-001] UNE COLONNE COLLANTE NE DOIT JAMAIS POUVOIR
+ * RECOUVRIR DU CONTENU.
+ *
+ * Ce que j'avais fait au round precedent : resserrer les marges de CETTE table a 6 px, en
+ * ecrivant que « la table tient sur les deux gabarits du parc ». C'etait vrai des donnees
+ * que j'avais sous les yeux, et faux en general. Le superviseur l'a mesure au pixel sur une
+ * capture ou l'en-tete se lit « S· ACTION » — « Statut » coupe apres le S — et ou chaque
+ * badge de statut est reduit a un croissant de 2 a 3 px avant d'etre recouvert.
+ *
+ * Le declencheur est la LONGUEUR DES NUMEROS DE COMMANDE : 17 caracteres
+ * (« AUDC-RICHE-7GFAQZ ») decalent les colonnes d'environ 55 px vers la droite. J'ai
+ * remesure sur les donnees d'aujourd'hui — aucun numero de plus de 12 caracteres, donc
+ * 0 recouvrement et 0 debordement. Le defaut ne se reproduit pas ; il n'a pas disparu pour
+ * autant, il attend juste le bon jeu de donnees. Un correctif qui depend de la longueur des
+ * chaines en base n'est pas un correctif.
+ *
+ * On epingle donc la colonne STATUT elle aussi, calee juste a gauche d'ACTION. Les deux
+ * restent visibles quoi qu'il arrive : ni l'une ni l'autre ne peut passer sous sa voisine,
+ * et le statut d'une commande — l'information qui dit si elle est annulee — cesse de
+ * dependre du nombre de caracteres de son numero.
+ */
+.hist-table {
+    /* Largeurs MESURÉES à 1280 px : ACTION 86 px, STATUT 68 px. Des variables, pas des
+       nombres recopiés, pour que le calage et la réserve ne puissent pas se désynchroniser. */
+    --hist-action-w: 86px;
+    --hist-statut-w: 68px;
+
+    /*
+     * LA TABLE DOIT POUVOIR PRENDRE SA LARGEUR NATURELLE.
+     *
+     * Sans ceci, la réserve posée plus bas se retourne contre elle-même : la table est
+     * contrainte à la largeur de son conteneur, donc une marge droite ne l'élargit pas —
+     * elle VOLE de la place au texte de la cellule. Mesuré à l'écran : la date est passée
+     * de « 18:34, 25-08-2026 » complète à « 25-0 » coupée. J'avais aggravé le défaut en
+     * croyant le réparer.
+     *
+     * `max-content` laisse chaque colonne prendre ce qu'il lui faut ; le conteneur
+     * `.db-table-responsive` défile alors horizontalement, et les deux colonnes épinglées
+     * restent visibles pendant ce défilement — ce pour quoi elles sont épinglées.
+     */
+    min-width: max-content;
+}
+
+/*
+ * LA RÉSERVE, ET POURQUOI ÉPINGLER NE SUFFISAIT PAS.
+ *
+ * Premier réflexe : épingler STATUT à côté d'ACTION pour qu'elle cesse d'être recouverte.
+ * Fait — et vérifié à l'écran : le statut est redevenu lisible sur chaque ligne. Mais la
+ * capture suivante montrait la DATE coupée à « 25-0 ». Je n'avais pas réparé le défaut, je
+ * l'avais DÉPLACÉ d'une colonne vers la gauche. C'est la nature même d'un élément collant :
+ * il se pose sur ce qui passe dessous, et il y aura toujours une colonne « dessous ».
+ *
+ * La seule réponse qui tienne est de RÉSERVER la place du groupe collant à la fin de la
+ * ligne. La dernière colonne non collante porte une marge droite égale à la largeur des
+ * deux colonnes épinglées : elles se posent alors sur du vide, jamais sur du texte.
+ *
+ * Le prix assumé : la table devient plus large et peut demander un défilement horizontal
+ * là où elle n'en demandait pas. C'est le bon échange — du contenu caché sans le dire est
+ * pire qu'une barre de défilement, surtout sur un écran dont l'objet est de montrer ce
+ * qu'un client a commandé.
+ */
+.hist-table .db-table-head-th:nth-last-child(3),
+.hist-table .db-table-body-td:nth-last-child(3) {
+    padding-right: calc(var(--hist-action-w) + var(--hist-statut-w) + 6px);
+}
+
+.hist-statut-col {
+    position: sticky;
+    right: var(--hist-action-w);
+    z-index: 1; /* sous ACTION, au-dessus du reste */
+    background-color: rgb(255, 255, 255);
+}
+
 .hist-action-col {
     position: sticky;
     right: 0;
     z-index: 2;
-    background: inherit;
+    /* Rangs PAIRS + repli : fond du tableau. Jamais `inherit`, jamais absent. */
+    background-color: rgb(255, 255, 255);
+}
+/* En-tête. [AUDIT-SUPERVISEUR 2026-08-25 · C-018] Le blanc posé au round précédent
+   créait une COUTURE : le superviseur a relevé au pixel (1120,340) = (247,243,236)
+   pour le thead contre (1155,340) = (255,255,255) pour la cellule collante. Opaque,
+   oui — mais de la mauvaise couleur, donc un rectangle blanc au bout d'un bandeau
+   beige. Le commentaire d'alors affirmait que `.db-table-head` ne pose aucun fond ;
+   la ligne 568 du même fichier le contredisait — `:deep(.db-table-head)` lui pose bien
+   `var(--pos-v5-bg-subtle)`. On reprend LA MÊME VARIABLE plutôt qu'un RGB figé : une
+   couleur recopiée à la main se désynchronise au premier changement de thème, et on
+   aurait recréé la couture ailleurs. */
+.db-table-head .hist-action-col,
+.db-table-head .hist-statut-col { background: var(--pos-v5-bg-subtle, #f4f4f6); }
+/* Rangs IMPAIRS : recopie EXACTE de la zébrure `app.css:464` (#f9fafb). */
+.db-table.stripe .db-table-body-tr:nth-child(odd) .hist-action-col,
+.db-table.stripe .db-table-body-tr:nth-child(odd) .hist-statut-col {
+    background-color: rgb(249, 250, 251);
+}
+/* Survol : recopie de `:deep(.db-table-body-tr:hover)` ci-dessus
+   (--pos-v5-brand-red-faint = #FFF4EE) sur les deux parités. */
+.db-table-body-tr:hover .hist-action-col,
+.db-table-body-tr:hover .hist-statut-col,
+.db-table.stripe .db-table-body-tr:nth-child(odd):hover .hist-action-col,
+.db-table.stripe .db-table-body-tr:nth-child(odd):hover .hist-statut-col {
+    background-color: var(--pos-v5-brand-red-faint, #FFF4EE);
 }
 @media (max-width: 1439px) {
-    .hist-action-col { box-shadow: -6px 0 8px -6px rgba(0, 0, 0, 0.18); }
+    /* L'ombre marque le bord du GROUPE collant, donc sur STATUT (le plus a gauche des
+       deux) et non sur ACTION : sinon elle tomberait ENTRE les deux colonnes epinglees. */
+    .hist-statut-col { box-shadow: -6px 0 8px -6px rgba(0, 0, 0, 0.18); }
 }
 
 /* [S2 V4 2026-07-29] Bouton réimpression — même gabarit que l'icône « voir »

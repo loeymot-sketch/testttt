@@ -1,0 +1,71 @@
+{
+ "round": 8,
+ "reviewer": "adversarial",
+ "closure": {
+  "ADV-01": "CLOSED (sim axios 1.20.0 + dedupe, 1 shared 429: N=3/5/8/20 -> 0 rejected; persistent 429 -> 5 adapter calls = 1+4)",
+  "ADV-02": "CLOSED on cited evidence (PHPUnit 18 green + default-config probes); not re-run by reviewer",
+  "ADV-03": "CLOSED (D06 drawer, D07 edit, D08 funnel recap show galette photo; heroImage/baseImage logic reviewed)",
+  "ADV-04": "NOT CLOSED: cart page fixed (B03) but cart strip and wizard recap still show the sandwich with a Galette line (R8-01, R8-02)",
+  "ADV-05": "MOSTLY CLOSED: real funnel D08-D10 with 2x429 Retry-After 5 s, 'Confirmation...' state, same key/body; residual: CORS expose header still mocked, 25 s only via direct-API regression, 20/60 s never through funnel",
+  "ADV-06": "CLOSED (B03: trash in flow under stepper, overlap 0 px2; KioskCartComponent.vue:1145-1149)"
+ },
+ "p0_p1_open": 2,
+ "findings": [
+  {
+   "id": "R8-01",
+   "severity": "P1",
+   "category": "visual/requirement",
+   "where": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/frontend/kiosk/ds/KsCartBottomSheet.vue:35-43 (rendered by KioskCategoriesComponent.vue:240)",
+   "proof": "B02-apres-wizard.dom.html: <img class=kiosk-cart-strip-img src=.../thumbs/sandwich-cayenne.webp alt=Cayenne> in 'VOTRE COMMANDE' strip, while the same line is 'Pain : Galette' (B03 note) -> B02-apres-wizard.png shows a sandwich under a Galette order. cartLineImage was added only to KioskCartComponent.vue; the strip still reads item.image.",
+   "fix": "Move cartLineImage/pool logic to a shared helper and use it in the strip."
+  },
+  {
+   "id": "R8-02",
+   "severity": "P1",
+   "category": "visual/requirement",
+   "where": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/frontend/kiosk/KioskOrderSummaryComponent.vue:6 (item.thumb) ; getPainImage :34/:373",
+   "proof": "B02-galette-etape-05.png (wizard RECAP, Galette chosen): header card 'Cayenne' shows the SANDWICH thumb, row 'Type de pain: Galette' shows galette-seule.svg illustration; DOM: img alt=Cayenne src=sandwich-cayenne.webp and step-bar img alt=RECAP src=sandwich-cayenne.webp. This is the owner's original complaint verbatim, on the borne recap. KioskOrderSummaryComponent is not in the frozen list (KioskWizardComponent only hosts it).",
+   "fix": "Pass the galette twin photo as the header thumb when the pain choice is a galette; use the twin photo for the pain row."
+  },
+  {
+   "id": "R8-03",
+   "severity": "P2",
+   "category": "double-submit (unreproduced)",
+   "where": "/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne/funnel.jsx:2443 (Retour not disabled while submitting), :2484-2494 (cart drawer stays editable), :1040-1058 (idem key = cart signature), api.js:1421 (no AbortSignal) + :437-447",
+   "proof": "D09: during 'Confirmation...' the Retour button stays active. api.js retry chain (up to 3x60 s) keeps running after the user leaves; if the cart is changed meanwhile via the header Panier drawer the signature, hence the idempotency key, changes and a second order can be sent while the first retry may still succeed. Reasoned from code, not reproduced.",
+   "fix": "Disable Retour/drawer edits while submitting or pass an AbortSignal and reuse the key until placeOrder settles."
+  },
+  {
+   "id": "R8-04",
+   "severity": "P2",
+   "category": "ux",
+   "where": "/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne/api.js:437-447",
+   "proof": "Customer can stay on 'Confirmation...' for up to 3x60 s without any message; D09 measured only Retry-After 5 s; the 25 s case is exercised only by tests-e2e/attente-429-selon-la-route-2026-10-29.regression.js through placeOrder() with a mocked Expose-Headers.",
+   "fix": "After ~10 s show 'Ta commande est en cours d'envoi, ne quitte pas la page'."
+  },
+  {
+   "id": "R8-05",
+   "severity": "P3",
+   "category": "persistence",
+   "where": "/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne/racine.jsx:48-52,116,482-494",
+   "proof": "lc.cart.v1 lines saved before this build keep image=sandwich under a Galette choice until the 24 h TTL. baseImage is dead on the edit path (edit reopens the CATALOGUE item, racine.jsx:493). Galette twin for non-Cayenne products is the Classique galette photo (pre-existing owner decision). No order regression: placeOrder body unchanged (149 bytes x3, D10 accepted).",
+   "fix": "none required; optionally migrate old lines."
+  },
+  {
+   "id": "R8-06",
+   "severity": "P3",
+   "category": "visual",
+   "where": "/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne/funnel.jsx:302 ; D08-page-commande.png; KioskCartComponent.vue:1145 (trash 36 px)",
+   "proof": "Funnel recap thumb is a ~36 px letterboxed sliver (object-fit contain); borne trash 36 px < 44 px touch target.",
+   "fix": "cosmetic"
+  },
+  {
+   "id": "R8-07",
+   "severity": "P2",
+   "category": "carry-over",
+   "where": "round-8 B01 network.json (401 kiosk-event/frontend/menu/GET api/login); git status",
+   "proof": "ADV-13 boot 401s still un-allowlisted; ADV-10 still uncommitted (nothing committed per brief); app/www must be rebuilt before any store build.",
+   "fix": "allowlist + commit by pathspec + build:www"
+  }
+ ]
+}

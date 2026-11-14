@@ -102,6 +102,14 @@
                         <small class="db-field-alert" v-if="errors.maximum_discount">{{
                             errors.maximum_discount[0]
                         }}</small>
+                        <!-- [ONB-09 2026-08-28] L'ECRAN SE TAISAIT SUR UN POINT COUTEUX.
+                             `CouponService:418` n'applique le plafond que s'il est
+                             STRICTEMENT positif : a zero, la remise est ILLIMITEE.
+                             Un code -20 % cree avec 0 ici rend 50 EUR sur une commande
+                             de groupe a 250 EUR, sans que rien ne l'ait annonce. -->
+                        <p class="text-xs text-gray-400 mt-1" data-testid="coupon-maximum-discount-hint">
+                            {{ $t("label.maximum_discount_hint") }}
+                        </p>
                     </div>
                     <div class="form-col-12 sm:form-col-6">
                         <label for="limit_per_user" class="db-field-title">{{ $t("label.limit_per_user") }}</label>
@@ -163,9 +171,13 @@
                         <label class="db-field-title">{{ $t('label.valid_days_of_week') }}</label>
                         <div class="flex flex-wrap gap-3" role="group" aria-label="valid_days_of_week">
                             <label v-for="d in dayOptions" :key="d.id" class="inline-flex items-center gap-1">
-                                <input type="checkbox" :value="d.id" v-model="props.form.valid_days_of_week"
-                                    :id="'day_' + d.id" class="custom-checkbox-field" />
-                                <span class="custom-checkbox-span"></span>
+                                <!-- [AUDIT ABUSIF 2026-11-06 · W4-P1-3] Case DANS son conteneur relatif (.custom-checkbox) : sans lui, la case
+                                     invisible (absolute w-full h-full) couvrait tout le tiroir et captait le clic « Enregistrer ». -->
+                                <span class="custom-checkbox">
+                                    <input type="checkbox" :value="d.id" v-model="props.form.valid_days_of_week"
+                                        :id="'day_' + d.id" class="custom-checkbox-field" />
+                                    <i class="fa-solid fa-check custom-checkbox-icon"></i>
+                                </span>
                                 <span>{{ d.name }}</span>
                             </label>
                         </div>
@@ -175,9 +187,13 @@
                         <label class="db-field-title">{{ $t('label.surfaces') }}</label>
                         <div class="flex flex-wrap gap-3" role="group" aria-label="surfaces">
                             <label v-for="s in surfaceOptions" :key="s.id" class="inline-flex items-center gap-1">
-                                <input type="checkbox" :value="s.id" v-model="props.form.surfaces"
-                                    :id="'surface_' + s.id" class="custom-checkbox-field" />
-                                <span class="custom-checkbox-span"></span>
+                                <!-- [AUDIT ABUSIF 2026-11-06 · W4-P1-3] Case DANS son conteneur relatif (.custom-checkbox) : sans lui, la case
+                                     invisible (absolute w-full h-full) couvrait tout le tiroir et captait le clic « Enregistrer ». -->
+                                <span class="custom-checkbox">
+                                    <input type="checkbox" :value="s.id" v-model="props.form.surfaces"
+                                        :id="'surface_' + s.id" class="custom-checkbox-field" />
+                                    <i class="fa-solid fa-check custom-checkbox-icon"></i>
+                                </span>
                                 <span>{{ s.name }}</span>
                             </label>
                         </div>
@@ -201,6 +217,8 @@
                                 <span>{{ $t("button.close") }}</span>
                             </button>
                         </div>
+                        <!-- [AUDIT ABUSIF tour 3 · ECR-R3-002] L'erreur s'affichait en haut du tiroir, hors de l'écran : rien près d'« Enregistrer ». -->
+                        <p v-if="saveError" role="alert" class="db-field-alert mt-2" data-testid="coupon-save-error">{{ saveError }}</p>
                     </div>
                 </div>
             </form>
@@ -220,6 +238,14 @@ export default {
     name: "CouponCreateComponent",
     components: { SmSidebarModalCreateComponent, LoadingComponent, Datepicker },
     props: ["props"],
+    // [AUDIT ABUSIF 2026-11-06 · W4-P2] À l'édition, le champ « branches » s'affichait VIDE alors que le code était limité à
+    // la branche 2 : la liste n'était jamais recopiée dans le champ texte. Elle l'est à chaque ouverture.
+    watch: {
+        'props.form.branch_scope': {
+            handler(v) { this.branchScopeCsv = Array.isArray(v) ? v.join(',') : ''; },
+            immediate: true,
+        },
+    },
     data() {
         return {
             loading: {
@@ -234,6 +260,7 @@ export default {
             },
             image: "",
             errors: {},
+            saveError: '',
             // [PROMO-DASH-2026-05-06] Options scoping avancé
             dayOptions: [
                 { id: 'mon', name: this.$t('label.monday_short') || 'Mon' },
@@ -268,6 +295,7 @@ export default {
             appService.sideDrawerHide();
             this.$store.dispatch("coupon/reset").then().catch();
             this.errors = {};
+            this.saveError = '';
             this.$props.props.form = {
                 name: "",
                 description: "",
@@ -342,6 +370,11 @@ export default {
                 if (typeof this.props.form.status !== 'undefined' && this.props.form.status !== null && this.props.form.status !== '') {
                     fd.append('status', String(this.props.form.status));
                 }
+                // [AUDIT ABUSIF 2026-11-06 · W4-P2] Champ VIDÉ à l'édition = levée de la limite : on l'envoie vide (le serveur
+                // le met à null), sinon il gardait l'ancienne valeur malgré le message de succès.
+                if (!this.props.form.max_uses_global) fd.append('max_uses_global', '');
+                if (!this.props.form.valid_hours_start) fd.append('valid_hours_start', '');
+                if (!this.props.form.valid_hours_end) fd.append('valid_hours_end', '');
                 if (this.props.form.max_uses_global) {
                     fd.append('max_uses_global', String(this.props.form.max_uses_global));
                 }
@@ -351,15 +384,22 @@ export default {
                 if (this.props.form.valid_hours_end) {
                     fd.append('valid_hours_end', this.props.form.valid_hours_end);
                 }
-                if (Array.isArray(this.props.form.valid_days_of_week)) {
+                if (Array.isArray(this.props.form.valid_days_of_week) && this.props.form.valid_days_of_week.length) {
                     this.props.form.valid_days_of_week.forEach((d, i) => {
                         fd.append(`valid_days_of_week[${i}]`, d);
                     });
+                } else {
+                    // [AUDIT FINAL 2026-11-05 · C-P2-2] Même défaut que les canaux : tout décocher = tous les jours.
+                    fd.append('valid_days_of_week', '');
                 }
-                if (Array.isArray(this.props.form.surfaces)) {
+                if (Array.isArray(this.props.form.surfaces) && this.props.form.surfaces.length) {
                     this.props.form.surfaces.forEach((s, i) => {
                         fd.append(`surfaces[${i}]`, s);
                     });
+                } else {
+                    // [AUDIT FINAL 2026-11-05 · C-P2-2] Tout décocher = valable partout. Sans clé envoyée, le serveur gardait
+                    // l'ancienne restriction (« Web » seul) : le code restait limité sans que l'écran le montre.
+                    fd.append('surfaces', '');
                 }
                 // branch_scope: parse CSV "1,3" -> array of integers
                 const csv = (this.branchScopeCsv || '').trim();
@@ -368,8 +408,11 @@ export default {
                         .map((v) => v.trim())
                         .filter((v) => v !== '' && !isNaN(parseInt(v, 10)))
                         .forEach((v, i) => fd.append(`branch_scope[${i}]`, String(parseInt(v, 10))));
+                } else {
+                    fd.append('branch_scope', ''); // [W4-P2] branche vidée = valable partout
                 }
                 const tempId = this.$store.getters["coupon/temp"].temp_id;
+                this.saveError = '';
                 this.loading.isActive = true;
                 this.$store
                     .dispatch("coupon/save", {
@@ -411,7 +454,11 @@ export default {
                     })
                     .catch((err) => {
                         this.loading.isActive = false;
-                        this.errors = err.response.data.errors;
+                        const data = (err && err.response && err.response.data) || {};
+                        this.errors = data.errors || {};
+                        this.saveError = Object.keys(this.errors).length > 0
+                            ? 'Le code promo n\'est pas enregistré : corrigez les champs signalés en rouge.'
+                            : (data.message || 'Le code promo n\'est pas enregistré. Vérifiez la connexion et réessayez.');
                     });
             } catch (err) {
                 this.loading.isActive = false;

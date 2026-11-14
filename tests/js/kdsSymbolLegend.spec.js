@@ -80,7 +80,8 @@ describe('F2 — KDS symbol legend (onboarding)', () => {
         expect(SRC).toContain('data-testid="kds-legend-toggle"');
         expect(SRC).toContain('@click="toggleSymbolLegend"');
         expect(SRC).toContain('id="kds-symbol-legend"');
-        expect(SRC).toMatch(/v-show="showSymbolLegend"/);
+        // [KDS-TABLETTE 2026-10-19] masquée en plus sur le poste tablette (jamais sur le grand écran)
+        expect(SRC).toMatch(/v-show="showSymbolLegend(?: && !modeTablette)?"/);
         expect(SRC).toMatch(/v-for="grp in symbolLegend"/);
         // Les codes restent affichés : la légende est un AJOUT (data-testid dédié), on
         // ne doit PAS avoir supprimé le rendu symbolique existant.

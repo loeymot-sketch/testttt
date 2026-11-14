@@ -135,7 +135,11 @@ describe('PosComponent shortcuts — Wave X X2 main-page notifications', () => {
         expect(corps).not.toBeNull();
         expect(corps[0]).not.toMatch(/allowedTypes/);
         expect(corps[0]).not.toMatch(/orderTypeEnum\./);
-        expect(corps[0]).toMatch(/paymentStatusEnum\.REFUNDED/);
+        // [GOAL REMARQUES 2026-10-03 · R-016] Filtre dans estPretAuComptoir() : remboursé exclu, et la seule
+        // exception est la commande du site payée à emporter (panneau « Web payées »).
+        const filtre = source.match(/estPretAuComptoir\(o\)\s*\{[\s\S]+?\n {8}\},/);
+        expect(filtre).not.toBeNull();
+        expect(filtre[0]).toMatch(/paymentStatusEnum\.REFUNDED/);
     });
 
     it('readyOrders is sorted oldest-first (cashier clears the longest-waiting first)', () => {

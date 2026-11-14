@@ -124,6 +124,17 @@ class CashSessionReportController extends AdminController
 
         $data = $paginated->getCollection()->map(function (CashDrawerSession $s) {
             $openedAt = $s->opened_at instanceof Carbon ? $s->opened_at : ($s->opened_at ? Carbon::parse($s->opened_at) : null);
+            // [ULTRA-AUDIT 2026-09-26 · A20] Ce rapport listait "début et fin" de chaque
+            // session (mandat owner ci-dessus) mais ne portait AUCUN signal d'ancienneté :
+            // une session OPEN depuis 78 jours (2 sessions concurrentes constatées, chacune
+            // légitimement scopée par caissier — CashDrawerService::openSession I1 refuse
+            // seulement la double-ouverture du MÊME caissier, jamais un 2e caissier sur la
+            // même branche) apparaissait identique à une session ouverte depuis 10 minutes.
+            // Calcul seul, pas de blocage : une alerte manager / procédure de comptage
+            // formelle reste un chantier séparé, hors scope-minimal ici.
+            $openSinceHours = ($s->status === \App\Models\CashDrawerSession::STATUS_OPEN && $openedAt)
+                ? (int) round($openedAt->diffInHours(now()))
+                : null;
             return [
                 'id'                      => (int) $s->id,
                 'branch_id'               => (int) $s->branch_id,
@@ -139,6 +150,7 @@ class CashSessionReportController extends AdminController
                 'variance_reason'         => $s->variance_reason,
                 'status'                  => (string) $s->status,
                 'transactions_count'      => (int) ($s->movements_count ?? 0),
+                'open_since_hours'        => $openSinceHours,
             ];
         })->values()->all();
 

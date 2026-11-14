@@ -1,0 +1,1 @@
+Exécuter le plan autoritaire uniquement. Commencer par les contrats prix/snapshot et les tests ; les composants Vue ne sont que des émetteurs d'intention et des afficheurs du résultat serveur. Ne réaliser aucun paiement réel pendant les E2E.

@@ -81,6 +81,50 @@
                     tabindex="-1"
                     data-testid="receipt-hidden-print-button-kitchen">_</button>
             </div>
+            <!-- [Root cause 2026-09-21, owner : « demande imprimer ou non après paiement »]
+                 Avant ce bloc, le ticket client ne s'imprimait déjà JAMAIS automatiquement
+                 (RECEIPT-NO-AUTO 2026-07-24) — mais le choix restait IMPLICITE : les boutons
+                 « Ticket client » / « Ticket cuisine » étaient simplement disponibles dans la
+                 barre d'outils, sans qu'aucune décision explicite ne soit demandée. Le
+                 propriétaire veut une VRAIE question, posée à chaque encaissement frais (CB ET
+                 espèces — ce bloc ne distingue pas le moyen de paiement, comme le reste du
+                 composant), avant de laisser le caissier passer à la vente suivante. Ne concerne
+                 QUE le ticket CLIENT (le ticket cuisine reste sur son propre bouton, toujours
+                 disponible : il sert la préparation, pas une remise au client, et n'a jamais été
+                 dans le périmètre de la demande). Gated sur `clearCartOnClose` : un re-print
+                 depuis le tracker (PosOrdersTrackerComponent) n'est pas un encaissement frais et
+                 ne redemande pas. -->
+            <div
+                v-if="showPrintDecisionPrompt"
+                class="hidden-print pos-v5-print-decision"
+                role="dialog"
+                :aria-label="$t('pos.print_decision_title') || 'Imprimer le ticket ?'"
+            >
+                <p class="pos-v5-print-decision-title">
+                    {{ $t('pos.print_decision_title') || 'Imprimer le ticket client ?' }}
+                </p>
+                <div class="pos-v5-print-decision-actions">
+                    <button
+                        type="button"
+                        @click="choosePrintClient"
+                        :disabled="printingClient"
+                        :aria-busy="printingClient"
+                        data-testid="receipt-print-decision-yes"
+                        class="pos-v5-receipt-btn pos-v5-receipt-btn--client"
+                    >
+                        <span aria-hidden="true">🧾</span>
+                        {{ $t('pos.print_decision_yes') || 'Oui, imprimer' }}
+                    </button>
+                    <button
+                        type="button"
+                        @click="choosePrintDecline"
+                        data-testid="receipt-print-decision-no"
+                        class="pos-v5-receipt-btn pos-v5-receipt-btn--ghost"
+                    >
+                        {{ $t('pos.print_decision_no') || 'Non merci' }}
+                    </button>
+                </div>
+            </div>
             <div class="modal-body max-h-[75vh] overflow-y-auto space-y-6 px-2 pb-4">
                 <!-- Aperçu ticket CLIENT (composition structurée uniquement — fiscal / caisse) -->
                 <div>
@@ -99,6 +143,13 @@
                             <h3 class="text-2xl font-bold mb-1">{{ company.company_name }}</h3>
                             <h4 class="text-sm font-normal">{{ receiptBranch.address }}</h4>
                             <h5 class="text-sm font-normal">Tel: {{ receiptBranch.phone }}</h5>
+                        </div>
+                        <!-- [LIVRAISON-TICKETS 2026-11-10 · T-1.2.1] Bloc CLIENT : même vérité que le ticket thermique
+                             (CoordonneesClientTicket côté serveur, via OrderDetailsResource : pos_customer_name/phone déjà
+                             repliés sur le compte du client du site, order_address pour une livraison). -->
+                        <div v-if="clientLines.length" data-testid="receipt-client-block"
+                            class="text-xs text-left py-1.5 border-b border-dashed border-gray-400 text-heading">
+                            <p v-for="(line, idx) in clientLines" :key="'cli-' + idx" :class="idx === 0 ? 'font-bold' : ''">{{ line }}</p>
                         </div>
 
                         <table class="w-full my-1.5">
@@ -153,7 +204,7 @@
                                             class="text-xs leading-5 font-normal text-heading max-w-[200px]">
                                             {{ $t('label.extras') }}:
                                             <span v-for="(extra, index) in receiptExtrasFor(item)" :key="'extra-' + idx + '-' + index">
-                                                <template v-if="extra.quantity > 1">{{ extra.quantity }}× </template>{{ extra.name }}<template v-if="extra.line_total > 0"> (+{{ formatReceiptAddonPrice(extra.line_total) }})</template>
+                                                <template v-if="extra.quantity > 1">{{ extra.quantity }}× </template>{{ extra.name }}<template v-if="extra.offered"> (<strong>{{ $t('pos.offered_badge') }}</strong>)</template><template v-else-if="extra.line_total > 0"> (+{{ formatReceiptAddonPrice(extra.line_total) }})</template>
                                                 <span v-if="index + 1 < receiptExtrasFor(item).length">, </span>
                                             </span>
                                         </p>
@@ -251,6 +302,14 @@
                                             </td>
                                         </tr>
                                     </template>
+                                    <template v-else-if="paymentLines.length === 0 && doorPaymentLabel">
+                                        <!-- [LIVRAISON-TICKETS 2026-11-10 · T-1.2.1] Livraison pas encore encaissée : le mode CHOISI
+                                             par le client sur le site, jamais « à régler en caisse ». -->
+                                        <tr>
+                                            <td colspan="2" class="pt-1 pb-1 pr-1 text-start font-semibold" data-testid="receipt-door-payment">
+                                                {{ $t('label.pay_at_delivery') }} : {{ doorPaymentLabel }}</td>
+                                        </tr>
+                                    </template>
                                     <template v-else-if="paymentLines.length > 1">
                                         <tr>
                                             <td colspan="2" class="pt-1 pb-0.5 text-start font-semibold">{{ $t('label.tendered_breakdown') }}</td>
@@ -326,8 +385,9 @@
                                     <td class="py-1.5 align-top text-base font-black">{{ item.quantity }}×</td>
                                     <td class="py-1.5">
                                         <template v-for="(line, li) in kitchenSymbolicLines(item)" :key="'ks-' + idx + '-' + li">
-                                            <p v-if="line.type === 'symbolic-main'" class="text-base font-black tracking-wide leading-snug">{{ line.label }}</p>
-                                            <p v-else-if="line.type === 'supplement'" class="text-sm font-bold leading-snug mt-0.5">{{ line.label }}</p>
+                                            <p v-if="line.type === 'symbolic-main'" class="text-base font-black tracking-wide leading-snug"><span v-if="line.hasSupplement">#&nbsp;</span>{{ line.label }}</p>
+                                            <!-- [GOAL #7 2026-10-02] supplément : gras BLANC sur cadre NOIR (lecture inversée) ; « # » gras en tête de la ligne produit. -->
+                                            <p v-else-if="line.type === 'supplement'" class="text-sm font-bold leading-snug mt-0.5"><span style="display:inline-block;background:#000;color:#fff;padding:1px 6px;border-radius:3px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">{{ String(line.label || '').replace(/^\s*⭐\s*/u, '') }}</span></p>
                                             <p v-else-if="line.type === 'symbolic-menu'" class="text-sm font-black leading-snug mt-0.5">{{ line.label }}</p>
                                         </template>
                                         <p v-if="kitchenInstructionText(item)"
@@ -355,6 +415,7 @@ import appService from "../../../services/appService";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
+import paymentStatusEnum from "../../../enums/modules/paymentStatusEnum";
 import ReceiptDuplicataMarker from "./ReceiptDuplicataMarker.vue";
 import { sanitizeKdsInstruction } from "../../../helpers/kdsCustomization";
 import { renderItemSymbolic, extraDisplayName } from "../../../helpers/kdsSymbolic";
@@ -387,6 +448,11 @@ export default {
     data() {
         return {
             localPrintCount: null,
+            // [Root cause 2026-09-21, owner : « demande imprimer ou non après paiement »]
+            // Id de la commande pour laquelle le caissier a DÉJÀ répondu à la question (Oui ou
+            // Non) — évite de reposer la question si le composant se re-rend avec la MÊME
+            // commande (ex. mise à jour de receipt_print_count après un clic manuel ultérieur).
+            printDecisionAnsweredForOrderId: null,
             // [PRINT-INSTANT 2026-07-06] Verrous PAR ticket (client / cuisine) : les deux
             // pipelines peuvent tourner EN PARALLÈLE (plus de série 10-25 s) et un
             // double-clic sur le même bouton reste dédupliqué.
@@ -438,6 +504,16 @@ export default {
         autoPrintClientReceipt: function () {
             return !!(typeof window !== 'undefined' && window.foodkingConfig?.printing?.autoPrintClientReceipt);
         },
+        // [Root cause 2026-09-21, owner : « demande imprimer ou non après paiement »] Une
+        // question explicite, pas seulement un bouton disponible — uniquement pour un
+        // encaissement FRAIS (clearCartOnClose=true, jamais un re-print du tracker), et une
+        // seule fois par commande (voir printDecisionAnsweredForOrderId).
+        showPrintDecisionPrompt: function () {
+            return !!(this.clearCartOnClose
+                && !this.autoPrintClientReceipt
+                && this.order?.id
+                && this.printDecisionAnsweredForOrderId !== this.order.id);
+        },
         company: function () {
             return this.$store.getters['company/lists'];
         },
@@ -461,6 +537,48 @@ export default {
         },
         paymentLines: function () {
             return buildPaymentLines(this.order);
+        },
+        // [LIVRAISON-TICKETS 2026-11-10 · T-1.2.1] Lignes « client » du reçu : nom, téléphone, adresse de livraison.
+        // Le serveur a déjà fait le repli caisse → compte client (OrderDetailsResource) ; ici on n'invente rien.
+        clientLines: function () {
+            const o = this.order || {};
+            const lines = [];
+            const name = String(o.pos_customer_name || '').trim();
+            if (name) lines.push(this.$t('label.customer') + ' : ' + name);
+            const phone = String(o.pos_customer_phone || '').trim();
+            if (phone) lines.push(this.$t('label.phone') + ' : ' + phone);
+            const a = o.order_address;
+            const voie = a ? String(a.address || '').trim() : '';
+            if (Number(o.order_type) === orderTypeEnum.DELIVERY && a && (voie || String(a.postal_code || '').trim() || String(a.city || '').trim())) {
+                // Comme le PHP (`lignesAdresseLivraison`) : une voie vide n'efface pas « CP commune » (relecture adverse cycle 2).
+                if (voie) lines.push(this.$t('label.deliver_to') + ' : ' + voie);
+                if (String(a.apartment || '').trim()) lines.push(String(a.apartment).trim());
+                const cp = String(a.postal_code || '').trim();
+                const commune = String(a.city || '').trim();
+                // Même règle que CoordonneesClientTicket::localite (PHP — à garder IDENTIQUE) : la voie venue de la BAN porte souvent
+                // déjà « 62110 Hénin-Beaumont » ; comparaison sans accents (« œ » → « oe »), ni casse, ni apostrophes typographiques ;
+                // commune cherchée en MOT entier (« Ham » n'est pas dans « rue du Hameau »), code postal en nombre entier. Voie avec la
+                // commune sans le code → le code seul ; voie avec le code sans la commune → la commune seule ; sinon « CP commune ».
+                const plat = (s) => String(s || '').replace(/[’‘`]/g, "'").replace(/œ/gi, 'oe').replace(/æ/gi, 'ae')
+                    .normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+                const echap = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const voieAvecCommune = !!commune && new RegExp('(?:^|[^a-z0-9])' + echap(plat(commune)) + '(?![a-z0-9])').test(plat(a.address));
+                const voieAvecCp = !!cp && new RegExp('(?:^|\\D)' + echap(cp) + '(?!\\d)').test(String(a.address));
+                const ville = voieAvecCommune ? (voieAvecCp ? '' : cp) : (voieAvecCp ? commune : [cp, commune].filter(Boolean).join(' '));
+                if (ville) lines.push(voie ? ville : this.$t('label.deliver_to') + ' : ' + ville);
+            }
+            return lines;
+        },
+        // Livraison à encaisser À LA PORTE : libellé du moyen choisi (espèces / carte au livreur / titre-restaurant) ;
+        // null si payée, si ce n'est pas une livraison, ou si un paiement en ligne est en cours (règle habituelle).
+        doorPaymentLabel: function () {
+            const o = this.order || {};
+            if (Number(o.order_type) !== orderTypeEnum.DELIVERY) return null;
+            if (Number(o.payment_status) === paymentStatusEnum.PAID) return null;
+            const m = Number(o.payment_method);
+            if (m === 5) return this.$t('label.ticket_restaurant');
+            if (m !== 1) return null;
+            return String(o.door_payment_mode || '') === 'card' ? this.$t('label.card_to_courier') : this.$t('label.cash');
         },
         nf525FooterLines: function () {
             return buildNf525Footer(this.order);
@@ -612,6 +730,19 @@ export default {
             this.$nextTick(() => {
                 this.handlePrintClientClick();
             });
+        },
+        // [Root cause 2026-09-21, owner : « demande imprimer ou non après paiement »]
+        // Les deux réponses à la question posée par showPrintDecisionPrompt.
+        choosePrintClient() {
+            if (this.order?.id) {
+                this.printDecisionAnsweredForOrderId = this.order.id;
+            }
+            this.handlePrintClientClick();
+        },
+        choosePrintDecline() {
+            if (this.order?.id) {
+                this.printDecisionAnsweredForOrderId = this.order.id;
+            }
         },
         /**
          * Ticket client : incrément NF525 + audit via POST print-receipt.
@@ -858,6 +989,30 @@ export default {
     padding: var(--pos-v5-space-3) var(--pos-v5-space-4) !important;
     background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%) !important;
     border-bottom: 1px solid var(--pos-v5-border) !important;
+}
+
+/* [Root cause 2026-09-21, owner : « demande imprimer ou non après paiement »] */
+.pos-v5-print-decision {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--pos-v5-space-3);
+    padding: var(--pos-v5-space-4);
+    background: var(--pos-v5-bg-panel) !important;
+    border-bottom: 1px solid var(--pos-v5-border) !important;
+    text-align: center;
+}
+.pos-v5-print-decision-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--pos-v5-ink);
+    margin: 0;
+}
+.pos-v5-print-decision-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--pos-v5-space-3);
 }
 
 .pos-v5-receipt-btn {

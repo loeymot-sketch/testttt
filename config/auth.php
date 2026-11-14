@@ -155,4 +155,20 @@ return [
         'decay_minutes' => max(1, (int) env('LOGIN_LOCKOUT_DECAY_MINUTES', 10)),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Compte de revue App Store / Google Play (décision propriétaire 2026-10-15)
+    |--------------------------------------------------------------------------
+    | Apple examine l'application CONTRE la production et ne peut pas lire nos e-mails.
+    | Pour CE SEUL e-mail (compte invité sans valeur, créé par `foodking:review-account`),
+    | le code de connexion est FIXE (4 chiffres) et n'est pas envoyé. Les TROIS valeurs sont
+    | requises : sans `until` (AAAA-MM-JJ) ou une fois cette date passée, la porte est fermée.
+    | Vide par défaut = éteint. Voir GuestSignupController::codeDeRevuePour.
+    */
+    'app_review' => [
+        'email' => env('APP_REVIEW_EMAIL', ''),
+        'otp'   => env('APP_REVIEW_OTP', ''),
+        'until' => env('APP_REVIEW_UNTIL', ''),
+    ],
+
 ];

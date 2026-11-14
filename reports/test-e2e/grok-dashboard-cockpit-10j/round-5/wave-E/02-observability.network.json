@@ -1,0 +1,41 @@
+[
+  {
+    "kind": "failed",
+    "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1788286711838
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:9100/health",
+    "method": "GET",
+    "failure": "net::ERR_CONNECTION_REFUSED",
+    "ts": 1788286715746
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:9101/health",
+    "method": "GET",
+    "failure": "net::ERR_CONNECTION_REFUSED",
+    "ts": 1788286715747
+  },
+  {
+    "kind": "http",
+    "url": "http://127.0.0.1:8766/api/admin/observability/interrupteurs/wheel",
+    "method": "PUT",
+    "status": 403,
+    "resourceType": "fetch",
+    "ts": 1788286745398,
+    "bodySnippet": "{\n    \"message\": \"User does not have the right roles.\",\n    \"exception\": \"Spatie\\\\Permission\\\\Exceptions\\\\UnauthorizedException\",\n    \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/spatie/laravel-permission/src/Exceptions/UnauthorizedException.php\",\n    \"line\": 21,\n    \"trace\": [\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/spatie/laravel-permission/src/Middlewares/RoleMiddleware.php\",\n            \"line\": 24,\n            \"function\": \"forRoles\",\n            \"class\": \"Spatie\\\\Permission\\\\Exceptions\\\\UnauthorizedException\",\n            \"type\": \"::\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php\",\n            \"line\": 180,\n            \"function\": \"handle\",\n            \"class\": \"Spatie\\\\Permission\\\\Middlewares\\\\RoleMiddleware\",\n            \"type\": \"->\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Middleware/localization.php\",\n            \"line\": 33,\n            \"function\": \"Illuminate\\\\Pipeline\\\\{closure}\",\n            \"class\": \"Illuminate\\\\Pipeline\\\\Pipeline\",\n            \"type\": \"->\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php\",\n            \"line\": 180,\n            \"function\": \"handle\",\n     "
+  },
+  {
+    "kind": "forced-put",
+    "url": "http://127.0.0.1:8766/api/admin/observability/interrupteurs/wheel",
+    "method": "PUT",
+    "status": 403,
+    "bodySnippet": "{\n    \"message\": \"User does not have the right roles.\",\n    \"exception\": \"Spatie\\\\Permission\\\\Exceptions\\\\UnauthorizedException\",\n    \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/spatie/laravel-permission/src/Exceptions/UnauthorizedException.php\",\n    \"line\": 21,\n    \"trace\": [\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/spatie/laravel-permission/src/Middlewares/RoleMiddleware.php\",\n            \"line\": 24,\n            \"function\": \"forRoles\",\n            \"class\": \"Spatie\\\\Permission\\\\Exceptions\\\\UnauthorizedException\",\n            \"type\": \"::\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php\",\n            \"line\": 180,\n            \"function\": \"handle\",\n            \"class\": \"Spatie\\\\Permission\\\\Middlewares\\\\RoleMiddleware\",\n            \"type\": \"->\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Middleware/localization.php\",\n            \"line\": 33,\n            \"function\": \"Illuminate\\\\Pipeline\\\\{closure}\",\n            \"class\": \"Illuminate\\\\Pipeline\\\\Pipeline\",\n            \"type\": \"->\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php\",\n            \"line\": 180,\n            \"function\": \"handle\",\n     ",
+    "forced": true,
+    "ts": 1788286746455
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "location": {
+      "url": "http://127.0.0.1:8766/api/frontend/delivery/suggest?q=12%20rue%20de%20la%20Gare%2062300%20Lens",
+      "line": 0,
+      "column": 0,
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1792789528929
+  }
+]

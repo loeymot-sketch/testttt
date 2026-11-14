@@ -34,8 +34,8 @@
                Card height ~80px, sheet total ~150px (-60% vs v2). -->
           <div class="kiosk-cart-strip-thumb">
             <img
-              v-if="item.image"
-              :src="item.image"
+              v-if="lineImage(item)"
+              :src="lineImage(item)"
               :alt="item.name"
               class="kiosk-cart-strip-img"
               loading="lazy"
@@ -110,6 +110,8 @@
  *  - Pas de side-effect sur le store (delegate à l'appelant)
  *  - Style scoped, tokens --kiosk-bold-* pour cohérence light mode
  */
+import { kioskLinePhoto } from '../../../../helpers/kioskMedia';
+
 export default {
     name: 'KsCartBottomSheet',
     props: {
@@ -124,6 +126,11 @@ export default {
         labels: {
             type: Object,
             default: () => ({}),
+        },
+        // [PAIN-PHOTO 2026-10-29] Catalogue (kioskMenu/allItems) : sert à montrer la photo de la GALETTE sur une ligne « Galette ».
+        catalog: {
+            type: Array,
+            default: () => [],
         },
     },
     emits: ['increment', 'decrement'],
@@ -165,6 +172,10 @@ export default {
         },
     },
     methods: {
+        lineImage(item) {
+            const cat = (this.catalog || []).find((i) => String(i.id) === String(item && item.item_id)) || null;
+            return kioskLinePhoto(cat, ((item && item.item_variations) || []).map((v) => v && v.id), this.catalog, (item && item.image) || null);
+        },
         truncate(str, max) {
             if (!str || typeof str !== 'string') return '';
             return str.length > max ? str.slice(0, Math.max(0, max - 1)) + '…' : str;

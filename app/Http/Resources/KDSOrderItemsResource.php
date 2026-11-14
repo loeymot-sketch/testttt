@@ -17,7 +17,9 @@ class KDSOrderItemsResource extends JsonResource
     {
         return [
             'item_id'            => $this->item_id,
-            'item_name'          => $this->orderItem?->name,
+            'item_name'          => $this->manual_label ?: $this->orderItem?->name,
+            'line_type'          => $this->line_type ?: \App\Models\OrderItem::LINE_TYPE_CATALOG,
+            'manual_label'       => $this->manual_label,
             'quantity'           => $this->quantity,
             // [POS-OUTPUT-AUDIT 2026-06-24 P2-KDS-SSOT] Prefer the immutable
             // composition_snapshot (NF525 SSOT) like OrderItemResource — the

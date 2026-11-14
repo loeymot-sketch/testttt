@@ -22,6 +22,8 @@ const cp = require('child_process');
 
 // ── Faux worker PowerShell (persistant) ──────────────────────────────────────
 const spawnCalls = [];
+// [FILE-PERIMEE 2026-10-20] État simulé de l'imprimante + journal de ce que le worker reçoit.
+const fake = { status: 'online', purged: 0, tickResponds: true, printResponds: true, lines: [] };
 function fakeSpawn(cmd, args, opts) {
   spawnCalls.push({ cmd, args, opts });
   const child = new EventEmitter();
@@ -32,8 +34,15 @@ function fakeSpawn(cmd, args, opts) {
     write(line) {
       // Répond READY une fois, puis OK <fichier> avec 300 ms de délai (simule
       // l'impression LENTE) — la réponse HTTP 202 doit partir AVANT.
-      const file = String(line).trim().split('|')[1];
-      setTimeout(() => child.stdout.emit('data', 'OK ' + file + '\n'), 300);
+      const txt = String(line).trim();
+      fake.lines.push(txt);
+      if (txt.startsWith('#TICK|')) {
+        // Commande de contrôle : réponse immédiate « OK tick <état> <supprimés> ».
+        if (fake.tickResponds) setTimeout(() => child.stdout.emit('data', 'OK tick ' + fake.status + ' ' + fake.purged + '\n'), 1);
+        return true;
+      }
+      const file = txt.split('|')[1];
+      if (fake.printResponds) setTimeout(() => child.stdout.emit('data', 'OK ' + file + '\n'), 300);
       return true;
     },
   };
@@ -95,8 +104,65 @@ async function main() {
   assert.strictEqual(spawnCalls[0].opts && spawnCalls[0].opts.windowsHide, true, 'windowsHide:true requis (flash console)');
   assert.strictEqual(spawnCalls[0].cmd, 'powershell.exe');
 
+  // ── [FILE-PERIMEE 2026-10-20] Porte « imprimante hors ligne » + purge des tickets périmés ──
+  const jobsRecus = () => fake.lines.filter((l) => !l.startsWith('#TICK|')).length;
+  const ticks = () => fake.lines.filter((l) => l.startsWith('#TICK|'));
+
+  // 6. Imprimante HORS LIGNE : 503 printer_offline, et RIEN n'est transmis au spouleur.
+  fake.status = 'offline';
+  await bridge.tickPrinter(120);
+  assert.strictEqual(bridge._printerState.status, 'offline', 'le contrôle doit mémoriser « offline »');
+  const avant = jobsRecus();
+  const refus = await request(port, 'POST', '/raw', Buffer.from([0x1b, 0x40, 0x44]));
+  assert.strictEqual(refus.status, 503, 'hors ligne : /raw doit répondre 503, reçu ' + refus.status);
+  assert.deepStrictEqual(JSON.parse(refus.body), { queued: false, error: 'printer_offline' });
+  await new Promise((r) => setTimeout(r, 100));
+  assert.strictEqual(jobsRecus(), avant, 'hors ligne : AUCUN octet ne doit atteindre le spouleur');
+
+  // 7. Imprimante REVENUE alors que l'état mémorisé dit encore « offline » : le contrôle en
+  //    direct l'emporte → le ticket passe (202), il n'est pas refusé à tort.
+  fake.status = 'online';
+  const revenue = await request(port, 'POST', '/raw', Buffer.from([0x1b, 0x40, 0x45]));
+  assert.strictEqual(revenue.status, 202, 'imprimante revenue : 202 attendu, reçu ' + revenue.status);
+  await new Promise((r) => setTimeout(r, 400));
+  assert.strictEqual(jobsRecus(), avant + 1, 'le ticket doit atteindre le spouleur');
+
+  // 8. Statut INCONNU (requête en erreur côté Windows) : la porte reste OUVERTE.
+  fake.status = 'unknown';
+  await bridge.tickPrinter(120);
+  const inconnu = await request(port, 'POST', '/raw', Buffer.from([0x1b, 0x40, 0x46]));
+  assert.strictEqual(inconnu.status, 202, 'statut inconnu : on imprime quand même (porte ouverte)');
+  await new Promise((r) => setTimeout(r, 400));
+
+  // 9. Purge : la commande transmet le nom d'imprimante ET l'âge maximum ; le nombre supprimé remonte.
+  fake.status = 'online'; fake.purged = 3;
+  const avantTicks = ticks().length;
+  await bridge.tickPrinter(120);
+  assert.strictEqual(bridge._printerState.purged, 3, 'le nombre de tickets supprimés doit remonter');
+  const derniere = ticks()[ticks().length - 1];
+  assert.strictEqual(ticks().length, avantTicks + 1);
+  assert.strictEqual(derniere, '#TICK|' + bridge.PRINTER + '|120', 'commande attendue, reçu ' + derniere);
+  fake.purged = 0;
+
+  // 9b. Contrôle en direct FIGÉ : la porte ne suspend pas la réponse HTTP, elle laisse passer après 3 s.
+  fake.status = 'offline';
+  await bridge.tickPrinter(120);
+  fake.tickResponds = false; fake.printResponds = false;   // worker figé : ne répond plus à RIEN
+  const t1 = Date.now();
+  const fige = await request(port, 'POST', '/raw', Buffer.from([0x1b, 0x40, 0x47]));
+  const attente = Date.now() - t1;
+  assert.strictEqual(fige.status, 202, 'contrôle figé : le ticket doit passer, reçu ' + fige.status);
+  assert.ok(attente >= 2500 && attente < 4500, 'la porte doit attendre ~3 s puis laisser passer — mesuré ' + attente + ' ms');
+
+  // 10. Le script PowerShell du worker ne touche QUE les jobs de CETTE imprimante, plus vieux que
+  //     la limite, et jamais ceux sans date (un « null » est plus ancien que tout en PowerShell).
+  const src = require('fs').readFileSync(require('path').join(__dirname, 'caisse-bridge.js'), 'utf8');
+  assert.ok(/Get-PrintJob -PrinterName \$p/.test(src), 'la purge doit être bornée à l\'imprimante du pont');
+  assert.ok(/\$_\.SubmittedTime -and \$_\.SubmittedTime -lt \$lim/.test(src), 'jamais de suppression d\'un job sans date');
+  assert.ok(!/Get-PrintJob\s*\|/.test(src) && !/Get-PrintJob -ErrorAction/.test(src), 'jamais « tous les jobs de toutes les imprimantes »');
+
   await new Promise((r) => server.close(r));
-  console.log('caisse-bridge.test.js — 5/5 assertions groupes OK (202 queued immédiat, compile unique, health, 400 vide, windowsHide)');
+  console.log('caisse-bridge.test.js — 11/11 assertions groupes OK (202 queued immédiat, compile unique, health, 400 vide, windowsHide, porte hors ligne 503, imprimante revenue, fail-open, purge périmés, périmètre PowerShell)');
   process.exit(0);
 }
 

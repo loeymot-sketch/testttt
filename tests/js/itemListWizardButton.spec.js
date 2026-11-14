@@ -53,9 +53,31 @@ describe('ItemListComponent — wizard button (T-WC-LIST-01)', () => {
             new RegExp("name:\\s*'admin\\.items\\.composer'\\s*,\\s*params:\\s*\\{\\s*id:\\s*item\\.id\\s*\\}"),
         );
 
-        // Visual sentinel: cog icon (lab-cog) marks the wizard / configuration concept
-        // and is the only icon present on this new control.
-        expect(source).toContain('lab-cog');
+        // [ONB 2026-08-28] Cette assertion se disait « visual sentinel » et epinglait
+        // `lab-cog` — une classe que la fonte d'icones NE DEFINIT PAS. Le bouton se
+        // rendait donc VIDE, sans pictogramme, et ce banc garantissait que ca continue.
+        // Verifie a l'ecran : c'est une capture qui l'a montre, pas un test.
+        //
+        // On garde l'intention — un bouton de configuration porte une icone — mais on
+        // exige desormais une icone qui EXISTE. Sinon la sentinelle atteste la presence
+        // d'une classe, pas celle d'un pictogramme.
+        const fonte = readSource(
+            resolve(process.cwd(), 'public/themes/default/fonts/lab/lab.css'),
+        );
+
+        const iconeDuBouton = 'lab-settings';
+
+        expect(source).toContain(iconeDuBouton);
+        expect(
+            fonte,
+            `${iconeDuBouton} doit etre definie dans la fonte, sinon le bouton se rend vide`,
+        ).toContain(`.${iconeDuBouton}:before`);
+
+        expect(
+            source.includes('lab-cog'),
+            'lab-cog est revenue : elle n\'existe pas dans la fonte et le bouton '
+            + 'redeviendrait vide.',
+        ).toBe(false);
 
         // Anchor the button to the actions block: the per-row wrapper span
         // immediately precedes the data-testid for the new button. The proximity

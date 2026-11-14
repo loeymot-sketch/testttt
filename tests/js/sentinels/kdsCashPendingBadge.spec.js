@@ -41,7 +41,7 @@ describe('KDS cash-pending NOTE (non-blocking) — owner reversal GOAL-2026-05-3
     });
 
     it('Template renders the cash-pending NOTE with v-if="isCashPending"', () => {
-        expect(cardSource).toMatch(/v-if="isCashPending"[\s\S]{0,260}kds-card__cash-pending/);
+        expect(cardSource).toMatch(/v-if="isCashPending(?: && !tablette)?"[\s\S]{0,260}kds-card__cash-pending/);
     });
 
     it('Cash-pending element is a NOTE (role="status", not a button)', () => {

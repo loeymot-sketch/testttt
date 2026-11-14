@@ -38,6 +38,16 @@ class ItemExtraManagementTest extends TestCase
         return env('MIX_API_KEY', 'test-api-key');
     }
 
+    // [ONB-02 T-2.1.3 2026-08-27] tax_id est désormais obligatoire (article sans taxe = facturé 0 % en silence)
+    private function taxeDeTest(): \App\Models\Tax
+    {
+        return \App\Models\Tax::firstOrCreate(
+            ['code' => 'TEST-VAT-10'],
+            ['name' => 'TVA 10 % (test)', 'tax_rate' => 10,
+             'type' => \App\Enums\TaxType::PERCENTAGE, 'status' => \App\Enums\Status::ACTIVE]
+        );
+    }
+
     public function test_item_store_creates_extras(): void
     {
         $branch = \Database\Factories\BranchFactory::new()->create();
@@ -58,6 +68,7 @@ class ItemExtraManagementTest extends TestCase
             'is_featured' => 1,
             'status' => Status::ACTIVE,
             'order' => 1,
+            'tax_id' => $this->taxeDeTest()->id,
             'extras' => json_encode([
                 ['name' => 'Supplément Fromage', 'price' => 1.00, 'status' => Status::ACTIVE],
                 ['name' => 'Supplément Jambon', 'price' => 1.00, 'status' => Status::ACTIVE],
@@ -95,6 +106,7 @@ class ItemExtraManagementTest extends TestCase
             'is_featured' => 1,
             'status' => Status::ACTIVE,
             'order' => 1,
+            'tax_id' => $this->taxeDeTest()->id,
             'extras' => json_encode([
                 ['name' => 'New Extra', 'price' => 2.00, 'status' => Status::ACTIVE],
             ]),

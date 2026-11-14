@@ -1,0 +1,69 @@
+{
+  "wave": "adv",
+  "round": 3,
+  "date": "2026-11-06",
+  "scope": "git diff 31a2401ea..b6afaf015 (app/ config/ routes/ PosComponent.vue posOrder.js coupons) + site 5120c3b..6208324 (api.js funnel.jsx)",
+  "frozen_zone_diff": "0 ligne (Fiscal, PricingService, BranchScope, IdempotencyKeyMiddleware, OrderStateMachine, PaymentComponent.vue, pos-wizard.js)",
+  "nf525_chain": "php artisan fiscal:verify-chain --all -> CHAIN OK sur 7 branches (base locale foodking_e2e)",
+  "findings": [
+    {
+      "id": "R3-ADV-001",
+      "severity": "P1",
+      "class": "contournement de W3-P1-1 (formule non payee annoncee en cuisine)",
+      "file_line": "app/Services/FrontendOrderService.php:2078 (menuPaye = n'importe quel role menu_*) et :2108 (Frites|Boisson menu gardees sans regarder QUEL role)",
+      "description": "La liste blanche garde 'Boisson menu: ...' et 'Frites: ...' des qu'UN addon menu_* est present. Un client qui paie la formule 'frites seules' (menu_frites, ratio 0,6) ajoute 'Boisson menu: Coca-Cola' a l'instruction : la cuisine affiche le badge 'FRITES : MAY' ET la note 'Boisson menu: Coca-Cola'. Miroir : menu_boisson + 'Frites: Classique' -> badge 'BOISSON' + note 'Frites: Classique'. Le site ne produit jamais ces lignes pour ces roles (cascade_drink seulement pour full|boisson, cascade_frites_sauce pour full|frites).",
+      "repro": "Test PHPUnit jetable tests/Feature/Zz/ZzR3AdvFormulePartielleTest.php (copie : scratchpad/r3adv/), chaine REELLE FrontendOrderService::sansFormuleNonPayee -> KitchenTicketSymbolicFormatter::cleanInstruction + menuBadge. Temoin menu_full : PASS. menu_frites : FAIL 'Frites: Classique\\nBoisson menu: Coca-Cola' contient 'Coca' (badge FRITES : MAY). menu_boisson : FAIL contient 'Frites' (badge BOISSON). Le test mord (2 rouges sur le defaut).",
+      "impact": "≈0,60 € + une boisson (ou des frites) servie non payee par ligne ; meme classe que W3-P1-1 classe P1 au tour 1. Requiert un payload forge.",
+      "fix_hint": "menuPaye par role : 'Boisson menu' seulement si menu_full|menu_boisson, 'Frites'/'Sauce frites' seulement si menu_full|menu_frites (idealement lu dans le snapshot price, pas dans le payload)."
+    },
+    {
+      "id": "R3-ADV-002",
+      "severity": "P2",
+      "class": "contournement de W4-P2 (sessions fermees au changement de mot de passe)",
+      "file_line": "app/Services/DeliveryBoyService.php:113, app/Services/ChefService.php:110 (idem WaiterService.php:111, CustomerService.php:110, AdministratorService.php:100 par lecture)",
+      "description": "Le correctif ne revoque les jetons qu'au update() d'EmployeeService. Changer le mot de passe d'un livreur ou d'un chef par sa FICHE (PUT /api/admin/delivery-boy/{id}, /api/admin/chef/{id}) laisse ses jetons ouverts ; seul changePassword() les revoque.",
+      "repro": "Test PHPUnit jetable ZzR3AdvSessionsSoeursTest (scratchpad/r3adv/) : Branch Manager (delivery-boys_edit, chefs_edit), cible avec 1 jeton, PUT avec password -> 200, tokens_apres=1 pour le livreur ET le chef (2 FAIL). Le jumeau EmployeeAbusGuardTest passe pour /employee : le test mord bien sur les services freres seulement.",
+      "impact": "Un livreur congedie dont on change le mot de passe par sa fiche garde l'application livreur (encaissement, remise) jusqu'a 8 h."
+    },
+    {
+      "id": "R3-ADV-003",
+      "severity": "P3",
+      "class": "hypothese - regression caisse (cle d'idempotence)",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:6609-6615, :8229-8231 ; ReceiptComponent.vue:558-571 ; PaymentComponent.vue:1091",
+      "description": "Apres une vente reussie, le panier (et donc la cle) n'est vide qu'au clic 'Fermer' du recu (resetCart differe). Si l'onglet est recharge/ferme recu ouvert, le panier paye revient (posCart 2 h) avec la MEME cle (localStorage 2 h). Une 2e vente volontairement identique de ce panier serait rejouee par le serveur (premiere vente renvoyee, aucune nouvelle vente fiscale) alors que le caissier encaisse.",
+      "repro": "Non executee (lecture de code). Non recevable en P1."
+    },
+    {
+      "id": "R3-ADV-004",
+      "severity": "P3",
+      "class": "hypothese - surface dormante sans liste blanche ni code promo",
+      "file_line": "app/Http/Controllers/Table/OrderController.php:46 -> OrderService::tableOrderStore ; app/Http/Requests/TableOrderRequest.php:57",
+      "description": "La commande a table par QR (non authentifiee) accepte coupon_id sans coupon_code et une instruction libre non assainie. Fermee en V1 (pos_dine_in_enabled=false -> 404) : a traiter avant d'activer le sur place."
+    },
+    {
+      "id": "R3-ADV-005",
+      "severity": "P3",
+      "class": "hypothese - note client coupee",
+      "file_line": "app/Services/FrontendOrderService.php:2142",
+      "description": "contenuNeutre coupe chaque ligne gardee a 300 caracteres. Le site borne la note a 190 unites UTF-16, donc hors d'atteinte en pratique ; une ancienne app ou une expansion NFKC (ligatures arabes) pourrait couper la fin d'une note (ALLERGIE en dernier). Non reproduit."
+    },
+    {
+      "id": "R3-ADV-006",
+      "severity": "P3",
+      "class": "hypothese - compatibilite app des stores",
+      "description": "Un paquet app/www construit avant 2432ca4 n'envoie pas coupon_code : toute commande avec code promo -> 422 'Ce code promo n'est pas valable'. Sans effet si aucune version n'est publiee ; sinon bumper majRequise."
+    }
+  ],
+  "attacked_without_finding": [
+    "Code promo : majuscules/espaces (mb_strtolower+trim des deux cotes ; le site envoie res.code du serveur) ; vitrine et roue passent par checkCoupon ; aucune autre voie web de creation (OrderService::myOrderStore sans appelant ; table QR dormante).",
+    "Concurrence coupon : verrou de la ligne coupon AVANT les deux comptages, comptages en jointure FOR UPDATE (pas de whereHas), order_coupons insere dans la meme transaction ; orders.deleted_at existe.",
+    "Plan B borne : payment-confirm et reconcile-pending refusent ; reconcile limite aux commandes du compte ; mollie-checkout exige un vrai paiement ; aucune autre ecriture PAID cote frontend.",
+    "Fidelite : add-points refuse le jeton borne ; routes admin bloquees par block_kiosk_token_admin ; credit seulement PAYEE ou DELIVERED ; annulation client d'une commande PAYEE refusee ; rachat avec le code d'autrui bloque (IDOR) ; aucune transition DELIVERED automatique.",
+    "Employes : les services freres verifient le role de la cible (assertTargetRole) ; aucun chemin d'inscription n'ajoute Customer a un compte qui a deja un role.",
+    "Horaires : ne touche que /api/frontend/order hors borne ; le site bloque deja 'ferme aujourd'hui' et envoie scheduled_at quand le service est ferme ; la livraison n'envoie jamais scheduled_at mais n'est refusee qu'un jour de fermeture, comme le site.",
+    "Caisse : la cle est oubliee quand le panier se vide (resetCart apres vente telephone/livraison et a la fermeture du recu) ; 409 si le payload change.",
+    "Liste blanche : toutes les lignes que produit api.js (Viandes/Sauces en plus, Frites, Boisson menu, Sauce frites, [Note : ...], [Note commande : ...]) passent intactes (temoin vert).",
+    "NF525 : 0 ligne en zone gelee ; chaine OK."
+  ],
+  "cleanup": "Tests jetables supprimes (tests/Feature/Zz absent), aucun serveur lance, aucun fichier suivi modifie."
+}

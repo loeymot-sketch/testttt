@@ -19,6 +19,6 @@ Route::prefix('payment')->name('payment.')->middleware(['installed'])->group(fun
     //   into Nginx access logs.
     // [Wave 1 P1 SYNC-RED-01 2026-05-18] throttle:60,1 → mitigates LAN HMAC-CPU DoS.
     Route::post('/senangpay-webhook/', [Senangpay::class, 'webhook'])
-        ->middleware(['throttle:60,1'])
+        ->middleware(['throttle:60,1,webhook-senangpay']) // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('senangpay.webhook');
 });

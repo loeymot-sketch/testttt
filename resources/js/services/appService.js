@@ -1,4 +1,11 @@
 import VueSimpleAlert from "vue3-simple-alert";
+// [ONB-11 T-2.1.1 2026-08-27] Les boites de confirmation etaient en ANGLAIS EN DUR.
+// destroyConfirmation() est utilisee sur ~40 ecrans : au moment le plus critique —
+// juste avant de supprimer quelque chose — un commercant francais lisait
+// « You will not be able to recover the deleted record! » et devait cliquer
+// « Yes, Delete it! ». On passe par l'instance i18n directement : ce fichier est un
+// service, il n'a pas de `this.$t`.
+import i18n from "../i18n";
 import store from "../store";
 import statusEnum from "../enums/modules/statusEnum";
 import orderStatusEnum from "../enums/modules/orderStatusEnum";
@@ -104,12 +111,12 @@ export default {
     },
     logoutConfirmation: function () {
         return new VueSimpleAlert.confirm(
-            "You will able to log in again using the kiosk machine!",
-            "Are you sure?",
+            i18n.global.t("message.confirm_kiosk_logout"),
+            i18n.global.t("message.are_you_sure"),
             "warning",
             {
-                confirmButtonText: "Yes, Log Out!",
-                cancelButtonText: "No, Cancel!",
+                confirmButtonText: i18n.global.t("button.yes_logout"),
+                cancelButtonText: i18n.global.t("button.no_back"),
                 confirmButtonColor: "#696cff",
                 cancelButtonColor: "#8592a3",
             }
@@ -117,12 +124,12 @@ export default {
     },
     destroyConfirmation: function () {
         return new VueSimpleAlert.confirm(
-            "You will not be able to recover the deleted record!",
-            "Are you sure?",
+            i18n.global.t("message.confirm_destroy"),
+            i18n.global.t("message.are_you_sure"),
             "warning",
             {
-                confirmButtonText: "Yes, Delete it!",
-                cancelButtonText: "No, Cancel!",
+                confirmButtonText: i18n.global.t("button.yes_delete"),
+                cancelButtonText: i18n.global.t("button.no_back"),
                 confirmButtonColor: "#696cff",
                 cancelButtonColor: "#8592a3",
             }
@@ -130,12 +137,12 @@ export default {
     },
     acceptOrder: function () {
         return new VueSimpleAlert.confirm(
-            "You will not be able to cancel the order!",
-            "Are you sure?",
+            i18n.global.t("message.confirm_accept_order"),
+            i18n.global.t("message.are_you_sure"),
             "warning",
             {
-                confirmButtonText: "Yes, Accept it!",
-                cancelButtonText: "No, Cancel!",
+                confirmButtonText: i18n.global.t("button.yes_accept"),
+                cancelButtonText: i18n.global.t("button.no_back"),
                 confirmButtonColor: "#696cff",
                 cancelButtonColor: "#8592a3",
             }
@@ -161,12 +168,12 @@ export default {
     },
     cancelOrder: function () {
         return new VueSimpleAlert.confirm(
-            "You will not be able to accept the order!",
-            "Are you sure?",
+            i18n.global.t("message.confirm_cancel_order"),
+            i18n.global.t("message.are_you_sure"),
             "warning",
             {
-                confirmButtonText: "Yes, Cancel it!",
-                cancelButtonText: "No, Cancel",
+                confirmButtonText: i18n.global.t("button.yes_cancel_order"),
+                cancelButtonText: i18n.global.t("button.no_back"),
                 confirmButtonColor: "#696cff",
                 cancelButtonColor: "#8592a3",
             }
