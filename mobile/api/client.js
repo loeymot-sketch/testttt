@@ -455,7 +455,12 @@
     // ligne inconnue) ; la consigne du client voyage en « [Note : … ] » — sinon la cuisine ne voyait ni la
     // boisson du menu, ni la sauce frites, ni « sans oignon » (relecture adverse A2-004/A2-005, vérifié au code).
     var note = String(line.instruction || '').replace(/[\[\]\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
-    var noteAll = (note ? ['[Note : ' + note + ']'] : []).concat(viandesEnPlus ? [viandesEnPlus] : []).concat(menuNoteParts).join('\n');
+    // [2026-11-14 R8 P2] Les rubriques de commande (viande en plus, boisson du menu, sauce frites) passent
+    // TOUJOURS ; seule la note libre est raccourcie pour tenir dans les 500 octets.
+    var fixes = (viandesEnPlus ? [viandesEnPlus] : []).concat(menuNoteParts);
+    var place = 500 - (typeof TextEncoder === 'function' ? new TextEncoder().encode(fixes.join('\n')).length : fixes.join('\n').length * 4) - (fixes.length ? 1 : 0) - '[Note : ]'.length - 2;
+    var noteCourte = note && place > 0 ? coupeOctets(note, place).trim() : '';
+    var noteAll = (noteCourte ? ['[Note : ' + noteCourte + ']'] : []).concat(fixes).join('\n');
     // [2026-11-14 R7-003] Le serveur limite la consigne à 500 OCTETS (UTF-8), pas 500 caractères : une note riche
     // en emojis passait à 400 caractères mais dépassait 500 octets → 422. On coupe au dernier caractère entier.
     if (noteAll) out.instruction = coupeOctets(String(noteAll), 500);

@@ -1292,6 +1292,9 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
   const lcMenu = window.LC.menu;
   const item = lcMenu.findItem(itemId);
   const headingRef = useRef_w(null);
+  // [2026-11-14 R8] L'étape courante est suivie par son NOM : quand les options du serveur arrivent, la liste
+  // d'étapes change et l'index pointait sur l'étape suivante (étape viande sautée).
+  const wantedKeyRef = useRef_w(null);
 
   const [selections, setSelections] = useState_w(() => {
     // [MOBILE-REALIGNMENT 2026-05-16] Pre-fill defaults from composer profile + item flags
@@ -1352,7 +1355,8 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
   const [itemOptions, setItemOptions] = useState_w(() => ((window.LC.itemOptions || {})[itemId]) || null);
   // [2026-11-14 R7-002] On attend les options du serveur AVANT de laisser avancer (sinon une étape viande
   // pouvait sauter si la réponse arrivait après le 1er « Suivant ») ; 5 s au plus, puis repli local.
-  const [optionsWait, setOptionsWait] = useState_w(() => !!(item && item.server_id && !((window.LC.itemOptions || {})[itemId]) && window.LC.mobileApi && window.LC.mobileApi.optionNames));
+  const [optionsWait, setOptionsWait] = useState_w(() => !!(item && !((window.LC.itemOptions || {})[itemId]) && window.LC.mobileApi && window.LC.mobileApi.optionNames
+    && (item.server_id || (window.LC.catalog && window.LC.catalog.status === 'pending'))));
   useEffect_w(() => {
     let alive = true;
     const api = window.LC.mobileApi;
@@ -1393,9 +1397,12 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
     return <ScreenItemDirectAdd item={item} selections={selections} setSelections={setSelections} go={go} addToCart={addToCart}/>;
   }
 
-  // Clamp stepIndex if cascade insertion changed steps array
-  const clampedIndex = Math.min(stepIndex, activeSteps.length - 1);
+  // Clamp stepIndex if cascade insertion changed steps array — et recalage par nom d'étape (R8).
+  // La navigation mémorise le NOM de l'étape voulue (wantedKeyRef) ; la position en découle à chaque rendu.
+  const wantedIdx = wantedKeyRef.current ? activeSteps.indexOf(wantedKeyRef.current) : -1;
+  const clampedIndex = Math.min(wantedIdx >= 0 ? wantedIdx : stepIndex, activeSteps.length - 1);
   const currentKey = activeSteps[clampedIndex];
+  const goStep = (idx) => { const i = Math.max(0, Math.min(activeSteps.length - 1, idx)); wantedKeyRef.current = activeSteps[i]; setStepIndex(i); };
   const isRecap = currentKey === STEP.RECAP;
 
   // Move focus to step heading on transition (a11y)
@@ -1413,16 +1420,21 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
       go('back');
       return;
     }
-    setStepIndex(i => Math.max(0, i - 1));
+    goStep(clampedIndex - 1);
   };
   const onNext = () => {
-    if (!valid) return;
+    if (!valid || optionsWait) return;
     if (isRecap) {
-      addToCart(buildLineItem(item, selections));
+      // [2026-11-14 R8] Toutes les étapes sont revérifiées : une étape obligatoire jamais remplie renvoie à elle.
+      const manquante = activeSteps.findIndex(k => k !== STEP.RECAP && !canAdvance(k, selections, item));
+      if (manquante >= 0) { goStep(manquante); return; }
+      // Le pain n'est retenu que si le profil serveur propose l'étape (sinon il n'est pas envoyé).
+      const sel = activeSteps.includes(STEP.PAIN) ? selections : { ...selections, painId: undefined };
+      addToCart(buildLineItem(item, sel));
       go('cart');
       return;
     }
-    setStepIndex(i => Math.min(activeSteps.length - 1, i + 1));
+    goStep(clampedIndex + 1);
   };
 
   // Hint message for disabled CTA
@@ -1444,7 +1456,10 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
 
   // Render step body
   let body;
-  switch (currentKey) {
+  // [2026-11-14 R8-003] Pendant le chargement des options, aucun choix n'est possible (un « Galette » tapé à ce
+  // moment pouvait ne jamais être envoyé).
+  if (optionsWait) body = <div role="status" style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--gray-4)', fontSize: 14 }}>Chargement des options de {item.name}…</div>;
+  else switch (currentKey) {
     case STEP.PAIN:              body = <ScreenStepPain item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
     case STEP.VIANDES:           body = <ScreenStepViandes item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
     case STEP.SAUCE:             body = <ScreenStepSauce item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
