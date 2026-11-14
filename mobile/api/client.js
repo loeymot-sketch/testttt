@@ -318,7 +318,7 @@
     var choisis = [];          // extras choisis par le client (jamais retirés en silence)
     var viandesEnPlus = null;
     // Viandes (meatIds = ids pool m-*) → attrs 1/2 (Viande 1 / Viande 2) par nom.
-    var meatAttrs = ['1', '2'];
+    var meatAttrs = ['1', '2', '3']; // [2026-11-14 R6-002] Tacos XL : 3 emplacements (Viande 1/2/3)
     var usedAttr = {};
     (Array.isArray(line.meatIds) ? line.meatIds : []).forEach(function (mid) {
       var nm = nameFromPools(['meats'], mid);
@@ -508,7 +508,8 @@
         var M = menu();
         var drinkItem = M.findItem ? M.findItem(DRINK_ID_TO_SLUG[bd]) : null;
         if (drinkItem) {
-          items.push(await resolveLine(Object.assign({}, drinkItem, { qty: 1 })));
+          // [2026-11-14 R6-003] une boisson PAR bol commandé (avant : toujours 1 → 2 bols, 1 boisson facturée et servie).
+          items.push(await resolveLine(Object.assign({}, drinkItem, { qty: Math.max(1, Number(line.qty) || 1) })));
         }
       }
     }

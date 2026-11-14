@@ -92,9 +92,10 @@ function verify(label, file) {
   check(fMenu && fMenu.price === 2.50, 'Formule menu +2,50€ (got ' + (fMenu && fMenu.price) + ')');
   // [GOAL-SYNC-HEAL 2026-07-08] canon PricingService SSOT (e2e W6) : role menu_frites=+1,50 · menu_boisson=+1,00
   const fFrites = M.formules.find(f => f.id === 'f-frites');
-  check(fFrites && fFrites.price === 1.50, 'Formule frites +1,50€ (got ' + (fFrites && fFrites.price) + ')');
+  // [2026-11-14 R6-001] 1,90 € = config/kiosk.php menu_pricing (0.76 × 2,50), commandes locales #10019/#10030.
+  check(fFrites && fFrites.price === 1.90, 'Formule frites +1,90€ (got ' + (fFrites && fFrites.price) + ')');
   const fBoisson = M.formules.find(f => f.id === 'f-boisson');
-  check(fBoisson && fBoisson.price === 1.00, 'Formule boisson +1,00€ (got ' + (fBoisson && fBoisson.price) + ')');
+  check(fBoisson && fBoisson.price === 1.90, 'Formule boisson +1,90€ (got ' + (fBoisson && fBoisson.price) + ')');
 
   // --- categories ---
   const catNames = M.categories.map(c => c.name);

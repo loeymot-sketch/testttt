@@ -18,7 +18,7 @@ const neutral = 'assets/menu/item-default.svg';
 // The branch phone is intentionally covered by mobile-identity.spec.js.
 assert.equal(sha(JSON.stringify(menu, (key, value) => ['image', 'hero', 'phone'].includes(key) ? undefined : value)),
   // [2026-11-14] verrou ré-enregistré après l'alignement serveur (mêmes changements que mobile-identity).
-  '79caa96d38fd75049b1014595d8043f9e3ac9874284de37bc484e4fc1c946092',
+  '65eb931d4716c4953a3dffcab9deb9aeac0d1a636094114465eb65882fe55023',
   'all nonvisual catalog data remains unchanged');
 
 function localAsset(file) {

@@ -258,10 +258,12 @@
   ];
 
   // Formule menu (seeder : Option Menu frites + boisson +2,50€).
+  // [2026-11-14 R6-001] frites seules / boisson seule = 1,90 € (config/kiosk.php menu_pricing 0.76 × 2,50, owner 2026-07-22) —
+  // l'app affichait 1,50 / 1,00 € et le serveur encaissait 1,90 €.
   const FORMULES = [
     { id: 'f-menu',    name: 'Menu (Frites + Boisson)', price: 2.50, has_drink: true, has_fries: true },
-    { id: 'f-frites',  name: 'Ajouter Frites',           price: 1.50, has_fries: true }, // [GOAL-SYNC-HEAL 2026-07-08] role menu_frites = +1,50 € (canon PricingService SSOT, e2e W6) — était 2,00 FAUX
-    { id: 'f-boisson', name: 'Ajouter Boisson',          price: 1.00, has_drink: true }, // [GOAL-SYNC-HEAL 2026-07-08] role menu_boisson = +1,00 € (canon PricingService SSOT, e2e W6) — était 2,00 FAUX
+    { id: 'f-frites',  name: 'Ajouter Frites',           price: 1.90, has_fries: true }, // [GOAL-SYNC-HEAL 2026-07-08] role menu_frites = +1,50 € (canon PricingService SSOT, e2e W6) — était 2,00 FAUX
+    { id: 'f-boisson', name: 'Ajouter Boisson',          price: 1.90, has_drink: true }, // [GOAL-SYNC-HEAL 2026-07-08] role menu_boisson = +1,00 € (canon PricingService SSOT, e2e W6) — était 2,00 FAUX
   ];
 
   // Frites styles (Nature / Cheddar fondu +1€ / Cheddar+Oignons +2€) — option client standalone.
