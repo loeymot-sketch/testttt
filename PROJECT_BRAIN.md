@@ -47,6 +47,13 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-11-14 00h — DÉPLOYÉ (par la session superviseur testttt-59, déployeur unique) : backend `e3bc55706` (code `1c8d4d5ba`) + site `3eb0ae2` EN LIGNE.**
+> - Backend : avance rapide `cb693313a..e3bc55706`, snapshot `storage/backups/predeploy-20261114-001250.sql.gz`, migrations 220000 / 090000 / 120000 jouées (batch 67), triggers NF525 10/10, CHAIN OK, healthz 200, pos-shell recompilé.
+> - Rattrapage `comptes:rattraper-suppressions` (simulation) : 1 compte supprimé, 0 donnée restante → `--appliquer` inutile, non lancé.
+> - Site : Vercel `3eb0ae2` ; vérification indépendante (session app-stores) : `release-gates --prod` **13/13**, 10/10 fichiers servis identiques au dépôt.
+> - Note : `tools/deploy-lecayenne.sh:123` tronque la sortie des migrations à 3 lignes (`| tail -3`) — une migration peut sembler non jouée alors qu'elle l'est : vérifier par `migrate:status`.
+> - Reste au propriétaire (stores) : signer l'AAB, archive iOS + TestFlight, compte de démonstration, statut « trader » DSA, clé `.p8`, URL `#suppression-compte` dans la Play Console.
+
 > **2026-11-13 soir — GO FINAL SUPERVISEUR : backend `1c8d4d5ba` (code) + site `3eb0ae2`. RIEN POUSSÉ NI DÉPLOYÉ (prod backend = `cb693313a`).**
 > - Preuves sur `1c8d4d5ba` : PHPUnit complet 7720 tests, 0 échec ; bancs e2e API 50/50, app iOS simulée 24/24, réglage passerelle 13/13 ; zones gelées 0 ligne ; chaîne NF525 OK.
 > - Au déploiement : 4 migrations (220000 = viandes SEULES ; apple_refresh_token ; is_default) ; recompiler le paquet caisse (pos-shell non suivi par git — le script le fait) ; puis `comptes:rattraper-suppressions` (simulation, puis `--appliquer`) ; puis le site `site-copie-3eb0ae2`.
