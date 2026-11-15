@@ -268,8 +268,8 @@ function WizardHeader({ stepIndex, stepTotal, title, onBack, onClose, headingRef
         {item ? (
           <div className="lc-wiz-product" data-testid="wizard-product-strip" style={{ flex: 1, minWidth: 0, margin: 0 }}>
             <div className="lc-wiz-product__art" aria-hidden="true">{item.image && <img src={item.image} alt=""/>}</div>
-            <div className="lc-wiz-product__name" title={item.name}>{item.name}<small className="rdw-stepcount" role="status" aria-live="polite" style={{ letterSpacing: 0, fontFamily: 'var(--font-body)' }}>Étape <b style={{ fontSize: 'inherit' }}>{stepIndex + 1}</b> sur {stepTotal}</small></div>
-            {typeof total === 'number' && <span className="lc-wiz-product__price" aria-label={`Prix actuel ${total.toFixed(2).replace('.', ',')} euros`}><Bump value={total.toFixed(2)}>{total.toFixed(2).replace('.', ',')} €</Bump></span>}
+            <div className="lc-wiz-product__name"><span className="lc-wiz-product__title" title={item.name}>{item.name}</span><small className="rdw-stepcount" role="status" aria-live="polite" style={{ letterSpacing: 0, fontFamily: 'var(--font-body)' }}>Étape <b style={{ fontSize: 'inherit' }}>{stepIndex + 1}</b> sur {stepTotal}</small></div>
+            {typeof total === 'number' && <span className="lc-wiz-product__price" role="status" aria-live="polite" aria-label={`Prix actuel ${total.toFixed(2).replace('.', ',')} euros`}><Bump value={total.toFixed(2)}>{total.toFixed(2).replace('.', ',')} €</Bump></span>}
           </div>
         ) : (
           <span className="rdw-stepcount" role="status" aria-live="polite">

@@ -181,6 +181,8 @@ const OWNER_BESTSELLER_SLUGS = Object.freeze([
 // name (posé par index.html depuis le profil réel / storage). Fallback neutre FR si absent.
 function ScreenHome({ go, name = '' }) {
   const screenRef = useScreenScrollReset('home');
+  // [UI/UX 2026-11-15] L'entrée orchestrée (titre puis carte signature) ne se joue qu'une fois par session.
+  const [firstEntry] = uS(() => { try { if (sessionStorage.getItem('lc.home.entered')) return false; sessionStorage.setItem('lc.home.entered', '1'); return true; } catch (_e) { return true; } });
   // [2026-11-14] Le compte créé par SMS porte le nom technique « Guest User » côté serveur :
   // ne jamais l'afficher (« Bonjour, Invité / GUEST »).
   const rawName = String(name || '').trim();
@@ -204,7 +206,7 @@ function ScreenHome({ go, name = '' }) {
     .filter((item, index, items) => items.findIndex(candidate => candidate.id === item.id) === index)
     .slice(0, 4);
   return (
-    <div ref={screenRef} data-screen-label="07 Home" className="lc-home">
+    <div ref={screenRef} data-screen-label="07 Home" className={'lc-home' + (firstEntry ? ' lc-home--first' : '')}>
       <div className="lc-screen lc-home__scroll">
         <header className="lc-home__header">
           <button type="button" onClick={() => go('profile')} aria-label={safeName ? `Profil — ${safeName}` : 'Profil'} className="lc-home__avatar">{avatarInitial}</button>
@@ -322,11 +324,22 @@ function ScreenMenu({ go, cart, addToCart, initialFilter = 'all' }) {
     const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     try { active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: reduced ? 'auto' : 'smooth' }); } catch (_e) { /* ancien WebKit */ }
   }, [filter]);
-  const quickAdd = (it) => { addToCart(it); setJustAdded(it.id); setTimeout(() => setJustAdded(id => (id === it.id ? null : id)), 1600); };
+  const quickTimer = React.useRef(null);
+  const [annonce, setAnnonce] = uS('');
+  uE(() => () => { if (quickTimer.current) clearTimeout(quickTimer.current); }, []);
+  const quickAdd = (it) => {
+    addToCart(it); setJustAdded(it.id);
+    const n = cart.reduce((s, i) => s + (Number(i.qty) || 0), 0) + 1;
+    const t = cart.reduce((s, i) => s + i.price * i.qty, 0) + it.price;
+    setAnnonce(`${it.name} ajouté au panier — ${n} article${n > 1 ? 's' : ''}, ${t.toFixed(2).replace('.', ',')} €`);
+    if (quickTimer.current) clearTimeout(quickTimer.current);
+    quickTimer.current = setTimeout(() => setJustAdded(id => (id === it.id ? null : id)), 1600);
+  };
   const cartCount = cart.reduce((n, i) => n + (Number(i.qty) || 0), 0);
   return (
     <div ref={screenRef} data-screen-label="08 Menu" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
       <div className="lc-screen" ref={scrollRef} onScroll={onScroll} style={{ paddingBottom: 160 }}>
+        <div className="lc-sr-only" role="status" aria-live="polite" data-testid="menu-announce">{annonce}</div>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '16px 20px 6px' }}>
           <div>
             <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.9 }}>Menu</h1>
@@ -383,8 +396,8 @@ function ScreenMenu({ go, cart, addToCart, initialFilter = 'all' }) {
                             ouvrir le wizard au lieu d'ajouter direct au panier avec composition vide. Pour desserts/boissons/items direct, garder add direct. */}
                         {soldOut ? <span data-testid="item-soldout" style={{ display: 'inline-flex', alignItems: 'center', height: 28, padding: '0 12px', borderRadius: 999, background: 'var(--ink)', color: '#FFFFFF', fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 1 }}>Épuisé</span>
                           : (it.viandes > 0 || it.has_sauce || it.has_supplements !== false || it.has_menu_addon || it.has_frites_style)
-                          ? <button onClick={e => { e.stopPropagation(); go('item', it.id); }} aria-label={`Personnaliser ${it.name}`} style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--orange)', color: '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><I.Arrow size={14} stroke="#fff" sw={2.4}/></button>
-                          : <button onClick={e => { e.stopPropagation(); quickAdd(it); }} aria-label={justAdded === it.id ? `${it.name} ajouté au panier` : `Ajouter ${it.name} au panier`} className={'lc-quick-add' + (justAdded === it.id ? ' is-done' : '')} style={{ width: 36, height: 36, borderRadius: 999, background: 'var(--ink)', color: 'var(--yellow)', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>{justAdded === it.id ? <span className="lc-check-draw" style={{ display: 'flex' }}><I.Check size={16} stroke="#fff" sw={3}/></span> : <I.Plus size={16}/>}</button>}
+                          ? <button onClick={e => { e.stopPropagation(); go('item', it.id); }} aria-label={`Personnaliser ${it.name}`} className="lc-menu-card__go" style={{ width: 44, height: 44, borderRadius: 999, background: 'var(--orange)', color: '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><I.Arrow size={14} stroke="#fff" sw={2.4}/></button>
+                          : <button onClick={e => { e.stopPropagation(); quickAdd(it); }} aria-label={justAdded === it.id ? `${it.name} ajouté au panier` : `Ajouter ${it.name} au panier`} className={'lc-quick-add' + (justAdded === it.id ? ' is-done' : '')} style={{ width: 44, height: 44, borderRadius: 999, background: 'var(--ink)', color: 'var(--yellow)', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>{justAdded === it.id ? <span className="lc-check-draw" style={{ display: 'flex' }}><I.Check size={16} stroke="#fff" sw={3}/></span> : <I.Plus size={16}/>}</button>}
                       </div>
                     </div>
                   </div>
@@ -396,7 +409,7 @@ function ScreenMenu({ go, cart, addToCart, initialFilter = 'all' }) {
       </div>
       {/* sticky cart bar */}
       {cart.length > 0 && (
-        <div className="lc-cartbar" data-testid="menu-cartbar" style={{ position: 'absolute', left: 16, right: 16, bottom: 96, zIndex: 8 }}>
+        <div className="lc-cartbar" data-testid="menu-cartbar" style={{ position: 'absolute', left: 16, right: 16, bottom: 122, zIndex: 8 }}>
           <button onClick={() => go('cart')} className="lc-btn" aria-label={`Voir le panier — ${cartCount} article${cartCount > 1 ? 's' : ''}, ${cart.reduce((s,i) => s+i.price*i.qty, 0).toFixed(2).replace('.', ',')} €`} style={{ background: 'var(--orange)', color: '#fff', width: '100%', height: 56, justifyContent: 'space-between', padding: '0 20px', boxShadow: 'var(--shadow-cta)' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span key={cartCount} className="lc-cartbar__count" style={{ background: '#fff', color: 'var(--orange)', minWidth: 24, height: 24, padding: '0 6px', borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800 }}>{cartCount}</span>
@@ -810,8 +823,8 @@ function ScreenCart({ go, cart, setCart }) {
             </div>
           ))}
         </div>
-        {/* loyalty banner — points + prochaine récompense dérivés de LC.loyalty */}
-        <div style={{ margin: '20px 20px 0', padding: 16, background: 'var(--yellow)', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* loyalty banner — points + prochaine récompense dérivés de LC.loyalty ([UI/UX 2026-11-15] rien à créditer sur un panier vide) */}
+        {cart.length > 0 && <div style={{ margin: '20px 20px 0', padding: 16, background: 'var(--yellow)', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--ink)', color: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><I.Gift size={20}/></div>
           <div style={{ flex: 1 }}>
             {/* [2026-11-14 B-004] Règle propriétaire : les points sont crédités quand le restaurant
@@ -820,7 +833,7 @@ function ScreenCart({ go, cart, setCart }) {
             {/* [GOAL-SYNC 2026-07-08] Modèle continu points→€ (contrat §2) — plus de nom de récompense mock */}
             <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>Réductions en caisse dès {lcMinRedeem()} pts ({redeemRatio} pts = 1 €)</div>
           </div>
-        </div>
+        </div>}
         {/* upsell */}
         <div style={{ marginTop: 24 }}>
           <div className="lc-sec-title">
@@ -1086,7 +1099,7 @@ function ScreenOrders({ go }) {
                 <button onClick={() => go('menu')} className="lc-btn lc-btn--ink" style={{ height: 48, marginTop: 16, fontSize: 13 }}>Voir la carte <I.Arrow size={16} stroke="var(--yellow)"/></button>
               </div>
             )}
-            {active.map(o => {
+            {active.map((o, idxCard) => {
               const summary = o.items_summary || (Array.isArray(o.items) ? o.items.map(i => i.name).join(' · ') : '');
               const statusLabel = (o.status_label || 'En préparation').toUpperCase();
               // [2026-11-14 B-014] Plus d'ETA « ~12 MIN » ni de barre de progression par défaut : seul le
@@ -1098,7 +1111,7 @@ function ScreenOrders({ go }) {
                 <div key={o.id} data-testid={'orders-active-card-' + o.id} role={openDetail ? 'button' : undefined} tabIndex={openDetail ? 0 : undefined} aria-label={(callNo ? `Commande ${callNo}` : `Commande ${o.id}`) + ' en cours' + (openDetail ? ' — voir détails' : '')} className="lc-tap" onClick={openDetail} onKeyDown={openDetail ? window.lcTapKey(openDetail) : undefined} style={{ background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, position: 'relative', overflow: 'hidden', cursor: openDetail ? 'pointer' : 'default', marginBottom: 12 }}>
                   <div style={{ position: 'absolute', top: -20, right: -20, width: 140, height: 140, opacity: 0.06 }}><I.Pepper size={140} stroke="#FF5A1F"/></div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span className="lc-pill" style={{ background: 'var(--orange)', color: '#fff' }}><span className="lc-status-dot lc-live-dot" style={{ background: '#fff', color: '#fff' }}/> {statusLabel}</span>
+                    <span className="lc-pill" style={{ background: 'var(--orange)', color: '#fff' }}><span className={'lc-status-dot' + (idxCard < 3 ? ' lc-live-dot' : '')} style={{ background: '#fff', color: '#fff' }}/> {statusLabel}</span>
                     {callNo && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>#{o.id}</span>}
                   </div>
                   {callNo && <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', marginTop: 14 }}>Numéro d'appel</div>}

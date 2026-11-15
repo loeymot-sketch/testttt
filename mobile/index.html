@@ -198,12 +198,12 @@ function App() {
     else if (SHEET_SCREENS.includes(s)) setNavDir('sheet');
     else setNavDir('push');
     if (s === 'pay' && !storage.isAuthenticated()) {
-      setAfterLogin('pay'); setHistory(h => [...h, 'login']); setScreen('login');
+      setNavDir('sheet'); setAfterLogin('pay'); setHistory(h => [...h, 'login']); setScreen('login');
       setToast({ m: 'Ton numéro suffit pour commander : on t’envoie un code par SMS.', k: 'info' });
       return;
     }
     if (NEEDS_ACCOUNT.includes(s) && !storage.isAuthenticated()) {
-      setAfterLogin(s); setHistory(h => [...h, 'login']); setScreen('login');
+      setNavDir('sheet'); setAfterLogin(s); setHistory(h => [...h, 'login']); setScreen('login');
       return;
     }
     if (s === 'pay')    { snapshotOrder(); setModal('pay'); return; }
@@ -426,7 +426,7 @@ function App() {
       {showTab && <TabBar active={activeTab} badge={cart.reduce((s, i) => s + (Number(i.qty) || 0), 0)} onChange={(t) => go(t)}/>}
       {/* [GOAL-SYNC 2026-07-08] flag={onlineCardEnabled} : la modale masque « Payer maintenant » quand OFF (contrat §4).
           onPickCounter = COMMANDE RÉELLE (placeCounterOrder) ; onPickCard gardé derrière le flag (défense en profondeur). */}
-      {modal === 'pay' && <ModalPayChoice total={total} flag={window.LC.config.onlineCardEnabled} onClose={()=>setModal(null)} onPickCounter={async ()=>{ setModal(null); const ok = await placeCounterOrder(); if (!ok) return; setHistory(h=>[...h,'confirm']); setScreen('confirm'); setCart([]); /* [GOAL-SYNC-HEAL 2026-07-08] Honnêteté : PAS de « +points gagnés » quand la commande n'a PAS été transmise (mode hors-ligne) */ if (ok !== 'offline') setTimeout(()=>setModal('gain'), 900); }} onPickCard={()=>{ if (!window.LC.config.onlineCardEnabled) return; setModal(null); setHistory(h=>[...h,'stripe']); setScreen('stripe'); }}/>}
+      {modal === 'pay' && <ModalPayChoice total={total} flag={window.LC.config.onlineCardEnabled} onClose={()=>setModal(null)} onPickCounter={async ()=>{ setModal(null); const ok = await placeCounterOrder(); if (!ok) return; setNavDir('sheet'); setHistory(h=>[...h,'confirm']); setScreen('confirm'); setCart([]); /* [GOAL-SYNC-HEAL 2026-07-08] Honnêteté : PAS de « +points gagnés » quand la commande n'a PAS été transmise (mode hors-ligne) */ if (ok !== 'offline') setTimeout(()=>setModal('gain'), 900); }} onPickCard={()=>{ if (!window.LC.config.onlineCardEnabled) return; setModal(null); setHistory(h=>[...h,'stripe']); setScreen('stripe'); }}/>}
       {/* [test-e2e fix C-003 round-2 2026-05-11] derive pointsEarned from the snapshotted order total.
           [GOAL-SYNC 2026-07-08] Estimation earn alignée backend (contrat §2) : points_per_euro FLOOR
           du total TTC (Math.floor(total × points_per_euro)) — l'EARN réel est crédité par le backend
