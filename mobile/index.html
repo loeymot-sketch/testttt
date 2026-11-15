@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20261114-r1">
+<link rel="stylesheet" href="styles.css?v=20261115-ui1">
 <link rel="stylesheet" href="redesigns-styles.css?v=20261114-r1">
 
 <style>
@@ -107,7 +107,7 @@
 <!-- Shared atoms + icons -->
 <script src="image-slot.js?v=20261016"></script>
 <script type="text/babel" src="icons.jsx?v=20261016"></script>
-<script type="text/babel" src="shared.jsx?v=20261016"></script>
+<script type="text/babel" src="shared.jsx?v=20261115-ui1"></script>
 
 <!-- [GOAL-SYNC 2026-07-08] Lib QR vendorisée LOCALE (globale `qrcode`, contrat §3) — AVANT les composants. -->
 <script src="vendor/qrcode.js?v=20261016"></script>
@@ -120,10 +120,10 @@
 <script type="text/babel" src="components/WizardRedeem.jsx?v=20261016"></script>
 
 <!-- Screens -->
-<script type="text/babel" src="screens-onboarding.jsx?v=20261114-r1"></script>
-<script type="text/babel" src="screens-item-steps.jsx?v=20261114-r1"></script>
-<script type="text/babel" src="screens-main.jsx?v=20261114-r1"></script>
-<script type="text/babel" src="screens-modals.jsx?v=20261114-r1"></script>
+<script type="text/babel" src="screens-onboarding.jsx?v=20261115-ui1"></script>
+<script type="text/babel" src="screens-item-steps.jsx?v=20261115-ui1"></script>
+<script type="text/babel" src="screens-main.jsx?v=20261115-ui1"></script>
+<script type="text/babel" src="screens-modals.jsx?v=20261115-ui1"></script>
 
 <!-- App root -->
 <script type="text/babel">
@@ -146,6 +146,10 @@ function App() {
 
   const [screen, setScreen] = useState(initialScreen);
   const [history, setHistory] = useState([initialScreen]);
+  // [UI/UX 2026-11-15] Sens du déplacement, pour que l'écran arrive d'où l'on va : onglet (fondu),
+  // page poussée (depuis la droite), retour (depuis la gauche), feuille (panier/connexion, depuis le bas).
+  const [navDir, setNavDir] = useState('tab');
+  const SHEET_SCREENS = ['cart', 'login', 'otp', 'confirm'];
   const [menuFilter, setMenuFilter] = useState('all');
   const [itemId, setItemId] = useState(null);
   const [cart, setCart] = useState(storage.getCart() || []);
@@ -186,9 +190,13 @@ function App() {
     if (s === 'back') {
       const h = [...history]; h.pop();
       const prev = h[h.length-1] || 'home';
+      setNavDir('back');
       setHistory(h); setScreen(prev);
       return;
     }
+    if (TAB_FOR[s] && TAB_FOR[screen] && !['item', 'orderDetail', 'loyalty'].includes(s)) setNavDir('tab');
+    else if (SHEET_SCREENS.includes(s)) setNavDir('sheet');
+    else setNavDir('push');
     if (s === 'pay' && !storage.isAuthenticated()) {
       setAfterLogin('pay'); setHistory(h => [...h, 'login']); setScreen('login');
       setToast({ m: 'Ton numéro suffit pour commander : on t’envoie un code par SMS.', k: 'info' });
@@ -226,12 +234,17 @@ function App() {
       setItemId(ext);
     }
     if (s === 'item' && ext) setItemId(ext);
+    // [UI/UX 2026-11-15] Depuis l'assistant, « Ajouter au panier » REMPLACE l'assistant dans l'historique :
+    // « Retour » depuis le panier ramène à la carte, pas à un assistant déjà validé.
+    if (s === 'cart' && screen === 'item') { setHistory(h => [...h.slice(0, -1), s]); setScreen(s); return; }
     setHistory(h => [...h, s]);
     setScreen(s);
   };
 
   const addToCart = (it) => {
-    setCart(c => [...c, { ...it, sups: it.sups || it.extraIds || [], qty: it.qty || 1 }]);
+    // [UI/UX 2026-11-15] `_addedAt` : la ligne qui vient d'arriver s'illumine dans le panier (ScreenCart).
+    setCart(c => [...c, { ...it, sups: it.sups || it.extraIds || [], qty: it.qty || 1, _addedAt: Date.now() }]);
+    if (window.lcHaptic) window.lcHaptic(12);
   };
 
   // [GOAL-SYNC 2026-07-08] onLogin mock SUPPRIMÉ (token 'mock-v0-token' + téléphone hardcodé).
@@ -406,8 +419,11 @@ function App() {
 
   return (
     <div className="lc-device">
-      {body}
-      {showTab && <TabBar active={activeTab} onChange={(t) => go(t)}/>}
+      {/* [UI/UX 2026-11-15] Scène remontée à chaque écran : l'animation d'entrée suit le sens du déplacement. */}
+      <div key={screen + ':' + (screen === 'item' || screen === 'orderDetail' ? String(itemId) : '')} className={'lc-stage lc-stage--' + navDir} data-nav-dir={navDir}>
+        {body}
+      </div>
+      {showTab && <TabBar active={activeTab} badge={cart.reduce((s, i) => s + (Number(i.qty) || 0), 0)} onChange={(t) => go(t)}/>}
       {/* [GOAL-SYNC 2026-07-08] flag={onlineCardEnabled} : la modale masque « Payer maintenant » quand OFF (contrat §4).
           onPickCounter = COMMANDE RÉELLE (placeCounterOrder) ; onPickCard gardé derrière le flag (défense en profondeur). */}
       {modal === 'pay' && <ModalPayChoice total={total} flag={window.LC.config.onlineCardEnabled} onClose={()=>setModal(null)} onPickCounter={async ()=>{ setModal(null); const ok = await placeCounterOrder(); if (!ok) return; setHistory(h=>[...h,'confirm']); setScreen('confirm'); setCart([]); /* [GOAL-SYNC-HEAL 2026-07-08] Honnêteté : PAS de « +points gagnés » quand la commande n'a PAS été transmise (mode hors-ligne) */ if (ok !== 'offline') setTimeout(()=>setModal('gain'), 900); }} onPickCard={()=>{ if (!window.LC.config.onlineCardEnabled) return; setModal(null); setHistory(h=>[...h,'stripe']); setScreen('stripe'); }}/>}

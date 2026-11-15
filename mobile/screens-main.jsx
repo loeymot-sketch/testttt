@@ -101,6 +101,13 @@ function reactivateLoyaltyAccount() {
   }
 }
 
+// [UI/UX 2026-11-15] Barre de progression qui se remplit à l'ouverture (0 → valeur), transition CSS .lc-progress-fill.
+function ProgressFill({ pct }) {
+  const [w, setW] = uS(0);
+  uE(() => { const id = requestAnimationFrame(() => setW(Math.max(0, Math.min(100, Number(pct) || 0)))); return () => cancelAnimationFrame(id); }, [pct]);
+  return <div className="lc-progress-fill" style={{ width: w + '%', height: '100%', background: 'linear-gradient(90deg, var(--yellow), var(--orange))' }}/>;
+}
+
 // Tag pill
 const Tag = ({ t }) => {
   const map = {
@@ -301,9 +308,25 @@ function ScreenMenu({ go, cart, addToCart, initialFilter = 'all' }) {
     return termes.some(t => hay.indexOf(t) !== -1);
   };
   const filtered = (filter === 'all' ? ITEMS : ITEMS.filter(i => i.cat === filter)).filter(matches);
+  // [UI/UX 2026-11-15] Filtres collés en haut quand on descend ; la catégorie active se recentre d'elle-même ;
+  // le « + » d'ajout direct confirme d'une coche ; la barre panier tressaute à chaque ajout.
+  const scrollRef = React.useRef(null);
+  const chipsRef = React.useRef(null);
+  const [stuck, setStuck] = uS(false);
+  const [justAdded, setJustAdded] = uS(null);
+  const onScroll = () => { const el = scrollRef.current; if (!el) return; const v = el.scrollTop > 70; setStuck(prev => prev === v ? prev : v); };
+  uE(() => {
+    const row = chipsRef.current; if (!row) return;
+    const active = row.querySelector('[aria-pressed="true"]');
+    if (!active || !active.scrollIntoView) return;
+    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    try { active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: reduced ? 'auto' : 'smooth' }); } catch (_e) { /* ancien WebKit */ }
+  }, [filter]);
+  const quickAdd = (it) => { addToCart(it); setJustAdded(it.id); setTimeout(() => setJustAdded(id => (id === it.id ? null : id)), 1600); };
+  const cartCount = cart.reduce((n, i) => n + (Number(i.qty) || 0), 0);
   return (
     <div ref={screenRef} data-screen-label="08 Menu" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
-      <div className="lc-screen" style={{ paddingBottom: 160 }}>
+      <div className="lc-screen" ref={scrollRef} onScroll={onScroll} style={{ paddingBottom: 160 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '16px 20px 6px' }}>
           <div>
             <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.9 }}>Menu</h1>
@@ -319,7 +342,8 @@ function ScreenMenu({ go, cart, addToCart, initialFilter = 'all' }) {
           </div>
         )}
         {/* filter chips */}
-        <div style={{ display: 'flex', gap: 8, padding: '12px 20px', overflowX: 'auto' }}>
+        <div className={'lc-menu-chips' + (stuck ? ' is-stuck' : '')}>
+        <div className="lc-menu-chips__row" ref={chipsRef}>
           {[{ id: 'all', label: 'Tout' }, ...CATS].map(c => {
             const active = filter === c.id;
             return (
@@ -328,6 +352,7 @@ function ScreenMenu({ go, cart, addToCart, initialFilter = 'all' }) {
               </button>
             );
           })}
+        </div>
         </div>
         {/* category sections */}
         {CATS.filter(c => filter === 'all' || filter === c.id).map(cat => {
@@ -341,7 +366,7 @@ function ScreenMenu({ go, cart, addToCart, initialFilter = 'all' }) {
               </div>
               <div style={{ padding: '0 20px', display: 'grid', gap: 10 }}>
                 {items.map(it => { const soldOut = it.available === false; return (
-                  <div key={it.id} role="button" tabIndex={0} aria-label={`Voir ${it.name} — ${soldOut ? 'épuisé' : it.price.toFixed(2).replace('.', ',') + ' €'}`} className={'lc-tap' + (soldOut ? ' lc-soldout' : '')} onClick={() => go('item', it.id)} onKeyDown={window.lcTapKey(() => go('item', it.id))} style={{ display: 'flex', gap: 14, padding: 12, background: 'var(--cream)', borderRadius: 16, cursor: 'pointer', alignItems: 'center' }}>
+                  <div key={it.id} role="button" tabIndex={0} aria-label={`Voir ${it.name} — ${soldOut ? 'épuisé' : it.price.toFixed(2).replace('.', ',') + ' €'}`} className={'lc-tap lc-menu-card' + (soldOut ? ' lc-soldout' : '')} onClick={() => go('item', it.id)} onKeyDown={window.lcTapKey(() => go('item', it.id))} style={{ display: 'flex', gap: 14, padding: 12, background: 'var(--cream)', borderRadius: 16, cursor: 'pointer', alignItems: 'center' }}>
                     <div style={{ width: 84, height: 84, borderRadius: 12, overflow: 'hidden', flexShrink: 0, background: '#0A0A0A' }}>
                       <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/>
                     </div>
@@ -359,7 +384,7 @@ function ScreenMenu({ go, cart, addToCart, initialFilter = 'all' }) {
                         {soldOut ? <span data-testid="item-soldout" style={{ display: 'inline-flex', alignItems: 'center', height: 28, padding: '0 12px', borderRadius: 999, background: 'var(--ink)', color: '#FFFFFF', fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 1 }}>Épuisé</span>
                           : (it.viandes > 0 || it.has_sauce || it.has_supplements !== false || it.has_menu_addon || it.has_frites_style)
                           ? <button onClick={e => { e.stopPropagation(); go('item', it.id); }} aria-label={`Personnaliser ${it.name}`} style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--orange)', color: '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><I.Arrow size={14} stroke="#fff" sw={2.4}/></button>
-                          : <button onClick={e => { e.stopPropagation(); addToCart(it); }} aria-label={`Ajouter ${it.name} au panier`} style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--ink)', color: 'var(--yellow)', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><I.Plus size={16}/></button>}
+                          : <button onClick={e => { e.stopPropagation(); quickAdd(it); }} aria-label={justAdded === it.id ? `${it.name} ajouté au panier` : `Ajouter ${it.name} au panier`} className={'lc-quick-add' + (justAdded === it.id ? ' is-done' : '')} style={{ width: 36, height: 36, borderRadius: 999, background: 'var(--ink)', color: 'var(--yellow)', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>{justAdded === it.id ? <span className="lc-check-draw" style={{ display: 'flex' }}><I.Check size={16} stroke="#fff" sw={3}/></span> : <I.Plus size={16}/>}</button>}
                       </div>
                     </div>
                   </div>
@@ -371,13 +396,13 @@ function ScreenMenu({ go, cart, addToCart, initialFilter = 'all' }) {
       </div>
       {/* sticky cart bar */}
       {cart.length > 0 && (
-        <div style={{ position: 'absolute', left: 16, right: 16, bottom: 96, zIndex: 8 }}>
-          <button onClick={() => go('cart')} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', width: '100%', height: 56, justifyContent: 'space-between', padding: '0 20px' }}>
+        <div className="lc-cartbar" data-testid="menu-cartbar" style={{ position: 'absolute', left: 16, right: 16, bottom: 96, zIndex: 8 }}>
+          <button onClick={() => go('cart')} className="lc-btn" aria-label={`Voir le panier — ${cartCount} article${cartCount > 1 ? 's' : ''}, ${cart.reduce((s,i) => s+i.price*i.qty, 0).toFixed(2).replace('.', ',')} €`} style={{ background: 'var(--orange)', color: '#fff', width: '100%', height: 56, justifyContent: 'space-between', padding: '0 20px', boxShadow: 'var(--shadow-cta)' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ background: '#fff', color: 'var(--orange)', width: 24, height: 24, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>{cart.length}</span>
+              <span key={cartCount} className="lc-cartbar__count" style={{ background: '#fff', color: 'var(--orange)', minWidth: 24, height: 24, padding: '0 6px', borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800 }}>{cartCount}</span>
               Voir le panier
             </span>
-            <span>{cart.reduce((s,i) => s+i.price*i.qty, 0).toFixed(2).replace('.', ',')} €</span>
+            <Bump value={cart.reduce((s,i) => s+i.price*i.qty, 0).toFixed(2)}>{cart.reduce((s,i) => s+i.price*i.qty, 0).toFixed(2).replace('.', ',')} €</Bump>
           </button>
         </div>
       )}
@@ -729,7 +754,7 @@ function ScreenCart({ go, cart, setCart }) {
   const earnRatio = lcEarnRatio();
   const redeemRatio = lcRedeemRatio();
   const pointsForCart = Math.floor((total || 0) * earnRatio);
-  const updateQty = (idx, d) => setCart(c => c.map((it, i) => i === idx ? { ...it, qty: Math.max(1, it.qty + d) } : it));
+  const updateQty = (idx, d) => { if (window.lcHaptic) window.lcHaptic(6); setCart(c => c.map((it, i) => i === idx ? { ...it, qty: Math.max(1, it.qty + d) } : it)); };
   const remove = (idx) => setCart(c => c.filter((_, i) => i !== idx));
   return (
     <div ref={screenRef} data-screen-label="10 Cart" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
@@ -742,13 +767,14 @@ function ScreenCart({ go, cart, setCart }) {
         {/* items */}
         <div style={{ padding: '20px 20px 0', display: 'grid', gap: 12 }}>
           {cart.length === 0 ? (
-            <div style={{ padding: '40px 20px', textAlign: 'center', background: 'var(--cream)', borderRadius: 16 }}>
-              <div style={{ fontSize: 32 }}>🛒</div>
-              <div style={{ marginTop: 8, fontWeight: 700 }}>Ton panier est vide</div>
-              <div style={{ fontSize: 12, color: 'var(--gray-3)', marginTop: 4 }}>Faim ? Va voir le menu.</div>
+            <div className="lc-empty" role="status">
+              <div className="lc-empty__art" aria-hidden="true"><I.Bag size={30} stroke="var(--yellow)"/></div>
+              <div className="lc-display" style={{ fontSize: 24, lineHeight: 1 }}>Ton panier est vide</div>
+              <div style={{ fontSize: 13, color: 'var(--gray-4)', marginTop: 8 }}>Choisis un plat sur la carte, personnalise-le et il arrive ici.</div>
+              <button onClick={() => go('menu')} className="lc-btn lc-btn--ink" style={{ height: 48, marginTop: 16, fontSize: 13 }}>Voir la carte <I.Arrow size={16} stroke="var(--yellow)"/></button>
             </div>
           ) : cart.map((it, idx) => (
-            <div key={idx} style={{ display: 'flex', gap: 12, padding: 12, background: 'var(--cream)', borderRadius: 16 }}>
+            <div key={idx} className={(it._addedAt && Date.now() - it._addedAt < 2500) ? 'lc-line-new' : ''} data-testid="cart-line" style={{ display: 'flex', gap: 12, padding: 12, background: 'var(--cream)', borderRadius: 16 }}>
               <div style={{ width: 80, height: 80, borderRadius: 12, overflow: 'hidden', flexShrink: 0, background: 'var(--ink)' }}>
                 <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/>
               </div>
@@ -774,10 +800,10 @@ function ScreenCart({ go, cart, setCart }) {
                 <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div className="lc-stepper">
                     <button onClick={() => updateQty(idx, -1)} aria-label={`Diminuer la quantité de ${it.name}`}>−</button>
-                    <span className="lc-stepper-val" aria-live="polite" aria-atomic="true">{it.qty}</span>
+                    <span className="lc-stepper-val" aria-live="polite" aria-atomic="true"><Bump value={it.qty}/></span>
                     <button onClick={() => updateQty(idx, +1)} aria-label={`Augmenter la quantité de ${it.name}`}>+</button>
                   </div>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--orange)' }}>{(it.price*it.qty).toFixed(2).replace('.', ',')} €</span>
+                  <Bump value={(it.price*it.qty).toFixed(2)} style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--orange-text)' }}>{(it.price*it.qty).toFixed(2).replace('.', ',')} €</Bump>
                 </div>
               </div>
               <button onClick={() => remove(idx)} aria-label={`Retirer ${it.name} du panier`} style={{ background: 'transparent', border: 0, color: 'var(--gray-3)', cursor: 'pointer', minWidth: 44, minHeight: 44, alignSelf: 'flex-start', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><I.Trash size={16}/></button>
@@ -832,7 +858,7 @@ function ScreenCart({ go, cart, setCart }) {
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 4 }}>
             <div>
               <div style={{ fontSize: 11, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Total</div>
-              <div data-testid="cart-total" className="lc-display" style={{ fontSize: 36, lineHeight: 1 }}>{total.toFixed(2).replace('.', ',')} €</div>
+              <div data-testid="cart-total" className="lc-display" style={{ fontSize: 36, lineHeight: 1 }}><Bump value={total.toFixed(2)}>{total.toFixed(2).replace('.', ',')} €</Bump></div>
             </div>
             <span style={{ fontSize: 11, color: 'var(--gray-3)' }}>TVA incluse</span>
           </div>
@@ -870,14 +896,15 @@ function ScreenConfirm({ go, order }) {
           </div>
         )}
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--ink)', color: 'var(--orange)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '4px 4px 0 var(--paper)' }}>
-            <I.Check size={28} sw={3}/>
+          {/* [UI/UX 2026-11-15] Une seule séquence : la coche se dessine, le titre monte, le ticket suit. */}
+          <div className="lc-confirm__check" style={{ width: 64, height: 64, borderRadius: 999, background: 'var(--ink)', color: 'var(--orange)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '4px 4px 0 var(--paper)' }}>
+            <I.Check size={32} sw={3}/>
           </div>
-          <h1 className="lc-display" style={{ margin: '8px 0 0', fontSize: 36, lineHeight: 0.9 }}>{isOffline ? 'Presque !' : "C'est parti !"}</h1>
-          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--ink)' }}>{isOffline ? <>Brouillon <b>#{orderId}</b> — à finaliser en caisse</> : <>Commande <b>#{orderId}</b> envoyée</>}</p>
+          <h1 className="lc-display lc-confirm__title" style={{ margin: '10px 0 0', fontSize: 38, lineHeight: 0.9 }}>{isOffline ? 'Presque !' : "C'est parti !"}</h1>
+          <p className="lc-confirm__title" style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--ink)' }}>{isOffline ? <>Brouillon <b>#{orderId}</b> — à finaliser en caisse</> : <>Commande <b>#{orderId}</b> envoyée</>}</p>
         </div>
         {/* QR ticket card */}
-        <div style={{ marginTop: 12, background: '#fff', borderRadius: 18, padding: 14, position: 'relative' }}>
+        <div className="lc-confirm__ticket" style={{ marginTop: 12, background: '#fff', borderRadius: 18, padding: 14, position: 'relative' }}>
           <div style={{ position: 'absolute', top: 44, left: -6, width: 12, height: 12, borderRadius: 999, background: 'var(--yellow)' }}/>
           <div style={{ position: 'absolute', top: 44, right: -6, width: 12, height: 12, borderRadius: 999, background: 'var(--yellow)' }}/>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -891,7 +918,7 @@ function ScreenConfirm({ go, order }) {
             {queueNo && (
               <div style={{ textAlign: 'center', fontSize: 10, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' }}>Ton numéro d'appel</div>
             )}
-            <div data-testid="confirm-queue-number" style={{ textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: queueNo ? 56 : 24, lineHeight: 1, letterSpacing: '0.06em', marginTop: 4 }}>{queueNo || orderId}</div>
+            <div data-testid="confirm-queue-number" className="lc-confirm__num" style={{ textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: queueNo ? 64 : 24, lineHeight: 1, letterSpacing: '0.06em', marginTop: 4 }}>{queueNo || orderId}</div>
           </div>
           {queueNo && queueNo !== orderId && (
             <div style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--gray-3)', marginTop: 2 }}>Commande #{orderId}</div>
@@ -910,12 +937,12 @@ function ScreenConfirm({ go, order }) {
         {/* [2026-11-14 B-014] Plus de « EN PRÉPARATION ~12 MIN » ni de barre à moitié pleine codés en
             dur : la commande vient d'être ENVOYÉE, le restaurant ne l'a pas encore validée. */}
         {!isOffline && (
-          <div data-testid="confirm-status" style={{ marginTop: 10, padding: 12, background: 'var(--ink)', borderRadius: 12, color: '#fff', fontSize: 12, lineHeight: 1.45 }}>
+          <div data-testid="confirm-status" className="lc-confirm__after" style={{ marginTop: 10, padding: 12, background: 'var(--ink)', borderRadius: 12, color: '#fff', fontSize: 12, lineHeight: 1.45 }}>
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--yellow)', marginBottom: 4 }}>Envoyée au restaurant</div>
             Le restaurant va valider ta commande. Suis son avancement dans « Commandes ».
           </div>
         )}
-        <div style={{ marginTop: 'auto', display: 'flex', gap: 8, paddingTop: 10 }}>
+        <div className="lc-confirm__after" style={{ marginTop: 'auto', display: 'flex', gap: 8, paddingTop: 10 }}>
           <button onClick={() => go('home')} style={{ flex: 1, background: 'var(--ink)', color: '#fff', border: 0, height: 50, borderRadius: 999, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: 'pointer' }}>Accueil</button>
           <button onClick={() => go('orders')} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', flex: 1.6, height: 50, fontSize: 12 }}>Suivre →</button>
         </div>
@@ -967,23 +994,28 @@ function ScreenOrders({ go }) {
   const [remote, setRemote] = uS(authed ? 'loading' : null); // 'loading' | {active,history} | null = mode local
   const [offline, setOffline] = uS(false);
   const [remoteErr, setRemoteErr] = uS(null);
+  // [UI/UX 2026-11-15] Relecture toutes les 20 s tant que l'écran est ouvert : le statut change sous les yeux
+  // du client sans qu'il ait à quitter l'écran (une erreur de relecture garde la liste précédente).
   uE(() => {
     if (!authed) return;
     let alive = true;
-    api.orderHistory(50).then(rows => {
+    const charger = (premiere) => api.orderHistory(50).then(rows => {
       if (!alive) return;
       const mapped = (Array.isArray(rows) ? rows : []).map(mapRemoteOrderRow);
       setRemote({
         active: mapped.filter(o => o.status === 'pending'),
         history: mapped.filter(o => o.status !== 'pending'),
       });
+      setOffline(false); setRemoteErr(null);
     }).catch(e => {
-      if (!alive) return;
+      if (!alive || !premiere) return;
       setRemote(null);
       if (e && e.kind === 'network') setOffline(true);
       else setRemoteErr((e && e.message) || 'Chargement des commandes impossible.');
     });
-    return () => { alive = false; };
+    charger(true);
+    const t = setInterval(() => { if (document.visibilityState !== 'hidden') charger(false); }, 20000);
+    return () => { alive = false; clearInterval(t); };
   }, []);
   const remoteMode = remote !== null && remote !== 'loading';
   const loading = remote === 'loading';
@@ -1028,8 +1060,10 @@ function ScreenOrders({ go }) {
         </div>
         {/* [GOAL-SYNC 2026-07-08] États réseau FR : chargement / hors-ligne / erreur */}
         {loading && (
-          <div role="status" style={{ margin: '20px 20px 0', background: 'var(--cream)', borderRadius: 16, padding: 24, textAlign: 'center', color: 'var(--gray-4)', fontSize: 13 }}>
-            Chargement de tes commandes…
+          <div role="status" aria-label="Chargement de tes commandes" style={{ margin: '20px 20px 0', display: 'grid', gap: 12 }}>
+            <div className="lc-skeleton lc-shimmer" style={{ height: 150, borderRadius: 20 }}/>
+            <div className="lc-skeleton lc-shimmer" style={{ height: 150, borderRadius: 20, opacity: .6 }}/>
+            <span className="lc-sr-only">Chargement de tes commandes…</span>
           </div>
         )}
         {offline && (
@@ -1045,8 +1079,11 @@ function ScreenOrders({ go }) {
         {!loading && (tab === 'current' ? (
           <div style={{ padding: '20px 20px 0' }}>
             {active.length === 0 && (
-              <div role="status" style={{ background: 'var(--cream)', borderRadius: 16, padding: 24, textAlign: 'center', color: 'var(--gray-4)', fontSize: 13 }}>
-                Aucune commande en cours.
+              <div role="status" className="lc-empty">
+                <div className="lc-empty__art" aria-hidden="true"><I.Receipt size={30} stroke="var(--yellow)"/></div>
+                <div className="lc-display" style={{ fontSize: 22, lineHeight: 1 }}>Aucune commande en cours</div>
+                <div style={{ fontSize: 13, color: 'var(--gray-4)', marginTop: 8 }}>Ta prochaine commande s'affichera ici, avec son numéro d'appel.</div>
+                <button onClick={() => go('menu')} className="lc-btn lc-btn--ink" style={{ height: 48, marginTop: 16, fontSize: 13 }}>Voir la carte <I.Arrow size={16} stroke="var(--yellow)"/></button>
               </div>
             )}
             {active.map(o => {
@@ -1061,7 +1098,7 @@ function ScreenOrders({ go }) {
                 <div key={o.id} data-testid={'orders-active-card-' + o.id} role={openDetail ? 'button' : undefined} tabIndex={openDetail ? 0 : undefined} aria-label={(callNo ? `Commande ${callNo}` : `Commande ${o.id}`) + ' en cours' + (openDetail ? ' — voir détails' : '')} className="lc-tap" onClick={openDetail} onKeyDown={openDetail ? window.lcTapKey(openDetail) : undefined} style={{ background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, position: 'relative', overflow: 'hidden', cursor: openDetail ? 'pointer' : 'default', marginBottom: 12 }}>
                   <div style={{ position: 'absolute', top: -20, right: -20, width: 140, height: 140, opacity: 0.06 }}><I.Pepper size={140} stroke="#FF5A1F"/></div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span className="lc-pill" style={{ background: 'var(--orange)', color: '#fff' }}><span className="lc-status-dot" style={{ background: '#fff' }}/> {statusLabel}</span>
+                    <span className="lc-pill" style={{ background: 'var(--orange)', color: '#fff' }}><span className="lc-status-dot lc-live-dot" style={{ background: '#fff', color: '#fff' }}/> {statusLabel}</span>
                     {callNo && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>#{o.id}</span>}
                   </div>
                   {callNo && <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', marginTop: 14 }}>Numéro d'appel</div>}
@@ -1201,7 +1238,7 @@ function ScreenProfile({ go }) {
                     : <>Plus que <b style={{ color: 'var(--orange)' }}>{lMin - lBalance} pts</b> pour ta première réduction ({lMin} pts = {Math.floor(lMin / lRatio)} €)</>}
                 </div>
                 <div style={{ marginTop: 14, height: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 999, overflow: 'hidden' }}>
-                  <div style={{ width: lProgPct + '%', height: '100%', background: 'linear-gradient(90deg, var(--yellow), var(--orange))' }}/>
+                  <ProgressFill pct={lProgPct}/>
                 </div>
                 <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, color: 'var(--yellow)' }}>
                   <span>VOIR MON QR →</span>
@@ -1558,7 +1595,7 @@ function ScreenLoyalty({ go }) {
                   <span style={{ color: 'var(--yellow)' }}>−{Math.floor(minRedeem / redeemRatio)} € EN CAISSE</span>
                 </div>
                 <div role="progressbar" aria-valuenow={progressMod} aria-valuemax={minRedeem} aria-valuetext={progressMod + ' sur ' + minRedeem + ' points avant la première réduction'} style={{ height: 8, background: 'rgba(255,255,255,0.12)', borderRadius: 999, overflow: 'hidden', position: 'relative' }}>
-                  <div style={{ width: progressPct + '%', height: '100%', background: 'linear-gradient(90deg, var(--yellow), var(--orange))' }}/>
+                  <ProgressFill pct={progressPct}/>
                 </div>
                 <div style={{ marginTop: 8, fontSize: 12, fontWeight: 600 }}>
                   Plus que <span style={{ color: 'var(--orange)', fontWeight: 800 }}>{progressRemaining} pts</span> pour <b style={{ color: 'var(--yellow)' }}>{Math.floor(minRedeem / redeemRatio)} € de réduction</b> 🎁

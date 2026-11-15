@@ -21,9 +21,10 @@ function ModalShell({ children, onClose, height = 'auto', labelledBy, dataModalK
   }, [onClose]);
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 50 }} data-modal-kind={dataModalKind}>
-      <div onClick={onClose} aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'rgba(10,10,10,0.55)' }}/>
+      <div onClick={onClose} aria-hidden="true" className="lc-veil-in" style={{ position: 'absolute', inset: 0, background: 'rgba(10,10,10,0.55)' }}/>
       <div
         ref={sheetRef}
+        className="lc-sheet-in"
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
@@ -162,7 +163,7 @@ function ModalPointsGain({ onClose, onSee, points, gain }) {
         const delay = (i % 8) * 0.12;
         return <span key={i} aria-hidden="true" style={{ position: 'absolute', top: -20, left: `${left}%`, width: 10, height: 14, background: c, animation: `lc-confetti 3.4s ${delay}s ease-in infinite`, transformOrigin: 'center', willChange: 'transform, opacity' }}/>;
       })}
-      <div style={{ position: 'relative', background: 'var(--yellow)', borderRadius: 28, padding: '32px 24px', textAlign: 'center', maxWidth: 320, boxShadow: '8px 8px 0 var(--ink)' }}>
+      <div className="lc-pop-in" style={{ position: 'relative', background: 'var(--yellow)', borderRadius: 28, padding: '32px 24px', textAlign: 'center', maxWidth: 320, boxShadow: '8px 8px 0 var(--ink)' }}>
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--ink)' }}>// Club Le Cayenne</div>
         {shownGain != null && shownGain > 0 ? (
           <>
@@ -438,10 +439,12 @@ function Toast({ message, kind = 'info', onClose }) {
   useEffect_m(() => { if (kind === 'error') return undefined; const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, [message, kind]);
   const bg = kind === 'success' ? 'var(--green)' : kind === 'error' ? 'var(--red)' : 'var(--ink)';
   return (
-    <div data-testid="toast" data-kind={kind} role={kind === 'error' ? 'alert' : 'status'} aria-live={kind === 'error' ? 'assertive' : 'polite'} style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) + 8px)', left: 14, right: 14, zIndex: 70, background: bg, color: '#fff', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 22px rgba(0,0,0,0.25)', animation: 'lc-slide-down 0.3s ease' }}>
+    <div data-testid="toast" data-kind={kind} role={kind === 'error' ? 'alert' : 'status'} aria-live={kind === 'error' ? 'assertive' : 'polite'} style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) + 8px)', left: 14, right: 14, zIndex: 70, background: bg, color: '#fff', borderRadius: 14, padding: '12px 16px 14px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 22px rgba(0,0,0,0.25)', animation: 'lc-slide-down 0.3s ease', overflow: 'hidden' }}>
       <span style={{ width: 8, height: 8, borderRadius: 999, background: kind === 'success' ? 'var(--yellow)' : '#fff' }}/>
       <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>{message}</span>
       <button onClick={onClose} aria-label="Fermer le message" style={{ background: 'transparent', border: 0, color: '#fff', fontSize: 20, cursor: 'pointer', opacity: 0.85, minWidth: 44, minHeight: 44, margin: '-12px -12px -12px 0' }}>×</button>
+      {/* [UI/UX 2026-11-15] Trait de temps : on voit qu'un message d'information se fermera seul (jamais pour une erreur). */}
+      {kind !== 'error' && <span key={message} className="lc-toast__bar" aria-hidden="true"/>}
     </div>
   );
 }

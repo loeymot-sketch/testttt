@@ -34,10 +34,10 @@ function OnboardingShell({ index, onNext, onSkip, hero, eyebrow, title, body, ac
         <Logo size={14}/>
         <button onClick={onSkip} aria-label="Passer la présentation" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', minWidth: 44, minHeight: 44, padding: '0 12px', background: 'transparent', border: 0, fontSize: 11, fontWeight: 700, color: 'var(--gray-3)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}>Passer</button>
       </div>
-      {/* hero */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>{hero}</div>
-      {/* content */}
-      <div style={{ padding: '24px 24px 28px', background: '#fff' }}>
+      {/* hero — [UI/UX 2026-11-15] la photo respire lentement (une fois par page) */}
+      <div className="lc-onb-hero" style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>{hero}</div>
+      {/* content — arrive avec la page */}
+      <div key={index} className="lc-onb-copy" style={{ padding: '24px 24px 28px', background: '#fff' }}>
         <div className="lc-eyebrow" style={{ color: accent, marginBottom: 10 }}>{eyebrow}</div>
         <h1 className="lc-display" style={{ margin: 0, fontSize: 44, color: 'var(--ink)' }}>{title}</h1>
         <p style={{ marginTop: 14, marginBottom: 24, fontSize: 15, lineHeight: 1.5, color: 'var(--gray-4)', maxWidth: 320 }}>{body}</p>

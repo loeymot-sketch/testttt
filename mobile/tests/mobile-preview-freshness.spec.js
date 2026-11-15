@@ -11,18 +11,20 @@ const productionHtml = html.replace(/document\.write\('[\s\S]*?'\);/, '');
 const VERSION = 'v=20261016';
 // [OWNER 2026-11-11] accueil (meilleures ventes), onboarding et carte (5 Tenders, Sandwich 2 Viandes) re-versionnés.
 // [2026-11-14] Ressources re-versionnées par l'audit superviseur de l'app (carte serveur, corrections P0/P1).
+// [UI/UX 2026-11-15] mouvement, bandeau produit de l'assistant, barre panier, états vides : re-versionnés.
 const VERSION_BY_RESOURCE = new Map([
-  ['styles.css', 'v=20261114-r1'],
+  ['styles.css', 'v=20261115-ui1'],
+  ['shared.jsx', 'v=20261115-ui1'],
   ['redesigns-styles.css', 'v=20261114-r1'],
   ['api/client.js', 'v=20261114-r1'],
   ['data/menu.js', 'v=20261114-r1'],
   ['api/catalog-sync.js', 'v=20261114-r1'],
   ['data/orders.js', 'v=20261114-r1'],
   ['components/LoyaltyQR.jsx', 'v=20261114-r1'],
-  ['screens-onboarding.jsx', 'v=20261114-r1'],
-  ['screens-item-steps.jsx', 'v=20261114-r1'],
-  ['screens-main.jsx', 'v=20261114-r1'],
-  ['screens-modals.jsx', 'v=20261114-r1'],
+  ['screens-onboarding.jsx', 'v=20261115-ui1'],
+  ['screens-item-steps.jsx', 'v=20261115-ui1'],
+  ['screens-main.jsx', 'v=20261115-ui1'],
+  ['screens-modals.jsx', 'v=20261115-ui1'],
 ]);
 
 const localScriptOrder = [...productionHtml.matchAll(/<script[^>]+src="([^"]+)"/g)]

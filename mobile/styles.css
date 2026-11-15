@@ -654,3 +654,150 @@ image-slot {
 
 /* [OWNER 2026-11-11] « Tacos XL pour les gourmands » dans les meilleures ventes. */
 .lc-home__product-note { display: block; font-style: normal; font-size: 11px; font-weight: 700; color: var(--orange); }
+
+/* ================================================================
+   [UI/UX 2026-11-15] SYSTÈME DE MOUVEMENT
+   Une règle : le mouvement répond au geste du client (ouvrir, choisir,
+   ajouter, confirmer) et montre CE QUI A CHANGÉ. Aucune décoration qui
+   bouge toute seule, sauf l'unique entrée de l'accueil.
+   prefers-reduced-motion : tout est neutralisé par la règle globale l.54.
+   ================================================================ */
+:root {
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-screen: 340ms;
+}
+
+/* Changement d'écran : la scène monte d'un cran (page poussée) ou fond (onglet). */
+.lc-stage { position: absolute; inset: 0; }
+.lc-stage > [data-screen-label] { isolation: isolate; contain: paint; }
+.lc-stage--tab   { animation: lc-stage-tab var(--dur-base) var(--ease-out-expo) both; }
+.lc-stage--push  { animation: lc-stage-push var(--dur-screen) var(--ease-out-expo) both; }
+.lc-stage--back  { animation: lc-stage-back var(--dur-screen) var(--ease-out-expo) both; }
+.lc-stage--sheet { animation: lc-stage-sheet var(--dur-screen) var(--ease-out-expo) both; }
+@keyframes lc-stage-tab   { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes lc-stage-push  { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes lc-stage-back  { from { opacity: 0; transform: translateX(-22px); } to { opacity: 1; transform: none; } }
+@keyframes lc-stage-sheet { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
+
+/* Plus de voile bleu système au toucher : le retour visuel est celui de l'app (pression, coche, saut). */
+button, a, [role="button"], [role="checkbox"], [role="radio"], [role="tab"], .lc-tap { -webkit-tap-highlight-color: transparent; }
+/* Feuilles et dialogues : la feuille monte, le voile apparaît. */
+.lc-sheet-in { animation: lc-stage-sheet 360ms var(--ease-out-expo) both; }
+.lc-veil-in { animation: lc-fade 240ms ease both; }
+@keyframes lc-fade { from { opacity: 0; } to { opacity: 1; } }
+.lc-pop-in { animation: lc-num 420ms var(--ease-pop) both; }
+
+/* Étape de l'assistant : glisse depuis la droite (suivant) ou la gauche (retour).
+   `.rdw-step` reste sans animation (contrat navigation.spec) ; le mouvement est porté par l'enfant. */
+.lc-step-in { animation: lc-step-next 340ms var(--ease-out-expo) both; }
+.lc-step-in--back { animation-name: lc-step-prev; }
+@keyframes lc-step-next { from { opacity: 0; transform: translateX(34px); } to { opacity: 1; transform: none; } }
+@keyframes lc-step-prev { from { opacity: 0; transform: translateX(-34px); } to { opacity: 1; transform: none; } }
+
+/* Un chiffre qui change (prix, quantité, compteur) saute d'un cran. */
+.lc-bump { display: inline-block; animation: lc-bump 320ms var(--ease-pop) both; }
+@keyframes lc-bump { 0% { transform: translateY(6px) scale(0.92); opacity: 0.4; } 60% { transform: translateY(-2px) scale(1.04); opacity: 1; } 100% { transform: none; } }
+
+/* Une carte de choix qui vient d'être cochée respire une fois. */
+.rdw-choice.lc-just-picked { animation: lc-choice-pop 300ms var(--ease-pop) both; }
+@keyframes lc-choice-pop { 0% { transform: scale(0.985); } 55% { transform: scale(1.025); } 100% { transform: scale(1); } }
+/* La coche se dessine (trait M5 12l5 5L20 7 ≈ 24 unités). */
+.lc-check-draw path { stroke-dasharray: 26; stroke-dashoffset: 26; animation: lc-draw 260ms 40ms var(--ease-out-expo) forwards; }
+@keyframes lc-draw { to { stroke-dashoffset: 0; } }
+.lc-checkbox--on { animation: lc-check-pop 260ms var(--ease-pop) both; }
+@keyframes lc-check-pop { 0% { transform: scale(0.7); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+
+/* Barre de progression de l'assistant : le segment courant se remplit. */
+.rdw-progress span { position: relative; overflow: hidden; }
+.rdw-progress span.current { background: var(--gray-2); }
+.rdw-progress span.current::after { content: ''; position: absolute; inset: 0; background: var(--orange); transform-origin: left; animation: lc-fill 420ms var(--ease-out-expo) both; }
+@keyframes lc-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* Bandeau produit de l'assistant : le plat reste sous les yeux à chaque étape. */
+.lc-wiz-product { display: flex; align-items: center; gap: 12px; margin: 10px 0 2px; }
+.lc-wiz-product__art { width: 52px; height: 52px; flex-shrink: 0; border-radius: 14px; overflow: hidden; background: var(--ink); box-shadow: 0 6px 14px -8px rgba(10,10,10,.6); }
+.lc-wiz-product__art img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.lc-wiz-product__name { flex: 1; min-width: 0; font-family: var(--font-display); font-size: 20px; line-height: 1; text-transform: uppercase; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lc-wiz-product__name small { display: block; margin-top: 4px; font: 500 11px/1.3 var(--font-body); text-transform: none; color: var(--gray-3); white-space: normal; }
+.lc-wiz-product__price { flex-shrink: 0; font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--orange-text); background: var(--yellow-soft); padding: 6px 10px; border-radius: 10px; }
+/* Le CTA désactivé explique au lieu de s'éteindre. */
+.rdw-cta[disabled] { background: var(--gray-1) !important; color: var(--gray-4) !important; box-shadow: none; }
+.rdw-cta[disabled] .rdw-cta-chip { background: transparent !important; color: var(--gray-3); }
+
+/* Barre d'onglets : l'onglet actif porte un coussin jaune qui s'ouvre. */
+.lc-tab { position: relative; }
+.lc-tab__icon { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 30px; border-radius: 12px; }
+.lc-tab__icon::before { content: ''; position: absolute; inset: 0; border-radius: 12px; background: var(--yellow); transform: scale(0.6); opacity: 0; transition: transform var(--dur-base) var(--ease-pop), opacity var(--dur-fast) ease; }
+.lc-tab--active .lc-tab__icon::before { transform: scale(1); opacity: 1; }
+.lc-tab__icon svg { position: relative; }
+.lc-tab__badge { position: absolute; top: -4px; right: 2px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--orange); color: #fff; font: 800 10px/18px var(--font-body); text-align: center; box-shadow: 0 0 0 2px var(--paper); animation: lc-bump 320ms var(--ease-pop) both; }
+
+/* Images : lueur d'attente tant que la photo n'est pas arrivée. */
+.lc-shimmer { position: relative; overflow: hidden; }
+.lc-shimmer::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.55) 50%, transparent 80%); transform: translateX(-100%); animation: lc-shimmer 1.3s ease-in-out infinite; }
+@keyframes lc-shimmer { to { transform: translateX(100%); } }
+.lc-img-fade { opacity: 0; transition: opacity 260ms ease; }
+.lc-img-fade.is-loaded { opacity: 1; }
+.lc-skeleton { border-radius: 16px; background: var(--gray-1); min-height: 88px; }
+
+/* Carte : barre « Voir le panier » qui monte, puis tressaute à chaque ajout. */
+.lc-cartbar { animation: lc-rise 360ms var(--ease-out-expo) both; }
+@keyframes lc-rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+.lc-cartbar__count { animation: lc-bump 320ms var(--ease-pop) both; }
+/* Bouton « + » d'ajout direct : confirme d'une coche verte pendant une seconde. */
+.lc-quick-add { transition: background-color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-pop); }
+.lc-quick-add.is-done { background: var(--green) !important; color: #fff !important; transform: scale(1.08); }
+.lc-quick-add:active { transform: scale(0.9); }
+/* Filtres de la carte : collés sous la barre d'état, dans un voile blanc. */
+.lc-menu-chips { position: sticky; top: 0; z-index: 4; padding: 12px 20px; margin-top: 0; background: rgba(255,255,255,.94); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); transition: box-shadow var(--dur-base) ease; }
+.lc-menu-chips.is-stuck { box-shadow: 0 8px 18px -14px rgba(10,10,10,.5); }
+/* Collé : le voile remonte sous la barre d'état, sinon la liste défile visible au-dessus des filtres. */
+.lc-menu-chips.is-stuck::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: var(--ios-safe-top); background: rgba(255,255,255,.94); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+.lc-wiz-product__art { width: 46px; height: 46px; }
+.lc-wiz-product__name { font-size: 19px; }
+.lc-menu-chips__row { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; }
+.lc-menu-chips__row::-webkit-scrollbar { display: none; }
+.lc-menu-chips__row > button { scroll-snap-align: center; transition: transform var(--dur-fast) var(--ease-pop), background-color var(--dur-fast) ease, color var(--dur-fast) ease; }
+.lc-menu-chips__row > button:active { transform: scale(0.95); }
+/* Carte produit de la liste : ombre discrète au repos, s'enfonce au toucher. */
+.lc-menu-card { transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast) ease; }
+.lc-menu-card:active { transform: scale(0.985); }
+
+/* Panier : la ligne qui vient d'arriver s'illumine une fois. */
+.lc-line-new { animation: lc-line-new 1.6s ease-out both; }
+@keyframes lc-line-new { 0% { background: var(--yellow); transform: translateY(8px); } 25% { transform: none; } 100% { background: var(--cream); } }
+.lc-empty { padding: 36px 20px; text-align: center; background: var(--cream); border-radius: 20px; }
+.lc-empty__art { width: 72px; height: 72px; margin: 0 auto 12px; border-radius: 22px; background: var(--ink); color: var(--yellow); display: flex; align-items: center; justify-content: center; }
+
+/* Confirmation : une seule séquence — coche dessinée, titre, ticket, boutons. */
+.lc-confirm__check { animation: lc-check-pop 420ms var(--ease-pop) both; }
+.lc-confirm__check path { stroke-dasharray: 26; stroke-dashoffset: 26; animation: lc-draw 320ms 160ms var(--ease-out-expo) forwards; }
+.lc-confirm__title { animation: lc-rise 380ms 120ms var(--ease-out-expo) both; }
+.lc-confirm__ticket { animation: lc-rise 420ms 220ms var(--ease-out-expo) both; }
+.lc-confirm__after { animation: lc-rise 420ms 340ms var(--ease-out-expo) both; }
+.lc-confirm__num { animation: lc-num 520ms 300ms var(--ease-pop) both; }
+@keyframes lc-num { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+
+/* Commandes en cours : point vivant sur le statut, squelettes au chargement. */
+.lc-live-dot { position: relative; }
+.lc-live-dot::after { content: ''; position: absolute; inset: -4px; border-radius: 999px; border: 2px solid currentColor; opacity: 0; animation: lc-ping 1.8s ease-out infinite; }
+@keyframes lc-ping { 0% { transform: scale(0.6); opacity: .8; } 100% { transform: scale(1.8); opacity: 0; } }
+
+/* Fidélité : la barre se remplit à l'ouverture, le solde monte. */
+.lc-progress-fill { transition: width 900ms var(--ease-out-expo); }
+
+/* Accueil : UNE entrée orchestrée (titre puis carte signature), rien d'autre ne bouge seul. */
+.lc-home__intro h1 { animation: lc-rise 460ms 40ms var(--ease-out-expo) both; }
+.lc-home__hero { animation: lc-rise 520ms 140ms var(--ease-out-expo) both; }
+.lc-home__brand > .lc-home__status { white-space: nowrap; }
+.lc-home__brand { width: auto; min-width: 132px; }
+
+/* Onboarding : la photo respire lentement, le texte arrive avec la page. */
+.lc-onb-hero img { animation: lc-kenburns 9s ease-in-out both; transform-origin: 55% 60%; }
+@keyframes lc-kenburns { from { transform: scale(1); } to { transform: scale(1.07); } }
+.lc-onb-copy { animation: lc-rise 420ms 60ms var(--ease-out-expo) both; }
+
+/* Toast : glisse, puis un trait de temps s'écoule pour les messages qui se ferment seuls. */
+.lc-toast__bar { position: absolute; left: 14px; right: 14px; bottom: 0; height: 3px; border-radius: 999px; background: rgba(255,255,255,.45); transform-origin: left; animation: lc-drain 3.5s linear both; }
+@keyframes lc-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }

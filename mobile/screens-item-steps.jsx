@@ -252,10 +252,12 @@ function computeTotal(item, selections) {
 // Preserves all a11y (aria-live, role, tabIndex, aria-disabled, focus mgmt) +
 // FSM (back/onClose handlers + stepIndex/stepTotal/title/headingRef).
 // ============================================================================
-function WizardHeader({ stepIndex, stepTotal, title, onBack, onClose, headingRef, scrolled = false }) {
+function WizardHeader({ stepIndex, stepTotal, title, onBack, onClose, headingRef, scrolled = false, item, total }) {
   return (
     <div className={'rdw-header' + (scrolled ? ' is-scrolled' : '')} style={{ position: 'sticky', top: 0, zIndex: 5, paddingTop: 'calc(var(--ios-safe-top) - 28px)' }}>
-      <div className="rdw-header-row">
+      {/* [UI/UX 2026-11-15] Une seule rangée : retour · le plat (photo, nom, étape, prix qui suit les choix) · fermer.
+          Le plat reste sous les yeux à chaque étape ; le compteur d'étapes vit dans la ligne sous le nom. */}
+      <div className="rdw-header-row" style={{ gap: 10 }}>
         <button
           className="rdw-back"
           onClick={onBack}
@@ -263,9 +265,17 @@ function WizardHeader({ stepIndex, stepTotal, title, onBack, onClose, headingRef
         >
           <I.Back size={20}/>
         </button>
-        <span className="rdw-stepcount" role="status" aria-live="polite">
-          <b>{stepIndex + 1}</b> / {stepTotal}
-        </span>
+        {item ? (
+          <div className="lc-wiz-product" data-testid="wizard-product-strip" style={{ flex: 1, minWidth: 0, margin: 0 }}>
+            <div className="lc-wiz-product__art" aria-hidden="true">{item.image && <img src={item.image} alt=""/>}</div>
+            <div className="lc-wiz-product__name" title={item.name}>{item.name}<small className="rdw-stepcount" role="status" aria-live="polite" style={{ letterSpacing: 0, fontFamily: 'var(--font-body)' }}>Étape <b style={{ fontSize: 'inherit' }}>{stepIndex + 1}</b> sur {stepTotal}</small></div>
+            {typeof total === 'number' && <span className="lc-wiz-product__price" aria-label={`Prix actuel ${total.toFixed(2).replace('.', ',')} euros`}><Bump value={total.toFixed(2)}>{total.toFixed(2).replace('.', ',')} €</Bump></span>}
+          </div>
+        ) : (
+          <span className="rdw-stepcount" role="status" aria-live="polite">
+            <b>{stepIndex + 1}</b> / {stepTotal}
+          </span>
+        )}
         <button
           className="rdw-back"
           onClick={onClose}
@@ -310,7 +320,7 @@ function WizardCTA({ label, total, disabled, hint, onClick }) {
       >
         <span className="rdw-cta-label">{label}</span>
         {total !== undefined && (
-          <span className="rdw-cta-chip" style={{ background: disabled ? 'transparent' : 'rgba(255,255,255,0.14)' }}>
+          <span key={total.toFixed(2)} className="rdw-cta-chip lc-bump" style={{ background: disabled ? 'transparent' : 'rgba(255,255,255,0.14)' }}>
             {total.toFixed(2).replace('.', ',')} €
           </span>
         )}
@@ -328,22 +338,27 @@ function ChoiceCard({ on, onPick, ariaRole = 'radio', children, accent = 'orange
     if (disabled) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      onPick();
+      pick();
     }
   };
   // Note: accent='green' for crudites step (Type 3 visual contract). The
   // rdw-choice.is-on uses --orange shadow by default ; accent override only
   // applies via inline overrides below (preserve cycle B contract).
   const isGreen = accent === 'green';
+  // [UI/UX 2026-11-15] Un choix = une petite vibration (Android) + la carte respire UNE fois (classe posée au geste,
+  // jamais au simple affichage : une étape qui s'ouvre avec des choix déjà faits reste calme).
+  const [justPicked, setJustPicked] = useState_w(false);
+  useEffect_w(() => { if (!justPicked) return undefined; const t = setTimeout(() => setJustPicked(false), 360); return () => clearTimeout(t); }, [justPicked]);
+  const pick = () => { if (window.lcHaptic) window.lcHaptic(8); setJustPicked(true); onPick(); };
   return (
     <div
       role={ariaRole}
       aria-checked={on ? 'true' : 'false'}
       aria-disabled={disabled ? 'true' : undefined}
       tabIndex={disabled ? -1 : 0}
-      onClick={disabled ? undefined : onPick}
+      onClick={disabled ? undefined : pick}
       onKeyDown={handleKey}
-      className={'rdw-choice' + (on ? ' is-on' : '')}
+      className={'rdw-choice' + (on ? ' is-on' : '') + (justPicked && on ? ' lc-just-picked' : '')}
       style={{
         opacity: disabled ? 0.4 : 1,
         cursor: disabled ? 'not-allowed' : 'pointer',
@@ -485,8 +500,8 @@ function ScreenStepViandes({ item, selections, setSelections, headingRef }) {
                 />}
                 <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</span>
               </span>
-              <span aria-hidden="true" style={{ width: 18, height: 18, borderRadius: 4, border: on ? '0' : '2px solid var(--gray-2)', background: on ? 'var(--orange)' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                {on && <I.Check size={12} stroke="#fff" sw={3}/>}
+              <span aria-hidden="true" className={on ? 'lc-check-draw' : ''} style={{ width: 22, height: 22, borderRadius: 7, border: on ? '0' : '2px solid var(--gray-2)', background: on ? 'var(--orange)' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {on && <I.Check size={14} stroke="#fff" sw={3}/>}
               </span>
             </ChoiceCard>
           );
@@ -657,7 +672,7 @@ function ExtraMeatSection({ item, selections, setSelections }) {
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{m.name}</div>
                 <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink)', fontWeight: 700, marginTop: 2 }}>+ {priceLabel} €</div>
               </div>
-              <div aria-hidden="true" className={`lc-checkbox ${on ? 'lc-checkbox--on' : ''}`}>
+              <div aria-hidden="true" className={`lc-checkbox ${on ? 'lc-checkbox--on lc-check-draw' : ''}`}>
                 {on && <I.Check size={12} stroke="#fff" sw={3}/>}
               </div>
             </div>
@@ -684,6 +699,7 @@ function ScreenStepSupplements({ item, selections, setSelections, headingRef }) 
     return true;
   });
   const toggle = (id) => {
+    if (window.lcHaptic) window.lcHaptic(8);
     setSelections(s => {
       const arr = s.supplementIds || [];
       // [2026-11-14 R4-002] plafond du profil serveur (5 suppléments ; la viande en plus compte dans l'étape).
@@ -719,7 +735,7 @@ function ScreenStepSupplements({ item, selections, setSelections, headingRef }) 
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{s.name}</div>
                 <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink)', fontWeight: 700, marginTop: 2 }}>+ {s.price.toFixed(2).replace('.', ',')} €</div>
               </div>
-              <div aria-hidden="true" className={`lc-checkbox ${on ? 'lc-checkbox--on' : ''}`}>
+              <div aria-hidden="true" className={`lc-checkbox ${on ? 'lc-checkbox--on lc-check-draw' : ''}`}>
                 {on && <I.Check size={12} stroke="#fff" sw={3}/>}
               </div>
             </div>
@@ -958,7 +974,7 @@ function ScreenStepBolSupplements({ item, selections, setSelections, headingRef 
                   + {s.price.toFixed(2).replace('.', ',')} €
                 </div>
               </div>
-              <div aria-hidden="true" className={`lc-checkbox ${on ? 'lc-checkbox--on' : ''}`}>
+              <div aria-hidden="true" className={`lc-checkbox ${on ? 'lc-checkbox--on lc-check-draw' : ''}`}>
                 {on && <I.Check size={12} stroke="#fff" sw={3}/>}
               </div>
             </div>
@@ -1351,6 +1367,8 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
   });
 
   const [stepIndex, setStepIndex] = useState_w(0);
+  // [UI/UX 2026-11-15] Sens du pas (suivant / retour) : l'étape glisse d'où elle vient.
+  const [stepDir, setStepDir] = useState_w('next');
   const screenRef = useScreenScrollReset(`${itemId}:${stepIndex}`);
 
   // [2026-11-14] Options du serveur pour ce produit (voir lcOffered).
@@ -1404,7 +1422,7 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
   const wantedIdx = wantedKey ? activeSteps.indexOf(wantedKey) : -1;
   const clampedIndex = Math.min(wantedIdx >= 0 ? wantedIdx : stepIndex, activeSteps.length - 1);
   const currentKey = activeSteps[clampedIndex];
-  const goStep = (idx) => { const i = Math.max(0, Math.min(activeSteps.length - 1, idx)); setWantedKey(activeSteps[i]); setStepIndex(i); };
+  const goStep = (idx) => { const i = Math.max(0, Math.min(activeSteps.length - 1, idx)); setStepDir(i < clampedIndex ? 'back' : 'next'); setWantedKey(activeSteps[i]); setStepIndex(i); };
   const isRecap = currentKey === STEP.RECAP;
 
   // Move focus to step heading on transition (a11y)
@@ -1489,10 +1507,12 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
           onBack={onPrev}
           onClose={() => go('back')}
           headingRef={headingRef}
+          item={item}
+          total={total}
         />
         {/* Keyed content resets each step; mobile navigation stays animation-free. */}
         <div key={currentKey} className="rdw-step">
-          {body}
+          <div className={'lc-step-in' + (stepDir === 'back' ? ' lc-step-in--back' : '')}>{body}</div>
         </div>
       </div>
       <WizardCTA

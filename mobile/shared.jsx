@@ -77,7 +77,9 @@ function Stamp({ size = 28 }) {
 // <div onClick> → <button aria-pressed aria-label> + role="tablist" wrapper.
 // axe button-name CRITICAL violation resolved ; keyboard nav now works (button
 // is natively focusable + Enter/Space activatable).
-function TabBar({ active, onChange }) {
+// [UI/UX 2026-11-15] `badge` = nombre d'articles au panier, porté par l'onglet Menu : le client qui
+// revient à l'accueil voit qu'un panier l'attend. L'onglet actif a un coussin jaune (CSS .lc-tab__icon).
+function TabBar({ active, onChange, badge = 0 }) {
   const tabs = [
     { id: 'home', label: 'Accueil', icon: I.Home },
     { id: 'menu', label: 'Menu', icon: I.Menu },
@@ -88,17 +90,21 @@ function TabBar({ active, onChange }) {
     <div className="lc-tabs" role="tablist" aria-label="Navigation principale">
       {tabs.map(t => {
         const isActive = active === t.id;
+        const n = t.id === 'menu' ? (Number(badge) || 0) : 0;
         return (
           <button
             key={t.id}
             type="button"
             role="tab"
             aria-selected={isActive}
-            aria-label={t.label}
+            aria-label={t.label + (n > 0 ? ` — ${n} article${n > 1 ? 's' : ''} au panier` : '')}
             className={`lc-tab ${isActive ? 'lc-tab--active' : ''}`}
             onClick={() => onChange(t.id)}
           >
-            <t.icon size={22} sw={isActive ? 2.2 : 1.7} />
+            <span className="lc-tab__icon" aria-hidden="true">
+              <t.icon size={22} sw={isActive ? 2.2 : 1.7} />
+              {n > 0 && <span key={n} className="lc-tab__badge" data-testid="tab-cart-badge">{n > 9 ? '9+' : n}</span>}
+            </span>
             <span>{t.label}</span>
             <span className="lc-tab-dot" />
           </button>
@@ -106,6 +112,20 @@ function TabBar({ active, onChange }) {
       })}
     </div>
   );
+}
+
+// [UI/UX 2026-11-15] Retour tactile court (Android ; iOS l'ignore sans bruit). Jamais sous
+// prefers-reduced-motion : le client qui coupe le mouvement coupe aussi les vibrations.
+window.lcHaptic = function lcHaptic(ms = 8) {
+  try {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (navigator.vibrate) navigator.vibrate(ms);
+  } catch (_e) { /* non supporté */ }
+};
+
+// Un nombre qui saute quand il change : remonté (clé = valeur) pour rejouer l'animation CSS .lc-bump.
+function Bump({ value, children, className = '', style }) {
+  return <span key={String(value)} className={'lc-bump ' + className} style={style}>{children === undefined ? value : children}</span>;
 }
 
 // Neutral image state for assets that are not available locally yet. It is
@@ -131,6 +151,9 @@ function NeutralAsset({ label = 'Photo indisponible', style = {} }) {
 // cover fit.
 function Slot({ id, w, h, radius = 14, placeholder = 'photo', shape, style = {}, src, alt, fallbackEmoji: _fallbackEmoji, fit = 'cover' }) {
   const [imageFailed, setImageFailed] = useState(false);
+  // [UI/UX 2026-11-15] Lueur d'attente puis fondu : une photo qui « apparaît » plutôt qu'un trou gris qui saute.
+  const [loaded, setLoaded] = useState(false);
+  const imgRef = (el) => { if (el && el.complete && el.naturalWidth > 0 && !loaded) setLoaded(true); };
   const sharedBoxStyle = {
     display: 'block',
     width: w === undefined ? '100%' : w,
@@ -141,12 +164,15 @@ function Slot({ id, w, h, radius = 14, placeholder = 'photo', shape, style = {},
   };
   if (src && !imageFailed) {
     return (
-      <div data-image-slot="true" data-image-src={src} data-image-state="loaded" style={{ ...sharedBoxStyle, background: 'var(--gray-1)', position: 'relative', pointerEvents: 'none' }} aria-label={alt || placeholder}>
+      <div data-image-slot="true" data-image-src={src} data-image-state="loaded" className={loaded ? '' : 'lc-shimmer'} style={{ ...sharedBoxStyle, background: 'var(--gray-1)', position: 'relative', pointerEvents: 'none' }} aria-label={alt || placeholder}>
         <img
+          ref={imgRef}
+          className={'lc-img-fade' + (loaded ? ' is-loaded' : '')}
           src={src}
           alt={alt === undefined ? placeholder : alt}
           loading="lazy"
           decoding="async"
+          onLoad={() => setLoaded(true)}
           onError={() => setImageFailed(true)}
           style={{
             display: 'block',
@@ -300,4 +326,4 @@ function QRMock({ size = 200, value = 'LECAY-LOYALTY' }) {
   );
 }
 
-Object.assign(window, { BRAND_LOGO_SRC, useScreenScrollReset, Logo, Stamp, TabBar, Slot, StickyCTA, ScreenHeader, IconBtn, Marquee, Dots, QRMock });
+Object.assign(window, { BRAND_LOGO_SRC, useScreenScrollReset, Logo, Stamp, TabBar, Slot, StickyCTA, ScreenHeader, IconBtn, Marquee, Dots, QRMock, Bump });
