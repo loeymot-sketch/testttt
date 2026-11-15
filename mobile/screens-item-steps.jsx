@@ -426,6 +426,11 @@ function extraMeatPriceOf(lcMenu) {
 // Tant que la réponse n'est pas arrivée (ou hors ligne), tout reste affiché ; la commande échoue alors
 // clairement si une option n'existe pas (api/client.js optionAbsente).
 // Étape crudités seulement si le profil serveur du produit en propose (Tacos L : aucune — R2).
+// [2026-11-15] L'extra payant « viande en plus » ne porte pas le même nom sur tous les plats en production :
+// « Viande supplémentaire » (Méga, galettes, bols…) ou « Viande en plus » (Cayenne, Suprême). Même option, même prix.
+function lcExtraMeatOffered() {
+  return lcOffered('extras', 'Viande supplémentaire') || lcOffered('extras', 'Viande en plus');
+}
 function lcOffersCrudites() {
   return ['Salade', 'Tomate', 'Oignon'].some(n => lcOffered('extras', n));
 }
@@ -434,7 +439,7 @@ function lcOffersSupplements(item) {
   const lcMenu = window.LC.menu;
   return (lcMenu.supplements || []).some(sp => lcOffered('extras', sp.name))
     || (lcMenu.supplementsBols || []).some(sp => lcOffered('extras', sp.name))
-    || (!!item.has_extra_meat && lcOffered('extras', 'Viande supplémentaire'));
+    || (!!item.has_extra_meat && lcExtraMeatOffered());
 }
 // Sauce frites de formule : seulement une sauce que le serveur vend (« Sauce … » au catalogue) — R3-003.
 function lcSauceVendue(name) {
@@ -505,7 +510,7 @@ function lcSupRepeat() { const l = lcLimits(); return !!(l && l.extrasRepeat); }
 function lcCount(arr, id) { return (arr || []).filter(x => x === id).length; }
 function lcSupTotal(s) { return (s.supplementIds || []).length + (s.bolSupplementIds || []).length + (s.extraMeatIds || []).length; }
 function lcExtraMeatCap(item) {
-  if (!item || !item.has_extra_meat || !lcOffered('extras', 'Viande supplémentaire')) return 0;
+  if (!item || !item.has_extra_meat || !lcExtraMeatOffered()) return 0;
   return lcSupRepeat() ? Math.min(LC_MAX_EXTRA_MEATS, lcSupMax()) : 1;
 }
 // Combien de fois une viande peut figurer parmi les viandes INCLUSES : une fois par emplacement qui la propose.

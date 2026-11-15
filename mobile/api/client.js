@@ -449,10 +449,13 @@
     // Viande supplémentaire +2,50 € (extraMeatIds = ids pool m-*) → extra « Viande supplémentaire ».
     var extraMeatCount = (Array.isArray(line.extraMeatIds) ? line.extraMeatIds.length : 0);
     if (extraMeatCount > 0) {
-      var emId = findExtraId(dIdx, ['supplement', 'supplement_bol'], 'Viande supplémentaire');
+      // « Viande supplémentaire » ou, sur le Cayenne et le Suprême en production, « Viande en plus » (même extra).
+      var emNom = 'Viande supplémentaire';
+      var emId = findExtraId(dIdx, ['supplement', 'supplement_bol'], emNom);
+      if (emId == null) { emNom = 'Viande en plus'; emId = findExtraId(dIdx, ['supplement', 'supplement_bol'], emNom); }
       if (emId == null) optionAbsente('Viande supplémentaire');
       item_extras.push({ id: emId, quantity: extraMeatCount });
-      choisis.push({ id: emId, nom: 'Viande supplémentaire' });
+      choisis.push({ id: emId, nom: emNom });
       // [2026-11-14] R3-002 : la cuisine doit savoir QUELLE viande (format lu par le serveur, plafonné aux
       // extras payés) — avant, seul « Viande supplémentaire » partait.
       var emNoms = line.extraMeatIds.map(function (mid) { return nameFromPools(['meats'], mid); }).filter(Boolean);
