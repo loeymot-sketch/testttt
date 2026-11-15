@@ -12,8 +12,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20261115-ui1">
-<link rel="stylesheet" href="redesigns-styles.css?v=20261114-r1">
+<link rel="stylesheet" href="styles.css?v=20261115-m9">
+<link rel="stylesheet" href="redesigns-styles.css?v=20261115-m9">
 
 <style>
   /* Production mobile entry — single full-viewport device frame, no prototype UI. */
@@ -29,8 +29,11 @@
     background: #fff;
     overflow: hidden;
   }
-  @media (min-width: 480px) {
-    /* Desktop preview : show iPhone frame centered */
+  /* Aperçu sur ordinateur UNIQUEMENT (souris) : cadre d'iPhone centré. Un téléphone couché ou une
+     tablette (écran tactile large) garde l'app plein écran — jamais de faux cadre ni de fausse encoche. */
+  @media (min-width: 480px) and (hover: hover) and (pointer: fine) {
+    /* Le cadre imite un iPhone à encoche : mêmes marges que le vrai téléphone (jetons de styles.css). */
+    :root { --lc-inset-top: 59px; --lc-inset-bottom: 34px; }
     body { background: #1a1a1a; display: flex; align-items: center; justify-content: center; padding: 20px; }
     .lc-device {
       width: 390px;
@@ -51,10 +54,18 @@
       z-index: 100;
       pointer-events: none;
     }
-  }
-  @media (max-width: 479px) {
-    /* Phone : full bleed */
-    .lc-device { border-radius: 0; }
+    .lc-device::after {
+      content: '';
+      position: absolute;
+      bottom: 9px; left: 50%;
+      transform: translateX(-50%);
+      width: 134px;
+      height: 5px;
+      border-radius: 999px;
+      background: #0a0a0a;
+      z-index: 100;
+      pointer-events: none;
+    }
   }
 </style>
 </head>
@@ -79,7 +90,7 @@
 <script src="api/storage.js?v=20261016"></script>
 <!-- [GOAL-SYNC 2026-07-08] Couche réseau RÉELLE (window.LC.mobileApi) — auth OTP, résolution
      par NOM canonique, commandes, fidélité. Chargée juste après storage.js (setAuth). -->
-<script src="api/client.js?v=20261114-r1"></script>
+<script src="api/client.js?v=20261115-m9"></script>
 <script src="data/menu.js?v=20261114-r1"></script>
 <!-- [2026-11-14] Carte + horaires relus au SERVEUR (noms, prix, ruptures) — après menu.js. -->
 <script src="api/catalog-sync.js?v=20261114-r1"></script>
@@ -107,7 +118,7 @@
 <!-- Shared atoms + icons -->
 <script src="image-slot.js?v=20261016"></script>
 <script type="text/babel" src="icons.jsx?v=20261016"></script>
-<script type="text/babel" src="shared.jsx?v=20261115-ui1"></script>
+<script type="text/babel" src="shared.jsx?v=20261115-m9"></script>
 
 <!-- [GOAL-SYNC 2026-07-08] Lib QR vendorisée LOCALE (globale `qrcode`, contrat §3) — AVANT les composants. -->
 <script src="vendor/qrcode.js?v=20261016"></script>
@@ -120,10 +131,10 @@
 <script type="text/babel" src="components/WizardRedeem.jsx?v=20261016"></script>
 
 <!-- Screens -->
-<script type="text/babel" src="screens-onboarding.jsx?v=20261115-ui1"></script>
-<script type="text/babel" src="screens-item-steps.jsx?v=20261115-ui1"></script>
-<script type="text/babel" src="screens-main.jsx?v=20261115-ui1"></script>
-<script type="text/babel" src="screens-modals.jsx?v=20261115-ui1"></script>
+<script type="text/babel" src="screens-onboarding.jsx?v=20261115-m9"></script>
+<script type="text/babel" src="screens-item-steps.jsx?v=20261115-m9"></script>
+<script type="text/babel" src="screens-main.jsx?v=20261115-m9"></script>
+<script type="text/babel" src="screens-modals.jsx?v=20261115-m9"></script>
 
 <!-- App root -->
 <script type="text/babel">
@@ -209,7 +220,6 @@ function App() {
     if (s === 'pay')    { snapshotOrder(); setModal('pay'); return; }
     if (s === 'gain')   { setModal('gain');   return; }
     if (s === 'redeem') { setModal('redeem'); setModalCtx(ext || null); return; }
-    if (s === 'link')   { setModal('link');   return; }
     if (s === 'walletApple')  { setModal('walletApple');  return; }
     if (s === 'walletGoogle') { setModal('walletGoogle'); return; }
     if (s === 'optOut') { setModal('optOut'); return; }

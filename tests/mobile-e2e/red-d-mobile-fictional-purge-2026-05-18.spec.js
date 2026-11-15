@@ -22,7 +22,8 @@ const OUT_DIR = '/tmp/foodking-goal-round3/red-d-mobile';
 // [GOAL-SYNC 2026-07-08] port 8081 → 8087 (8081 hijacké par un autre projet ;
 // 8087 = port dédié Cayenne mobile, aligné playwright.config.js).
 const MOBILE_URL = 'http://127.0.0.1:8087/index.html';
-const PROTOTYPE_URL = 'http://127.0.0.1:8087/Le%20Cayenne%20-%20Prototype.html';
+// [2026-11-15] planche de prototype archivée (mobile/archive/prototype-2026-05/).
+const PROTOTYPE_URL = 'http://127.0.0.1:8087/archive/prototype-2026-05/Le%20Cayenne%20-%20Prototype.html';
 
 if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
 

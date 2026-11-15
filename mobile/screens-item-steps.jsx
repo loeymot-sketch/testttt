@@ -81,6 +81,23 @@ function wizardTemplateFor(item) {
   return item.wizard_template || (cat && cat.wizard_template) || 'simple';
 }
 
+// [2026-11-15 relecture adverse P0] Nombre de viandes à choisir. Quand le profil publié exige une viande sur un plat
+// que la carte locale décrit sans choix (burgers, Cayenne), l'assistant la DEMANDE — avant, l'envoi complétait en
+// silence avec la première viande de la liste.
+function lcRequiredMeats(item) {
+  if (!item) return 0;
+  const base = item.viande_count || item.viandes || 0;
+  const o = window.LC && window.LC.currentItemOptions;
+  const l = (o && o.limits) || null;
+  if (!l || !l.meatSlots) return base; // fiche serveur pas encore lue : carte locale
+  // [2026-11-15] La fiche du serveur fait foi : en production le Suprême n'a AUCUN emplacement viande (recette fixe)
+  // alors que la carte locale lui en donnait 2 → étape Viandes vide, plat incommandable.
+  const slots = l.meatSlots.length;
+  if (!slots) return 0;
+  const voulu = l.viandeCount > 0 ? l.viandeCount : (base > 0 ? base : (l.meatMin > 0 ? 1 : 0));
+  return Math.min(voulu, slots);
+}
+
 function computeActiveSteps(item, selections) {
   if (!item) return [STEP.RECAP];
   const template = wizardTemplateFor(item);
@@ -92,7 +109,7 @@ function computeActiveSteps(item, selections) {
     case 'sandwich':
       // [GOAL-SYNC 2026-07-08] Pain/Galette AVANT viandes (parité web wizard-v2.jsx:68-73)
       if (item.has_pain_choice && (lcOffered('variations', 'Pain') || lcOffered('variations', 'Galette'))) steps.push(STEP.PAIN);
-      if ((item.viande_count || item.viandes) > 0) steps.push(STEP.VIANDES);
+      if (lcRequiredMeats(item) > 0) steps.push(STEP.VIANDES);
       if (item.has_sauce) steps.push(STEP.SAUCE);
       if (item.has_crudites && lcOffersCrudites()) steps.push(STEP.CRUDITES);
       if (item.has_supplements !== false && lcOffersSupplements(item)) steps.push(STEP.SUPPLEMENTS);
@@ -109,7 +126,7 @@ function computeActiveSteps(item, selections) {
       // [GOAL-SYNC 2026-07-08] Template BOL (cat 6) — canon fixture Bol Frites/Bol Riz :
       // viande (1/1, MEATS) → sauce (1/1, pool BOL_SAUCES) → suppléments bols (0/5,
       // sb-gratine riz_only) → boisson optionnelle (0/1). PAS de formule menu.
-      if ((item.viande_count || item.viandes) > 0) steps.push(STEP.VIANDES);
+      if (lcRequiredMeats(item) > 0) steps.push(STEP.VIANDES);
       if (item.has_sauce !== false) steps.push(STEP.SAUCE);
       steps.push(STEP.BOL_SUPPLEMENTS);
       steps.push(STEP.BOL_DRINK);
@@ -169,6 +186,11 @@ function computeActiveSteps(item, selections) {
       break;
   }
 
+  // Tout autre plat dont le profil serveur exige une viande : l'étape Viandes passe en tête (après le pain).
+  if (!steps.includes(STEP.VIANDES) && lcRequiredMeats(item) > 0) {
+    steps.splice(steps.includes(STEP.PAIN) ? steps.indexOf(STEP.PAIN) + 1 : 0, 0, STEP.VIANDES);
+  }
+
   // Cascade formule menu (inserted right after MENU step)
   const menuChoice = selections && selections.menuChoice;
   if (steps.includes(STEP.MENU) && menuChoice && menuChoice !== 'none') {
@@ -198,7 +220,7 @@ function canAdvance(stepKey, selections, item) {
       // [GOAL-SYNC 2026-07-08] défaut Pain pré-sélectionné à l'init → toujours valide en pratique
       return !!selections.painId;
     case STEP.VIANDES:
-      return (selections.meatIds || []).length === (item.viande_count || item.viandes);
+      return (selections.meatIds || []).length === lcRequiredMeats(item);
     case STEP.SAUCE:
       return (selections.sauceIds || []).length >= 1;
     case STEP.CRUDITES:
@@ -253,8 +275,12 @@ function computeTotal(item, selections) {
 // FSM (back/onClose handlers + stepIndex/stepTotal/title/headingRef).
 // ============================================================================
 function WizardHeader({ stepIndex, stepTotal, title, onBack, onClose, headingRef, scrolled = false, item, total }) {
+  // [2026-11-15] Le plat « reçoit » l'option : un anneau part de sa vignette quand le prix change (jamais à l'ouverture).
+  const firstTotal = useRef_w(total);
+  const ring = typeof total === 'number' && total !== firstTotal.current;
+  if (ring) firstTotal.current = null;
   return (
-    <div className={'rdw-header' + (scrolled ? ' is-scrolled' : '')} style={{ position: 'sticky', top: 0, zIndex: 5, paddingTop: 'calc(var(--ios-safe-top) - 28px)' }}>
+    <div className={'rdw-header' + (scrolled ? ' is-scrolled' : '')} style={{ position: 'sticky', top: 0, zIndex: 5 }}>
       {/* [UI/UX 2026-11-15] Une seule rangée : retour · le plat (photo, nom, étape, prix qui suit les choix) · fermer.
           Le plat reste sous les yeux à chaque étape ; le compteur d'étapes vit dans la ligne sous le nom. */}
       <div className="rdw-header-row" style={{ gap: 10 }}>
@@ -267,7 +293,7 @@ function WizardHeader({ stepIndex, stepTotal, title, onBack, onClose, headingRef
         </button>
         {item ? (
           <div className="lc-wiz-product" data-testid="wizard-product-strip" style={{ flex: 1, minWidth: 0, margin: 0 }}>
-            <div className="lc-wiz-product__art" aria-hidden="true">{item.image && <img src={item.image} alt=""/>}</div>
+            <div className="lc-wiz-product__art" aria-hidden="true">{item.image && <img src={item.image} alt=""/>}{(ring || firstTotal.current === null) && <i key={total} className="lc-art-ring"/>}</div>
             <div className="lc-wiz-product__name"><span className="lc-wiz-product__title" title={item.name}>{item.name}</span><small className="rdw-stepcount" role="status" aria-live="polite" style={{ letterSpacing: 0, fontFamily: 'var(--font-body)' }}>Étape <b style={{ fontSize: 'inherit' }}>{stepIndex + 1}</b> sur {stepTotal}</small></div>
             {typeof total === 'number' && <span className="lc-wiz-product__price" role="status" aria-live="polite" aria-label={`Prix actuel ${total.toFixed(2).replace('.', ',')} euros`}><Bump value={total.toFixed(2)}>{total.toFixed(2).replace('.', ',')} €</Bump></span>}
           </div>
@@ -333,7 +359,8 @@ function WizardCTA({ label, total, disabled, hint, onClick }) {
 // Reusable interactive primitives — A11y-correct (role + tabindex + keydown)
 // Claude Design rdw-choice classes (cycle C 2026-05-11) — preserve aria + role.
 // ============================================================================
-function ChoiceCard({ on, onPick, ariaRole = 'radio', children, accent = 'orange', disabled = false }) {
+function ChoiceCard({ on, onPick, ariaRole = 'radio', children, accent = 'orange', disabled = false, rupture = false }) {
+  if (rupture) disabled = true;
   const handleKey = (e) => {
     if (disabled) return;
     if (e.key === 'Enter' || e.key === ' ') {
@@ -358,9 +385,9 @@ function ChoiceCard({ on, onPick, ariaRole = 'radio', children, accent = 'orange
       tabIndex={disabled ? -1 : 0}
       onClick={disabled ? undefined : pick}
       onKeyDown={handleKey}
-      className={'rdw-choice' + (on ? ' is-on' : '') + (justPicked && on ? ' lc-just-picked' : '')}
+      className={'rdw-choice' + (on ? ' is-on' : '') + (justPicked && on ? ' lc-just-picked' : '') + (rupture ? ' is-rupture' : '')}
       style={{
-        opacity: disabled ? 0.4 : 1,
+        opacity: disabled && !rupture ? 0.4 : 1,
         cursor: disabled ? 'not-allowed' : 'pointer',
         outline: 'none',
         // Override is-on shadow for green accent (crudites)
@@ -427,6 +454,14 @@ function lcOffered(kind, name) {
   return !!table[api._norm(name)];
 }
 
+// [2026-11-15] Vendu avec ce plat mais en rupture aujourd'hui (voir api/client.js `rupture`).
+function lcRupture(kind, name) {
+  const o = window.LC && window.LC.currentItemOptions;
+  const api = window.LC && window.LC.mobileApi;
+  if (!o || !o.rupture || !api || !api._norm) return false;
+  return !!(o.rupture[kind] || {})[api._norm(name)];
+}
+
 function ScreenStepPain({ item, selections, setSelections, headingRef }) {
   const lcMenu = window.LC.menu;
   const pains = lcMenu.pains || [];
@@ -460,50 +495,246 @@ function ScreenStepPain({ item, selections, setSelections, headingRef }) {
 // ============================================================================
 // STEP 1 — Viandes
 // ============================================================================
+// [2026-11-15] Quantités — règles lues dans le profil publié du serveur (api/client.js profileChoiceIds.limits).
+// Le serveur compte TOUT le groupe « suppléments » (suppléments + viande en plus, avec leur quantité) et refuse
+// une répétition tant que l'étape n'a pas `allow_repeat` : l'app propose exactement ce qu'il accepte.
+const LC_MAX_EXTRA_MEATS = 4; // plafond voulu par le propriétaire (2026-11-15), jamais au-dessus du serveur
+function lcLimits() { const o = window.LC && window.LC.currentItemOptions; return (o && o.limits) || null; }
+function lcSupMax() { const l = lcLimits(); return l && l.extrasMax > 0 ? l.extrasMax : 5; }
+function lcSupRepeat() { const l = lcLimits(); return !!(l && l.extrasRepeat); }
+function lcCount(arr, id) { return (arr || []).filter(x => x === id).length; }
+function lcSupTotal(s) { return (s.supplementIds || []).length + (s.bolSupplementIds || []).length + (s.extraMeatIds || []).length; }
+function lcExtraMeatCap(item) {
+  if (!item || !item.has_extra_meat || !lcOffered('extras', 'Viande supplémentaire')) return 0;
+  return lcSupRepeat() ? Math.min(LC_MAX_EXTRA_MEATS, lcSupMax()) : 1;
+}
+// Combien de fois une viande peut figurer parmi les viandes INCLUSES : une fois par emplacement qui la propose.
+function lcMeatSlotCount(name, required) {
+  const l = lcLimits();
+  const api = window.LC && window.LC.mobileApi;
+  if (!l || !l.meatSlots || !l.meatSlots.length || !api || !api._norm) return required;
+  const n = api._norm(name);
+  return l.meatSlots.slice(0, required).filter(slot => slot[n]).length;
+}
+// « Cheddar, Cheddar, Œuf » → « Cheddar ×2 », « Œuf » (ordre du premier choix conservé).
+function lcGroupLabels(labels) {
+  const out = [];
+  (labels || []).forEach(l => { const f = out.find(x => x.l === l); if (f) f.n += 1; else out.push({ l, n: 1 }); });
+  return out.map(x => x.n > 1 ? x.l + ' ×' + x.n : x.l);
+}
+// Refus expliqué : le compteur tressaute et dit pourquoi (jamais un toucher sans réponse).
+function useNudge() {
+  const [n, setN] = useState_w(0);
+  const [msg, setMsg] = useState_w(null);
+  useEffect_w(() => { if (!n) return undefined; const t = setTimeout(() => setMsg(null), 2600); return () => clearTimeout(t); }, [n]);
+  return { n, msg, nudge: (m) => { if (window.lcHaptic) window.lcHaptic(18); setMsg(m); setN(x => x + 1); } };
+}
+// Jauge « 2 / 5 » : un cran par choix possible.
+function CapMeter({ used, max, label, nudge }) {
+  return (
+    <div className="lc-cap" data-testid="cap-meter">
+      <div key={nudge.n} className={'lc-cap__row' + (nudge.n ? ' lc-shake' : '')}>
+        <span className="lc-cap__label">{label}</span>
+        <span className="lc-cap__dots" aria-hidden="true">
+          {Array.from({ length: max }, (_, k) => <i key={k} className={k < used ? 'on' : ''}/>)}
+        </span>
+        <span className={'lc-cap__count' + (used >= max ? ' is-full' : '')}><Bump value={used}>{used}</Bump> / {max}</span>
+      </div>
+      <div role="status" aria-live="polite" className={'lc-cap__msg' + (nudge.msg ? ' is-on' : '')}>{nudge.msg || ''}</div>
+    </div>
+  );
+}
+// Ligne d'option à quantité : un toucher ajoute ; si le serveur autorise la répétition, un compteur − n + remplace
+// la coche. Sans répétition, la ligne reste une case à cocher (un second toucher retire).
+function QtyRow({ image, name, priceLabel, count, repeat, canAdd, onAdd, onRemove, onBlocked, testid, badge, rupture = false }) {
+  const on = count > 0;
+  if (rupture && !on) canAdd = false;
+  const tap = () => {
+    if (!on || repeat) { if (canAdd) { if (window.lcHaptic) window.lcHaptic(8); onAdd(); } else onBlocked(); return; }
+    if (window.lcHaptic) window.lcHaptic(8); onRemove();
+  };
+  const handleKey = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tap(); } };
+  const dim = !on && !canAdd;
+  return (
+    <div className={'lc-toggle-row lc-qrow' + (on ? ' is-on' : '') + (dim ? ' is-dim' : '') + (rupture && !on ? ' is-rupture' : '')} data-testid={testid}>
+      <div role="checkbox" aria-checked={on ? 'true' : 'false'} aria-disabled={dim ? 'true' : undefined} aria-label={`${name}${priceLabel ? ' ' + priceLabel : ''}${count > 1 ? ', ' + count + ' fois' : ''}`}
+        tabIndex={0} onClick={tap} onKeyDown={handleKey} className="lc-qrow__main" style={{ outline: 'none' }}>
+        {image
+          ? <img src={image} alt="" aria-hidden="true" className="lc-qrow__img" onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}/>
+          : null}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="lc-qrow__name">{name}{badge}</div>
+          {rupture && !on
+            ? <div className="lc-rupture-tag">Rupture aujourd'hui</div>
+            : priceLabel && <div className="lc-qrow__price">{priceLabel}{count > 1 ? <span className="lc-qrow__mult"> × {count}</span> : null}</div>}
+        </div>
+      </div>
+      {repeat && on ? (
+        <div className="lc-qty" role="group" aria-label={`Quantité ${name}`}>
+          <button type="button" onClick={() => { if (window.lcHaptic) window.lcHaptic(8); onRemove(); }} aria-label={`Retirer un ${name}`}><I.Minus size={14}/></button>
+          <span aria-live="polite"><Bump value={count}>{count}</Bump></span>
+          <button type="button" className={canAdd ? 'is-plus' : 'is-plus is-off'} onClick={() => { if (canAdd) { if (window.lcHaptic) window.lcHaptic(8); onAdd(); } else onBlocked(); }} aria-label={`Ajouter un ${name}`}><I.Plus size={14}/></button>
+        </div>
+      ) : on ? (
+        <div aria-hidden="true" className="lc-checkbox lc-checkbox--on lc-check-draw" onClick={tap}><I.Check size={12} stroke="#fff" sw={3}/></div>
+      ) : (
+        <div aria-hidden="true" className="lc-qrow__add" onClick={tap}><I.Plus size={14}/></div>
+      )}
+    </div>
+  );
+}
+
+// [2026-11-15] Étape viandes refaite : chaque toucher AJOUTE une viande (la même deux fois si le plat a deux
+// emplacements qui la proposent). Les emplacements inclus se remplissent sous les yeux du client ; une fois pleins,
+// chaque carte propose « + en plus » (extra serveur « Viande supplémentaire », payant) dans la limite du profil.
 function ScreenStepViandes({ item, selections, setSelections, headingRef }) {
   const lcMenu = window.LC.menu;
   const meatIds = selections.meatIds || [];
-  const required = item.viandes;
-  const remaining = required - meatIds.length;
-  const togglePush = (id) => {
+  const extraIds = selections.extraMeatIds || [];
+  const required = lcRequiredMeats(item);
+  const extraCap = lcExtraMeatCap(item);
+  const emPrice = extraMeatPriceOf(lcMenu).toFixed(2).replace('.', ',');
+  const full = meatIds.length >= required;
+  const extraRoom = Math.min(extraCap - extraIds.length, lcSupMax() - lcSupTotal(selections));
+  const nudge = useNudge();
+  const [lastId, setLastId] = useState_w(null);
+  const nameOf = (id) => (lcMenu.meats.find(m => m.id === id) || {}).name || '';
+  const mark = (id) => { if (window.lcHaptic) window.lcHaptic(8); setLastId(id + ':' + Date.now()); };
+
+  const tapCard = (m) => {
+    const mine = lcCount(meatIds, m.id);
+    if (!mine && lcRupture('variations', m.name)) { nudge.nudge(`${m.name} est en rupture aujourd'hui — choisis une autre viande`); return; }
+    if (!full) {
+      if (mine >= lcMeatSlotCount(m.name, required)) { nudge.nudge(mine === 0 ? `${m.name} n'est plus disponible pour ce plat aujourd'hui` : `${m.name} : ${mine > 1 ? mine + ' fois au plus' : 'une seule fois'} ici — choisis une autre viande`); return; }
+      mark(m.id);
+      setSelections(s => ({ ...s, meatIds: [...(s.meatIds || []), m.id] }));
+      return;
+    }
+    // Une seule viande incluse : toucher une autre viande la REMPLACE (jamais d'ajout payant par accident).
+    if (required === 1 && mine === 0 && lcCount(extraIds, m.id) === 0) {
+      mark(m.id);
+      setSelections(s => ({ ...s, meatIds: [m.id] }));
+      return;
+    }
+    nudge.nudge(extraCap > 0
+      ? (extraRoom > 0 ? `C'est complet — touche « + en plus » pour en ajouter (+${emPrice} €)` : 'Maximum atteint — retire une viande avec −')
+      : 'C\'est complet — retire une viande avec − pour changer');
+  };
+  const addExtra = (m) => {
+    if (extraRoom <= 0) { nudge.nudge(extraIds.length >= extraCap ? `Maximum : ${extraCap} viande${extraCap > 1 ? 's' : ''} en plus` : 'Maximum de suppléments atteint pour ce plat'); return; }
+    mark(m.id);
+    setSelections(s => ({ ...s, extraMeatIds: [...(s.extraMeatIds || []), m.id] }));
+  };
+  // Retirer : la viande EN PLUS (payante) part d'abord ; si une incluse part, une viande en plus prend sa place
+  // (le client ne paie jamais un supplément tant qu'un emplacement inclus est libre).
+  const removeOne = (id, from) => {
+    if (window.lcHaptic) window.lcHaptic(8);
+    setLastId(null);
     setSelections(s => {
-      const arr = s.meatIds || [];
-      if (arr.includes(id)) return { ...s, meatIds: arr.filter(x => x !== id) };
-      if (arr.length >= required) return { ...s, meatIds: [...arr.slice(1), id] };
-      return { ...s, meatIds: [...arr, id] };
+      const inc = (s.meatIds || []).slice();
+      const ext = (s.extraMeatIds || []).slice();
+      const takeExtra = from === 'extra' || (from !== 'included' && ext.includes(id));
+      if (takeExtra && ext.includes(id)) { ext.splice(ext.lastIndexOf(id), 1); return { ...s, extraMeatIds: ext }; }
+      if (!inc.includes(id)) return s;
+      inc.splice(inc.lastIndexOf(id), 1);
+      const promu = ext.findIndex(x => lcCount(inc, x) < lcMeatSlotCount(nameOf(x), required));
+      if (promu >= 0) inc.push(ext.splice(promu, 1)[0]);
+      return { ...s, meatIds: inc, extraMeatIds: ext };
     });
   };
+
   return (
-    <div style={{ padding: '20px 20px 120px' }}>
-      <div role="status" aria-live="polite" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <p style={{ margin: 0, fontSize: 14, color: 'var(--gray-4)' }}>
-          Choisis <strong>{required}</strong> viande{required > 1 ? 's' : ''}
-        </p>
-        <span style={{ fontSize: 11, fontWeight: 700, color: meatIds.length === required ? 'var(--green)' : 'var(--orange)', letterSpacing: '0.08em' }}>
-          {meatIds.length}/{required}
-        </span>
+    <div style={{ padding: '16px 20px 120px' }}>
+      {/* Plateau : les emplacements inclus + les viandes en plus, dans l'ordre choisi. */}
+      <div className="lc-tray" data-testid="meat-tray">
+        <div key={nudge.n} className={'lc-tray__head' + (nudge.n ? ' lc-shake' : '')} role="status" aria-live="polite">
+          <span>{required > 1 ? <span><strong>{required} viandes</strong> comprises</span> : <span><strong>1 viande</strong> comprise</span>}</span>
+          <span className={'lc-tray__count' + (full ? ' is-full' : '')}><Bump value={meatIds.length}>{meatIds.length}</Bump>/{required}</span>
+        </div>
+        <div className="lc-tray__slots">
+          {Array.from({ length: required }, (_, k) => {
+            const id = meatIds[k];
+            const m = id ? lcMenu.meats.find(x => x.id === id) : null;
+            return m ? (
+              <button type="button" key={k + ':' + id} className="lc-slot is-filled" onClick={() => removeOne(id, 'included')} aria-label={`Retirer ${m.name}`}>
+                {m.image && <img src={m.image} alt="" aria-hidden="true"/>}
+                <span className="lc-slot__name">{m.name}</span>
+                <span className="lc-slot__tag">Comprise</span>
+                <span className="lc-slot__x" aria-hidden="true"><I.Close size={11}/></span>
+              </button>
+            ) : (
+              <div key={k + ':vide'} className={'lc-slot' + (k === meatIds.length ? ' is-next' : '')} aria-hidden="true">
+                <span className="lc-slot__num">{k + 1}</span>
+                <span className="lc-slot__name">{k === meatIds.length ? 'Choisis ci-dessous' : 'Viande ' + (k + 1)}</span>
+              </div>
+            );
+          })}
+          {extraIds.map((id, k) => {
+            const m = lcMenu.meats.find(x => x.id === id);
+            return m ? (
+              <button type="button" key={'x' + k + ':' + id} className="lc-slot is-filled is-extra" data-testid="meat-extra-chip" onClick={() => removeOne(id, 'extra')} aria-label={`Retirer ${m.name} en plus`}>
+                {m.image && <img src={m.image} alt="" aria-hidden="true"/>}
+                <span className="lc-slot__name">{m.name}</span>
+                <span className="lc-slot__tag">+{emPrice} €</span>
+                <span className="lc-slot__x" aria-hidden="true"><I.Close size={11}/></span>
+              </button>
+            ) : null;
+          })}
+        </div>
+        <div role="status" aria-live="polite" className={'lc-cap__msg' + (nudge.msg ? ' is-on' : '')}>{nudge.msg || ''}</div>
+        {extraCap > 0 && lcMenu.meats.some(m => lcOffered('variations', m.name)) && (
+          <p className="lc-tray__foot">
+            {full
+              ? (extraRoom > 0
+                ? <span>Encore faim ? <strong>Viande en plus +{emPrice} €</strong>{extraCap > 1 ? ` · jusqu'à ${extraCap}` : ''}</span>
+                : <span>{extraIds.length >= extraCap ? `Viande en plus : maximum atteint (${extraCap})` : 'Maximum de suppléments atteint pour ce plat'}</span>)
+              : <span>Ensuite, tu pourras ajouter de la viande en plus (+{emPrice} €)</span>}
+          </p>
+        )}
       </div>
-      <div role="radiogroup" aria-label={`Choisis ${required} viandes`} style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-        {lcMenu.meats.filter(m => lcOffered('variations', m.name)).map(m => {
-          const on = meatIds.includes(m.id);
+
+      <div role="radiogroup" aria-label={`Choisis ${required} viandes`} style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginTop: 14, alignItems: 'start' }}>
+        {lcMenu.meats.filter(m => lcOffered('variations', m.name) || lcRupture('variations', m.name)).map(m => {
+          const rupture = !lcOffered('variations', m.name);
+          const inc = lcCount(meatIds, m.id);
+          const ext = lcCount(extraIds, m.id);
+          const count = inc + ext;
+          const on = count > 0;
+          const fresh = lastId && lastId.indexOf(m.id + ':') === 0;
+          const handleKey = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tapCard(m); } };
           return (
-            <ChoiceCard key={m.id} on={on} onPick={() => togglePush(m.id)} ariaRole="checkbox">
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                {/* Phase 6.A real-asset thumb (kiosk viande_*.png) */}
-                {m.image && <img
-                  data-testid={`meat-choice-image-${m.id}`}
-                  className="lc-wizard-choice-image lc-wizard-choice-image--meat"
-                  src={m.image}
-                  alt=""
-                  aria-hidden="true"
-                  onError={(e) => { e.currentTarget.dataset.imageError = 'true'; }}
-                />}
-                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</span>
-              </span>
-              <span aria-hidden="true" className={on ? 'lc-check-draw' : ''} style={{ width: 22, height: 22, borderRadius: 7, border: on ? '0' : '2px solid var(--gray-2)', background: on ? 'var(--orange)' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                {on && <I.Check size={14} stroke="#fff" sw={3}/>}
-              </span>
-            </ChoiceCard>
+            <div key={m.id} className={'lc-meat' + (on ? ' is-on' : '') + (rupture && !on ? ' is-rupture' : '')} data-testid={`meat-card-${m.id}`}>
+              <div role="checkbox" aria-checked={on ? 'true' : 'false'} aria-disabled={rupture && !on ? 'true' : undefined} tabIndex={0} onClick={() => tapCard(m)} onKeyDown={handleKey}
+                aria-label={`${m.name}${count > 1 ? ', ' + count + ' fois' : ''}`}
+                className={'rdw-choice lc-meat__card' + (on ? ' is-on' : '') + (fresh && on ? ' lc-just-picked' : '')} style={{ outline: 'none' }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+                  {m.image && <img
+                    data-testid={`meat-choice-image-${m.id}`}
+                    className="lc-wizard-choice-image lc-wizard-choice-image--meat"
+                    src={m.image}
+                    alt=""
+                    aria-hidden="true"
+                    onError={(e) => { e.currentTarget.dataset.imageError = 'true'; }}
+                  />}
+                  <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{m.name}{rupture && !on && <span className="lc-rupture-tag" style={{ display: 'block' }}>Rupture</span>}</span>
+                </span>
+                {on
+                  ? <span key={count} aria-hidden="true" className="lc-meat__count lc-bump">{count > 1 ? '×' + count : <I.Check size={14} stroke="#fff" sw={3}/>}</span>
+                  : <span aria-hidden="true" className="lc-meat__empty"/>}
+              </div>
+              {(on || (full && extraRoom > 0 && !rupture)) && (
+                <div className="lc-meat__actions">
+                  {on
+                    ? <button type="button" className="lc-meat__minus" onClick={() => removeOne(m.id)} aria-label={`Retirer un ${m.name}`}><I.Minus size={14}/></button>
+                    : <span/>}
+                  {full && extraRoom > 0 && !rupture && (
+                    <button type="button" className="lc-meat__plus" data-testid={`meat-extra-add-${m.id}`} onClick={() => addExtra(m)} aria-label={`Ajouter ${m.name} en plus, ${emPrice} euros`}>
+                      <I.Plus size={12}/> en plus
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
@@ -541,7 +772,8 @@ function ScreenStepSauce({ item, selections, setSelections, headingRef, sauceFie
   // « bolSauces » (2 noms) faisait disparaître la Spicy et « Sans sauce » (régression R2-001).
   const pool = ((isMainSauce && template === 'bol' && !window.LC.currentItemOptions && (lcMenu.bolSauces || []).length > 0)
     ? lcMenu.bolSauces
-    : lcMenu.sauces).filter(x => /^sans/i.test(x.name) || (isFritesSauce ? lcSauceVendue(x.name) : lcOffered('variations', x.name)));
+    : lcMenu.sauces).filter(x => /^sans/i.test(x.name) || (isFritesSauce ? lcSauceVendue(x.name) : (lcOffered('variations', x.name) || lcRupture('variations', x.name))));
+  const enRupture = (x) => !isFritesSauce && !/^sans/i.test(x.name) && !lcOffered('variations', x.name);
   const toggle = (id) => {
     setSelections(s => {
       const arr = s[sauceField] || [];
@@ -563,13 +795,13 @@ function ScreenStepSauce({ item, selections, setSelections, headingRef, sauceFie
         {pool.map(s => {
           const on = sauceIds.includes(s.id);
           return (
-            <ChoiceCard key={s.id} on={on} onPick={() => toggle(s.id)} ariaRole={maxOne ? 'radio' : 'checkbox'}>
+            <ChoiceCard key={s.id} on={on} onPick={() => toggle(s.id)} ariaRole={maxOne ? 'radio' : 'checkbox'} rupture={enRupture(s) && !on}>
               <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 {/* Phase 6.A real-asset color swatch (kiosk generated sauce_*.svg) */}
                 {s.image
                   ? <img src={s.image} alt="" aria-hidden="true" style={{ width: 18, height: 18, objectFit: 'cover', borderRadius: 999, flexShrink: 0, border: '1px solid var(--gray-2)' }} onError={(e) => { e.target.style.display = 'none'; }}/>
                   : (window.NeutralAsset ? <window.NeutralAsset label={`${s.name} — photo indisponible`} style={{ width: 18, height: 18, borderRadius: 999, flexShrink: 0 }} /> : null)}
-                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</span>
+                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}{enRupture(s) && <span className="lc-rupture-tag" style={{ display: 'block' }}>Rupture</span>}</span>
               </span>
             </ChoiceCard>
           );
@@ -624,60 +856,34 @@ function ScreenStepCrudites({ item, selections, setSelections, headingRef }) {
 // [GOAL-SYNC 2026-07-08] item.has_extra_meat → rendue dans l'étape suppléments
 // (et suppléments bols) — parité web wizard-v2.jsx viande_extra (max 2).
 // ============================================================================
-function ExtraMeatSection({ item, selections, setSelections }) {
+function ExtraMeatSection({ item, selections, setSelections, nudge }) {
   const lcMenu = window.LC.menu;
-  if (!item.has_extra_meat || !lcOffered('extras', 'Viande supplémentaire')) return null;
+  const cap = lcExtraMeatCap(item);
+  // Avec une étape Viandes, la viande en plus se choisit là-bas (un seul endroit pour la même chose).
+  if (!cap || computeActiveSteps(item, selections).includes(STEP.VIANDES)) return null;
   const emPrice = extraMeatPriceOf(lcMenu);
   const extraMeatIds = selections.extraMeatIds || [];
-  const toggle = (id) => {
-    setSelections(s => {
-      const arr = s.extraMeatIds || [];
-      if (arr.includes(id)) return { ...s, extraMeatIds: arr.filter(x => x !== id) };
-      if (arr.length >= 1) return s; // [2026-11-14 R4-002] 1 seule : le serveur refuse 2 « Viande supplémentaire » (choix non répétable)
-      if ((s.supplementIds || []).length + (s.bolSupplementIds || []).length >= 5) return s; // [R5-002] 5 choix au total
-      return { ...s, extraMeatIds: [...arr, id] };
-    });
-  };
+  const repeat = lcSupRepeat();
+  const room = Math.min(cap - extraMeatIds.length, lcSupMax() - lcSupTotal(selections));
   const priceLabel = emPrice.toFixed(2).replace('.', ',');
+  const add = (id) => setSelections(s => ({ ...s, extraMeatIds: [...(s.extraMeatIds || []), id] }));
+  const remove = (id) => setSelections(s => { const a = (s.extraMeatIds || []).slice(); const k = a.lastIndexOf(id); if (k >= 0) a.splice(k, 1); return { ...s, extraMeatIds: a }; });
   return (
     <div style={{ marginTop: 18 }} data-testid="extra-meat-section">
       <p style={{ margin: '0 0 10px', fontSize: 14, color: 'var(--gray-4)' }}>
-        Viande supplémentaire <strong>+{priceLabel} €</strong> · 1 au choix
+        Viande en plus <strong>+{priceLabel} €</strong> · {cap > 1 ? `jusqu'à ${cap}` : '1 au choix'}
       </p>
+      {nudge && <div role="status" aria-live="polite" className={'lc-cap__msg' + (nudge.msg ? ' is-on' : '')} style={{ marginBottom: nudge.msg ? 8 : 0 }}>{nudge.msg || ''}</div>}
       <div role="group" aria-label={`Viande supplémentaire +${priceLabel} €`} style={{ background: 'var(--cream)', borderRadius: 14, overflow: 'hidden' }}>
-        {lcMenu.meats.map(m => {
-          const on = extraMeatIds.includes(m.id);
-          const blocked = !on && (extraMeatIds.length >= 1 || (selections.supplementIds || []).length + (selections.bolSupplementIds || []).length >= 5);
-          const handleKey = (e) => {
-            if (blocked) return;
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(m.id); }
-          };
-          return (
-            <div
-              key={m.id}
-              role="checkbox"
-              aria-checked={on ? 'true' : 'false'}
-              aria-disabled={blocked ? 'true' : undefined}
-              tabIndex={blocked ? -1 : 0}
-              onClick={blocked ? undefined : () => toggle(m.id)}
-              onKeyDown={handleKey}
-              className="lc-toggle-row"
-              data-testid={`extra-meat-${m.id}`}
-              style={{ outline: 'none', opacity: blocked ? 0.4 : 1, cursor: blocked ? 'not-allowed' : 'pointer' }}
-            >
-              {m.image
-                ? <img src={m.image} alt="" aria-hidden="true" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 8, flexShrink: 0, marginRight: 10 }} onError={(e) => { e.target.style.display = 'none'; }}/>
-                : (window.NeutralAsset ? <window.NeutralAsset label={`${m.name} — photo indisponible`} style={{ width: 36, height: 36, borderRadius: 8, flexShrink: 0, marginRight: 10 }} /> : null)}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{m.name}</div>
-                <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink)', fontWeight: 700, marginTop: 2 }}>+ {priceLabel} €</div>
-              </div>
-              <div aria-hidden="true" className={`lc-checkbox ${on ? 'lc-checkbox--on lc-check-draw' : ''}`}>
-                {on && <I.Check size={12} stroke="#fff" sw={3}/>}
-              </div>
-            </div>
-          );
-        })}
+        {/* Profil sans étape viande (aucune viande connue pour ce plat) : toutes les viandes, comme avant. */}
+        {(lcMenu.meats.some(m => lcLimits() && lcLimits().meatSlots.length && (lcOffered('variations', m.name) || lcRupture('variations', m.name)))
+          ? lcMenu.meats.filter(m => lcOffered('variations', m.name) || lcRupture('variations', m.name))
+          : lcMenu.meats).map(m => (
+          <QtyRow key={m.id} rupture={!!(lcLimits() && lcLimits().meatSlots.length) && !lcOffered('variations', m.name)} testid={`extra-meat-${m.id}`} image={m.image} name={m.name} priceLabel={`+ ${priceLabel} €`}
+            count={lcCount(extraMeatIds, m.id)} repeat={repeat && cap > 1} canAdd={room > 0}
+            onAdd={() => add(m.id)} onRemove={() => remove(m.id)}
+            onBlocked={() => nudge && nudge.nudge(lcRupture('variations', m.name) && !lcOffered('variations', m.name) ? `${m.name} est en rupture aujourd'hui` : extraMeatIds.length >= cap ? `Maximum : ${cap} viande${cap > 1 ? 's' : ''} en plus` : 'Maximum de suppléments atteint pour ce plat')}/>
+        ))}
       </div>
     </div>
   );
@@ -693,57 +899,35 @@ function ScreenStepSupplements({ item, selections, setSelections, headingRef }) 
   const supplementIds = selections.supplementIds || [];
   const isGalette = item.category_id === 2;
   const pool = lcMenu.supplements.filter(s => {
-    if (!lcOffered('extras', s.name)) return false;
+    if (!lcOffered('extras', s.name) && !lcRupture('extras', s.name)) return false;
     if (s.galette_only && !isGalette) return false;
     if (s.galette_excluded && isGalette) return false;
     return true;
   });
-  const toggle = (id) => {
-    if (window.lcHaptic) window.lcHaptic(8);
-    setSelections(s => {
-      const arr = s.supplementIds || [];
-      // [2026-11-14 R4-002] plafond du profil serveur (5 suppléments ; la viande en plus compte dans l'étape).
-      if (!arr.includes(id) && arr.length + (s.extraMeatIds || []).length >= 5) return s;
-      return { ...s, supplementIds: arr.includes(id) ? arr.filter(x => x !== id) : [...arr, id] };
-    });
-  };
+  // [2026-11-14 R4-002] plafond du profil serveur (la viande en plus compte dans le même groupe).
+  // [2026-11-15] plafond et répétition LUS dans le profil ; chaque refus est expliqué (jauge + message).
+  const max = lcSupMax();
+  const repeat = lcSupRepeat();
+  const used = lcSupTotal(selections);
+  const nudge = useNudge();
+  const add = (id) => setSelections(s => (lcSupTotal(s) >= max ? s : { ...s, supplementIds: [...(s.supplementIds || []), id] }));
+  const remove = (id) => setSelections(s => { const a = (s.supplementIds || []).slice(); const k = a.lastIndexOf(id); if (k >= 0) a.splice(k, 1); return { ...s, supplementIds: a }; });
   return (
-    <div style={{ padding: '20px 20px 120px' }}>
-      <p style={{ margin: '0 0 14px', fontSize: 14, color: 'var(--gray-4)' }}>Optionnel · ajoute ce que tu veux</p>
+    <div style={{ padding: '16px 20px 120px' }}>
+      <CapMeter used={used} max={max} label={repeat ? 'Optionnel · touche deux fois pour doubler' : 'Optionnel · ajoute ce que tu veux'} nudge={nudge}/>
+      {(selections.extraMeatIds || []).length > 0 && computeActiveSteps(item, selections).includes(STEP.VIANDES) && (
+        <p style={{ margin: '-4px 0 12px', fontSize: 12, color: 'var(--gray-4)' }}>dont {(selections.extraMeatIds || []).length} viande{(selections.extraMeatIds || []).length > 1 ? 's' : ''} en plus (étape Viandes)</p>
+      )}
       <div role="group" aria-label="Suppléments" style={{ background: 'var(--cream)', borderRadius: 14, overflow: 'hidden' }}>
-        {pool.map(s => {
-          const on = supplementIds.includes(s.id);
-          const handleKey = (e) => {
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(s.id); }
-          };
-          return (
-            <div
-              key={s.id}
-              role="checkbox"
-              aria-checked={on ? 'true' : 'false'}
-              tabIndex={0}
-              onClick={() => toggle(s.id)}
-              onKeyDown={handleKey}
-              className="lc-toggle-row"
-              style={{ outline: 'none' }}
-            >
-              {/* Phase 6.A real-asset thumb (kiosk supplement_*.png) */}
-              {s.image && (
-                <img src={s.image} alt="" aria-hidden="true" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 8, flexShrink: 0, marginRight: 10 }}/>
-              )}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{s.name}</div>
-                <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink)', fontWeight: 700, marginTop: 2 }}>+ {s.price.toFixed(2).replace('.', ',')} €</div>
-              </div>
-              <div aria-hidden="true" className={`lc-checkbox ${on ? 'lc-checkbox--on lc-check-draw' : ''}`}>
-                {on && <I.Check size={12} stroke="#fff" sw={3}/>}
-              </div>
-            </div>
-          );
-        })}
+        {pool.map(s => (
+          <QtyRow key={s.id} rupture={!lcOffered('extras', s.name)} testid={`supp-${s.id}`} image={s.image} name={s.name} priceLabel={`+ ${s.price.toFixed(2).replace('.', ',')} €`}
+            count={lcCount(supplementIds, s.id)} repeat={repeat} canAdd={used < max}
+            onAdd={() => add(s.id)} onRemove={() => remove(s.id)}
+            onBlocked={() => nudge.nudge(!lcOffered('extras', s.name) ? `${s.name} est en rupture aujourd'hui` : `Maximum ${max} suppléments par plat — retires-en un pour changer`)}/>
+        ))}
       </div>
-      {/* [GOAL-SYNC 2026-07-08] Viande supplémentaire +2,50 € (has_extra_meat, multi 0..2) */}
-      <ExtraMeatSection item={item} selections={selections} setSelections={setSelections}/>
+      {/* Viande en plus : ici seulement pour les plats sans étape Viandes (burgers, galettes…). */}
+      <ExtraMeatSection item={item} selections={selections} setSelections={setSelections} nudge={nudge}/>
     </div>
   );
 }
@@ -923,66 +1107,37 @@ function ScreenStepFritesSauce(props) {
 // ============================================================================
 function ScreenStepBolSupplements({ item, selections, setSelections, headingRef }) {
   const lcMenu = window.LC.menu;
-  // [GOAL-SYNC 2026-07-08] Canon fixture : 0..5 suppléments ; « Option Gratiné »
-  // (sb-gratine, riz_only) visible UNIQUEMENT sur le Bol Riz (slug 'bol-riz').
+  // [GOAL-SYNC 2026-07-08] « Option Gratiné » (sb-gratine, riz_only) visible UNIQUEMENT sur le Bol Riz (slug 'bol-riz').
   const isBolRiz = item.slug === 'bol-riz';
   const supplementsBols = (lcMenu.supplementsBols || []).filter(s => {
-    if (!lcOffered('extras', s.name)) return false;
+    if (!lcOffered('extras', s.name) && !lcRupture('extras', s.name)) return false;
     if ((s.riz_only || s.id === 'sb-gratine') && !isBolRiz) return false;
     return true;
   });
   const bolSupplementIds = selections.bolSupplementIds || [];
-  const MAX_BOL_SUPPLEMENTS = 5;
-  const toggle = (id) => {
-    setSelections(s => {
-      const arr = s.bolSupplementIds || [];
-      if (arr.includes(id)) return { ...s, bolSupplementIds: arr.filter(x => x !== id) };
-      if (arr.length + (s.extraMeatIds || []).length >= MAX_BOL_SUPPLEMENTS) return s; // max 5, viande en plus comprise (R5-002)
-      return { ...s, bolSupplementIds: [...arr, id] };
-    });
-  };
+  // [2026-11-15] plafond et répétition lus dans le profil serveur (viande en plus comprise — R5-002).
+  const max = lcSupMax();
+  const repeat = lcSupRepeat();
+  const used = lcSupTotal(selections);
+  const nudge = useNudge();
+  const add = (id) => setSelections(s => (lcSupTotal(s) >= max ? s : { ...s, bolSupplementIds: [...(s.bolSupplementIds || []), id] }));
+  const remove = (id) => setSelections(s => { const a = (s.bolSupplementIds || []).slice(); const k = a.lastIndexOf(id); if (k >= 0) a.splice(k, 1); return { ...s, bolSupplementIds: a }; });
   return (
-    <div style={{ padding: '20px 20px 120px' }}>
-      <p style={{ margin: '0 0 14px', fontSize: 14, color: 'var(--gray-4)' }}>
-        Optionnel · personnalise ton bol · max {MAX_BOL_SUPPLEMENTS}
-      </p>
+    <div style={{ padding: '16px 20px 120px' }}>
+      <CapMeter used={used} max={max} label={repeat ? 'Optionnel · touche deux fois pour doubler' : 'Optionnel · personnalise ton bol'} nudge={nudge}/>
       <div role="group" aria-label="Suppléments bol" style={{ background: 'var(--cream)', borderRadius: 14, overflow: 'hidden' }}>
         {supplementsBols.map(s => {
-          const on = bolSupplementIds.includes(s.id);
           const isGratine = s.id === 'sb-gratine' || s.id === 'sb-boule-gratinee';
-          const handleKey = (e) => {
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(s.id); }
-          };
           return (
-            <div
-              key={s.id}
-              role="checkbox"
-              aria-checked={on ? 'true' : 'false'}
-              tabIndex={0}
-              onClick={() => toggle(s.id)}
-              onKeyDown={handleKey}
-              className="lc-toggle-row"
-              data-testid={`bol-supp-${s.id}`}
-              style={{ outline: 'none' }}
-            >
-              {s.image && <img src={s.image} alt="" aria-hidden="true" style={{ width: 36, height: 36, marginRight: 10, borderRadius: 8, objectFit: 'cover', background: 'var(--cream, #f5f0e8)' }} onError={(e) => { e.currentTarget.dataset.imageError = 'true'; }}/>}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>
-                  {s.name}{isGratine && <span style={{ marginLeft: 6, fontSize: 10, padding: '2px 6px', background: 'var(--orange)', color: '#fff', borderRadius: 4, fontWeight: 700, letterSpacing: '0.05em' }}>POPULAIRE</span>}
-                </div>
-                <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink)', fontWeight: 700, marginTop: 2 }}>
-                  + {s.price.toFixed(2).replace('.', ',')} €
-                </div>
-              </div>
-              <div aria-hidden="true" className={`lc-checkbox ${on ? 'lc-checkbox--on lc-check-draw' : ''}`}>
-                {on && <I.Check size={12} stroke="#fff" sw={3}/>}
-              </div>
-            </div>
+            <QtyRow key={s.id} rupture={!lcOffered('extras', s.name)} testid={`bol-supp-${s.id}`} image={s.image} name={s.name} priceLabel={`+ ${s.price.toFixed(2).replace('.', ',')} €`}
+              badge={isGratine ? <span style={{ marginLeft: 6, fontSize: 10, padding: '2px 6px', background: 'var(--orange)', color: '#fff', borderRadius: 4, fontWeight: 700, letterSpacing: '0.05em' }}>POPULAIRE</span> : null}
+              count={lcCount(bolSupplementIds, s.id)} repeat={repeat} canAdd={used < max}
+              onAdd={() => add(s.id)} onRemove={() => remove(s.id)}
+              onBlocked={() => nudge.nudge(!lcOffered('extras', s.name) ? `${s.name} est en rupture aujourd'hui` : `Maximum ${max} suppléments par bol — retires-en un pour changer`)}/>
           );
         })}
       </div>
-      {/* [GOAL-SYNC 2026-07-08] Viande supplémentaire +2,50 € aussi sur les bols (has_extra_meat) */}
-      <ExtraMeatSection item={item} selections={selections} setSelections={setSelections}/>
+      <ExtraMeatSection item={item} selections={selections} setSelections={setSelections} nudge={nudge}/>
     </div>
   );
 }
@@ -1032,22 +1187,77 @@ function ScreenStepBolDrink({ item, selections, setSelections, headingRef }) {
 }
 
 // ============================================================================
+// Note du client pour CE produit — la cuisine la lit sur le ticket ([Note : …], api/client.js).
+// [2026-11-15] Un seul composant pour l'assistant et l'ajout direct ; des raccourcis écrivent les demandes
+// les plus courantes à la place du client (un toucher ajoute, un second retire).
+// ============================================================================
+const LC_NOTE_MAX = 190;
+const LC_NOTE_SHORTCUTS = ['Bien cuit', 'Peu de sauce', 'Coupé en deux'];
+function NoteField({ value, onChange, shortcuts = [], placeholder = 'Une précision pour la cuisine ?' }) {
+  const v = value || '';
+  const [open, setOpen] = useState_w(!!v);
+  const clip = (t) => Array.from(t).slice(0, LC_NOTE_MAX).join('');
+  // Un raccourci est « posé » si un SEGMENT de la note (entre virgules) COMMENCE par lui : « bien cuit et sans tomate »
+  // garde la puce allumée, « pas bien cuit » ne l'allume pas ; le retirer n'enlève que ces mots-là.
+  const segments = () => v.split(',').map(x => x.trim()).filter(Boolean);
+  const porte = (seg, c) => { const a = seg.toLowerCase(), b = c.toLowerCase(); return a === b || a.indexOf(b + ' ') === 0; };
+  const has = (c) => segments().some(x => porte(x, c));
+  const [plein, setPlein] = useState_w(false);
+  useEffect_w(() => { if (!plein) return undefined; const t = setTimeout(() => setPlein(false), 2400); return () => clearTimeout(t); }, [plein]);
+  const toggle = (c) => {
+    if (window.lcHaptic) window.lcHaptic(8);
+    if (has(c)) { onChange(segments().map(x => porte(x, c) ? x.slice(c.length).trim() : x).filter(Boolean).join(', ')); return; }
+    const next = segments().concat([segments().length ? c.toLowerCase() : c]).join(', ');
+    if (Array.from(next).length <= LC_NOTE_MAX) onChange(next); else setPlein(true);
+  };
+  const len = Array.from(v).length;
+  return (
+    <div className="lc-note" data-testid="note-field">
+      <div className="lc-note__head">
+        <span className="lc-note__icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>
+        <label htmlFor="lc-recap-instructions" className="lc-note__label">Une petite note ? <span>(optionnel)</span></label>
+      </div>
+      {shortcuts.length > 0 && (
+        <div className="lc-note__chips" role="group" aria-label="Demandes courantes">
+          {shortcuts.map(c => (
+            <button type="button" key={c} className={'lc-note__chip' + (has(c) ? ' is-on' : '')} aria-pressed={has(c) ? 'true' : 'false'} onClick={() => { setOpen(true); toggle(c); }}>{c}</button>
+          ))}
+        </div>
+      )}
+      <textarea
+        id="lc-recap-instructions"
+        data-testid="recap-instructions"
+        rows={open || v ? 3 : 1}
+        placeholder={placeholder}
+        value={v}
+        onFocus={() => setOpen(true)}
+        onChange={(e) => onChange(clip(e.target.value))}
+        className="lc-note__input"
+      />
+      <div aria-live="polite" className={'lc-note__count' + (len >= LC_NOTE_MAX || plein ? ' is-full' : '')} style={{ visibility: open || v || plein ? 'visible' : 'hidden' }}>
+        {plein ? 'Plus de place dans la note · ' : ''}{len} / {LC_NOTE_MAX}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // STEP 9 — Recap (composition résumé + total + Ajouter au panier)
 // ============================================================================
 function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
   const lcMenu = window.LC.menu;
-  const meatLabels = (selections.meatIds || []).map(id => (lcMenu.meats.find(m => m.id === id) || {}).name).filter(Boolean);
+  const meatLabels = lcGroupLabels((selections.meatIds || []).map(id => (lcMenu.meats.find(m => m.id === id) || {}).name).filter(Boolean));
   // [GOAL-SYNC 2026-07-08] lookup multi-pools (sauces génériques + bolSauces 'bs-*')
   const sauceLabels = (selections.sauceIds || []).map(id => sauceNameFor(lcMenu, id)).filter(Boolean);
   // [GOAL-SYNC 2026-07-08] pain + viandes supplémentaires
   const painLabel = selections.painId ? ((lcMenu.pains || []).find(p => p.id === selections.painId) || {}).name : null;
-  const extraMeatLabels = (selections.extraMeatIds || []).map(id => (lcMenu.meats.find(m => m.id === id) || {}).name).filter(Boolean);
+  const extraMeatLabels = lcGroupLabels((selections.extraMeatIds || []).map(id => (lcMenu.meats.find(m => m.id === id) || {}).name).filter(Boolean));
   const cruditeIds = selections.cruditeIds || lcMenu.defaultCruditeIds();
   const cruditeAll = lcMenu.crudites.filter(c => c.default).map(c => c.id); // « retirées » = servies par défaut seulement
   const cruditeRemoved = cruditeAll.filter(id => !cruditeIds.includes(id)).map(id => (lcMenu.crudites.find(c => c.id === id) || {}).name).filter(Boolean);
   const cruditeKept = lcMenu.crudites.filter(c => cruditeIds.includes(c.id)).map(c => c.name);
-  const supLabels = (selections.supplementIds || []).map(id => (lcMenu.supplements.find(s => s.id === id) || {}).name).filter(Boolean);
-  const bolSupLabels = (selections.bolSupplementIds || []).map(id => (lcMenu.supplementsBols.find(s => s.id === id) || {}).name).filter(Boolean);
+  const supLabels = lcGroupLabels((selections.supplementIds || []).map(id => (lcMenu.supplements.find(s => s.id === id) || {}).name).filter(Boolean));
+  const bolSupLabels = lcGroupLabels((selections.bolSupplementIds || []).map(id => (lcMenu.supplementsBols.find(s => s.id === id) || {}).name).filter(Boolean));
   const bolDrinkLabel = selections.bolDrinkId
     ? (lcMenu.formuleDrinks.find(d => d.id === selections.bolDrinkId) || {}).name
     : (selections.bolDrinkId === null ? 'Aucune' : null);
@@ -1125,8 +1335,8 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
   const has = (k) => activeSteps.includes(k);
 
   const Row = ({ label, value }) => value ? (
-    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid var(--gray-1)' }}>
-      <span style={{ fontSize: 12, color: 'var(--gray-4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
+    <div className="lc-recap-row" style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '12px 16px', borderBottom: '1px solid var(--gray-1)' }}>
+      <span style={{ fontSize: 12, color: 'var(--gray-4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>{label}</span>
       <span style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 600, textAlign: 'right', maxWidth: '60%' }}>{value}</span>
     </div>
   ) : null;
@@ -1136,13 +1346,15 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
       <div style={{ background: 'var(--cream)', borderRadius: 16, padding: '14px 0 0', overflow: 'hidden' }}>
         <div style={{ padding: '0 16px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
           <Slot id={`recap-${item.id}`} w={44} h={44} radius={10} placeholder={item.name} src={item.image} alt={item.name} fit="contain" />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 16, fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>{item.name}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 16, lineHeight: 1.15, fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>{item.name}</div>
             <div style={{ fontSize: 11, color: 'var(--gray-4)' }}>Récapitulatif de ta commande</div>
           </div>
           {/* [MOBILE-EXCELLENCE-PHASE13] Disclosure textuelle sur le récapitulatif.
               [MASSIVE-LOGIC HEAL 2026-05-17] uses aggregatedAllergens (item + supps + drinks)
               so every selected component remains covered by the legal disclosure. */}
+        </div>
+        <div style={{ padding: '0 16px 12px' }}>
           {window.AllergenBadge && <window.AllergenBadge allergens={aggregatedAllergens} size="lg"/>}
         </div>
         {/* [MOBILE-REALIGNMENT 2026-05-16] Bol pre-filled rows : base + viande fixed by item */}
@@ -1160,7 +1372,7 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
         )}
         {has(STEP.SUPPLEMENTS) && <Row label="Suppléments" value={supLabels.length ? supLabels.join(' + ') : 'Aucun'}/>}
         {/* [GOAL-SYNC 2026-07-08] rangée viandes supplémentaires (+2,50 € chacune) */}
-        {item.has_extra_meat && extraMeatLabels.length > 0 && <Row label="Viande suppl." value={extraMeatLabels.join(' + ')}/>}
+        {item.has_extra_meat && extraMeatLabels.length > 0 && <Row label="Viande en plus" value={extraMeatLabels.join(' + ') + ' (+' + (extraMeatPriceOf(lcMenu) * (selections.extraMeatIds || []).length).toFixed(2).replace('.', ',') + ' €)'}/>}
         {has(STEP.BOL_SUPPLEMENTS) && <Row label="Suppléments bol" value={bolSupLabels.length ? bolSupLabels.join(' + ') : 'Aucun'}/>}
         {has(STEP.BOL_DRINK) && <Row label="Boisson bol" value={bolDrinkLabel || 'Aucune'}/>}
         {has(STEP.MENU) && <Row label="Formule" value={menuLabel || 'Sans formule'}/>}
@@ -1169,35 +1381,17 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
         {has(STEP.FRITES_SAUCE) && <Row label="Sauce frites" value={fritesSauceLabels.length ? fritesSauceLabels.join(' / ') : '—'}/>}
       </div>
 
-      {/* [D5 Owner re-cadrage 2026-05-11] Instructions spéciales — kiosk a champ instruction 190 char
-          (KW.vue:151-161), mobile alignment. Notes pour la cuisine : sans oignon, bien cuit, etc. */}
-      <div style={{ marginTop: 14 }}>
-        <label htmlFor="lc-recap-instructions" style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--gray-4)', marginBottom: 6 }}>
-          Instructions spéciales <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optionnel)</span>
-        </label>
-        <textarea
-          id="lc-recap-instructions"
-          data-testid="recap-instructions"
-          maxLength={190}
-          rows={2}
-          placeholder="Ex. Sans oignon, bien cuit, etc."
-          value={selections.instruction || ''}
-          onChange={(e) => setSelections(s => ({ ...s, instruction: Array.from(e.target.value).slice(0, 190).join('') }))}
-          style={{ width: '100%', padding: '10px 12px', fontSize: 13, lineHeight: 1.35, border: '1.5px solid var(--gray-2)', borderRadius: 12, background: '#fff', color: 'var(--ink)', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box' }}
-        />
-        <div aria-live="polite" style={{ fontSize: 10, color: 'var(--gray-3)', textAlign: 'right', marginTop: 2 }}>
-          {Array.from(selections.instruction || '').length} / 190
-        </div>
-      </div>
+      {/* [D5 Owner re-cadrage 2026-05-11] Note du client pour ce produit (190 caractères, lue en cuisine). */}
+      <NoteField value={selections.instruction} onChange={(t) => setSelections(st => ({ ...st, instruction: t }))} shortcuts={LC_NOTE_SHORTCUTS} placeholder="Ex. sans oignon, bien cuit…"/>
 
       <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: 'var(--ink)', borderRadius: 16 }}>
         <span style={{ color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Quantité</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <button onClick={() => setQty(qty - 1)} aria-label="Diminuer la quantité" style={{ width: 32, height: 32, borderRadius: 999, background: 'rgba(255,255,255,0.15)', border: 0, color: '#fff', cursor: 'pointer' }}>
+          <button onClick={() => setQty(qty - 1)} aria-label="Diminuer la quantité" style={{ width: 40, height: 40, borderRadius: 999, background: 'rgba(255,255,255,0.15)', border: 0, color: '#fff', cursor: 'pointer' }}>
             <I.Minus size={14} stroke="#fff"/>
           </button>
           <span aria-live="polite" style={{ color: 'var(--orange)', fontFamily: 'var(--font-display)', fontSize: 24, minWidth: 24, textAlign: 'center' }}>{qty}</span>
-          <button onClick={() => setQty(qty + 1)} aria-label="Augmenter la quantité" style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--orange)', border: 0, color: '#fff', cursor: 'pointer' }}>
+          <button onClick={() => setQty(qty + 1)} aria-label="Augmenter la quantité" style={{ width: 40, height: 40, borderRadius: 999, background: 'var(--orange)', border: 0, color: '#fff', cursor: 'pointer' }}>
             <I.Plus size={14} stroke="#fff"/>
           </button>
         </div>
@@ -1243,14 +1437,14 @@ function buildLineItem(item, selections) {
     if (baseLabel) summary.push(baseLabel);
     if (item.bol_meat_fixed) summary.push(item.bol_meat_fixed);
   }
-  if (meatLabels.length) summary.push(meatLabels.join(' + '));
+  if (meatLabels.length) summary.push(lcGroupLabels(meatLabels).join(' + '));
   if (sauceLabels.length) summary.push('Sauce ' + sauceLabels.map(l => String(l).replace(/^sauce\s+/i, '')).join('/'));
   if (cruditeRemoved.length) summary.push('Sans ' + cruditeRemoved.map(s => s.toLowerCase()).join('/'));
   if (cruditeAdded.length) summary.push('Avec ' + cruditeAdded.map(s => s.toLowerCase()).join('/'));
-  if (supLabels.length) summary.push('+ ' + supLabels.join(' + '));
+  if (supLabels.length) summary.push('+ ' + lcGroupLabels(supLabels).join(' + '));
   // [GOAL-SYNC 2026-07-08] viandes supplémentaires (+2,50 € chacune) dans le résumé cuisine
-  if (extraMeatLabels.length) summary.push('Viande suppl. ' + extraMeatLabels.join(' + '));
-  if (bolSupLabels.length) summary.push('+ ' + bolSupLabels.join(' + '));
+  if (extraMeatLabels.length) summary.push('Viande en plus ' + lcGroupLabels(extraMeatLabels).join(' + '));
+  if (bolSupLabels.length) summary.push('+ ' + lcGroupLabels(bolSupLabels).join(' + '));
   if (bolDrinkLabel) summary.push('🥤 ' + bolDrinkLabel);
   if (selections.menuChoice && selections.menuChoice !== 'none') {
     const mLabel = selections.menuChoice === 'full' ? '🍽 Menu' : selections.menuChoice === 'frites' ? '🍟 Frites' : '🥤 Boisson';
@@ -1291,8 +1485,8 @@ function buildLineItem(item, selections) {
     fritesSauceIds: selections.fritesSauceIds || [],
     fritesSauceLabels,
     // [D5 Owner re-cadrage 2026-05-11] instruction spéciale recap → ligne cart
-    instruction: (selections.instruction || '').slice(0, 190),
-    composition_summary: summary.join(' · ') + ((selections.instruction && selections.instruction.length) ? ' · 📝 ' + selections.instruction.slice(0, 60) + (selections.instruction.length > 60 ? '…' : '') : ''),
+    instruction: Array.from(selections.instruction || '').slice(0, 190).join(''),
+    composition_summary: summary.join(' · ') + ((selections.instruction && selections.instruction.length) ? ' · 📝 ' + Array.from(selections.instruction).slice(0, 60).join('') + (Array.from(selections.instruction).length > 60 ? '…' : '') : ''),
     sups: selections.supplementIds || [],
     qty,
     unitPrice,
@@ -1380,7 +1574,9 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
   useEffect_w(() => {
     let alive = true;
     const api = window.LC.mobileApi;
-    if (!itemOptions && item && item.server_id && api && api.optionNames) {
+    // [2026-11-15] Toujours relu à l'ouverture (la fiche est gardée 45 s par api/client.js) : une rupture posée en
+    // caisse entre deux ouvertures du même plat doit apparaître ; l'ancienne réponse sert seulement d'affichage immédiat.
+    if (item && item.server_id && api && api.optionNames) {
       const t = setTimeout(() => { if (alive) setOptionsWait(false); }, 5000);
       api.optionNames(item.server_id).then(o => {
         window.LC.itemOptions = window.LC.itemOptions || {};
@@ -1395,11 +1591,46 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
     return () => { alive = false; clearTimeout(t2); };
   }, [itemId, item && item.server_id]);
   window.LC.currentItemOptions = itemOptions;
+  // [2026-11-15 relecture adverse P1] Un choix fait sur une réponse périmée (ou pré-coché : sauce par défaut) puis
+  // signalé en rupture par le serveur est RETIRÉ de la sélection, et le client est prévenu — sinon la carte cochée
+  // masquait l'étiquette « Rupture » et la ligne partait au panier pour être refusée à la commande.
+  const [ruptureNote, setRuptureNote] = useState_w(null);
+  useEffect_w(() => {
+    if (!itemOptions || !itemOptions.rupture) return undefined;
+    const retires = [];
+    const garde = (ids, pools, kind) => (ids || []).filter(id => {
+      let nm = null;
+      pools.forEach(pl => { const f = (pl || []).find(x => x.id === id); if (f && !nm) nm = f.name; });
+      if (nm && lcRupture(kind, nm) && !lcOffered(kind, nm)) { if (retires.indexOf(nm) === -1) retires.push(nm); return false; }
+      return true;
+    });
+    const nettoie = (st) => ({
+      meatIds: garde(st.meatIds, [lcMenu.meats], 'variations'),
+      extraMeatIds: garde(st.extraMeatIds, [lcMenu.meats], 'variations'),
+      sauceIds: garde(st.sauceIds, [lcMenu.sauces, lcMenu.bolSauces], 'variations'),
+      supplementIds: garde(st.supplementIds, [lcMenu.supplements], 'extras'),
+      bolSupplementIds: garde(st.bolSupplementIds, [lcMenu.supplementsBols], 'extras'),
+    });
+    nettoie(selections); // relevé sur l'état courant : c'est lui qui décide du message
+    // [2026-11-15 relecture adverse, tour 3] Fiche arrivée APRÈS le repli local (réseau lent) : des viandes choisies
+    // sur la carte locale restaient dans la sélection alors que le plat n'en demande pas (Suprême de production) ou
+    // en demande moins → ligne au panier impossible à envoyer. La sélection est ramenée à ce que la fiche permet.
+    const requis = lcRequiredMeats(item);
+    const plusMax = lcExtraMeatCap(item);
+    const ajuste = (st) => ({ meatIds: (st.meatIds || []).slice(0, requis), extraMeatIds: (st.extraMeatIds || []).slice(0, plusMax) });
+    const trop = (selections.meatIds || []).length > requis || (selections.extraMeatIds || []).length > plusMax;
+    if (trop) setSelections(st => ({ ...st, ...ajuste(st) }));
+    if (!retires.length) return undefined;
+    setSelections(st => ({ ...st, ...nettoie(st) }));
+    setRuptureNote(retires.join(', ') + (retires.length > 1 ? ' sont en rupture : choix retirés' : ' est en rupture : choix retiré'));
+    const t = setTimeout(() => setRuptureNote(null), 7000);
+    return () => clearTimeout(t);
+  }, [itemOptions]);
 
   // If item not found, render error early
   if (!item) {
     return (
-      <div ref={screenRef} data-screen-label="09 Item Detail" style={{ position: 'absolute', inset: 0, background: '#fff', padding: 40, paddingTop: 100, textAlign: 'center' }}>
+      <div ref={screenRef} data-screen-label="09 Item Detail" style={{ position: 'absolute', inset: 0, background: '#fff', padding: 40, paddingTop: 'calc(var(--lc-inset-top) + 60px)', textAlign: 'center' }}>
         <h2 className="lc-display" style={{ fontSize: 26, color: 'var(--ink)' }}>Plat introuvable.</h2>
         <button onClick={() => go('back')} className="lc-btn lc-btn--ink" style={{ marginTop: 20 }}>Retour</button>
       </div>
@@ -1459,9 +1690,11 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
 
   // Hint message for disabled CTA
   const hint = (() => {
+    if (ruptureNote) return ruptureNote;
     if (valid) return null;
     if (currentKey === STEP.VIANDES) {
-      const required = item.viande_count || item.viandes;
+      if (!lcMenu.meats.some(m => lcOffered('variations', m.name))) return 'Plus aucune viande disponible pour ce plat aujourd\'hui';
+      const required = lcRequiredMeats(item);
       const remain = required - (selections.meatIds || []).length;
       return `Encore ${remain} viande${remain > 1 ? 's' : ''} à choisir`;
     }
@@ -1498,8 +1731,9 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
   const stepTitle = STEP_LABELS[currentKey] || currentKey;
 
   return (
-    <div ref={screenRef} data-screen-label={`09 Item Wizard ${stepTitle}`} style={{ position: 'absolute', inset: 0, background: 'var(--paper)', overflow: 'hidden' }}>
-      <div data-screen-scroll style={{ position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
+    <div ref={screenRef} data-screen-label={`09 Item Wizard ${stepTitle}`} style={{ position: 'absolute', inset: 0, background: 'var(--cream)', overflow: 'hidden' }}>
+      {/* La bande de la barre d'état prend la couleur de l'en-tête (crème) ; le corps reste sur papier. */}
+      <div data-screen-scroll style={{ background: 'var(--paper)' }}>
         <WizardHeader
           stepIndex={clampedIndex}
           stepTotal={activeSteps.length}
@@ -1536,10 +1770,10 @@ function ScreenItemDirectAdd({ item, selections, setSelections, go, addToCart })
   const total = item.price * qty;
   return (
     <div ref={screenRef} data-screen-label="09 Item Direct" style={{ position: 'absolute', inset: 0, background: 'var(--paper)' }}>
-      <div className="lc-screen" style={{ paddingBottom: 130 }}>
+      <div className="lc-screen" style={{ paddingTop: 0, paddingBottom: 'calc(var(--lc-safe-bottom) + 110px)' }}>
         <div style={{ position: 'relative', height: 280, background: 'var(--ink)' }}>
           <Slot id={item.thumb} h="100%" radius={0} placeholder={item.name} src={item.image} alt={item.name} fit="contain"/>
-          <div style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) - 14px)', left: 14, right: 14, display: 'flex', justifyContent: 'space-between', zIndex: 2 }}>
+          <div style={{ position: 'absolute', top: 12, left: 14, right: 14, display: 'flex', justifyContent: 'space-between', zIndex: 2 }}>
             <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)" ariaLabel="Retour"><I.Back size={20}/></IconBtn>
             <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)" ariaLabel="Fermer"><I.Close size={18}/></IconBtn>
           </div>
@@ -1549,14 +1783,15 @@ function ScreenItemDirectAdd({ item, selections, setSelections, go, addToCart })
           <p style={{ marginTop: 10, fontSize: 14, lineHeight: 1.5, color: 'var(--gray-4)' }}>{item.description}</p>
           {/* [MOBILE-EXCELLENCE-PHASE13] Disclosure textuelle sur le détail produit. */}
           {window.AllergenBadge && <window.AllergenBadge allergens={item.allergens} size="lg"/>}
-          <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: 'var(--ink)', borderRadius: 16 }}>
+          <NoteField value={selections.instruction} onChange={(t) => setSelections(st => ({ ...st, instruction: t }))} placeholder="Ex. bien frais, sans paille…"/>
+          <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: 'var(--ink)', borderRadius: 16 }}>
             <span style={{ color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Quantité</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <button onClick={() => setQty(qty - 1)} aria-label="Diminuer la quantité" style={{ width: 32, height: 32, borderRadius: 999, background: 'rgba(255,255,255,0.15)', border: 0, color: '#fff', cursor: 'pointer' }}>
+              <button onClick={() => setQty(qty - 1)} aria-label="Diminuer la quantité" style={{ width: 40, height: 40, borderRadius: 999, background: 'rgba(255,255,255,0.15)', border: 0, color: '#fff', cursor: 'pointer' }}>
                 <I.Minus size={14} stroke="#fff"/>
               </button>
               <span aria-live="polite" style={{ color: 'var(--orange)', fontFamily: 'var(--font-display)', fontSize: 24, minWidth: 24, textAlign: 'center' }}>{qty}</span>
-              <button onClick={() => setQty(qty + 1)} aria-label="Augmenter la quantité" style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--orange)', border: 0, color: '#fff', cursor: 'pointer' }}>
+              <button onClick={() => setQty(qty + 1)} aria-label="Augmenter la quantité" style={{ width: 40, height: 40, borderRadius: 999, background: 'var(--orange)', border: 0, color: '#fff', cursor: 'pointer' }}>
                 <I.Plus size={14} stroke="#fff"/>
               </button>
             </div>
@@ -1568,7 +1803,8 @@ function ScreenItemDirectAdd({ item, selections, setSelections, go, addToCart })
         total={total}
         disabled={item.available === false}
         onClick={() => {
-          const lineItem = { ...item, qty, unitPrice: item.price, lineTotal: total, sups: [], composition_summary: '' };
+          const note = Array.from(selections.instruction || '').slice(0, LC_NOTE_MAX).join('');
+          const lineItem = { ...item, qty, unitPrice: item.price, lineTotal: total, sups: [], instruction: note, composition_summary: note ? '📝 ' + Array.from(note).slice(0, 60).join('') + (Array.from(note).length > 60 ? '…' : '') : '' };
           addToCart(lineItem);
           go('cart');
         }}

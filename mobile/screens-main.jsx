@@ -338,7 +338,7 @@ function ScreenMenu({ go, cart, addToCart, initialFilter = 'all' }) {
   const cartCount = cart.reduce((n, i) => n + (Number(i.qty) || 0), 0);
   return (
     <div ref={screenRef} data-screen-label="08 Menu" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
-      <div className="lc-screen" ref={scrollRef} onScroll={onScroll} style={{ paddingBottom: 160 }}>
+      <div className="lc-screen" ref={scrollRef} onScroll={onScroll} style={{ paddingBottom: 'calc(var(--lc-tabs-h) + 88px)' }}>
         <div className="lc-sr-only" role="status" aria-live="polite" data-testid="menu-announce">{annonce}</div>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '16px 20px 6px' }}>
           <div>
@@ -409,7 +409,7 @@ function ScreenMenu({ go, cart, addToCart, initialFilter = 'all' }) {
       </div>
       {/* sticky cart bar */}
       {cart.length > 0 && (
-        <div className="lc-cartbar" data-testid="menu-cartbar" style={{ position: 'absolute', left: 16, right: 16, bottom: 122, zIndex: 8 }}>
+        <div className="lc-cartbar" data-testid="menu-cartbar" style={{ position: 'absolute', left: 16, right: 16, bottom: 'calc(var(--lc-tabs-h) + 12px)', zIndex: 8 }}>
           <button onClick={() => go('cart')} className="lc-btn" aria-label={`Voir le panier — ${cartCount} article${cartCount > 1 ? 's' : ''}, ${cart.reduce((s,i) => s+i.price*i.qty, 0).toFixed(2).replace('.', ',')} €`} style={{ background: 'var(--orange)', color: '#fff', width: '100%', height: 56, justifyContent: 'space-between', padding: '0 20px', boxShadow: 'var(--shadow-cta)' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span key={cartCount} className="lc-cartbar__count" style={{ background: '#fff', color: 'var(--orange)', minWidth: 24, height: 24, padding: '0 6px', borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800 }}>{cartCount}</span>
@@ -423,334 +423,11 @@ function ScreenMenu({ go, cart, addToCart, initialFilter = 'all' }) {
   );
 }
 
-// ITEM DETAIL — flow kiosk-aligned (config/menu.php SSOT)
-//
-// Schéma item (cf. data/menu.js) :
-//   item.viandes       (0-4)  → étape "Viandes" (pick N from MEATS list)
-//   item.has_sauce     bool   → étape "Sauce" (1 gratuite parmi 15, sup 0.50€/sauce additionnelle)
-//   item.has_crudites  bool   → étape "Crudités" (Salade/Tomate/Oignon toggle, default ON)
-//   item.has_supplements bool → étape "Suppléments" (7 items toggleable)
-//   item.has_menu_addon  bool → étape "Formule" (Menu+3€ / Frites+2€ / Boisson+2€)
-//
-// Validation pre-cart : viandesCount === item.viandes (si > 0).
-
-const FALLBACK_FORMULA_IMAGES = {
-  'f-menu': 'assets/menu/menu_complet.png',
-  'f-frites': 'assets/menu/frites.png',
-  'f-boisson': 'assets/menu/boisson.png',
-};
-
-// ScreenItem — thin wrapper delegating to the multi-page wizard
-// (mobile/screens-item-steps.jsx exposes window.ScreenItemWizard).
-// Refactor 2026-05-10 post-audit cross-agent. Single-scroll legacy preserved
-// only as fallback if the wizard module fails to load.
+// ScreenItem — la fiche d'un plat EST l'assistant de personnalisation (screens-item-steps.jsx,
+// chargé avant ce fichier). [2026-11-15] L'ancienne page unique gardée « en repli » n'était jamais
+// rendue (l'assistant est toujours chargé) et dérivait : retirée.
 function ScreenItem({ go, itemId, addToCart }) {
-  const screenRef = useScreenScrollReset(itemId);
-  if (typeof window.ScreenItemWizard === 'function') {
-    return <window.ScreenItemWizard go={go} itemId={itemId} addToCart={addToCart}/>;
-  }
-  // Fallback : single-scroll (kept for safety if wizard module fails to load)
-  const lcMenu = window.LC.menu;
-  const item = lcMenu.findItem(itemId);
-  if (!item) {
-    return (
-      <div ref={screenRef} data-screen-label="09 Item Detail" style={{ position: 'absolute', inset: 0, background: '#fff', padding: 40, paddingTop: 100, textAlign: 'center' }}>
-        <h2 className="lc-display" style={{ fontSize: 26, color: 'var(--ink)' }}>Plat introuvable.</h2>
-        <button onClick={() => go('back')} className="lc-btn lc-btn--ink" style={{ marginTop: 20 }}>Retour</button>
-      </div>
-    );
-  }
-
-  // -- State -----------------------------------------------------------------
-  const [meatIds, setMeatIds] = uS([]);                      // selected meat ids (allow_repeat OK)
-  const [sauceIds, setSauceIds] = uS([]);                    // selected sauce ids (1 free, +0.50€/extra)
-  const [cruditeIds, setCruditeIds] = uS(lcMenu.defaultCruditeIds()); // default Salade+Tomate+Oignon ON
-  const [supplementIds, setSupplementIds] = uS([]);
-  const [formuleId, setFormuleId] = uS(null);
-  const [qty, setQty] = uS(1);
-
-  // -- Helpers ---------------------------------------------------------------
-  const togglePush = (arr, id, max) => {
-    if (arr.includes(id)) return arr.filter(x => x !== id);
-    if (max && arr.length >= max) return [...arr.slice(1), id]; // FIFO eviction
-    return [...arr, id];
-  };
-  const toggleMeat = (id) => setMeatIds(arr => togglePush(arr, id, item.viandes));
-  const toggleSauce = (id) => {
-    // If "Sans Sauce" picked, exclusive
-    const sansSauceId = 's-sans';
-    if (id === sansSauceId) return setSauceIds([sansSauceId]);
-    setSauceIds(arr => {
-      const next = arr.includes(id) ? arr.filter(x => x !== id) : [...arr.filter(x => x !== sansSauceId), id];
-      return next;
-    });
-  };
-  const toggleCrudite = (id) => setCruditeIds(arr => arr.includes(id) ? arr.filter(x => x !== id) : [...arr, id]);
-  const toggleSupplement = (id) => setSupplementIds(arr => arr.includes(id) ? arr.filter(x => x !== id) : [...arr, id]);
-
-  // -- Validation ------------------------------------------------------------
-  const meatsOK = item.viandes === 0 || meatIds.length === item.viandes;
-  const valid = meatsOK; // sauce/crudités/etc are optional
-
-  // -- Pricing ---------------------------------------------------------------
-  const unitPrice = lcMenu.priceFor(item, { sauceIds, supplementIds, formuleId, qty: 1 });
-  const total = lcMenu.priceFor(item, { sauceIds, supplementIds, formuleId, qty });
-
-  // -- Render ---------------------------------------------------------------
-  return (
-    <div ref={screenRef} data-screen-label="09 Item Detail" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
-      <div className="lc-screen" style={{ paddingBottom: 110, paddingTop: 0 }}>
-        {/* hero photo */}
-        <div style={{ position: 'relative', height: 280, background: 'var(--ink)' }}>
-          <Slot id={item.thumb} h="100%" radius={0} placeholder={item.name} src={item.image} alt={item.name} fit="contain"/>
-          <div style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) - 14px)', left: 14, right: 14, display: 'flex', justifyContent: 'space-between', zIndex: 2 }}>
-            <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)" ariaLabel="Retour"><I.Back size={20}/></IconBtn>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <span aria-hidden="true" style={{ width: 44, height: 44 }}/>
-              <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)" ariaLabel="Fermer"><I.Close size={20}/></IconBtn>
-            </div>
-          </div>
-          <div style={{ position: 'absolute', bottom: 14, left: 14, display: 'flex', gap: 8 }}>
-            <span className="lc-pill lc-pill--yellow" style={{ fontSize: 12, padding: '8px 14px' }}>{unitPrice.toFixed(2).replace('.', ',')} €</span>
-          </div>
-          {item.time > 0 && (
-            <div style={{ position: 'absolute', bottom: 14, right: 14 }}>
-              <span className="lc-pill" style={{ background: 'rgba(0,0,0,0.7)', color: '#fff', backdropFilter: 'blur(8px)', padding: '8px 12px' }}>
-                <I.Clock size={12} stroke="#fff"/> {item.time} min
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* content */}
-        <div style={{ padding: '24px 20px 0' }}>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-            {(item.tags || []).map(t => <Tag key={t} t={t}/>)}
-            {item.is_halal && <span className="lc-pill" style={{ background: 'var(--green)', color: '#fff', fontSize: 9 }}>HALAL</span>}
-            {item.is_vegetarian && <span className="lc-pill" style={{ background: 'var(--green)', color: '#fff', fontSize: 9 }}>VEGGIE</span>}
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--gray-4)', display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
-              <I.StarFilled size={14} stroke="var(--orange)"/> 4.8
-            </span>
-          </div>
-          <h1 className="lc-display" style={{ margin: 0, fontSize: 36, lineHeight: 0.95 }}>{item.name}</h1>
-          <p style={{ marginTop: 10, fontSize: 14, lineHeight: 1.5, color: 'var(--gray-4)' }}>{item.description}</p>
-          <AllergenBadge allergens={item.allergens} size="lg"/>
-
-          {item.time > 0 && (
-            <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--cream)', borderRadius: 999, fontSize: 12, fontWeight: 600 }}><I.Clock size={14}/> Prêt en {item.time} min</span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--cream)', borderRadius: 999, fontSize: 12, fontWeight: 600 }}><I.Store size={14}/> Retrait sur place</span>
-            </div>
-          )}
-
-          {/* VIANDES — étape obligatoire si item.viandes > 0 */}
-          {item.viandes > 0 && (
-            <div style={{ marginTop: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
-                <h3 className="lc-display" style={{ margin: 0, fontSize: 20 }}>Choisis {item.viandes} viande{item.viandes > 1 ? 's' : ''}</h3>
-                <span style={{ fontSize: 10, color: meatsOK ? 'var(--green)' : 'var(--orange)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{meatIds.length}/{item.viandes}</span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-                {lcMenu.meats.map(m => {
-                  const on = meatIds.includes(m.id);
-                  return (
-                    <div key={m.id} onClick={() => toggleMeat(m.id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 12px', borderRadius: 12, border: on ? '2px solid var(--orange)' : '2px solid var(--gray-1)', background: on ? 'var(--orange-soft)' : 'var(--cream)', cursor: 'pointer' }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        {m.image && <img
-                          className="lc-wizard-choice-image lc-wizard-choice-image--meat"
-                          src={m.image}
-                          alt=""
-                          aria-hidden="true"
-                          onError={(e) => { e.currentTarget.dataset.imageError = 'true'; }}
-                        />}
-                        {m.name}
-                      </span>
-                      <span style={{ width: 18, height: 18, borderRadius: 4, border: on ? '0' : '2px solid var(--gray-2)', background: on ? 'var(--orange)' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        {on && <I.Check size={12} stroke="#fff" sw={3}/>}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* SAUCE — étape optionnelle, 1 gratuite, sup 0.50€/sauce additionnelle */}
-          {item.has_sauce && (
-            <div style={{ marginTop: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
-                <h3 className="lc-display" style={{ margin: 0, fontSize: 20 }}>Sauce</h3>
-                <span style={{ fontSize: 10, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>1 gratuite · sup 0,50 €</span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
-                {lcMenu.sauces.map(s => {
-                  const on = sauceIds.includes(s.id);
-                  const free = sauceIds.indexOf(s.id) === 0;
-                  return (
-                    <div key={s.id} onClick={() => toggleSauce(s.id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 10, border: on ? '2px solid var(--orange)' : '1.5px solid var(--gray-1)', background: on ? 'var(--orange-soft)' : 'var(--cream)', cursor: 'pointer' }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        {s.name}
-                      </span>
-                      {on && !free && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--orange)', fontWeight: 700 }}>+0,50€</span>}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* CRUDITÉS — toggle 3 (default ON) */}
-          {item.has_crudites && (
-            <div style={{ marginTop: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
-                <h3 className="lc-display" style={{ margin: 0, fontSize: 20 }}>Crudités</h3>
-                <span style={{ fontSize: 10, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Tu peux retirer</span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                {lcMenu.crudites.map(c => {
-                  const on = cruditeIds.includes(c.id);
-                  return (
-                    // [test-e2e fix B-005 round-2 2026-05-11] longhand to avoid React warning
-                    <div key={c.id} onClick={() => toggleCrudite(c.id)} style={{ padding: '12px 8px', borderRadius: 12, border: on ? '2px solid var(--green)' : '2px solid var(--gray-2)', background: on ? '#E8F8ED' : 'var(--cream)', cursor: 'pointer', textAlign: 'center', textDecorationLine: on ? 'none' : 'line-through', textDecorationColor: 'var(--gray-3)' }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: on ? 'var(--green)' : 'var(--gray-3)' }}>
-                        {on ? '✓' : '✕'} {c.name}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* SUPPLÉMENTS — tous payants */}
-          {item.has_supplements !== false && (
-            <div style={{ marginTop: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
-                <h3 className="lc-display" style={{ margin: 0, fontSize: 20 }}>Suppléments</h3>
-                <span style={{ fontSize: 10, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Optionnel</span>
-              </div>
-              <div style={{ background: 'var(--cream)', borderRadius: 14, overflow: 'hidden' }}>
-                {lcMenu.supplements.map(s => {
-                  const on = supplementIds.includes(s.id);
-                  return (
-                    <div key={s.id} className="lc-toggle-row" onClick={() => toggleSupplement(s.id)}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{s.name}</div>
-                        <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--orange)', fontWeight: 700, marginTop: 2 }}>+ {s.price.toFixed(2).replace('.', ',')} €</div>
-                      </div>
-                      <div className={`lc-checkbox ${on ? 'lc-checkbox--on' : ''}`}>
-                        {on && <I.Check size={12} stroke="#fff" sw={3}/>}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* FORMULE MENU — pour catégories has_menu */}
-          {item.has_menu_addon && (
-            <div style={{ marginTop: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
-                <h3 className="lc-display" style={{ margin: 0, fontSize: 20 }}>Faire un menu ?</h3>
-                <span style={{ fontSize: 10, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Optionnel</span>
-              </div>
-              <div style={{ display: 'grid', gap: 8 }}>
-                    {[{ id: null, name: 'Sans formule', price: 0, label: '—' }].concat(lcMenu.formules).map(f => {
-                  const on = formuleId === f.id;
-                  return (
-                    <div key={f.id || 'none'} onClick={() => setFormuleId(f.id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: 12, border: on ? '2px solid var(--orange)' : '1.5px solid var(--gray-1)', background: on ? 'var(--orange-soft)' : 'var(--cream)', cursor: 'pointer' }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {f.id && FALLBACK_FORMULA_IMAGES[f.id]
-                          ? <img
-                              className="lc-wizard-choice-image"
-                              src={FALLBACK_FORMULA_IMAGES[f.id]}
-                              alt=""
-                              aria-hidden="true"
-                              onError={(e) => { e.currentTarget.dataset.imageError = 'true'; }}
-                            />
-                          : (!f.id && window.NeutralAsset
-                            ? <window.NeutralAsset label="Sans formule — aucune formule sélectionnée" style={{ width: 44, height: 44, borderRadius: 10, flexShrink: 0 }} />
-                            : null)}
-                        {f.name}
-                      </span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {f.price > 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--orange)', fontWeight: 700 }}>+ {f.price.toFixed(2).replace('.', ',')} €</span>}
-                        <span style={{ width: 18, height: 18, borderRadius: 999, border: on ? '5px solid var(--orange)' : '2px solid var(--gray-2)', background: '#fff' }}/>
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* qty */}
-          <div style={{ marginTop: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: 'var(--ink)', borderRadius: 16 }}>
-            <span style={{ color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Quantité</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <button onClick={() => setQty(q => Math.max(1, q-1))} style={{ width: 32, height: 32, borderRadius: 999, background: 'rgba(255,255,255,0.15)', border: 0, color: '#fff', cursor: 'pointer' }}><I.Minus size={14} stroke="#fff"/></button>
-              <span style={{ color: 'var(--orange)', fontFamily: 'var(--font-display)', fontSize: 24, minWidth: 24, textAlign: 'center' }}>{qty}</span>
-              <button onClick={() => setQty(q => q+1)} style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--orange)', border: 0, color: '#fff', cursor: 'pointer' }}><I.Plus size={14} stroke="#fff"/></button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* sticky CTA */}
-      <div style={{ position: 'absolute', left: 16, right: 16, bottom: 24 }}>
-        <button
-          disabled={!valid}
-          onClick={() => {
-            if (!valid) return;
-            // Build composition_snapshot aligned with FoodKing OrderItem schema
-            const meatLabels = meatIds.map(id => (lcMenu.meats.find(m => m.id === id) || {}).name).filter(Boolean);
-            const sauceLabels = sauceIds.map(id => (lcMenu.sauces.find(s => s.id === id) || {}).name).filter(Boolean);
-            const cruditeLabels = lcMenu.crudites.filter(c => cruditeIds.includes(c.id)).map(c => c.name);
-            const supLabels = supplementIds.map(id => (lcMenu.supplements.find(s => s.id === id) || {}).name).filter(Boolean);
-            const formuleLabel = formuleId ? (lcMenu.formules.find(f => f.id === formuleId) || {}).name : null;
-            const summaryParts = [];
-            if (meatLabels.length) summaryParts.push(meatLabels.join(' + '));
-            if (sauceLabels.length) summaryParts.push('Sauce ' + sauceLabels.join('/'));
-            if (cruditeLabels.length < 3 && item.has_crudites) summaryParts.push('Sans ' + lcMenu.crudites.filter(c => !cruditeIds.includes(c.id)).map(c => c.name.toLowerCase()).join('/'));
-            if (supLabels.length) summaryParts.push('+ ' + supLabels.join(' + '));
-            if (formuleLabel) summaryParts.push(formuleLabel);
-
-            const lineItem = {
-              ...item,
-              meatIds, meatLabels,
-              sauceIds, sauceLabels,
-              cruditeIds, cruditeLabels,
-              supplementIds, supLabels,
-              formuleId, formuleLabel,
-              composition_summary: summaryParts.join(' · '),
-              sups: supplementIds,            // backwards-compat with cart UI
-              qty,
-              unitPrice,
-              lineTotal: total,
-              price: unitPrice,                // override base price with computed unit price
-            };
-            addToCart(lineItem);
-            go('cart');
-          }}
-          className="lc-btn"
-          style={{
-            background: valid ? 'var(--ink)' : 'var(--gray-2)',
-            color: valid ? '#fff' : 'var(--gray-4)',
-            width: '100%', height: 60,
-            justifyContent: 'space-between', padding: '0 24px',
-            cursor: valid ? 'pointer' : 'not-allowed',
-          }}
-        >
-          <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <I.Bag size={18} stroke={valid ? 'var(--yellow)' : 'var(--gray-4)'}/>
-            {valid ? 'Ajouter au panier' : `Choisis ${item.viandes - meatIds.length} viande${(item.viandes - meatIds.length) > 1 ? 's' : ''}`}
-          </span>
-          <span style={{ color: valid ? 'var(--yellow)' : 'var(--gray-4)' }}>{total.toFixed(2).replace('.', ',')} €</span>
-        </button>
-      </div>
-    </div>
-  );
+  return <window.ScreenItemWizard go={go} itemId={itemId} addToCart={addToCart}/>;
 }
 
 // CART
@@ -771,7 +448,7 @@ function ScreenCart({ go, cart, setCart }) {
   const remove = (idx) => setCart(c => c.filter((_, i) => i !== idx));
   return (
     <div ref={screenRef} data-screen-label="10 Cart" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
-      <div className="lc-screen" style={{ paddingBottom: 200 }}>
+      <div className="lc-screen" style={{ paddingBottom: 'calc(var(--lc-safe-bottom) + 180px)' }}>
         <ScreenHeader left={<IconBtn onClick={() => go('back')} ariaLabel="Retour"><I.Back size={20}/></IconBtn>} center={<div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>PANIER</div>}/>
         <div style={{ padding: '8px 20px 0' }}>
           <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.9 }}>Ta<br/>commande</h1>
@@ -802,21 +479,21 @@ function ScreenCart({ go, cart, setCart }) {
                     is fixed at the same time. */}
                 {it.composition_summary
                   ? <div title={it.composition_summary} style={{
-                      fontSize: 11, color: 'var(--gray-4)', marginTop: 2,
-                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.4,
+                      // [2026-11-15] Composition ENTIÈRE dans le panier : coupée à 2 lignes, ni les suppléments ni la
+                      // viande en plus payés ne se lisaient avant de valider.
+                      fontSize: 11, color: 'var(--gray-4)', marginTop: 2, lineHeight: 1.4, overflowWrap: 'anywhere',
                     }}>{it.composition_summary}</div>
                   : ((it.sups||[]).length > 0
                       ? <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>+ {(it.sups).length} supplément{(it.sups).length > 1 ? 's' : ''}</div>
                       : null)
                 }
-                <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px 8px' }}>
                   <div className="lc-stepper">
                     <button onClick={() => updateQty(idx, -1)} aria-label={`Diminuer la quantité de ${it.name}`}>−</button>
                     <span className="lc-stepper-val" aria-live="polite" aria-atomic="true"><Bump value={it.qty}/></span>
                     <button onClick={() => updateQty(idx, +1)} aria-label={`Augmenter la quantité de ${it.name}`}>+</button>
                   </div>
-                  <Bump value={(it.price*it.qty).toFixed(2)} style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--orange-text)' }}>{(it.price*it.qty).toFixed(2).replace('.', ',')} €</Bump>
+                  <Bump value={(it.price*it.qty).toFixed(2)} style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--orange-text)', whiteSpace: 'nowrap', fontSize: 14 }}>{(it.price*it.qty).toFixed(2).replace('.', ',')} €</Bump>
                 </div>
               </div>
               <button onClick={() => remove(idx)} aria-label={`Retirer ${it.name} du panier`} style={{ background: 'transparent', border: 0, color: 'var(--gray-3)', cursor: 'pointer', minWidth: 44, minHeight: 44, alignSelf: 'flex-start', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><I.Trash size={16}/></button>
@@ -866,7 +543,7 @@ function ScreenCart({ go, cart, setCart }) {
       </div>
       {/* sticky checkout */}
       {cart.length > 0 && (
-        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#fff', padding: '14px 20px 36px', borderTop: '1px solid var(--gray-1)' }}>
+        <div className="lc-foot">
           {/* [2026-11-14 B-001 P0] Plus de champ code promo : TOTAL = somme des lignes (le serveur recalcule). */}
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 4 }}>
             <div>
@@ -900,9 +577,9 @@ function ScreenConfirm({ go, order }) {
   // alors PAS la commande comme transmise à la cuisine — bandeau clair + libellé qualifié.
   const isOffline = !!(order && order.offline);
   return (
-    <div ref={screenRef} data-screen-label="11 Confirmation" style={{ position: 'absolute', inset: 0, background: '#FFD93D', display: 'flex', flexDirection: 'column', paddingTop: 'var(--ios-safe-top)' }}>
+    <div ref={screenRef} data-screen-label="11 Confirmation" className="lc-page" style={{ background: '#FFD93D' }}>
       <ScreenHeader left={<IconBtn bg="var(--ink)" color="#fff" onClick={() => go('home')} ariaLabel="Fermer la confirmation"><I.Close size={18}/></IconBtn>} center={<Logo size={12}/>}/>
-      <div style={{ flex: 1, padding: '4px 20px 20px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ flex: 1, padding: '4px 20px calc(var(--lc-safe-bottom) + 8px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {isOffline && (
           <div role="status" data-testid="confirm-offline-banner" style={{ margin: '0 0 10px', background: 'var(--red)', color: '#fff', borderRadius: 12, padding: '10px 14px', fontSize: 12, fontWeight: 700, textAlign: 'center' }}>
             Hors ligne — commande NON transmise. À repasser sur place.
@@ -975,9 +652,16 @@ function ScreenConfirm({ go, order }) {
 function mapRemoteOrderRow(o) {
   o = o || {};
   const sn = String(o.status_name || '').toLowerCase();
-  const status = /annul/.test(sn) ? 'cancelled'
-    : /(termin|livr|récup|recup|complet|prêt|pret|servi)/.test(sn) ? 'delivered'
+  // [2026-11-15] Le statut NUMÉRIQUE du serveur fait foi (1 attente, 4 acceptée, 7 préparation, 8 prête,
+  // 10 en livraison, 13 remise, 16/19/22 annulée-rejetée-retournée). Le classement par mots rangeait une commande
+  // « Prête » et « En livraison » dans l'historique (« Aucune commande en cours » au moment de venir la chercher)
+  // et laissait une commande « Rejetée » en cours. Les mots ne servent plus que si le numéro manque.
+  const n = Number(o.status) || 0;
+  const status = n ? ((n === 16 || n === 19 || n === 22) ? 'cancelled' : n === 13 ? 'delivered' : 'pending')
+    : /annul|rejet|refus|retourn/.test(sn) ? 'cancelled'
+    : /(termin|livr[ée]e|récup|recup|complet|servi)/.test(sn) ? 'delivered'
     : 'pending';
+  const ready = n ? n === 8 : /pr[êe]t/.test(sn);
   // [2026-11-14 B-022] nombre d'ARTICLES = somme des quantités (order_items_quantity), pas des lignes
   const count = Number(o.order_items_quantity) || Number(o.order_items) || 0;
   return {
@@ -991,6 +675,7 @@ function mapRemoteOrderRow(o) {
     date: o.order_datetime || '',
     total: parseFloat(o.total_amount_price || 0) || 0,
     status,
+    ready,
     status_label: o.status_name || (status === 'delivered' ? 'Récupérée' : status === 'cancelled' ? 'Annulée' : 'En préparation'),
     items_summary: count > 0 ? (count + ' article' + (count > 1 ? 's' : '')) : '',
     remote: true,
@@ -1016,7 +701,7 @@ function ScreenOrders({ go }) {
       if (!alive) return;
       const mapped = (Array.isArray(rows) ? rows : []).map(mapRemoteOrderRow);
       setRemote({
-        active: mapped.filter(o => o.status === 'pending'),
+        active: mapped.filter(o => o.status === 'pending').sort((a, b) => (b.ready ? 1 : 0) - (a.ready ? 1 : 0)),
         history: mapped.filter(o => o.status !== 'pending'),
       });
       setOffline(false); setRemoteErr(null);
@@ -1055,7 +740,7 @@ function ScreenOrders({ go }) {
 
   return (
     <div ref={screenRef} data-screen-label="12 Orders" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
-      <div className="lc-screen" style={{ paddingBottom: 100 }}>
+      <div className="lc-screen lc-screen--tabs">
         <div style={{ padding: '16px 20px 6px' }}>
           <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.9 }}>Commandes</h1>
         </div>
@@ -1111,7 +796,7 @@ function ScreenOrders({ go }) {
                 <div key={o.id} data-testid={'orders-active-card-' + o.id} role={openDetail ? 'button' : undefined} tabIndex={openDetail ? 0 : undefined} aria-label={(callNo ? `Commande ${callNo}` : `Commande ${o.id}`) + ' en cours' + (openDetail ? ' — voir détails' : '')} className="lc-tap" onClick={openDetail} onKeyDown={openDetail ? window.lcTapKey(openDetail) : undefined} style={{ background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, position: 'relative', overflow: 'hidden', cursor: openDetail ? 'pointer' : 'default', marginBottom: 12 }}>
                   <div style={{ position: 'absolute', top: -20, right: -20, width: 140, height: 140, opacity: 0.06 }}><I.Pepper size={140} stroke="#FF5A1F"/></div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span className="lc-pill" style={{ background: 'var(--orange)', color: '#fff' }}><span className={'lc-status-dot' + (idxCard < 3 ? ' lc-live-dot' : '')} style={{ background: '#fff', color: '#fff' }}/> {statusLabel}</span>
+                    <span className="lc-pill" data-testid={o.ready ? 'order-ready-pill' : undefined} style={{ background: o.ready ? 'var(--green)' : 'var(--orange)', color: '#fff' }}><span className={'lc-status-dot' + (idxCard < 3 ? ' lc-live-dot' : '')} style={{ background: '#fff', color: '#fff' }}/> {o.ready ? 'PRÊTE · VIENS LA CHERCHER' : statusLabel}</span>
                     {callNo && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>#{o.id}</span>}
                   </div>
                   {callNo && <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', marginTop: 14 }}>Numéro d'appel</div>}
@@ -1211,7 +896,7 @@ function ScreenProfile({ go }) {
   const initials = displayName.split(/\s+/).slice(0, 2).map(w => w.charAt(0)).join('').toUpperCase() || 'LC';
   return (
     <div ref={screenRef} data-screen-label="13 Profile" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
-      <div className="lc-screen" style={{ paddingBottom: 100 }}>
+      <div className="lc-screen lc-screen--tabs">
         <div style={{ padding: '16px 20px 0' }}>
           <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.9 }}>Profil</h1>
         </div>
@@ -1555,8 +1240,9 @@ function ScreenLoyalty({ go }) {
       });
 
   return (
-    <div ref={screenRef} data-screen-label="14 Loyalty" data-testid="loyalty-screen" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
-      <div className="lc-screen" style={{ paddingBottom: 40 }}>
+    <div ref={screenRef} data-screen-label="14 Loyalty" data-testid="loyalty-screen" style={{ position: 'absolute', inset: 0, background: 'var(--yellow)' }}>
+      {/* La bande de la barre d'état prend le jaune de l'en-tête ; le corps défilant reste blanc. */}
+      <div className="lc-screen" style={{ paddingTop: 0, background: '#fff', paddingBottom: 'calc(var(--lc-safe-bottom) + 26px)' }}>
         {/* HERO — yellow top with QR/Barcode + member badge + countdown */}
         <div style={{ background: 'var(--yellow)', padding: '0 0 28px', position: 'relative', overflow: 'hidden' }}>
           <div aria-hidden="true" data-lc-decoration="loyalty-pattern" style={{ position: 'absolute', inset: 0, opacity: 0.08, pointerEvents: 'none', backgroundImage: 'radial-gradient(circle at 18% 22%, rgba(0,0,0,0.5) 0 2px, transparent 2px), radial-gradient(circle at 78% 65%, rgba(0,0,0,0.5) 0 2px, transparent 2px)', backgroundSize: '60px 60px' }}/>
@@ -1581,7 +1267,7 @@ function ScreenLoyalty({ go }) {
                   <window.LoyaltyQR loyaltyCode={(remoteProfile && remoteProfile.loyalty_code) || account.loyalty_code} memberNumber={remoteProfile ? (remoteProfile.id != null ? 'CLIENT-' + remoteProfile.id : '') : account.member_number} name={memberDisplayName} mode={qrMode}/>
                 </div>
               </div>
-              <div style={{ marginTop: 14, textAlign: 'center', fontSize: 12, color: 'var(--ink)', fontWeight: 600 }}>
+              <div style={{ marginTop: 14, padding: '0 20px', textAlign: 'center', fontSize: 12, lineHeight: 1.4, color: 'var(--ink)', fontWeight: 600 }}>
                 Présente ce code à la caisse pour ajouter ou utiliser tes points
               </div>
             </>

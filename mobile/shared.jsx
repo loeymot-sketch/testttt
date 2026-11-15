@@ -63,16 +63,6 @@ function Logo({ size = 22, color = '#0A0A0A', accent = '#C2410C' }) {
   );
 }
 
-// Stamp/seal mark used as small flourish
-function Stamp({ size = 28 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 28 28">
-      <circle cx="14" cy="14" r="13" fill="none" stroke="currentColor" strokeWidth="1"/>
-      <text x="14" y="17" textAnchor="middle" fontFamily="var(--font-display)" fontSize="11" fontWeight="700" fill="currentColor">LC</text>
-    </svg>
-  );
-}
-
 // Bottom tab bar — A11-001/F-004/S-004/A-007 P1 closed round-2 2026-05-11.
 // <div onClick> → <button aria-pressed aria-label> + role="tablist" wrapper.
 // axe button-name CRITICAL violation resolved ; keyboard nav now works (button
@@ -204,19 +194,10 @@ function Slot({ id, w, h, radius = 14, placeholder = 'photo', shape, style = {},
 window.NeutralAsset = NeutralAsset;
 window.Slot = Slot;
 
-// Generic floating sticky CTA at bottom
-function StickyCTA({ children, bg = 'var(--ink)', color = '#fff', extraBottom = 84 }) {
-  return (
-    <div style={{ position: 'absolute', left: 16, right: 16, bottom: extraBottom, zIndex: 9 }}>
-      <button className="lc-btn" style={{ background: bg, color, width: '100%', height: 60, fontSize: 14 }}>{children}</button>
-    </div>
-  );
-}
-
 // Header bar at top of content screens
-function ScreenHeader({ left, center, right, style = {}, safeTop = true }) {
+function ScreenHeader({ left, center, right, style = {} }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${safeTop ? 14 : 14}px 16px 12px`, position: 'relative', zIndex: 5, ...style }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px 12px', position: 'relative', zIndex: 5, ...style }}>
       <div style={{ width: 40, display: 'flex' }}>{left}</div>
       <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>{center}</div>
       <div style={{ width: 40, display: 'flex', justifyContent: 'flex-end' }}>{right}</div>
@@ -287,43 +268,4 @@ function Dots({ count, active, color = '#0A0A0A' }) {
   );
 }
 
-// QR Code SVG (simple deterministic mock)
-function QRMock({ size = 200, value = 'LECAY-LOYALTY' }) {
-  // Generate pseudo-random pattern from value
-  const cells = 25;
-  const cellSize = size / cells;
-  const grid = [];
-  let seed = 0;
-  for (let c of value) seed = (seed * 31 + c.charCodeAt(0)) % 100000;
-  const rand = (i, j) => {
-    const v = Math.sin((i + 1) * (j + 1) * (seed + 1)) * 10000;
-    return (v - Math.floor(v)) > 0.55;
-  };
-  for (let i = 0; i < cells; i++) {
-    for (let j = 0; j < cells; j++) {
-      if (rand(i, j)) grid.push({ i, j });
-    }
-  }
-  // Corner finder pattern
-  const finder = (x, y) => (
-    <g key={`f${x}-${y}`}>
-      <rect x={x*cellSize} y={y*cellSize} width={cellSize*7} height={cellSize*7} fill="#0A0A0A"/>
-      <rect x={(x+1)*cellSize} y={(y+1)*cellSize} width={cellSize*5} height={cellSize*5} fill="#fff"/>
-      <rect x={(x+2)*cellSize} y={(y+2)*cellSize} width={cellSize*3} height={cellSize*3} fill="#0A0A0A"/>
-    </g>
-  );
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ background: '#fff' }}>
-      {grid.map((c, k) => {
-        // Skip finder areas
-        if ((c.i < 7 && c.j < 7) || (c.i < 7 && c.j > 17) || (c.i > 17 && c.j < 7)) return null;
-        return <rect key={k} x={c.j*cellSize} y={c.i*cellSize} width={cellSize} height={cellSize} fill="#0A0A0A"/>;
-      })}
-      {finder(0, 0)}
-      {finder(0, 18)}
-      {finder(18, 0)}
-    </svg>
-  );
-}
-
-Object.assign(window, { BRAND_LOGO_SRC, useScreenScrollReset, Logo, Stamp, TabBar, Slot, StickyCTA, ScreenHeader, IconBtn, Marquee, Dots, QRMock, Bump });
+Object.assign(window, { BRAND_LOGO_SRC, useScreenScrollReset, Logo, TabBar, Slot, ScreenHeader, IconBtn, Marquee, Dots, Bump });

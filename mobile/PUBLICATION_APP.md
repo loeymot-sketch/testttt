@@ -50,6 +50,24 @@ L'app des stores déjà publiée (site emballé, `lecayenne-web-deploy/Site leca
 
 Dans les deux cas : `npx cap sync`, icônes/écran de démarrage, signature (Xcode / clé Play) par le propriétaire.
 
+### Barre d'état, encoche et barre d'accueil (2026-11-15)
+
+L'app règle elle-même ses marges à partir de ce que dit le téléphone (jetons `--lc-*` de `styles.css`,
+détail dans `README.md`). Elle a été mesurée dans les deux réglages possibles de l'enveloppe native :
+
+- **l'app dessine sous la barre d'état** (réglage conseillé : la bande prend la couleur de l'écran) —
+  iOS `ios.contentInset: "never"`, `StatusBar.overlaysWebView: true`, icônes sombres ; Android : affichage
+  bord à bord par défaut de Capacitor 8, `SystemBars` laissé sur `insetsHandling: "css"` (il pose
+  `--safe-area-inset-*`, lues par l'app sur les Android où `env()` vaut 0) ;
+- **l'enveloppe réserve déjà la barre d'état** (réglage actuel du projet `fr.lecayenne.app` :
+  `contentInset: "always"`, `overlaysWebView: false`) — l'app reçoit alors une marge nulle et se cale dessus ;
+  la bande du haut garde la couleur de fond de l'enveloppe (`#0A0A0A`, donc noire).
+
+Mesuré au banc (`tools/banc-marges/`) sur 6 profils — iPhone à encoche, petit iPhone, Android à gestes,
+Android à 3 boutons, Android ancien, sans marge — source et paquet construit : aucun texte ni bouton dans
+une marge. **Reste à confirmer sur un vrai iPhone et un vrai Android** après `npx cap sync` (le banc simule
+les marges ; il ne remplace pas l'appareil).
+
 ## 4. Reste à faire (hors code de l'app)
 
 - Fiches allergènes réelles à saisir côté restaurant (le serveur n'en a que pour 1 produit sur 72).

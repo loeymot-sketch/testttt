@@ -65,7 +65,10 @@ assert.equal(wizard.scrollTop, 0, 'back navigation also resets');
 render('unmounted', null);
 
 // All in-scope top-level screens use the hook and bind its ref, including errors.
-for (const name of ['Home', 'Menu', 'Item', 'Cart', 'Confirm', 'Orders', 'Profile', 'Loyalty']) {
+// [2026-11-15] ScreenItem n'a plus d'écran à lui (l'ancienne page unique « de repli », jamais rendue,
+// a été retirée) : il délègue à l'assistant, dont la remise à zéro est vérifiée juste en dessous.
+assert.match(main.split('function ScreenItem(')[1].split('\nfunction ')[0], /return <window\.ScreenItemWizard go=\{go\} itemId=\{itemId\} addToCart=\{addToCart\}\/>;/, 'Item delegates to the wizard');
+for (const name of ['Home', 'Menu', 'Cart', 'Confirm', 'Orders', 'Profile', 'Loyalty']) {
   const component = main.split(`function Screen${name}(`)[1].split('\nfunction ')[0];
   assert.match(component, /const screenRef = useScreenScrollReset\(/, `${name} uses reset hook`);
   for (const root of component.matchAll(/<div[^>]*data-screen-label=[^>]+>/g)) {
@@ -86,7 +89,8 @@ for (const source of [main, steps]) {
     }
   }
 }
-assert.equal(productSlots, 8, 'home, menu, detail, cart, upsell, recap and direct-add covered');
+// [2026-11-15] 7 et non plus 8 : la page de détail « de repli » (jamais rendue) a été retirée.
+assert.equal(productSlots, 7, 'home, menu, cart, upsell, recap and direct-add covered');
 assert.match(shared, /fit = 'cover'/, 'hero default remains cover');
 assert.match(main, /src=\{featured.hero\}[^>]*fit="contain"/, 'existing signature hero fit preserved');
 assert.match(shared, /position: 'relative', pointerEvents: 'none'/, 'image layers cannot intercept clicks');

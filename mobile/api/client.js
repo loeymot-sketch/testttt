@@ -182,10 +182,14 @@
   }
 
   async function itemDetails(realId) {
-    if (_detailsCache[realId]) return _detailsCache[realId];
-    var r = await req('GET', '/api/frontend/item/details/' + realId, {});
+    // [2026-11-15] Fiche demandée POUR LA BRANCHE (le serveur n'indique la rupture d'une viande ou d'un supplément
+    // que si la branche est précisée) et gardée 45 s seulement : une rupture posée en caisse doit arriver dans
+    // l'assistant sans relancer l'application.
+    var c = _detailsCache[realId];
+    if (c && c.d && Date.now() - c.t < 45000) return c.d;
+    var r = await req('GET', '/api/frontend/item/details/' + realId + '?branch_id=' + encodeURIComponent(CFG.branchId), {});
     var d = (r && r.data) || r;
-    _detailsCache[realId] = d;
+    _detailsCache[realId] = { d: d, t: Date.now() };
     return d;
   }
 
@@ -305,6 +309,39 @@
     if (realId == null) throw { kind: 'resolve', message: 'Article introuvable côté caisse : ' + (line.name || line.slug || '?') };
     var d = await itemDetails(realId);
     var dIdx = indexDetails(d);
+    // [2026-11-15 relecture adverse P0] Avec un profil publié, SEULS ses choix disponibles existent pour la ligne :
+    // une viande ou une sauce passée en rupture depuis l'ajout au panier était placée, puis retirée EN SILENCE par
+    // le filtre du profil (Tacos L payé, une seule viande servie). Elle devient introuvable ici → la commande
+    // s'arrête avec un message, panier intact ; le placement des viandes ne compte que les emplacements réels.
+    var profLigne = profileChoiceIds(d);
+    var enRuptureFiche = {};
+    Object.keys(d.variations || {}).forEach(function (a) {
+      (d.variations[a] || []).forEach(function (v) {
+        if (v && v.is_available === false) {
+          enRuptureFiche[norm(v.name)] = true;
+          if (!profLigne && dIdx.variationByAttr[a]) delete dIdx.variationByAttr[a][norm(v.name)];
+        }
+      });
+    });
+    if (!profLigne) {   // le complément automatique (sauce obligatoire…) ne prend jamais un choix en rupture
+      Object.keys(dIdx.attrMeta).forEach(function (a) {
+        var ko = {};
+        (d.variations[a] || []).forEach(function (v) { if (v && v.is_available === false) ko[v.id] = true; });
+        dIdx.attrMeta[a].options = dIdx.attrMeta[a].options.filter(function (o) { return !ko[o.id]; });
+      });
+    }
+    Object.keys(dIdx.variationByAttr).forEach(function (a) {   // disponible sur un autre emplacement = pas en rupture
+      Object.keys(dIdx.variationByAttr[a]).forEach(function (n) { delete enRuptureFiche[n]; });
+    });
+    if (profLigne) {
+      Object.keys(dIdx.variationByAttr).forEach(function (a) {
+        var m = dIdx.variationByAttr[a];
+        Object.keys(m).forEach(function (n) { if (!profLigne.variations[m[n]]) delete m[n]; });
+      });
+      Object.keys(dIdx.attrMeta).forEach(function (a) {
+        dIdx.attrMeta[a].options = dIdx.attrMeta[a].options.filter(function (o) { return !!profLigne.variations[o.id]; });
+      });
+    }
     var item_variations = [];
     var item_extras = [];
     var item_addons = [];
@@ -313,17 +350,45 @@
     // abandon SILENCIEUX : le client voyait (et croyait payer) une Boule gratinée qui n'arrivait jamais en
     // cuisine. Désormais la commande s'arrête avec un message clair, panier intact.
     var optionAbsente = function (nm) {
+      if ((profLigne && (profLigne.rupture.variations[norm(nm)] || profLigne.rupture.extras[norm(nm)])) || (!profLigne && enRuptureFiche[norm(nm)])) {
+        throw { kind: 'resolve', message: '« ' + nm + ' » est en rupture pour ' + (line.name || 'ce produit') + '. Retire ce produit du panier et recompose-le avec un autre choix.' };
+      }
       throw { kind: 'resolve', message: '« ' + nm + ' » n’est plus proposé pour ' + (line.name || 'ce produit') + '. Retire-le du panier et recommence ce produit.' };
     };
     var choisis = [];          // extras choisis par le client (jamais retirés en silence)
+    // [2026-11-15] Un supplément pris deux fois = UNE entrée avec quantité 2 (le serveur compte la quantité).
+    var ajouteExtra = function (eid, nm) {
+      var deja = null;
+      item_extras.forEach(function (x) { if (x.id === eid) deja = x; });
+      if (deja) { deja.quantity += 1; return; }
+      item_extras.push({ id: eid, quantity: 1 });
+      choisis.push({ id: eid, nom: nm });
+    };
     var viandesEnPlus = null;
     // Viandes (meatIds = ids pool m-*) → attrs 1/2 (Viande 1 / Viande 2) par nom.
     var meatAttrs = ['1', '2', '3']; // [2026-11-14 R6-002] Tacos XL : 3 emplacements (Viande 1/2/3)
     var usedAttr = {};
-    (Array.isArray(line.meatIds) ? line.meatIds : []).forEach(function (mid) {
-      var nm = nameFromPools(['meats'], mid);
-      if (!nm) return;
-      var vid = pickVariation(dIdx, meatAttrs, nm, usedAttr);
+    // [2026-11-15] La viande proposée sur le moins d'emplacements est placée en premier : sinon une viande présente
+    // sur un seul emplacement pouvait le trouver déjà pris par une autre (deux viandes sur le même emplacement).
+    // L'ordre d'affichage du client n'est pas modifié (ligne du panier).
+    var nbEmplacements = function (nm) {
+      var n = norm(nm), k = 0;
+      meatAttrs.forEach(function (a) { var m = dIdx.variationByAttr[a]; if (m && m[n] != null) k++; });
+      return k;
+    };
+    var viandesChoisies = (Array.isArray(line.meatIds) ? line.meatIds : [])
+      .map(function (mid) { return nameFromPools(['meats'], mid); }).filter(Boolean)
+      .map(function (nm, i) { return { nm: nm, i: i, k: nbEmplacements(nm) }; })
+      .sort(function (a, b) { return (a.k - b.k) || (a.i - b.i); });
+    viandesChoisies.forEach(function (v) {
+      var nm = v.nm;
+      // Placement STRICT : un emplacement libre qui propose cette viande, sinon arrêt avec message — jamais deux
+      // viandes sur le même emplacement (le repli de pickVariation le faisait quand un emplacement était en rupture).
+      var vid = null;
+      for (var ai = 0; ai < meatAttrs.length && vid == null; ai++) {
+        var am = dIdx.variationByAttr[meatAttrs[ai]];
+        if (!usedAttr[meatAttrs[ai]] && am && am[norm(nm)] != null) { usedAttr[meatAttrs[ai]] = true; vid = am[norm(nm)]; }
+      }
       if (vid == null) optionAbsente(nm);
       item_variations.push({ id: vid, quantity: 1 });
     });
@@ -369,8 +434,7 @@
       if (!nm) return;
       var eid = findExtraId(dIdx, ['supplement'], nm);
       if (eid == null) optionAbsente(nm);
-      item_extras.push({ id: eid, quantity: 1 });
-      choisis.push({ id: eid, nom: nm });
+      ajouteExtra(eid, nm);
     });
 
     // Suppléments bol (bolSupplementIds = sb-*) → extras group 'supplement_bol'.
@@ -379,8 +443,7 @@
       if (!nm) return;
       var eid = findExtraId(dIdx, ['supplement_bol'], nm);
       if (eid == null) optionAbsente(nm);
-      item_extras.push({ id: eid, quantity: 1 });
-      choisis.push({ id: eid, nom: nm });
+      ajouteExtra(eid, nm);
     });
 
     // Viande supplémentaire +2,50 € (extraMeatIds = ids pool m-*) → extra « Viande supplémentaire ».
@@ -393,7 +456,15 @@
       // [2026-11-14] R3-002 : la cuisine doit savoir QUELLE viande (format lu par le serveur, plafonné aux
       // extras payés) — avant, seul « Viande supplémentaire » partait.
       var emNoms = line.extraMeatIds.map(function (mid) { return nameFromPools(['meats'], mid); }).filter(Boolean);
-      if (emNoms.length) viandesEnPlus = 'Viandes en plus : ' + emNoms.join(', ') + '.';
+      // [2026-11-15] La même viande en plus deux fois s'écrit « 2× Tenders » (convention de la caisse et de la borne) :
+      // les lecteurs de la cuisine dédoublonnent les noms (KitchenTicketSymbolicFormatter::splitViandeList,
+      // kdsSymbolic.js) — « Tenders, Tenders » n'annonçait qu'UNE viande pour deux payées.
+      var emGroupes = [];
+      emNoms.forEach(function (nm) {
+        var g = null; emGroupes.forEach(function (x) { if (x.nm === nm) g = x; });
+        if (g) g.n += 1; else emGroupes.push({ nm: nm, n: 1 });
+      });
+      if (emNoms.length) viandesEnPlus = 'Viandes en plus : ' + emGroupes.map(function (x) { return x.n > 1 ? x.n + '× ' + x.nm : x.nm; }).join(', ') + '.';
     }
 
     // Formule menu (menuChoice full|frites|boisson) → addon backend par role.
@@ -432,6 +503,12 @@
       var have = item_variations.filter(function (v) {
         return meta.options.some(function (o) { return o.id === v.id; });
       }).length;
+      // [2026-11-15 relecture adverse P0] Jamais de VIANDE choisie à la place du client : le complément prenait la
+      // première option (« Poulet mariné ») et un Cheese Burger partait en cuisine avec une viande ni choisie ni
+      // affichée. L'assistant demande désormais la viande ; une ligne sans viande s'arrête avec un message.
+      if (have < meta.min && meatAttrs.indexOf(String(attrId)) !== -1 && meta.options.length) {
+        throw { kind: 'resolve', message: 'Il manque le choix de la viande pour ' + (line.name || 'ce produit') + '. Retire-le du panier et recompose-le.' };
+      }
       for (var k = have; k < meta.min && k < meta.options.length; k++) {
         item_variations.push({ id: meta.options[k].id, quantity: 1 });
       }
@@ -479,17 +556,41 @@
   function profileChoiceIds(d) {
     var steps = d && d.composer_profile && d.composer_profile.is_published !== false && d.composer_profile.steps;
     if (!Array.isArray(steps) || !steps.length) return null;
-    var out = { variations: {}, extras: {}, names: { variations: {}, extras: {} }, sauceMax: null };
-    steps.forEach(function (st) {
+    var out = { variations: {}, extras: {}, names: { variations: {}, extras: {} }, sauceMax: null,
+      // [2026-11-15] Règles de quantité du profil publié : l'assistant propose « deux fois le même » et la viande
+      // en plus dans la limite EXACTE que le serveur accepte (max_select / allow_repeat de l'étape), jamais plus.
+      limits: { extrasMax: 0, extrasRepeat: false, meatSlots: [], meatMin: 0 },
+      // [2026-11-15] Choix vendus avec ce plat mais EN RUPTURE aujourd'hui (aucun emplacement ne les propose) :
+      // l'assistant les montre grisés « Rupture » au lieu de les faire disparaître sans explication.
+      rupture: { variations: {}, extras: {} } };
+    var vus = { variations: {}, extras: {} };
+    steps.slice().sort(function (a, b) { return (Number(a && a.position) || 0) - (Number(b && b.position) || 0); }).forEach(function (st) {
       if (st && st.is_active === false) return;
       if (st && st.step_key === 'sauce' && Number(st.max_select) > 0) out.sauceMax = Number(st.max_select);
+      if (st && st.source_type === 'extra_group' && /^supplement/.test(String(st.source_ref || ''))) {
+        out.limits.extrasMax = Number(st.max_select) || 0;
+        out.limits.extrasRepeat = !!st.allow_repeat;
+      }
+      if (st && st.source_type === 'item_attribute' && /^viande/.test(String(st.step_key || ''))) {
+        if (!out.limits.meatSlots.length) out.limits.meatMin = Number(st.min_select) || 0;
+        var slot = {};
+        (st.choices || []).forEach(function (c) {
+          if (c && c.is_available !== false && (c.status == null || Number(c.status) === 5)) slot[norm(c.name)] = true;
+        });
+        out.limits.meatSlots.push(slot);
+      }
       ((st && st.choices) || []).forEach(function (c) {
+        var kk = c && (c.source_type === 'extra' ? 'extras' : c.source_type === 'variation' ? 'variations' : null);
+        if (kk && c.is_available === false && (c.status == null || Number(c.status) === 5)) vus[kk][norm(c.name)] = true;
         if (!c || c.is_available === false || (c.status != null && Number(c.status) !== 5)) return;
         var k = c.source_type === 'extra' ? 'extras' : c.source_type === 'variation' ? 'variations' : null;
         if (!k) return;
         out[k][c.id] = true;
         out.names[k][norm(c.name)] = true;
       });
+    });
+    ['variations', 'extras'].forEach(function (k) {
+      Object.keys(vus[k]).forEach(function (n) { if (!out.names[k][n]) out.rupture[k][n] = true; });
     });
     return out;
   }
@@ -499,13 +600,34 @@
   async function optionNames(realId) {
     var d = await itemDetails(realId);
     var prof = profileChoiceIds(d);
-    if (prof) return { variations: prof.names.variations, extras: prof.names.extras, profile: true, sauceMax: prof.sauceMax };
-    var out = { variations: {}, extras: {} };
+    // Nombre de viandes comprises = règle du serveur (`viande_count`), jamais la carte locale de l'app.
+    if (prof) prof.limits.viandeCount = Number(d && d.viande_count) || 0;
+    if (prof) return { variations: prof.names.variations, extras: prof.names.extras, profile: true, sauceMax: prof.sauceMax, limits: prof.limits, rupture: prof.rupture };
+    var out = { variations: {}, extras: {}, rupture: { variations: {}, extras: {} } };
     var vs = (d && d.variations) || {};
     Object.keys(vs).forEach(function (a) {
       (vs[a] || []).forEach(function (v) { if (v && v.is_available !== false) out.variations[norm(v.name)] = true; });
     });
     ((d && d.extras) || []).forEach(function (e) { if (e && e.is_available !== false) out.extras[norm(e.name)] = true; });
+    Object.keys(vs).forEach(function (a) {
+      (vs[a] || []).forEach(function (v) { if (v && v.is_available === false && !out.variations[norm(v.name)]) out.rupture.variations[norm(v.name)] = true; });
+    });
+    ((d && d.extras) || []).forEach(function (e) { if (e && e.is_available === false && !out.extras[norm(e.name)]) out.rupture.extras[norm(e.name)] = true; });
+    // [2026-11-15] Produit SANS profil publié (en production : Cayenne, galettes, tacos, sandwichs) : les emplacements
+    // viande et leur minimum se lisent sur les attributs « Viande 1/2/3 » (ids 1, 2, 3). Sans cela l'assistant ne
+    // demandait pas la viande du Cayenne et l'envoi la choisissait à la place du client.
+    out.limits = { extrasMax: 0, extrasRepeat: false, meatSlots: [], meatMin: 0, viandeCount: Number(d && d.viande_count) || 0 };
+    ['1', '2', '3'].forEach(function (a) {
+      var rows = vs[a] || [];
+      if (!rows.length) return;
+      if (!out.limits.meatSlots.length) {
+        var ia = rows[0] && rows[0].item_attribute;
+        out.limits.meatMin = ia ? (Number(ia.min_select) || 0) : 0;
+      }
+      var slot = {};
+      rows.forEach(function (v) { if (v && v.is_available !== false) slot[norm(v.name)] = true; });
+      out.limits.meatSlots.push(slot);
+    });
     return out;
   }
 

@@ -73,11 +73,38 @@ h1[tabindex="-1"]:focus-visible { outline: none; }
 .lc-display { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.01em; line-height: 0.92; text-transform: uppercase; }
 .lc-eyebrow { font-family: var(--font-body); font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
 
-/* iOS status bar safe area — 11px island top + 22px island + ~30px clearance */
-:root { --ios-safe-top: 68px; }
+/* ================================================================
+   MARGES D'ÉCRAN — source unique (2026-11-15)
+   Le téléphone dit lui-même la place prise par la barre d'état / l'encoche (haut) et par la barre
+   d'accueil ou de navigation (bas). Plus aucune valeur fixe « iPhone » : avant, 68 px en haut et
+   28 px en bas étaient réservés sur TOUS les appareils (trop haut sur Android, trop court sur un
+   iPhone à encoche, textes sous l'heure dès qu'on faisait défiler).
+     --lc-inset-top / --lc-inset-bottom : la marge réelle. env() = iOS et Android récents ;
+       --safe-area-inset-* = valeur posée par Capacitor (SystemBars) sur les Android plus anciens.
+     --lc-safe-top    : où commence le contenu d'un écran.
+     --lc-safe-bottom : dégagement minimal sous le dernier bouton d'un écran sans onglets.
+     --lc-tabs-h      : hauteur totale de la barre d'onglets (marge basse comprise).
+   Règle : aucun conteneur défilant ne passe sous la barre d'état — il COMMENCE sous elle
+   (.lc-screen, .lc-home__scroll, [data-screen-scroll]) ; la bande garde le fond de l'écran.
+   ================================================================ */
+:root {
+  --lc-inset-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+  --lc-inset-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
+  --lc-safe-top: calc(var(--lc-inset-top) + 10px);
+  --lc-safe-bottom: max(var(--lc-inset-bottom), 14px);
+  --lc-tabs-pad-bottom: max(calc(var(--lc-inset-bottom) + 2px), 10px);
+  --lc-tabs-h: calc(79px + var(--lc-tabs-pad-bottom));
+}
 
 /* Phone-screen scroll */
-.lc-screen { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-top: var(--ios-safe-top); }
+.lc-screen { position: absolute; inset: var(--lc-inset-top) 0 0 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-top: 10px; }
+[data-screen-scroll] { position: absolute; inset: var(--lc-inset-top) 0 0 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+/* Écran défilant AVEC la barre d'onglets : le dernier contenu se lit au-dessus d'elle. */
+.lc-screen--tabs { padding-bottom: calc(var(--lc-tabs-h) + 16px); }
+/* Écran fixe (présentation, connexion, code, confirmation) : colonne entre les deux marges. */
+.lc-page { position: absolute; inset: 0; display: flex; flex-direction: column; padding-top: var(--lc-inset-top); }
+/* Pied d'écran fixe (total + bouton) : toujours au-dessus de la barre d'accueil. */
+.lc-foot { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid var(--gray-1); padding: 14px 20px calc(var(--lc-safe-bottom) + 10px); }
 .lc-screen::-webkit-scrollbar { display: none; }
 
 /* Keep artwork inside its screen, including fixed/transformed descendants. */
@@ -201,7 +228,7 @@ image-slot {
   position: absolute; left: 0; right: 0; bottom: 0;
   background: var(--paper);
   border-top: 1px solid var(--gray-1);
-  padding: 10px 4px 28px;
+  padding: 10px 4px var(--lc-tabs-pad-bottom);
   display: grid; grid-template-columns: repeat(4, 1fr);
   z-index: 10;
 }
@@ -345,7 +372,7 @@ image-slot {
   background: var(--cream);
 }
 .lc-home__scroll {
-  padding: calc(var(--ios-safe-top) + 8px) 0 112px;
+  padding: 18px 0 calc(var(--lc-tabs-h) + 24px);
   background:
     radial-gradient(circle at 95% 4%, rgba(255,217,61,.18), transparent 26%),
     var(--cream);
@@ -719,9 +746,9 @@ button, a, [role="button"], [role="checkbox"], [role="radio"], [role="tab"], .lc
 .lc-wiz-product__art { width: 46px; height: 46px; flex-shrink: 0; border-radius: 14px; overflow: hidden; background: var(--ink); box-shadow: 0 6px 14px -8px rgba(10,10,10,.6); }
 .lc-wiz-product__art img { width: 100%; height: 100%; object-fit: contain; display: block; }
 /* Le nom complet, sur deux lignes au plus (« Sandwich 2 Viandes », « Galette Classique ») : jamais d'ellipse sur un nom de plat. */
-.lc-wiz-product__name { flex: 1; min-width: 0; font-family: var(--font-display); font-size: 17px; line-height: .95; text-transform: uppercase; color: var(--ink); }
-.lc-wiz-product__title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-.lc-wiz-product__name small { display: block; margin-top: 3px; font: 500 11px/1.3 var(--font-body); text-transform: none; color: var(--gray-3); }
+.lc-wiz-product__name { flex: 1; min-width: 0; font-family: var(--font-display); font-size: 17px; line-height: 1.08; text-transform: uppercase; color: var(--ink); }
+.lc-wiz-product__title { padding-top: 2px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.lc-wiz-product__name small { white-space: nowrap; display: block; margin-top: 3px; font: 500 11px/1.3 var(--font-body); text-transform: none; color: var(--gray-3); }
 [data-screen-label] .lc-wiz-product__price { flex-shrink: 0; font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--orange-text); background: var(--yellow-soft); padding: 6px 9px; border-radius: 10px; }
 /* Le CTA désactivé explique au lieu de s'éteindre. */
 .rdw-cta[disabled] { background: var(--gray-1) !important; color: var(--gray-4) !important; box-shadow: none; }
@@ -758,8 +785,6 @@ button, a, [role="button"], [role="checkbox"], [role="radio"], [role="tab"], .lc
 /* Filtres de la carte : collés sous la barre d'état, dans un voile blanc. */
 .lc-menu-chips { position: sticky; top: 0; z-index: 4; padding: 12px 20px; margin-top: 0; background: rgba(255,255,255,.94); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); transition: box-shadow var(--dur-base) ease; }
 .lc-menu-chips.is-stuck { box-shadow: 0 8px 18px -14px rgba(10,10,10,.5); }
-/* Collé : le voile remonte sous la barre d'état, sinon la liste défile visible au-dessus des filtres. */
-.lc-menu-chips.is-stuck::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: var(--ios-safe-top); background: rgba(255,255,255,.94); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
 
 .lc-menu-chips__row { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; }
 .lc-menu-chips__row::-webkit-scrollbar { display: none; }
@@ -806,3 +831,134 @@ button, a, [role="button"], [role="checkbox"], [role="radio"], [role="tab"], .lc
 /* Toast : glisse, puis un trait de temps s'écoule pour les messages qui se ferment seuls. */
 .lc-toast__bar { position: absolute; left: 14px; right: 14px; bottom: 0; height: 3px; border-radius: 999px; background: rgba(255,255,255,.45); transform-origin: left; animation: lc-drain 3.5s linear both; }
 @keyframes lc-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+/* ================================================================
+   [UI/UX 2026-11-15] PERSONNALISATION — quantités, viande en plus, note
+   Même règle que le système de mouvement : chaque animation répond à
+   un geste (ajouter, retirer, atteindre la limite) et montre ce qui a
+   changé. prefers-reduced-motion : neutralisé par la règle globale l.54.
+   ================================================================ */
+/* Refus expliqué : la jauge tressaute, le message apparaît. */
+.lc-shake { animation: lc-shake 380ms cubic-bezier(.36,.07,.19,.97) both; }
+@keyframes lc-shake { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(3px); } 30%, 50%, 70% { transform: translateX(-5px); } 40%, 60% { transform: translateX(5px); } }
+.lc-cap { margin: 0 0 12px; }
+.lc-cap__row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 10px; }
+[data-screen-label] .lc-cap__label { flex: 1; min-width: 0; font-size: 14px; color: var(--gray-4); }
+.lc-cap__dots { order: 3; flex: 0 0 100%; display: flex; gap: 4px; }
+.lc-cap__dots i { flex: 1; height: 5px; border-radius: 999px; background: var(--gray-2); transition: background-color 220ms ease, transform 260ms var(--ease-pop); }
+.lc-cap__dots i.on { background: var(--orange); transform: scaleY(1.4); }
+[data-screen-label] .lc-cap__count { flex-shrink: 0; font: 700 12px/1 var(--font-mono); color: var(--gray-4); min-width: 34px; text-align: right; }
+[data-screen-label] .lc-cap__count.is-full { color: var(--orange-text); }
+[data-screen-label] .lc-cap__msg { max-height: 0; opacity: 0; overflow: hidden; font-size: 12px; font-weight: 700; color: var(--orange-text); transition: max-height 220ms var(--ease-out-expo), opacity 180ms ease, margin 220ms var(--ease-out-expo); }
+[data-screen-label] .lc-cap__msg.is-on { max-height: 40px; opacity: 1; margin-top: 8px; }
+
+/* Ligne d'option à quantité. */
+.lc-qrow { padding: 0; align-items: stretch; transition: background-color 200ms ease; }
+.lc-qrow.is-on { background: var(--yellow-soft); }
+.lc-qrow.is-dim .lc-qrow__main, .lc-qrow.is-dim .lc-qrow__add { opacity: .42; }
+.lc-qrow.is-rupture .lc-qrow__main { opacity: 1; }
+[data-screen-label] .lc-qrow.is-rupture .lc-qrow__name { color: var(--gray-4); }
+.lc-qrow.is-rupture .lc-qrow__add { display: none; }
+.lc-qrow__main { flex: 1; min-width: 0; display: flex; align-items: center; padding: 12px 8px 12px 16px; cursor: pointer; }
+.lc-qrow__img { width: 40px; height: 40px; object-fit: cover; border-radius: 10px; flex-shrink: 0; margin-right: 12px; transition: transform 260ms var(--ease-pop); }
+.lc-qrow.is-on .lc-qrow__img { transform: scale(1.08) rotate(-3deg); }
+.lc-qrow__name { font-size: 13px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.lc-qrow__price { font: 700 11px/1.3 var(--font-mono); color: var(--ink); margin-top: 2px; }
+[data-screen-label] .lc-qrow__mult { color: var(--orange-text); }
+.lc-qrow > .lc-checkbox, .lc-qrow__add, .lc-qty { align-self: center; margin: 0 14px 0 6px; flex-shrink: 0; }
+.lc-qrow__add { width: 30px; height: 30px; border-radius: 999px; border: 1.5px solid var(--gray-2); background: #fff; color: var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 160ms var(--ease-pop), border-color 160ms ease; }
+.lc-qrow__main:active + .lc-qrow__add, .lc-qrow__add:active { transform: scale(.86); border-color: var(--orange); }
+/* Compteur − n + : s'ouvre depuis le bouton « + ». */
+.lc-qty { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border-radius: 999px; background: var(--ink); color: #fff; transform-origin: right center; animation: lc-qty-in 300ms var(--ease-pop) both; }
+@keyframes lc-qty-in { from { transform: scaleX(.42); opacity: .3; } to { transform: none; opacity: 1; } }
+.lc-qty button { width: 32px; height: 32px; border-radius: 999px; border: 0; background: rgba(255,255,255,.14); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 140ms var(--ease-pop), background-color 140ms ease; }
+.lc-qty button svg { stroke: #fff; }
+.lc-qty button:active { transform: scale(.84); }
+.lc-qty button.is-plus { background: var(--orange); }
+.lc-qty button.is-plus.is-off { background: rgba(255,255,255,.14); opacity: .5; }
+[data-screen-label] .lc-qty > span { min-width: 22px; text-align: center; font: 400 18px/1 var(--font-display); color: var(--yellow); }
+
+/* Plateau des viandes : emplacements compris + viandes en plus. */
+.lc-tray { background: var(--cream); border-radius: 18px; padding: 12px 12px 10px; }
+.lc-tray__head { display: flex; align-items: center; justify-content: space-between; font-size: 14px; color: var(--gray-4); padding: 0 4px 10px; }
+.lc-tray__head strong { color: var(--ink); }
+[data-screen-label] .lc-tray__count { font: 700 12px/1 var(--font-mono); color: var(--orange-text); letter-spacing: .06em; }
+[data-screen-label] .lc-tray__count.is-full { color: #12703A; }
+.lc-tray__slots { display: flex; flex-wrap: wrap; gap: 8px; }
+.lc-slot { position: relative; flex: 1 1 calc(50% - 4px); min-width: 0; min-height: 52px; display: flex; align-items: center; gap: 8px; padding: 6px 28px 6px 8px; border-radius: 14px; border: 1.5px dashed var(--gray-2); background: transparent; font: inherit; text-align: left; color: var(--gray-3); }
+.lc-slot.is-next { border-color: var(--orange); color: var(--orange-text); }
+.lc-slot__num { width: 28px; height: 28px; border-radius: 999px; background: #fff; display: flex; align-items: center; justify-content: center; font: 700 12px/1 var(--font-mono); flex-shrink: 0; }
+.lc-slot__name { flex: 1; min-width: 0; font-size: 12px; font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
+.lc-slot.is-filled { border: 0; background: #fff; color: var(--ink); box-shadow: var(--shadow-1); cursor: pointer; flex-wrap: wrap; row-gap: 0; animation: lc-slot-in 380ms var(--ease-pop) both; }
+@keyframes lc-slot-in { 0% { transform: translateY(14px) scale(.8); opacity: 0; } 60% { transform: translateY(-2px) scale(1.03); opacity: 1; } 100% { transform: none; } }
+.lc-slot.is-filled img { width: 36px; height: 36px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+.lc-slot.is-filled .lc-slot__name { flex: 1 1 0; }
+[data-screen-label] .lc-slot__tag { position: absolute; left: 52px; bottom: 5px; font: 700 10px/1 var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: #12703A; }
+.lc-slot.is-filled .lc-slot__name { padding-bottom: 11px; }
+.lc-slot.is-extra { background: var(--ink); color: #fff; }
+[data-screen-label] .lc-slot.is-extra .lc-slot__tag { color: var(--yellow); text-transform: none; letter-spacing: 0; font-family: var(--font-mono); font-size: 10px; }
+.lc-slot__x { position: absolute; top: 50%; right: 8px; width: 18px; height: 18px; margin-top: -9px; border-radius: 999px; background: var(--gray-1); color: var(--gray-4); display: flex; align-items: center; justify-content: center; }
+.lc-slot.is-extra .lc-slot__x { background: rgba(255,255,255,.16); color: #fff; }
+.lc-slot.is-extra .lc-slot__x svg { stroke: #fff; }
+[data-screen-label] .lc-tray__foot { margin: 10px 4px 0; font-size: 12px; line-height: 1.35; color: var(--gray-4); }
+.lc-tray__foot strong { color: var(--ink); }
+
+/* Carte viande : la carte + sa rangée d'actions (retirer / en plus). */
+.lc-meat { display: flex; flex-direction: column; border-radius: 16px; background: var(--paper); box-shadow: var(--shadow-1); transition: box-shadow 200ms ease; }
+.lc-meat.is-on { box-shadow: var(--shadow-selected); }
+.lc-meat .lc-meat__card { box-shadow: none !important; background: transparent; padding: 12px 10px 12px 12px; gap: 8px; }
+.lc-meat__empty { display: none; }
+/* La pastille (coche ou ×2) est posée sur le coin de la carte : le nom garde toute la largeur (360 px). */
+.lc-meat { position: relative; }
+[data-screen-label] .lc-meat__count { position: absolute; top: -6px; right: -6px; z-index: 1; box-shadow: 0 0 0 2px var(--paper); min-width: 24px; height: 24px; padding: 0 6px; border-radius: 999px; background: var(--orange); color: #fff; font: 800 11px/22px var(--font-body); text-align: center; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.lc-meat__actions { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 8px 8px; animation: lc-actions-in 260ms var(--ease-out-expo) both; }
+@keyframes lc-actions-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.lc-meat__minus, .lc-meat__plus, .lc-qty button, .lc-note__chip { position: relative; }
+/* Zone de toucher élargie à 44 px sans grossir le dessin. */
+.lc-meat__minus::after, .lc-meat__plus::after, .lc-qty button::after, .lc-note__chip::after { content: ''; position: absolute; inset: -6px; }
+.lc-meat__minus { width: 34px; height: 34px; border-radius: 999px; border: 0; background: var(--gray-1); color: var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 140ms var(--ease-pop); }
+.lc-meat__plus { height: 34px; padding: 0 10px; border-radius: 999px; border: 0; background: var(--ink); color: var(--yellow); font: 700 11px/1 var(--font-body); display: inline-flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap; transition: transform 140ms var(--ease-pop), opacity 160ms ease; }
+.lc-meat__plus svg { stroke: var(--yellow); }
+.lc-meat__minus:active, .lc-meat__plus:active { transform: scale(.88); }
+
+/* La vignette du plat « reçoit » l'option choisie. */
+.lc-wiz-product__art { position: relative; }
+.lc-art-ring { position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 3px var(--yellow); pointer-events: none; animation: lc-art-ring 520ms ease-out both; }
+@keyframes lc-art-ring { 0% { opacity: 1; background: rgba(255,184,0,.35); } 100% { opacity: 0; background: transparent; } }
+
+/* Récapitulatif : les rangées arrivent l'une après l'autre. */
+.lc-recap-row { animation: lc-rise 320ms var(--ease-out-expo) both; }
+.lc-recap-row:nth-child(2) { animation-delay: 40ms; } .lc-recap-row:nth-child(3) { animation-delay: 80ms; }
+.lc-recap-row:nth-child(4) { animation-delay: 120ms; } .lc-recap-row:nth-child(5) { animation-delay: 160ms; }
+.lc-recap-row:nth-child(6) { animation-delay: 200ms; } .lc-recap-row:nth-child(7) { animation-delay: 240ms; }
+.lc-recap-row:nth-child(n+8) { animation-delay: 280ms; }
+
+/* Note du client. */
+.lc-note { margin-top: 14px; padding: 12px 12px 8px; border-radius: 16px; background: var(--cream); animation: lc-rise 360ms 120ms var(--ease-out-expo) both; }
+.lc-note__head { display: flex; align-items: center; gap: 8px; }
+.lc-note__icon { width: 28px; height: 28px; border-radius: 9px; background: var(--yellow); color: var(--ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.lc-note__label { font-size: 14px; font-weight: 700; color: var(--ink); }
+.lc-note__label span { font-weight: 400; color: var(--gray-4); font-size: 12px; }
+.lc-note__chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.lc-note__chip { min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1.5px solid var(--gray-2); background: #fff; color: var(--ink); font: 600 12px/1 var(--font-body); cursor: pointer; transition: transform 160ms var(--ease-pop), background-color 160ms ease, border-color 160ms ease, color 160ms ease; }
+.lc-note__chip:active { transform: scale(.94); }
+.lc-note__chip.is-on { background: var(--ink); border-color: var(--ink); color: var(--yellow); }
+.lc-note__input { display: block; width: 100%; box-sizing: border-box; margin-top: 10px; padding: 10px 12px; font: inherit; font-size: 16px; line-height: 1.35; border: 1.5px solid var(--gray-2); border-radius: 12px; background: #fff; color: var(--ink); resize: none; transition: border-color 160ms ease, box-shadow 160ms ease; }
+.lc-note__input:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px rgba(255,107,0,.16); }
+.lc-note__count { font-size: 10px; color: var(--gray-3); text-align: right; margin-top: 3px; }
+.lc-note__count.is-full { color: var(--orange-text); font-weight: 700; }
+
+.lc-tray > .lc-cap__msg.is-on { margin: 8px 4px 0; }
+
+/* Rupture : le choix reste visible, grisé, avec son étiquette — il ne disparaît jamais sans explication. */
+[data-screen-label] .lc-rupture-tag { margin-top: 2px; font: 700 10px/1.2 var(--font-body); letter-spacing: .04em; text-transform: uppercase; color: var(--orange-text); }
+.lc-meat.is-rupture { box-shadow: none; background: var(--gray-1); }
+.lc-meat.is-rupture img, .lc-qrow.is-rupture .lc-qrow__img { filter: grayscale(1); opacity: .55; }
+.lc-meat.is-rupture .lc-meat__card { cursor: not-allowed; }
+
+/* Sauce en rupture : carte éteinte mais étiquette lisible (plus d'opacité globale). */
+.rdw-choice.is-rupture { background: var(--gray-1); box-shadow: none; cursor: not-allowed; }
+.rdw-choice.is-rupture img { filter: grayscale(1); opacity: .55; }
+[data-screen-label] .rdw-choice.is-rupture span { color: var(--gray-4); }
+[data-screen-label] .rdw-choice.is-rupture .lc-rupture-tag, [data-screen-label] .lc-meat.is-rupture .lc-rupture-tag { color: var(--orange-text); }
+@media (max-width: 380px) { .lc-wiz-product__name { font-size: 15px; } }

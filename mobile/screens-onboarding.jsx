@@ -9,7 +9,7 @@ function ScreenSplash({ onNext }) {
     return () => clearTimeout(t);
   }, []);
   return (
-    <div data-screen-label="00 Splash" className="lc-doodle-bg" style={{ position: 'absolute', inset: 0, background: '#FFD93D', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', paddingTop: 'var(--ios-safe-top)' }} onClick={onNext}>
+    <div data-screen-label="00 Splash" className="lc-doodle-bg" style={{ position: 'absolute', inset: 0, background: '#FFD93D', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', paddingTop: 'var(--lc-inset-top)' }} onClick={onNext}>
       <div style={{ position: 'absolute', inset: 0, opacity: 0.18, backgroundImage: 'radial-gradient(circle at 18% 22%, rgba(0,0,0,0.4) 0 2px, transparent 2px), radial-gradient(circle at 78% 65%, rgba(0,0,0,0.4) 0 2px, transparent 2px), radial-gradient(circle at 42% 88%, rgba(0,0,0,0.4) 0 2px, transparent 2px)', backgroundSize: '80px 80px' }}/>
       <div style={{ width: 110, height: 110, borderRadius: '50%', background: '#0A0A0A', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, position: 'relative' }}>
         <I.Pepper size={56} stroke="#FF5A1F" sw={1.6}/>
@@ -19,7 +19,7 @@ function ScreenSplash({ onNext }) {
         <div style={{ fontSize: 56, color: '#FF5A1F', letterSpacing: '0.01em' }}>CAYENNE</div>
       </div>
       <div style={{ marginTop: 22, fontSize: 11, fontWeight: 700, letterSpacing: '0.32em', color: '#0A0A0A' }}>HÉNIN-BEAUMONT · 62110</div>
-      <div style={{ position: 'absolute', bottom: 60, fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', color: 'rgba(0,0,0,0.55)', textTransform: 'uppercase' }}>Du peuple, pour le peuple</div>
+      <div style={{ position: 'absolute', bottom: 'calc(var(--lc-inset-bottom) + 36px)', fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', color: 'rgba(0,0,0,0.55)', textTransform: 'uppercase' }}>Du peuple, pour le peuple</div>
     </div>
   );
 }
@@ -28,16 +28,16 @@ function ScreenSplash({ onNext }) {
 function OnboardingShell({ index, onNext, onSkip, hero, eyebrow, title, body, accent }) {
   const total = 4;
   return (
-    <div data-screen-label={`0${index+1} Onboarding`} style={{ position: 'absolute', inset: 0, background: '#FFFFFF', display: 'flex', flexDirection: 'column', paddingTop: 'var(--ios-safe-top)' }}>
+    <div data-screen-label={`0${index+1} Onboarding`} className="lc-page" style={{ background: '#FFFFFF' }}>
       {/* top bar — logo centered, skip absolute right */}
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '14px 20px 8px', minHeight: 36 }}>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px 20px 6px', minHeight: 44 }}>
         <Logo size={14}/>
         <button onClick={onSkip} aria-label="Passer la présentation" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', minWidth: 44, minHeight: 44, padding: '0 12px', background: 'transparent', border: 0, fontSize: 11, fontWeight: 700, color: 'var(--gray-3)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}>Passer</button>
       </div>
       {/* hero — [UI/UX 2026-11-15] la photo respire lentement (une fois par page) */}
       <div className="lc-onb-hero" style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>{hero}</div>
       {/* content — arrive avec la page */}
-      <div key={index} className="lc-onb-copy" style={{ padding: '24px 24px 28px', background: '#fff' }}>
+      <div key={index} className="lc-onb-copy" style={{ padding: '24px 24px calc(var(--lc-safe-bottom) + 14px)', background: '#fff' }}>
         <div className="lc-eyebrow" style={{ color: accent, marginBottom: 10 }}>{eyebrow}</div>
         <h1 className="lc-display" style={{ margin: 0, fontSize: 44, color: 'var(--ink)' }}>{title}</h1>
         <p style={{ marginTop: 14, marginBottom: 24, fontSize: 15, lineHeight: 1.5, color: 'var(--gray-4)', maxWidth: 320 }}>{body}</p>
@@ -178,9 +178,9 @@ function ScreenLogin({ onNext, onBack }) {
     }
   };
   return (
-    <div data-screen-label="05 Login" style={{ position: 'absolute', inset: 0, background: '#FFFFFF', display: 'flex', flexDirection: 'column', paddingTop: 'var(--ios-safe-top)' }}>
+    <div data-screen-label="05 Login" className="lc-page" style={{ background: '#FFFFFF' }}>
       <ScreenHeader left={<IconBtn onClick={onBack} ariaLabel="Retour"><I.Back size={20}/></IconBtn>} center={<Logo size={14}/>}/>
-      <div style={{ flex: 1, padding: '12px 28px', position: 'relative' }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px 28px', position: 'relative' }}>
         <div className="lc-eyebrow" style={{ color: 'var(--orange)', marginBottom: 10 }}>// Étape 1 sur 2</div>
         <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.92, color: 'var(--ink)' }}>Ton<br/>numéro,<br/>chef.</h1>
         <p style={{ marginTop: 14, fontSize: 14, lineHeight: 1.55, color: 'var(--gray-4)' }}>Pas de spam, promis. On t'envoie juste un code par SMS pour confirmer que c'est bien toi.</p>
@@ -210,7 +210,7 @@ function ScreenLogin({ onNext, onBack }) {
         </div>
       </div>
       {/* Sticky CTA — [GOAL-SYNC 2026-07-08] désactivé si numéro invalide + loading pendant l'appel */}
-      <div style={{ padding: '12px 24px 32px' }}>
+      <div style={{ padding: '12px 24px calc(var(--lc-safe-bottom) + 14px)' }}>
         <button onClick={submit} disabled={!valid || loading} aria-busy={loading} className="lc-btn" style={{ background: 'var(--ink)', color: '#fff', width: '100%', height: 60, fontSize: 14, opacity: (!valid || loading) ? 0.45 : 1, cursor: (!valid || loading) ? 'not-allowed' : 'pointer' }}>
           {loading ? 'Envoi du code…' : <>Recevoir le code <I.Arrow size={18} stroke="var(--orange)"/></>}
         </button>
@@ -286,9 +286,9 @@ function ScreenOTP({ phone, devCode, onNext, onResend, onBack }) {
   };
   useEffect_o(() => { refs[0].current?.focus(); }, []);
   return (
-    <div data-screen-label="06 OTP" style={{ position: 'absolute', inset: 0, background: '#FFFFFF', display: 'flex', flexDirection: 'column', paddingTop: 'var(--ios-safe-top)' }}>
+    <div data-screen-label="06 OTP" className="lc-page" style={{ background: '#FFFFFF' }}>
       <ScreenHeader left={<IconBtn onClick={onBack} ariaLabel="Retour"><I.Back size={20}/></IconBtn>} center={<Logo size={14}/>}/>
-      <div style={{ flex: 1, padding: '12px 28px' }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px 28px' }}>
         <div className="lc-eyebrow" style={{ color: 'var(--orange)', marginBottom: 10 }}>// Étape 2 sur 2</div>
         <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.92 }}>Entre<br/>ton code.</h1>
         {/* [GOAL-SYNC 2026-07-08] numéro RÉEL saisi à l'étape 1 + « Modifier » actif (retour login) */}

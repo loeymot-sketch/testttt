@@ -28,7 +28,7 @@ function ModalShell({ children, onClose, height = 'auto', labelledBy, dataModalK
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
-        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#fff', borderRadius: '24px 24px 0 0', padding: '14px 20px 32px', maxHeight: '85%', height, overflowY: 'auto', boxShadow: '0 -12px 30px rgba(0,0,0,0.18)' }}
+        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#fff', borderRadius: '24px 24px 0 0', padding: '14px 20px calc(var(--lc-safe-bottom) + 16px)', maxHeight: 'min(85%, calc(100% - var(--lc-inset-top) - 12px))', height, overflowY: 'auto', boxShadow: '0 -12px 30px rgba(0,0,0,0.18)' }}
       >
         <div style={{ width: 44, height: 4, borderRadius: 999, background: 'var(--gray-2)', margin: '0 auto 14px' }} aria-hidden="true"/>
         {children}
@@ -93,7 +93,7 @@ function ScreenStripe({ go, total = 33 }) {
   }
   return (
     <div data-screen-label="11b Stripe" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
-      <div className="lc-screen" style={{ paddingBottom: 120 }}>
+      <div className="lc-screen" style={{ paddingBottom: 'calc(var(--lc-safe-bottom) + 104px)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 20px 8px' }}>
           <button onClick={() => go('cart')} style={{ width: 36, height: 36, borderRadius: 999, background: 'var(--cream)', border: 0, color: 'var(--ink)', cursor: 'pointer' }}>←</button>
           <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--ink)' }}>Paiement</div>
@@ -124,7 +124,7 @@ function ScreenStripe({ go, total = 33 }) {
           <span style={{ width: 8, height: 8, borderRadius: 999, background: 'var(--green)' }}/> Paiement chiffré · Stripe · 3D-Secure
         </div>
       </div>
-      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#fff', padding: '14px 20px 30px', borderTop: '1px solid var(--gray-1)' }}>
+      <div className="lc-foot">
         <button onClick={() => go('confirm')} className="lc-btn" style={{ background: 'var(--ink)', color: '#fff', width: '100%', height: 58 }}>
           Payer {total.toFixed(2).replace('.', ',')} €
         </button>
@@ -155,7 +155,7 @@ function ModalPointsGain({ onClose, onSee, points, gain }) {
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="modal-points-gain-title" data-modal-kind="points-gain" style={{ position: 'absolute', inset: 0, zIndex: 60, background: 'rgba(10,10,10,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, overflow: 'hidden' }}>
+    <div role="dialog" aria-modal="true" aria-labelledby="modal-points-gain-title" data-modal-kind="points-gain" style={{ position: 'absolute', inset: 0, zIndex: 60, background: 'rgba(10,10,10,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'calc(var(--lc-inset-top) + 12px) 20px calc(var(--lc-safe-bottom) + 12px)', overflow: 'hidden' }}>
       {pieces.map((_, i) => {
         const colors = ['#FF5A1F', '#FFD93D', '#0A0A0A', '#1FA653'];
         const c = colors[i % colors.length];
@@ -178,59 +178,6 @@ function ModalPointsGain({ onClose, onSee, points, gain }) {
         <button onClick={onClose} style={{ background: 'transparent', border: 0, color: 'var(--gray-4)', fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', minHeight: 44, padding: '0 16px' }}>Plus tard</button>
       </div>
     </div>
-  );
-}
-
-// ---------- I.3 Reward redeem confirm ----------
-function ModalRedeem({ onClose, onConfirm, reward = 'Burger gratuit', cost = 1000 }) {
-  return (
-    <ModalShell onClose={onClose} labelledBy="modal-redeem-title" dataModalKind="redeem">
-      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--orange)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>★ Récompense</div>
-      <h2 id="modal-redeem-title" className="lc-display" style={{ margin: '12px 0 4px', fontSize: 36, lineHeight: 0.92, color: 'var(--ink)' }}>Confirmer<br/>l'échange ?</h2>
-      <p style={{ margin: '0 0 18px', color: 'var(--gray-3)', fontSize: 13 }}>Cette action est irréversible.</p>
-
-      <div style={{ background: 'var(--cream)', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gray-3)' }}>Tu reçois</div>
-          <div style={{ fontWeight: 700, fontSize: 16, marginTop: 2, color: 'var(--ink)' }}>{reward}</div>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gray-3)' }}>Tu dépenses</div>
-          <div className="lc-display" style={{ fontSize: 24, color: 'var(--orange)', lineHeight: 1 }}>−{cost}</div>
-          <div style={{ fontSize: 11, color: 'var(--gray-4)' }}>points</div>
-        </div>
-      </div>
-
-      <div style={{ marginTop: 14, padding: '10px 14px', background: 'var(--yellow-soft)', borderRadius: 12, fontSize: 12, color: 'var(--ink)', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-        <span style={{ flexShrink: 0 }}>ℹ︎</span>
-        <span>Ta réduction sera appliquée automatiquement sur ta prochaine commande.</span>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: 10, marginTop: 18 }}>
-        <button onClick={onClose} className="lc-btn" style={{ background: 'var(--cream)', color: 'var(--ink)', height: 54 }}>Annuler</button>
-        <button onClick={onConfirm} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', height: 54 }}>Confirmer</button>
-      </div>
-    </ModalShell>
-  );
-}
-
-// ---------- I.4 Card linking ----------
-function ModalCardLink({ onClose, onScan }) {
-  return (
-    <ModalShell onClose={onClose} labelledBy="modal-cardlink-title" dataModalKind="card-link">
-      <h2 id="modal-cardlink-title" className="lc-display" style={{ margin: 0, fontSize: 32, lineHeight: 0.92, color: 'var(--ink)' }}>Lier ta carte<br/>plastique</h2>
-      <p style={{ margin: '8px 0 18px', color: 'var(--gray-3)', fontSize: 13 }}>Scanne le QR au dos de ta carte pour fusionner les points.</p>
-      <div style={{ position: 'relative', height: 220, background: 'var(--ink)', borderRadius: 18, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ position: 'absolute', inset: 24, border: '2px solid var(--orange)', borderRadius: 14 }}/>
-        <div style={{ position: 'absolute', top: 24, left: 24, width: 24, height: 24, borderTop: '4px solid var(--yellow)', borderLeft: '4px solid var(--yellow)', borderTopLeftRadius: 14 }}/>
-        <div style={{ position: 'absolute', top: 24, right: 24, width: 24, height: 24, borderTop: '4px solid var(--yellow)', borderRight: '4px solid var(--yellow)', borderTopRightRadius: 14 }}/>
-        <div style={{ position: 'absolute', bottom: 24, left: 24, width: 24, height: 24, borderBottom: '4px solid var(--yellow)', borderLeft: '4px solid var(--yellow)', borderBottomLeftRadius: 14 }}/>
-        <div style={{ position: 'absolute', bottom: 24, right: 24, width: 24, height: 24, borderBottom: '4px solid var(--yellow)', borderRight: '4px solid var(--yellow)', borderBottomRightRadius: 14 }}/>
-        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Cadre la carte ici</div>
-      </div>
-      <button onClick={onScan} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', width: '100%', height: 54, marginTop: 16 }}>Activer l'appareil photo</button>
-      <button onClick={onClose} style={{ background: 'transparent', border: 0, color: 'var(--gray-4)', fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', display: 'block', margin: '12px auto 0' }}>Pas maintenant</button>
-    </ModalShell>
   );
 }
 
@@ -272,8 +219,11 @@ function ScreenOrderDetailRemote({ go, dbId }) {
   const o = state.order;
   const fmt = (n) => (Number(n) || 0).toFixed(2).replace('.', ',') + ' €';
   const sn = String((o && o.status_name) || '').toLowerCase();
-  const isCancelled = /annul|rejet|refus/.test(sn);
-  const isDone = /(termin|livr|récup|recup|complet|prêt|pret|servi)/.test(sn);
+  // [2026-11-15] Statut NUMÉRIQUE d'abord (comme la liste) : « Retournée » (22) restait « en cours » avec la promesse
+  // de points, « En livraison » (10) s'affichait terminée. Les mots ne servent que si le numéro manque.
+  const stn = Number(o && o.status) || 0;
+  const isCancelled = stn ? (stn === 16 || stn === 19 || stn === 22) : /annul|rejet|refus|retourn/.test(sn);
+  const isDone = stn ? (stn === 8 || stn === 13) : /(termin|livr[ée]e|récup|recup|complet|prêt|pret|servi)/.test(sn);
   const awarded = Number(o && o.loyalty_points_awarded) || 0;
   const loyCfg = (window.LC && window.LC.loyalty && window.LC.loyalty.config) || {};
   const earnRatio = Number(loyCfg.points_per_euro != null ? loyCfg.points_per_euro : loyCfg.earn_ratio) || 10;
@@ -282,7 +232,7 @@ function ScreenOrderDetailRemote({ go, dbId }) {
   const callNo = o && o.queue_number ? String(o.queue_number) : '';
   return (
     <div data-screen-label="12b Order detail" data-testid="order-detail-remote" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
-      <div className="lc-screen" style={{ paddingBottom: 120 }}>
+      <div className="lc-screen lc-screen--tabs">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 20px 8px' }}>
           <button onClick={() => go('orders')} aria-label="Retour à mes commandes" style={{ width: 44, height: 44, borderRadius: 999, background: 'var(--cream)', border: 0, color: 'var(--ink)', cursor: 'pointer', fontSize: 16 }}>←</button>
           <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--ink)' }}>Détail</div>
@@ -313,7 +263,10 @@ function ScreenOrderDetailRemote({ go, dbId }) {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>{oi.quantity} × {oi.item_name}</div>
                       {sups && <div style={{ fontSize: 11, color: 'var(--gray-3)', marginTop: 2, lineHeight: 1.4 }}>{sups}</div>}
-                      {oi.instruction && <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2, fontStyle: 'italic' }}>{oi.instruction}</div>}
+                      {/* [2026-11-15] Une information par ligne, sans la notation technique de la cuisine (« [Note : … ] »). */}
+                      {oi.instruction && String(oi.instruction).split(/\r?\n/).map(l => l.trim()).filter(Boolean).map((l, k) => (
+                        <div key={k} style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2, fontStyle: 'italic' }}>{l.replace(/^\[(Note(?: commande)?) : (.*)\]$/, '$1 : $2').replace(/^Boisson menu:\s*/, 'Boisson : ')}</div>
+                      ))}
                     </div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--ink)' }}>{fmt(oi.total_price)}</div>
                   </div>
@@ -324,7 +277,7 @@ function ScreenOrderDetailRemote({ go, dbId }) {
                 <span data-testid="order-detail-total" className="lc-display" style={{ fontSize: 24, color: 'var(--orange)' }}>{fmt(o.total)}</span>
               </div>
             </div>
-            <div style={{ margin: '14px 20px 0', fontSize: 12, color: 'var(--gray-4)', textAlign: 'center' }}>Paiement en caisse, CB ou espèces.</div>
+            {!isCancelled && <div style={{ margin: '14px 20px 0', fontSize: 12, color: 'var(--gray-4)', textAlign: 'center' }}>Paiement en caisse, CB ou espèces.</div>}
             {awarded > 0 ? (
               <div data-testid="order-detail-points" style={{ margin: '14px 20px 0', background: 'var(--ink)', color: '#fff', borderRadius: 18, padding: 16, fontSize: 14, fontWeight: 700 }}>+{awarded} pts crédités sur ta carte</div>
             ) : (!isCancelled && !isDone && estimate > 0) ? (
@@ -373,7 +326,7 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
 
   return (
     <div data-screen-label="12b Order detail" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
-      <div className="lc-screen" style={{ paddingBottom: 120 }}>
+      <div className="lc-screen" style={{ paddingBottom: 'calc(var(--lc-tabs-h) + 100px)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 20px 8px' }}>
           <button onClick={() => go('orders')} style={{ width: 36, height: 36, borderRadius: 999, background: 'var(--cream)', border: 0, color: 'var(--ink)', cursor: 'pointer', fontSize: 16 }}>←</button>
           <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--ink)' }}>Détail</div>
@@ -425,7 +378,7 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
           </div>
         )}
       </div>
-      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#fff', padding: '14px 20px 30px', borderTop: '1px solid var(--gray-1)' }}>
+      <div className="lc-foot" style={{ bottom: 'var(--lc-tabs-h)', paddingBottom: 14 }}>
         <button onClick={() => go(items ? 'menu' : 'orders')} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', width: '100%', height: 56 }}>{items ? 'Commander à nouveau sur la carte' : '← Retour'}</button>
       </div>
     </div>
@@ -439,7 +392,7 @@ function Toast({ message, kind = 'info', onClose }) {
   useEffect_m(() => { if (kind === 'error') return undefined; const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, [message, kind]);
   const bg = kind === 'success' ? 'var(--green)' : kind === 'error' ? 'var(--red)' : 'var(--ink)';
   return (
-    <div data-testid="toast" data-kind={kind} role={kind === 'error' ? 'alert' : 'status'} aria-live={kind === 'error' ? 'assertive' : 'polite'} style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) + 8px)', left: 14, right: 14, zIndex: 70, background: bg, color: '#fff', borderRadius: 14, padding: '12px 16px 14px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 22px rgba(0,0,0,0.25)', animation: 'lc-slide-down 0.3s ease', overflow: 'hidden' }}>
+    <div data-testid="toast" data-kind={kind} role={kind === 'error' ? 'alert' : 'status'} aria-live={kind === 'error' ? 'assertive' : 'polite'} style={{ position: 'absolute', top: 'calc(var(--lc-inset-top) + 8px)', left: 14, right: 14, zIndex: 70, background: bg, color: '#fff', borderRadius: 14, padding: '12px 16px 14px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 22px rgba(0,0,0,0.25)', animation: 'lc-slide-down 0.3s ease', overflow: 'hidden' }}>
       <span style={{ width: 8, height: 8, borderRadius: 999, background: kind === 'success' ? 'var(--yellow)' : '#fff' }}/>
       <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>{message}</span>
       <button onClick={onClose} aria-label="Fermer le message" style={{ background: 'transparent', border: 0, color: '#fff', fontSize: 20, cursor: 'pointer', opacity: 0.85, minWidth: 44, minHeight: 44, margin: '-12px -12px -12px 0' }}>×</button>
@@ -550,4 +503,4 @@ function ModalDeleteAccountConfirm({ onClose, onConfirm }) {
   );
 }
 
-Object.assign(window, { ModalPayChoice, ScreenStripe, ModalPointsGain, ModalRedeem, ModalCardLink, ModalWalletV0Notice, ModalOptOutConfirm, ModalDeleteAccountConfirm, ModalShell, ScreenOrderDetail, Toast });
+Object.assign(window, { ModalPayChoice, ScreenStripe, ModalPointsGain, ModalWalletV0Notice, ModalOptOutConfirm, ModalDeleteAccountConfirm, ModalShell, ScreenOrderDetail, Toast });

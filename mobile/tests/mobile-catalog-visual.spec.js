@@ -227,5 +227,6 @@ assert.match(compact, /src=\{cat.image\}[^>]*fit="contain"/, 'menu section categ
 assert.match(steps, /aggregatedAllergens[\s\S]*selections\.supplementIds[\s\S]*selections\.drinkId/, 'recap keeps item + supplements + drink aggregation');
 assert.equal(sha(steps.match(/function buildLineItem\([\s\S]*?\n\}/)[0]),
   // [2026-11-14] buildLineItem modifié exprès : résumé crudités (« Sans » = défaut retiré, « Avec » = option ajoutée).
-  '37bebc4576eda0587a2cf8f5b9d912599ad1dde0126d39e6f4b91c10c285ce68', 'order line payload builder unchanged');
+  // [2026-11-15] modifié exprès : une option prise deux fois s'écrit « Cheddar ×2 » dans le résumé de la ligne.
+  'db1e0ab199399343a835d5af307ee2eb91699813c047b7fb8fb0d1f926cf6c21', 'order line payload builder unchanged');
 console.log('PASS: burger SHA/mappings, 10 categories, 15 drinks + wizard parity, text allergens and payload invariants');
