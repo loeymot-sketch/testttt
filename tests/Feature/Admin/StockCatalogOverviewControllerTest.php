@@ -297,6 +297,41 @@ class StockCatalogOverviewControllerTest extends TestCase
         $this->assertTrue($tomato['is_available']);
     }
 
+    /**
+     * [RUPTURE-VIANDE-UNE-FOIS 2026-11-15] « Viande 1 / 2 / 3 » = un seul rayon : une viande se met en rupture une fois,
+     * pour tous les emplacements de tous les plats.
+     */
+    public function test_les_emplacements_viande_forment_un_seul_rayon(): void
+    {
+        $category = ItemCategory::factory()->create(['status' => Status::ACTIVE]);
+        $tax = Tax::factory()->create(['status' => Status::ACTIVE]);
+        $v1 = ItemAttribute::factory()->create(['name' => 'Viande 1', 'status' => Status::ACTIVE]);
+        $v2 = ItemAttribute::factory()->create(['name' => 'Viande 2', 'status' => Status::ACTIVE]);
+        $sauce = ItemAttribute::factory()->create(['name' => 'Sauce', 'status' => Status::ACTIVE]);
+        $item = Item::factory()->create(['name' => 'Tacos L', 'item_category_id' => $category->id, 'tax_id' => $tax->id, 'status' => Status::ACTIVE]);
+        $ids = [];
+        foreach ([[$v1, 'Viande Hachée'], [$v2, 'Viande Hachée'], [$v1, 'Poulet mariné'], [$sauce, 'Blanche']] as [$attr, $name]) {
+            $ids[$attr->name . '/' . $name] = (int) ItemVariation::create([
+                'item_id' => $item->id, 'item_attribute_id' => $attr->id, 'name' => $name, 'price' => 0.00, 'status' => Status::ACTIVE,
+            ])->id;
+        }
+        // Rupture posée sur le SEUL emplacement 2 : la carte de la viande doit le signaler.
+        app(\App\Services\Menu\AvailabilityService::class)->toggleVariation($ids['Viande 2/Viande Hachée'], $this->branchA->id, false, 'stock_rupture');
+
+        Sanctum::actingAs($this->admin, ['*']);
+        $groups = collect($this->getJson('/api/admin/stock/catalog-overview?branch_id=' . $this->branchA->id)->assertOk()->json('variation_groups'));
+
+        $this->assertCount(2, $groups, 'Sauce + un seul rayon viande (plus « Viande 1 » et « Viande 2 » séparés)');
+        $viandes = $groups->firstWhere('attribute_name', 'Viandes (tous les emplacements)');
+        $this->assertNotNull($viandes);
+        $this->assertSame(min((int) $v1->id, (int) $v2->id), $viandes['attribute_id']);
+        $hachee = collect($viandes['items'])->firstWhere('name', 'Viande Hachée');
+        $this->assertEqualsCanonicalizing([$ids['Viande 1/Viande Hachée'], $ids['Viande 2/Viande Hachée']], $hachee['variation_ids']);
+        $this->assertFalse($hachee['is_available'], 'rupture partielle = carte signalée, un toucher la remet partout');
+        $this->assertSame(1, $hachee['any_unavailable_count']);
+        $this->assertTrue(collect($viandes['items'])->firstWhere('name', 'Poulet mariné')['is_available']);
+    }
+
     public function test_shape_contract_required_fields_present(): void
     {
         $category = ItemCategory::factory()->create(['status' => Status::ACTIVE]);

@@ -2289,9 +2289,27 @@ class FrontendOrderService
                     continue;
                 }
                 // Jamais plus de noms que d'extras payés : le surplus n'est pas annoncé en cuisine.
-                $noms = array_slice(self::listeDeNoms(self::contenuNeutre($m[2])), 0, max(0, (int) $plafond));
+                // [2026-11-15] Le plafond compte les UNITÉS, pas les noms : « 2× Tenders » vaut deux viandes
+                // (écriture de la caisse, de la borne et de l'application). « 9× Tenders » pour UNE viande payée
+                // annonçait neuf viandes en cuisine ; l'excédent est ramené à ce qui a été payé.
+                $noms = [];
+                $restant = max(0, (int) $plafond);
+                foreach (self::listeDeNoms(self::contenuNeutre($m[2])) as $nom) {
+                    if ($restant <= 0) {
+                        break;
+                    }
+                    $unites = 1;
+                    $libelle = $nom;
+                    if (preg_match('/^(\d{1,3})\s*[×xX]\s*(\S.*)$/u', $nom, $q)) {
+                        $unites = max(1, (int) $q[1]);
+                        $libelle = trim($q[2]);
+                    }
+                    $unites = min($unites, $restant);
+                    $restant -= $unites;
+                    $noms[] = $unites > 1 ? $unites.'× '.$libelle : $libelle;
+                }
                 if ($m[1] === 'Sauces en plus') {
-                    $saucesRestantes = max(0, (int) $saucesRestantes - count($noms));
+                    $saucesRestantes = $restant; // unités réellement gardées (« 2× X » compte pour deux)
                 }
                 if ($noms !== []) {
                     $gardees[] = $m[1].' : '.implode(', ', $noms).'.';

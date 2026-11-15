@@ -95,4 +95,51 @@ class ItemDetailsBranchAvailabilityTest extends TestCase
 
         $this->assertTrue($payload['is_available'], 'Sans branch_id, le flag global s’applique (rétro-compatible).');
     }
+
+    /**
+     * [RUPTURE-CHOIX-CLIENT 2026-11-15] Le client du site / de l'application lit la fiche SANS jeton. La rupture d'un
+     * CHOIX (une viande, un supplément) n'était calculée que pour un utilisateur connecté à une branche : le client
+     * composait son plat avec la viande en rupture et la commande était refusée à la fin.
+     */
+    public function test_un_visiteur_voit_la_rupture_d_un_choix_quand_il_precise_la_branche(): void
+    {
+        $branch = Branch::factory()->create();
+        $item = $this->makeAvailableItem();
+        $attribute = \App\Models\ItemAttribute::factory()->create(['is_available' => true]);
+        $hachee = \App\Models\ItemVariation::query()->create([
+            'item_id' => $item->id, 'item_attribute_id' => $attribute->id, 'name' => 'Viande Hachée', 'price' => 0, 'status' => Status::ACTIVE,
+        ]);
+        $poulet = \App\Models\ItemVariation::query()->create([
+            'item_id' => $item->id, 'item_attribute_id' => $attribute->id, 'name' => 'Poulet mariné', 'price' => 0, 'status' => Status::ACTIVE,
+        ]);
+        $cheddar = \App\Models\ItemExtra::query()->create([
+            'item_id' => $item->id, 'name' => 'Cheddar', 'price' => 0.90, 'status' => Status::ACTIVE, 'group_label' => 'supplement', 'is_available' => true,
+        ]);
+        $svc = app(\App\Services\Menu\AvailabilityService::class);
+        $svc->toggleVariation($hachee->id, $branch->id, false, 'stock_rupture');
+        $svc->toggleExtra($cheddar->id, $branch->id, false, 'stock_rupture');
+
+        $lire = function (array $query) use ($item): array {
+            $detailed = app(ItemService::class)->itemDetails($item->fresh(), isset($query['branch_id']) ? (int) $query['branch_id'] : null);
+            $payload = json_decode((new NormalItemResource($detailed))->toResponse(\Illuminate\Http\Request::create('/api/frontend/item/details/'.$item->id, 'GET', $query))->getContent(), true)['data'];
+            $dispo = [];
+            foreach ($payload['variations'] as $groupe) {
+                foreach ($groupe as $v) { $dispo[$v['name']] = $v['is_available']; }
+            }
+            foreach ($payload['extras'] as $e) { $dispo[$e['name']] = $e['is_available']; }
+
+            return $dispo;
+        };
+
+        $avecBranche = $lire(['branch_id' => $branch->id]);
+        $this->assertFalse($avecBranche['Viande Hachée'], 'Visiteur + branche : la viande en rupture doit être signalée.');
+        $this->assertTrue($avecBranche['Poulet mariné'], 'Une viande disponible le reste.');
+        $this->assertFalse($avecBranche['Cheddar'], 'Visiteur + branche : le supplément en rupture doit être signalé.');
+
+        $autreBranche = $lire(['branch_id' => Branch::factory()->create()->id]);
+        $this->assertTrue($autreBranche['Viande Hachée'], 'La rupture d\'une branche ne déborde pas sur une autre.');
+
+        $inconnue = $lire(['branch_id' => 999999]);
+        $this->assertTrue($inconnue['Viande Hachée'], 'Branche inexistante : aucune rupture inventée (comportement d\'avant).');
+    }
 }

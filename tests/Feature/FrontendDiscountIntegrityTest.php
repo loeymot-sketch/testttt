@@ -623,4 +623,16 @@ class FrontendDiscountIntegrityTest extends TestCase
         $this->assertSame(0, \App\Models\LoyaltyTransaction::where('type', 'redeem')->count(), 'Refused loyalty redeem must not write a ledger entry.');
         $this->assertSame(0, \App\Models\FrontendOrder::count(), 'Refused loyalty order must roll back entirely.');
     }
+
+    /** [2026-11-15] Le plafond des viandes / sauces « en plus » compte les unités : « N× Nom » vaut N. */
+    public function test_le_plafond_des_viandes_en_plus_compte_les_unites(): void
+    {
+        $f = fn (string $i, int $payees): string => \App\Services\FrontendOrderService::instructionWebAssainie($i, true, true, ['viandes' => $payees]);
+
+        $this->assertSame('Viandes en plus : 2× Tenders, Cordon Bleu.', $f('Viandes en plus : 2× Tenders, Cordon Bleu.', 3), 'trois unités payées, trois annoncées');
+        $this->assertSame('Viandes en plus : Tenders.', $f('Viandes en plus : 9× Tenders.', 1), 'une payée : jamais neuf annoncées');
+        $this->assertSame('Viandes en plus : 2× Tenders.', $f('Viandes en plus : 2× Tenders, Cordon Bleu.', 2), 'le surplus est retiré');
+        $this->assertSame('Viandes en plus : Tenders, Nuggets.', $f('Viandes en plus : Tenders, Nuggets, Cordon Bleu.', 2), 'écriture sans préfixe inchangée');
+        $this->assertSame('', $f('Viandes en plus : Tenders.', 0), 'rien de payé, rien d\'annoncé');
+    }
 }

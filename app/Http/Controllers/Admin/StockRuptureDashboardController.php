@@ -655,13 +655,31 @@ class StockRuptureDashboardController extends AdminController
             }
         }
 
+        // [RUPTURE-VIANDE-UNE-FOIS 2026-11-15] Les emplacements « Viande 1 », « Viande 2 », « Viande 3 » sont UN SEUL
+        // rayon pour le gérant : « plus de viande hachée » se dit une fois. Avant, il fallait la retirer trois fois ;
+        // en oublier un laissait la viande en rupture proposée comme 2ᵉ viande d'un Tacos L (commande refusée à la
+        // fin, ou servie sans la viande). Les emplacements sont réunis sous le plus petit identifiant ; la carte
+        // d'une viande porte donc TOUTES ses variations, et l'écran les bascule ensemble (aucun changement d'écran).
+        $emplacementsViande = [];
+        foreach ($variations as $v) {
+            $attr = $v->itemAttribute;
+            if ($attr && preg_match('/^viande\s*\d+$/iu', trim((string) $attr->name))) {
+                $emplacementsViande[(int) $attr->id] = true;
+            }
+        }
+        $rayonViande = count($emplacementsViande) > 1 ? min(array_keys($emplacementsViande)) : null;
+
         // Group variations by attribute, dedupe by variation name.
-        $byAttribute = $variations->groupBy(fn (ItemVariation $v): int => (int) $v->item_attribute_id);
+        $byAttribute = $variations->groupBy(fn (ItemVariation $v): int => $rayonViande !== null && isset($emplacementsViande[(int) $v->item_attribute_id])
+            ? $rayonViande
+            : (int) $v->item_attribute_id);
         $variationGroupsPayload = [];
         foreach ($byAttribute as $attributeId => $bucket) {
             $attributeId = (int) $attributeId;
             $attribute = $bucket->first()->itemAttribute;
-            $attributeName = (string) ($attribute->name ?? ('#' . $attributeId));
+            $attributeName = $rayonViande !== null && $attributeId === $rayonViande
+                ? 'Viandes (tous les emplacements)'
+                : (string) ($attribute->name ?? ('#' . $attributeId));
 
             $byName = $bucket->groupBy(fn (ItemVariation $v): string => (string) $v->name);
             $items = [];
