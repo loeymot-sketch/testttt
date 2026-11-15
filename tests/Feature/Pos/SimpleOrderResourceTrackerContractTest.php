@@ -132,4 +132,23 @@ class SimpleOrderResourceTrackerContractTest extends TestCase
         $this->assertFalse($bare['has_instruction']);
         $this->assertSame([], $bare['order_items']);
     }
+
+    /**
+     * [RÈGLEMENT CLIENT 2026-11-15 · propriétaire] Le suivi caisse et la fenêtre Encaisser lisent CETTE ressource : sans
+     * `door_payment_mode`, une livraison que le client paie par carte au livreur s'annonçait « espèces ».
+     *
+     * @test
+     */
+    public function door_payment_mode_is_shipped_to_the_tracker(): void
+    {
+        $this->actingAs(User::factory()->create(['branch_id' => 0]));
+        $branch = Branch::factory()->create();
+        $carte = Order::factory()->create(['branch_id' => $branch->id, 'order_datetime' => now(), 'order_type' => 5, 'payment_method' => 1, 'door_payment_mode' => 'card']);
+        $especes = Order::factory()->create(['branch_id' => $branch->id, 'order_datetime' => now(), 'order_type' => 5, 'payment_method' => 1, 'door_payment_mode' => null]);
+
+        $this->assertSame('card', $this->payloadFor($carte->fresh())['door_payment_mode']);
+        $p = $this->payloadFor($especes->fresh());
+        $this->assertArrayHasKey('door_payment_mode', $p);
+        $this->assertNull($p['door_payment_mode']);
+    }
 }

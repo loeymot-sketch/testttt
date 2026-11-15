@@ -68,6 +68,14 @@
           </p>
         </div>
 
+        <!-- [RÈGLEMENT CLIENT 2026-11-15 · propriétaire] Le moyen que le CLIENT a choisi sur le site (carte bancaire
+             ou espèces à la livraison, titre-restaurant), écrit en toutes lettres — avant, rien ne le disait et la
+             fenêtre s'ouvrait toujours sur Espèces. Il est présélectionné ci-dessous ; le caissier peut en changer. -->
+        <p v-if="choixClient" class="cc-client-choice" data-testid="cc-client-choice" role="status">
+          <span aria-hidden="true">{{ choixClient.icone }}</span>
+          Le client a choisi : <strong>{{ choixClient.libelle }}</strong>
+        </p>
+
         <!-- Hero "À encaisser" — mirror PaymentComponent V5 design (48px monospace tabular) -->
         <div class="cc-hero-total">
           <p class="cc-hero-label">{{ $t('label.total_amount') }}</p>
@@ -270,6 +278,7 @@ import focusTrap from '../../../mixins/focusTrap';
 // helpers que ReceiptComponent) — le serveur rend les octets ESC/POS fiscaux, le pont
 // local les sort sur le SAGA. Aucun window.print (donc pas de page grise / URL).
 import { isCaisseBridgeAvailable, printEscPosViaCaisseBridge } from '../../../helpers/posLocalPrinter';
+import { choixReglementClient } from '../../../helpers/choixReglementClient';
 
 /**
  * PosCounterCollectModal — Wave X X1 sibling counter-collect SSOT-flavored modal.
@@ -353,6 +362,9 @@ export default {
   computed: {
     visible() {
       return this.order !== null && this.order !== undefined;
+    },
+    choixClient() {
+      return choixReglementClient(this.order);
     },
     orderTotal() {
       if (!this.order) return 0;
@@ -478,7 +490,10 @@ export default {
           // cashReceivedNumber accepts both `,` and `.`.
           this.cashReceivedRaw = String(this.orderTotal.toFixed(2)).replace('.', ',');
           this.cashFieldPristine = true;
-          this.selectedMode = 'CASH';
+          // [RÈGLEMENT CLIENT 2026-11-15] Présélection = moyen choisi par le client (carte à la livraison,
+          // titre-restaurant) ; sinon Espèces comme avant. Le montant prérempli (= total) vaut pour CASH et CARD.
+          const choix = choixReglementClient(newOrder);
+          this.selectedMode = (choix && choix.mode) ? choix.mode : 'CASH';
           this.submitting = false;
           // [GOAL-M-POS-2 2026-05-24] Auto-focus receivedInput on modal
           // open so the cashier can type-then-Enter without a mouse hop.
@@ -922,6 +937,19 @@ export default {
   background: var(--pos-v5-brand-red-soft, #ffeaea);
   color: var(--pos-v5-brand-red, #cf3a3a);
   font-weight: 600;
+}
+
+.cc-client-choice {
+  margin: 0 0 12px 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #fff7e6;
+  border: 2px solid #ffb800;
+  color: #1a1a1a;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Hero total — mirror PaymentComponent V5 ".pos-v5-payment-total-card" */

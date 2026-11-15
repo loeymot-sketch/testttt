@@ -578,7 +578,10 @@ export default {
             const m = Number(o.payment_method);
             if (m === 5) return this.$t('label.ticket_restaurant');
             if (m !== 1) return null;
-            return String(o.door_payment_mode || '') === 'card' ? this.$t('label.card_to_courier') : this.$t('label.cash');
+            if (String(o.door_payment_mode || '') === 'card') return this.$t('label.card_to_courier');
+            // [RÈGLEMENT CLIENT 2026-11-15] Livraison prise par téléphone à la caisse : aucun moyen noté — ne pas inventer « Espèces ».
+            if (Number(o.source) === 15) return 'Espèces ou carte';
+            return this.$t('label.cash');
         },
         nf525FooterLines: function () {
             return buildNf525Footer(this.order);

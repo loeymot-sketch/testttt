@@ -62,7 +62,10 @@
                 <div class="flex flex-wrap gap-3" v-if="order.status === enums.orderStatusEnum.PENDING">
                     <OnlineOrderReasonComponent />
                     
-                    <button v-if="order.payment_status === enums.paymentStatusEnum.UNPAID && order.payment_method === enums.paymentTypeEnum.CASH_ON_DELIVERY" 
+                    <!-- [RÈGLEMENT CLIENT 2026-11-15 · propriétaire] Ce bouton enregistre un encaissement ESPÈCES au comptoir :
+                         jamais pour une livraison que le client paie PAR CARTE au livreur (il fausserait le tiroir). -->
+                    <button v-if="order.payment_status === enums.paymentStatusEnum.UNPAID && order.payment_method === enums.paymentTypeEnum.CASH_ON_DELIVERY && !payeParCarteALaLivraison(order)" 
+                        data-testid="online-order-encaisser-especes"
                         type="button" @click="confirmCashPayment()"
                         class="flex items-center justify-center text-white gap-2 px-4 h-[38px] rounded shadow-db-card bg-[#FF9F43]">
                         <i class="lab lab-cash"></i>
@@ -346,6 +349,7 @@ import OnlineOrderReasonComponent from "./OnlineOrderReasonComponent";
 import OnlineOrderReceiptComponent from "./OnlineOrderReceiptComponent";
 import { normalizeReceiptVariations, normalizeReceiptExtras } from "../../../helpers/posReceiptBuilder";
 import { paymentMethodLabelMixin } from "../../../helpers/paymentMethodLabel";
+import { choixReglementClient } from "../../../helpers/choixReglementClient";
 
 export default {
     name: "OnlineOrderShowComponent",
@@ -508,7 +512,15 @@ export default {
         },
         // [E2E stores · B2-R2 · 2026-10-01] « Paiement à la livraison » s'affichait pour une commande
         // à EMPORTER réglée au comptoir. Le libellé suit le type de commande.
+        payeParCarteALaLivraison(order) {
+            const choix = choixReglementClient(order);
+            return !!choix && choix.mode === 'CARD';
+        },
         libellePaiement(order) {
+            // [RÈGLEMENT CLIENT 2026-11-15 · propriétaire] Une livraison disait « Paiement à la livraison » sans le
+            // moyen choisi : écrire « Carte bancaire à la livraison » / « Espèces à la livraison » / « Titre-restaurant ».
+            const choix = choixReglementClient(order);
+            if (choix) return choix.libelle;
             if (order?.payment_method === paymentTypeEnum.CASH_ON_DELIVERY && order?.order_type !== orderTypeEnum.DELIVERY) {
                 return this.$t("label.pay_at_counter");
             }

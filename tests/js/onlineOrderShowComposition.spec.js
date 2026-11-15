@@ -70,10 +70,22 @@ describe('Fiche caisse d\'une commande web — composition, statuts, libellés',
         expect(w.vm.paymentStatusEnumArray[paymentStatusEnum.REFUNDED]).toBe('label.refunded');
     });
 
-    it('une commande à emporter réglée sur place dit « Paiement au comptoir », une livraison garde son libellé', () => {
+    it('une commande à emporter réglée sur place dit « Paiement au comptoir », une livraison dit le moyen choisi par le client', () => {
         const { w } = build();
         expect(w.vm.libellePaiement({ order_type: orderTypeEnum.TAKEAWAY, payment_method: paymentTypeEnum.CASH_ON_DELIVERY })).toBe('label.pay_at_counter');
-        expect(w.vm.libellePaiement({ order_type: orderTypeEnum.DELIVERY, payment_method: paymentTypeEnum.CASH_ON_DELIVERY })).toBe('label.cash_on_delivery');
+        // [RÈGLEMENT CLIENT 2026-11-15 · propriétaire] « Paiement à la livraison » ne disait pas carte ou espèces.
+        expect(w.vm.libellePaiement({ order_type: orderTypeEnum.DELIVERY, payment_method: paymentTypeEnum.CASH_ON_DELIVERY, payment_status: 10, door_payment_mode: null })).toBe('Espèces à la livraison');
+        expect(w.vm.libellePaiement({ order_type: orderTypeEnum.DELIVERY, payment_method: paymentTypeEnum.CASH_ON_DELIVERY, payment_status: 10, door_payment_mode: 'card' })).toBe('Carte bancaire à la livraison');
+        // Déjà encaissée : plus de « à la livraison » inventé, libellé historique.
+        expect(w.vm.libellePaiement({ order_type: orderTypeEnum.DELIVERY, payment_method: paymentTypeEnum.CASH_ON_DELIVERY, payment_status: 5 })).toBe('label.cash_on_delivery');
+    });
+
+    it('« Encaisser & Valider » (espèces au comptoir) masqué pour une livraison payée PAR CARTE au livreur', () => {
+        const { w } = build();
+        const liv = { order_type: orderTypeEnum.DELIVERY, payment_method: paymentTypeEnum.CASH_ON_DELIVERY, payment_status: 10 };
+        expect(w.vm.payeParCarteALaLivraison({ ...liv, door_payment_mode: 'card' })).toBe(true);
+        expect(w.vm.payeParCarteALaLivraison({ ...liv, door_payment_mode: null })).toBe(false);
+        expect(w.vm.payeParCarteALaLivraison({ order_type: orderTypeEnum.TAKEAWAY, payment_method: paymentTypeEnum.CASH_ON_DELIVERY, payment_status: 10, door_payment_mode: null })).toBe(false);
     });
 
     it('n\'appelle PAS la liste des livreurs pour une commande à emporter (403 côté caisse)', async () => {

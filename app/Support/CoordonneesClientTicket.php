@@ -148,7 +148,16 @@ final class CoordonneesClientTicket
             return 'TITRE-RESTAURANT';
         }
 
-        return (string) ($order->door_payment_mode ?? '') === 'card' ? 'CARTE AU LIVREUR' : 'ESPÈCES';
+        if ((string) ($order->door_payment_mode ?? '') === 'card') {
+            return 'CARTE AU LIVREUR';
+        }
+        // [RÈGLEMENT CLIENT 2026-11-15 · propriétaire] Livraison prise par TÉLÉPHONE à la caisse : le caissier ne note
+        // aucun moyen de paiement (le livreur encaisse comme le client veut). Imprimer « ESPÈCES » inventait un choix.
+        if ((int) ($order->source ?? 0) === \App\Enums\Source::POS) {
+            return 'ESPÈCES OU CARTE';
+        }
+
+        return 'ESPÈCES';
     }
 
     public static function clientAbsent(BroadcastableOrder $order): bool

@@ -104,6 +104,29 @@ class ReceiptParityLivraisonTest extends TestCase
     }
 
     /**
+     * [RÈGLEMENT CLIENT 2026-11-15 · propriétaire] Une livraison prise par TÉLÉPHONE à la caisse ne porte aucun moyen de
+     * paiement (le caissier ne le note pas) : le ticket imprimait « ESPÈCES », un choix que personne n'avait fait.
+     * Une livraison du SITE garde le moyen du client (espèces / carte au livreur).
+     */
+    public function test_livraison_telephone_caisse_n_invente_pas_espèces_et_le_site_garde_le_choix_du_client(): void
+    {
+        $base = ['payment_method' => PaymentGateway::CASH_ON_DELIVERY, 'status' => OrderStatus::PREPARED, 'payment_status' => PaymentStatus::UNPAID];
+
+        $tel = $this->delivery($base + ['source' => \App\Enums\Source::POS, 'source_surface' => 'pos', 'door_payment_mode' => null]);
+        $order = Order::query()->withoutGlobalScopes()->with(['branch', 'orderItems', 'user', 'address'])->findOrFail($tel->order_id);
+        $this->assertSame('ESPÈCES OU CARTE', CoordonneesClientTicket::reglementALaPorte($order));
+        $this->assertStringContainsString('A REGLER A LA LIVRAISON : ESPÈCES OU CARTE', $this->texte(app(OrderReceiptEscPosRenderer::class)->renderClientTicket($order)));
+
+        $webCarte = $this->delivery($base + ['source' => \App\Enums\Source::WEB, 'source_surface' => 'delivery', 'door_payment_mode' => 'card']);
+        $o2 = Order::query()->withoutGlobalScopes()->findOrFail($webCarte->order_id);
+        $this->assertSame('CARTE AU LIVREUR', CoordonneesClientTicket::reglementALaPorte($o2));
+
+        $webEsp = $this->delivery($base + ['source' => \App\Enums\Source::WEB, 'source_surface' => 'delivery', 'door_payment_mode' => null]);
+        $o3 = Order::query()->withoutGlobalScopes()->findOrFail($webEsp->order_id);
+        $this->assertSame('ESPÈCES', CoordonneesClientTicket::reglementALaPorte($o3));
+    }
+
+    /**
      * [SUPERVISION 2026-11-10] La « source unique » s'arrêtait à la porte du client : l'écran de REMISE (QR) lisait
      * `user->phone` brut. Les deux écrans du livreur (tournée et remise) disent désormais le téléphone du ticket — numéro saisi
      * en caisse d'abord, jamais une sentinelle « PENDING_… » — et reçoivent la ligne localité déjà dédoublonnée.

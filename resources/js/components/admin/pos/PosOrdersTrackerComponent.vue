@@ -262,7 +262,7 @@
                                     :data-testid="`tracker-paid-online-${order.id}`"
                                     aria-label="Commande déjà payée en ligne"
                                 >
-                                    ✅ CB
+                                    ✅ Payée en ligne
                                 </span>
                                 <!-- [CAISSE-WEB-INTEL 2026-08-06] Livraison signalée dès l'arrivée
                                      (order_type) — avant, seule la voie 🛵 OUT_FOR_DELIVERY la
@@ -290,6 +290,17 @@
                                     {{ elapsedShort(order.created_at) }}
                                 </span>
                             </header>
+                            <!-- [RÈGLEMENT CLIENT 2026-11-15 · propriétaire] Moyen choisi par le client, en toutes
+                                 lettres (carte bancaire / espèces à la livraison, titre-restaurant). Avant, la carte
+                                 ne le disait pas et l'encaissement repartait toujours sur Espèces. -->
+                            <p
+                                v-if="choixReglement(order)"
+                                :class="['pos-tracker-card-reglement', `pos-tracker-card-reglement--${(choixReglement(order).mode || 'autre').toLowerCase()}`]"
+                                :data-testid="`tracker-reglement-${order.id}`"
+                            >
+                                <span aria-hidden="true">{{ choixReglement(order).icone }}</span>
+                                {{ choixReglement(order).libelle }}
+                            </p>
                             <!--
                               [IMP-AGING 2026-07-22] Age badge — À encaisser lane only.
                               A web/kiosk order waiting for the cashier turns orange
@@ -1050,6 +1061,7 @@ import PosRefundModal from './PosRefundModal.vue';
 // must be self-sufficient for encashment (its Encaisser CTA was previously a
 // dead button: it only dispatched an un-listened CustomEvent).
 import PosCounterCollectModal from './PosCounterCollectModal.vue';
+import { choixReglementClient } from '../../../helpers/choixReglementClient';
 import PosQuestionImpressionTicket from './PosQuestionImpressionTicket.vue';
 import { imprimerTicketClient } from '../../../helpers/posImprimerTicketClient';
 import PosSystemHealthPill from './PosSystemHealthPill.vue';
@@ -2738,6 +2750,9 @@ export default {
                 && this.sourceOf(o) === 'online'
                 && !this.isCashPending(o);
         },
+        choixReglement(o) {
+            return choixReglementClient(o);
+        },
         isDeliveryOrder(o) {
             return o ? parseInt(o.order_type, 10) === orderTypeEnum.DELIVERY : false;
         },
@@ -3497,6 +3512,24 @@ export default {
     white-space: nowrap;
 }
 
+/* [RÈGLEMENT CLIENT 2026-11-15] Moyen choisi par le client, lisible d'un coup d'œil. */
+.pos-tracker-card-reglement {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 6px 0 2px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.25;
+    border: 1px solid #d0d5dd;
+    background: #f9fafb;
+    color: #1a1a1a;
+}
+.pos-tracker-card-reglement--card { background: #eef4ff; border-color: #84adff; color: #1d3a8a; }
+.pos-tracker-card-reglement--cash { background: #ecfdf3; border-color: #75e0a7; color: #085d3a; }
+.pos-tracker-card-reglement--ticket { background: #fff7e6; border-color: #ffb800; color: #7a4a00; }
 /* [CAISSE-WEB-INTEL 2026-08-06] Badge « ✅ CB » payé en ligne — vert succès,
    même gabarit que le 🔔 cash-pending pour la symétrie visuelle. */
 .pos-tracker-card-paid-badge {

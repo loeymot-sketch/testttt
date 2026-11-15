@@ -63,6 +63,10 @@ class SimpleOrderResource extends JsonResource
             "delivery_charge_currency_price" => AppLibrary::currencyAmountFormat($this->delivery_charge),
             'payment_method'               => $this->payment_method,
             'payment_status'               => $this->payment_status,
+            // [RÈGLEMENT CLIENT 2026-11-15 · propriétaire] Moyen choisi par le client pour une livraison réglée à la remise
+            // ('card' = carte bancaire au livreur, null = espèces). Sans ce champ, le suivi caisse et la fenêtre Encaisser
+            // (alimentés par CETTE ressource) ne pouvaient que supposer « espèces ».
+            'door_payment_mode'            => $this->door_payment_mode,
             'transaction'                  => $this->transaction ? strtoupper($this->transaction?->payment_method) : null,
             'order_type'                   => $this->order_type,
             'source'                       => $this->source,
