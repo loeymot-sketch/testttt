@@ -2300,13 +2300,22 @@ class FrontendOrderService
                     }
                     $unites = 1;
                     $libelle = $nom;
-                    if (preg_match('/^(\d{1,3})\s*[×xX]\s*(\S.*)$/u', $nom, $q)) {
-                        $unites = max(1, (int) $q[1]);
+                    // « 2× Tenders », « 0002x Tenders », « Tenders ×2 » : la quantité, quelle que soit son écriture.
+                    if (preg_match('/^(\d+)\s*[×xX*]\s*(\S.*)$/u', $nom, $q)) {
+                        $unites = (int) min(999, max(1, (int) ltrim($q[1], '0')));
                         $libelle = trim($q[2]);
+                    } elseif (preg_match('/^(.*\S)\s*[×xX*]\s*(\d+)$/u', $nom, $q)) {
+                        $unites = (int) min(999, max(1, (int) ltrim($q[2], '0')));
+                        $libelle = trim($q[1]);
                     }
                     $unites = min($unites, $restant);
                     $restant -= $unites;
                     $noms[] = $unites > 1 ? $unites.'× '.$libelle : $libelle;
+                }
+                // Le plafond vaut pour TOUTES les lignes de la consigne : deux lignes « Viandes en plus » ne
+                // doublent pas ce qui a été payé.
+                if ($m[1] === 'Viandes en plus') {
+                    $bornes['viandes'] = $restant;
                 }
                 if ($m[1] === 'Sauces en plus') {
                     $saucesRestantes = $restant; // unités réellement gardées (« 2× X » compte pour deux)

@@ -831,6 +831,26 @@
                     @click="openWebOrder(o)"
                   >Détails</button>
                 </span>
+                <!-- [CONTENU AVANT ACCEPTATION 2026-11-15] Le caissier acceptait sans voir QUI commande ni QUOI :
+                     client, nombre d'articles, liste courte (3 lignes puis « + N autres ») et note du client. -->
+                <div class="pos-shortcuts__web-detail" :data-testid="`pos-shortcut-web-detail-${o.id}`">
+                  <span
+                    v-if="webClient(o)"
+                    class="pos-shortcuts__web-client"
+                    :data-testid="`pos-shortcut-web-client-${o.id}`"
+                  ><span aria-hidden="true">👤</span> {{ webClient(o) }}</span>
+                  <span
+                    v-if="webArticles(o).nombre > 0"
+                    class="pos-shortcuts__web-articles"
+                    :data-testid="`pos-shortcut-web-articles-${o.id}`"
+                  ><strong>{{ webArticles(o).nombre }} {{ webArticles(o).nombre > 1 ? 'articles' : 'article' }}</strong> : {{ webArticles(o).lignes.join(', ') }}<span v-if="webArticles(o).autres > 0" class="pos-shortcuts__apercu-plus"> + {{ webArticles(o).autres }} {{ webArticles(o).autres > 1 ? 'autres' : 'autre' }}</span></span>
+                  <span
+                    v-if="webNote(o)"
+                    class="pos-shortcuts__web-note"
+                    role="note"
+                    :data-testid="`pos-shortcut-web-note-${o.id}`"
+                  ><span aria-hidden="true">📝</span> {{ webNote(o) }}</span>
+                </div>
               </li>
             </ul>
             <p
@@ -7695,6 +7715,40 @@ export default {
         apercuCommande(o) {
             return apercuTechnique(o);
         },
+        /** [CONTENU AVANT ACCEPTATION 2026-11-15] « Nom · téléphone » du client d'une commande web (déjà dans la réponse). */
+        webClient(o) {
+            if (!o) return '';
+            const nom = String(o.pos_customer_name || o.user?.name || '').trim();
+            const tel = String(o.pos_customer_phone || o.user?.phone || '').trim();
+            return [nom, tel].filter(Boolean).join(' · ');
+        },
+        /** [CONTENU AVANT ACCEPTATION 2026-11-15] Nombre d'articles + 3 premières lignes « quantité × nom ». */
+        webArticles(o) {
+            const items = (o && Array.isArray(o.order_items)) ? o.order_items : [];
+            const nombre = items.reduce((n, it) => n + (Math.max(1, parseInt(it && it.quantity, 10) || 1)), 0);
+            const lignes = items.slice(0, 3).map((it) => `${Math.max(1, parseInt(it && it.quantity, 10) || 1)}× ${String((it && (it.item_name || it.manual_label)) || 'Article').trim()}`);
+            return { nombre, lignes, autres: Math.max(0, items.length - lignes.length) };
+        },
+        /**
+         * [CONTENU AVANT ACCEPTATION 2026-11-15] Note du client : le site l'écrit sur sa propre ligne de
+         * `instruction`, entre crochets — « [Note : …] » ou « [Note commande : …] ». Seul ce texte est montré ;
+         * les lignes techniques (« Boisson menu: », « Sauce frites : », « Viandes en plus : »…) ne le sont jamais.
+         * Une même note répétée sur plusieurs lignes n'apparaît qu'une fois.
+         */
+        webNote(o) {
+            const items = (o && Array.isArray(o.order_items)) ? o.order_items : [];
+            const notes = [];
+            for (const it of items) {
+                const texte = it && typeof it.instruction === 'string' ? it.instruction : '';
+                if (!texte) continue;
+                for (const ligne of texte.split(/\r?\n/)) {
+                    const m = /^\s*\[\s*Note(?:\s+commande)?\s*:\s*([^\]]*)\]?\s*$/i.exec(ligne);
+                    const note = m ? m[1].trim() : '';
+                    if (note && !notes.includes(note)) notes.push(note);
+                }
+            }
+            return notes.join(' — ');
+        },
         retirerClientFidelite() {
             const form = this.checkoutProps.form;
             form.loyalty_redeem_points = null;
@@ -8537,6 +8591,39 @@ export default {
   letter-spacing: 0.2px;
   overflow-wrap: break-word;
   word-break: normal;
+}
+/* [CONTENU AVANT ACCEPTATION 2026-11-15] Le panneau garde une hauteur bornée : au-delà de ~2 commandes détaillées
+   il défile, pour que la grille des produits ne descende pas pendant le coup de feu. */
+.pos-shortcuts__panel--web .pos-shortcuts__list {
+  max-height: 300px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* [CONTENU AVANT ACCEPTATION 2026-11-15] Client, articles et note sous une commande web (pleine largeur). */
+.pos-shortcuts__web-detail {
+  flex-basis: 100%;
+  order: 11;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: #1F2937;
+  min-width: 0;
+}
+.pos-shortcuts__web-client,
+.pos-shortcuts__web-articles {
+  overflow-wrap: break-word;
+}
+.pos-shortcuts__web-client {
+  font-weight: 700;
+}
+.pos-shortcuts__web-note {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #FEF3C7;
+  color: #78350F;
+  font-weight: 700;
+  overflow-wrap: break-word;
 }
 .pos-shortcuts__heure {
   font-size: 12px;

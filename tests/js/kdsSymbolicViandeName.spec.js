@@ -47,6 +47,11 @@ describe('extraDisplayName — nomme la viande générique, laisse les autres in
         expect(extraDisplayName('Viande supplémentaire', 'Viandes en plus : Poulet, Merguez'))
             .toBe('Viande supplémentaire : Poulet, Merguez');
     });
+    it('nomme aussi « Viande en plus » (nom de l\'extra sur le Cayenne et le Suprême en production)', () => {
+        expect(extraDisplayName('Viande en plus', 'Viandes en plus : 2× Tenders, Poulet mariné'))
+            .toBe('Viande en plus : 2× Tenders, Poulet mariné');
+        expect(extraDisplayName('Viande en plus', null)).toBe('Viande en plus');
+    });
     it('rétro-compat : sans nom parsable → générique inchangé (pas de crash)', () => {
         expect(extraDisplayName('Viande supplémentaire', 'TACOS M')).toBe('Viande supplémentaire');
         expect(extraDisplayName('Viande supplémentaire', null)).toBe('Viande supplémentaire');

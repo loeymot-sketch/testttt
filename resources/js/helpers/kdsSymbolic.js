@@ -247,7 +247,8 @@ export function extraDisplayName(name, instruction) {
         const names = extraSauceNames(instruction);
         return names.length ? `${label} : ${names.join(', ')}` : label;
     }
-    if (/viande\s*suppl/i.test(label)) {
+    // [2026-11-15] « Viande en plus » (Cayenne, Suprême en production) = même extra que « Viande supplémentaire ».
+    if (/viande\s*(?:suppl|en\s+plus)/i.test(label)) {
         const names = extraViandeNames(instruction);
         return names.length ? `${label} : ${names.join(', ')}` : label;
     }
@@ -1133,7 +1134,7 @@ export function meatPortionsForItem(orderItem) {
     const noms = extraViandeNames(instruction);
     let iSupp = 0;
     for (const e of readExtras(orderItem)) {
-        if (!/viande\s*suppl/i.test(extraName(e))) continue;
+        if (!/viande\s*(?:suppl|en\s+plus)/i.test(extraName(e))) continue;
         const n = Math.max(1, Number(e?.quantity) || 1);
         for (let k = 0; k < n; k++) {
             let nom = noms[iSupp];

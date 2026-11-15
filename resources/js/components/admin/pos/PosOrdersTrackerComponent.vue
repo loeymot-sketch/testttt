@@ -641,6 +641,21 @@
                                         <i class="fa-solid fa-lock" aria-hidden="true"></i>
                                         <span class="hidden xl:inline">{{ cancelBlockedReason(order) === 'sealed' ? 'Clôturé' : 'Responsable' }}</span>
                                     </span>
+                                    <!-- [PRÊTE DEPUIS LA CAISSE 2026-11-15] Commande acceptée ou en préparation :
+                                         la passer « Prête » sans écran cuisine (voir marquerPrete). -->
+                                    <button
+                                        v-if="(col.id === 'accept' || col.id === 'preparing') && peutMarquerPrete(order)"
+                                        type="button"
+                                        class="pos-tracker-card-btn pos-tracker-card-btn--primary"
+                                        :disabled="!!preteEnCours[order.id]"
+                                        title="Marquer la commande prête"
+                                        :aria-label="`Marquer prête — ${order.queue_number || order.order_serial_no || order.id}`"
+                                        :data-testid="`tracker-ready-${order.id}`"
+                                        @click="marquerPrete(order)"
+                                    >
+                                        <i class="fa-solid fa-bell-concierge" aria-hidden="true"></i>
+                                        <span class="hidden xl:inline">{{ preteEnCours[order.id] ? 'En cours…' : 'Prête' }}</span>
+                                    </button>
                                     <button
                                         v-if="col.id === 'prepared'"
                                         type="button"
@@ -1042,6 +1057,7 @@ import orderStatusEnum from '../../../enums/modules/orderStatusEnum';
 // (payé en ligne CB vs à encaisser ; livraison vs à emporter).
 import paymentStatusEnum from '../../../enums/modules/paymentStatusEnum';
 import orderTypeEnum from '../../../enums/modules/orderTypeEnum';
+import sourceEnum from '../../../enums/modules/sourceEnum';
 import { onEvents } from '../../../services/eventContract';
 import alertService from '../../../services/alertService';
 import { resumeTechnique as resumeTechniqueCommande, formuleDeLigne as formuleDeLigneCommande } from '../../../support/compositionCommande';
@@ -1082,6 +1098,24 @@ import { adminPriceMixin } from '../../../helpers/formatPrice';
  * Bien cuit · +2 Cheddar · +Salade », 54 caractères) passe ENTIÈRE.
  */
 export const BUDGET_COMPO = 58;
+
+/**
+ * [ALERTE LIVRAISON 2026-11-15] Livraison passée par le CLIENT (site ou application) ?
+ *
+ * Elle porte `source_surface='delivery'` (FrontendOrder::creating) → `sourceOf` la range en « delivery »
+ * et elle ne sonnait jamais. Mais la caisse écrit AUSSI 'delivery' pour une livraison payée à la porte
+ * (OrderService : `delivery_door_payment`). Ce qui les sépare : `source`. Le site et l'application
+ * envoient WEB (5) ou APP (10) — OrderRequest n'accepte rien d'autre — ; la caisse envoie toujours
+ * POS (15). Test POSITIF : une ligne sans `source` ne sonne pas.
+ *
+ * Fonction de module (et non méthode) : les bancs d'essai appellent `_maybeNotifyIncomingOrder` sur un
+ * contexte fabriqué à la main.
+ */
+export function estLivraisonDistante(o, surface) {
+    if (!o || surface !== 'delivery') return false;
+    const source = parseInt(o.source, 10);
+    return source === sourceEnum.WEB || source === sourceEnum.APP;
+}
 
 const POLL_WS_MS = 60000;
 // [MULTI-DEVICE 2026-08-07] 8 s → 5 s sur demande du propriétaire, qui accepte
@@ -1222,6 +1256,8 @@ export default {
             // [WEB-TRACKER-VISIBILITY 2026-07-20] Anti double-clic par commande
             // pour le CTA « Accepter » des commandes web PENDING.
             webAccepting: {},
+            // [PRÊTE DEPUIS LA CAISSE 2026-11-15] Anti double-clic du bouton « Prête ».
+            preteEnCours: {},
             // [CAISSE-WEB-INTEL 2026-08-06] Temps de préparation choisi par
             // commande web avant l'accept (défaut 15 min = défaut settings).
             webPrepChoice: {},
@@ -2125,6 +2161,47 @@ export default {
                 order._delivering = false;
             }
         },
+        // [PRÊTE DEPUIS LA CAISSE 2026-11-15] Sans écran cuisine allumé, une commande acceptée restait
+        // « acceptée » pour le client : le Suivi n'avançait que les commandes déjà prêtes. Même route que
+        // markDelivered (posOrder/changeStatus) et même chemin que l'écran cuisine : la machine à états
+        // n'autorise pas ACCEPT → PREPARED, on passe donc par PREPARING, une étape à la fois. Chaque
+        // étape reste contrôlée par le serveur ; un refus est AFFICHÉ, jamais avalé.
+        peutMarquerPrete(o) {
+            if (!o || this.isRefunded(o)) return false;
+            const s = parseInt(o.order_status ?? o.status ?? 0, 10);
+            return s === orderStatusEnum.ACCEPT || s === orderStatusEnum.PREPARING;
+        },
+        async marquerPrete(order) {
+            if (!order || !order.id || this.preteEnCours[order.id]) return;
+            this.preteEnCours = { ...this.preteEnCours, [order.id]: true };
+            const num = order.queue_number || order.order_serial_no || order.id;
+            try {
+                let statut = parseInt(order.order_status ?? order.status ?? 0, 10);
+                if (statut === orderStatusEnum.ACCEPT) {
+                    await this.$store.dispatch('posOrder/changeStatus', {
+                        id: order.id,
+                        status: orderStatusEnum.PREPARING,
+                    });
+                    statut = orderStatusEnum.PREPARING;
+                }
+                if (statut === orderStatusEnum.PREPARING) {
+                    await this.$store.dispatch('posOrder/changeStatus', {
+                        id: order.id,
+                        status: orderStatusEnum.PREPARED,
+                    });
+                }
+                try { alertService.success(`Commande N°${num} prête`); } catch (_) { /* best-effort */ }
+            } catch (e) {
+                const msg = e?.response?.data?.message
+                    || e?.response?.data?.errors?.status?.[0]
+                    || `Impossible de passer la commande N°${num} en « Prête »`;
+                try { alertService.error(msg); } catch (_) { /* defensive */ }
+            } finally {
+                this.preteEnCours = { ...this.preteEnCours, [order.id]: false };
+                // Toujours relire : après un refus à la 2e étape, la commande est « en préparation ».
+                await this.fetchOrders();
+            }
+        },
         // [POS-V4-CASHIER-OPS 2026-05-02] One-click reprint.
         // Fetches the full order (we only hold the lightweight list payload)
         // and opens the existing ReceiptComponent modal, which carries its own
@@ -2827,15 +2904,18 @@ export default {
         _maybeNotifyIncomingOrder(o) {
             if (!o) return;
             const src = this.sourceOf(o);
-            if (src !== 'online' && src !== 'kiosk') return;
+            const livraisonDistante = estLivraisonDistante(o, src);
+            if (src !== 'online' && src !== 'kiosk' && !livraisonDistante) return;
             const idStr = String(o.id);
             if (this._notifiedOrderIds.has(idStr)) return;
             this._notifiedOrderIds.add(idStr);
             try {
                 const num = o.queue_number || o.order_serial_no || o.id;
-                const label = src === 'online'
-                    ? `Nouvelle commande web N°${num}`
-                    : `Nouvelle commande borne N°${num}`;
+                const label = livraisonDistante
+                    ? `Nouvelle livraison en ligne N°${num}`
+                    : (src === 'online'
+                        ? `Nouvelle commande web N°${num}`
+                        : `Nouvelle commande borne N°${num}`);
                 alertService.info(label);
             } catch (_e) { /* defensive */ }
             if (!this._newOrderSoundEnabled()) return;

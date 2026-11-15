@@ -650,7 +650,9 @@ final class KitchenTicketSymbolicFormatter
 
             return $names === [] ? $extraName : $extraName.' : '.implode(', ', $names);
         }
-        if (preg_match('/viande\s*suppl/iu', $extraName)) {
+        // [2026-11-15] En production l'extra payant s'appelle « Viande en plus » sur le Cayenne et le Suprême (et
+        // « Viande supplémentaire » ailleurs) : même traitement, sinon la cuisine lisait « + Viande en plus » sans la viande.
+        if (preg_match('/viande\s*(?:suppl|en\s+plus)/iu', $extraName)) {
             $names = $this->extraViandeNames($instruction);
 
             return $names === [] ? $extraName : $extraName.' : '.implode(', ', $names);

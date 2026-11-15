@@ -634,5 +634,10 @@ class FrontendDiscountIntegrityTest extends TestCase
         $this->assertSame('Viandes en plus : 2× Tenders.', $f('Viandes en plus : 2× Tenders, Cordon Bleu.', 2), 'le surplus est retiré');
         $this->assertSame('Viandes en plus : Tenders, Nuggets.', $f('Viandes en plus : Tenders, Nuggets, Cordon Bleu.', 2), 'écriture sans préfixe inchangée');
         $this->assertSame('', $f('Viandes en plus : Tenders.', 0), 'rien de payé, rien d\'annoncé');
+        $this->assertSame('Viandes en plus : Tenders.', $f('Viandes en plus : 1000× Tenders.', 1), 'quantité à quatre chiffres');
+        $this->assertSame('Viandes en plus : Tenders.', $f('Viandes en plus : 0009x Tenders.', 1), 'zéros de tête');
+        $this->assertSame('Viandes en plus : 2× Tenders.', $f('Viandes en plus : Tenders ×9.', 2), 'quantité écrite après le nom');
+        $this->assertSame('Viandes en plus : 2× Tenders.', $f("Viandes en plus : 2× Tenders.\nViandes en plus : 2× Nuggets.", 2), 'le plafond vaut pour toutes les lignes');
+        $this->assertSame('Viandes en plus : 5 Tenders.', $f('Viandes en plus : 5 Tenders.', 1), 'un nom qui commence par un chiffre reste un nom');
     }
 }

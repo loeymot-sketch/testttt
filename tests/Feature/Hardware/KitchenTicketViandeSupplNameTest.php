@@ -249,4 +249,15 @@ class KitchenTicketViandeSupplNameTest extends TestCase
         $lines3 = $this->f->supplementLines($snap, null);
         $this->assertSame(['+ Viande supplémentaire ×2'], $lines3);
     }
+
+    /** [2026-11-15] « Viande en plus » (Cayenne, Suprême en production) est le même extra que « Viande supplémentaire ». */
+    public function test_viande_en_plus_est_nommee_comme_viande_supplementaire(): void
+    {
+        $this->assertSame(
+            'Viande en plus : 2× Tenders, Poulet mariné',
+            $this->f->extraDisplayName('Viande en plus', 'Viandes en plus : 2× Tenders, Poulet mariné.')
+        );
+        $this->assertSame('Viande en plus', $this->f->extraDisplayName('Viande en plus', null));
+        $this->assertSame('Cheddar', $this->f->extraDisplayName('Cheddar', 'Viandes en plus : Tenders.'));
+    }
 }
