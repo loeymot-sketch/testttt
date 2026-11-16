@@ -83,9 +83,12 @@
         </div>
     </header>
 
+    @if ($invoice->client_name !== '' || $invoice->client_address || $invoice->client_siret || $invoice->client_vat_number)
     <section class="client">
         <div class="tag">Facturé à</div>
-        <p class="name">{{ $invoice->client_name }}</p>
+        @if ($invoice->client_name !== '')
+            <p class="name">{{ $invoice->client_name }}</p>
+        @endif
         @if ($invoice->client_address)
             <p style="white-space: pre-line">{{ $invoice->client_address }}</p>
         @endif
@@ -96,6 +99,7 @@
             <p>N° TVA : {{ $invoice->client_vat_number }}</p>
         @endif
     </section>
+    @endif
 
     <table>
         <thead>

@@ -1477,6 +1477,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                 ->middleware('idempotency')->name('store');
             Route::get('/{proInvoice}', [\App\Http\Controllers\Admin\Pos\ProInvoiceController::class, 'show'])
                 ->whereNumber('proInvoice')->name('show');
+            Route::get('/{proInvoice}/escpos', [\App\Http\Controllers\Admin\Pos\ProInvoiceController::class, 'escpos'])
+                ->whereNumber('proInvoice')->name('escpos');
             Route::get('/{proInvoice}/document', [\App\Http\Controllers\Admin\Pos\ProInvoiceController::class, 'document'])
                 ->whereNumber('proInvoice')->name('document');
             Route::post('/{proInvoice}/cancel', [\App\Http\Controllers\Admin\Pos\ProInvoiceController::class, 'cancel'])

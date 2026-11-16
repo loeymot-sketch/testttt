@@ -22,6 +22,9 @@ class ProInvoice extends Model
 {
     public const PAYMENT_METHODS = ['especes', 'carte', 'titre_restaurant'];
 
+    /** Désignation quand la caisse n'en saisit aucune (la désignation est facultative). */
+    public const DEFAULT_LABEL = 'Repas';
+
     public const PAYMENT_LABELS = [
         'especes'          => 'Espèces',
         'carte'            => 'Carte bancaire',

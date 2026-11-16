@@ -72,12 +72,13 @@ class ProInvoiceService
                     $invoice->fill([
                         'branch_id'         => $branchId,
                         'number'            => $number,
-                        'client_name'       => $data['client_name'],
+                        // [2026-11-16] Client facultatif : la colonne est NOT NULL, on range « sans nom » en chaîne vide.
+                        'client_name'       => trim((string) ($data['client_name'] ?? '')),
                         'client_address'    => $data['client_address'] ?? null,
                         'client_siret'      => $data['client_siret'] ?? null,
                         'client_vat_number' => $data['client_vat_number'] ?? null,
                         'service_date'      => $data['service_date'],
-                        'label'             => $data['label'],
+                        'label'             => trim((string) ($data['label'] ?? '')) !== '' ? $data['label'] : ProInvoice::DEFAULT_LABEL,
                         'quantity'          => (int) $data['quantity'],
                         'amount_ttc'        => $amounts['amount_ttc'],
                         'vat_rate'          => number_format((float) $data['vat_rate'], 2, '.', ''),

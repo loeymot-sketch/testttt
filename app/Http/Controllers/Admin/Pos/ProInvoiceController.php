@@ -98,6 +98,28 @@ class ProInvoiceController extends Controller
         return response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']);
     }
 
+    /**
+     * Ticket ESC/POS pour l'imprimante de caisse (base64) — même contrat que les tickets de commande et le ticket
+     * promo : la caisse le pousse au pont d'impression local. `width` (24-64) facultatif : à défaut, la largeur
+     * configurée du papier de la caisse.
+     */
+    public function escpos(Request $request, ProInvoice $proInvoice): JsonResponse
+    {
+        abort_unless($request->user()?->can('pos'), 403, 'Vous n\'avez pas le droit d\'imprimer les factures pro.');
+
+        $width = (int) $request->query('width', 0);
+        $width = ($width >= 24 && $width <= 64) ? $width : 0;
+        $width = $width ?: ((int) config('printing.receipt.width_chars', 0) ?: 48);
+
+        $bytes = (new \App\Services\ProInvoice\ProInvoiceEscPosRenderer())->render(
+            $proInvoice,
+            $this->service->sellerIdentity((int) $proInvoice->branch_id),
+            $width
+        );
+
+        return response()->json(['escpos_b64' => base64_encode($bytes)]);
+    }
+
     public function cancel(ProInvoiceCancelRequest $request, ProInvoice $proInvoice): JsonResponse
     {
         $invoice = $this->service->cancel($proInvoice, $request->user(), $request->validated()['cancel_reason']);

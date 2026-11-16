@@ -152,15 +152,12 @@ class ProInvoiceTest extends TestCase
     {
         Sanctum::actingAs($this->cashier(), ['*']);
 
-        $this->store(['client_name' => ''])->assertStatus(422)
-            ->assertJsonPath('errors.client_name.0', 'Indiquez la raison sociale du client.');
         $this->store(['amount_ttc' => '0'])->assertStatus(422)
             ->assertJsonPath('errors.amount_ttc.0', 'Le montant TTC doit être supérieur à 0.');
         $this->store(['amount_ttc' => '-5'])->assertStatus(422)->assertJsonValidationErrors('amount_ttc');
         $this->store(['amount_ttc' => '12.345'])->assertStatus(422)->assertJsonValidationErrors('amount_ttc');
         $this->store(['payment_method' => 'cheque'])->assertStatus(422)
             ->assertJsonPath('errors.payment_method.0', 'Mode de règlement inconnu (espèces, carte ou titre-restaurant).');
-        $this->store(['label' => ''])->assertStatus(422)->assertJsonValidationErrors('label');
         $this->store(['service_date' => now()->addDay()->toDateString()])->assertStatus(422)
             ->assertJsonPath('errors.service_date.0', 'La date de la prestation ne peut pas être dans le futur.');
         $this->store(['client_siret' => '1234'])->assertStatus(422)->assertJsonValidationErrors('client_siret');
@@ -415,5 +412,125 @@ class ProInvoiceTest extends TestCase
                 $this->assertStringNotContainsString($forbidden, $code, "{$file} ne doit pas dépendre de {$forbidden}.");
             }
         }
+    }
+
+    // ── [2026-11-16 · propriétaire] Rien n'est obligatoire sauf le montant ──────────────────
+
+    public function test_seul_le_montant_est_obligatoire(): void
+    {
+        Sanctum::actingAs($this->cashier(), ['*']);
+
+        $res = $this->withHeaders(['X-Idempotency-Key' => (string) Str::uuid()])
+            ->postJson(self::BASE, ['amount_ttc' => '18,00']);
+
+        $res->assertStatus(201)
+            ->assertJsonPath('data.client_name', '')
+            ->assertJsonPath('data.label', ProInvoice::DEFAULT_LABEL)
+            ->assertJsonPath('data.payment_method', 'especes')
+            ->assertJsonPath('data.quantity', 1)
+            ->assertJsonPath('data.amount_ht', '16.36');
+
+        $this->withHeaders(['X-Idempotency-Key' => (string) Str::uuid()])
+            ->postJson(self::BASE, [])->assertStatus(422)->assertJsonValidationErrors('amount_ttc');
+    }
+
+    public function test_le_document_a4_sans_client_n_a_pas_de_bloc_facture_a(): void
+    {
+        Sanctum::actingAs($this->cashier(), ['*']);
+        $id = $this->withHeaders(['X-Idempotency-Key' => (string) Str::uuid()])
+            ->postJson(self::BASE, ['amount_ttc' => '12.00'])->json('data.id');
+
+        $html = $this->get(self::BASE.'/'.$id.'/document')->assertOk()->getContent();
+        $this->assertStringNotContainsString('Facturé à', $html);
+        $this->assertStringContainsString('Repas', $html);
+
+        $avec = $this->store(['client_name' => ''])->json('data.id'); // adresse + SIRET sans nom
+        $this->assertStringContainsString('Facturé à', $this->get(self::BASE.'/'.$avec.'/document')->getContent());
+    }
+
+    // ── Ticket ESC/POS pour l'imprimante de caisse ───────────────────────────────────────────
+
+    /** Retire les commandes ESC/GS (init, page de code, gras, taille, alignement, coupe) : il reste le texte imprimé. */
+    private function sansCommandes(string $bytes): string
+    {
+        return (string) preg_replace('/\x1B@|\x1B[Eat\-M][\x00-\xFF]|\x1D[!B][\x00-\xFF]|\x1DV[\x00-\xFF]{1,2}/s', '', $bytes);
+    }
+
+    private function decoded(int $id, string $query = ''): string
+    {
+        $b64 = $this->getJson(self::BASE.'/'.$id.'/escpos'.$query)->assertOk()->json('escpos_b64');
+        $this->assertNotEmpty($b64);
+
+        return (string) base64_decode($b64, true);
+    }
+
+    public function test_le_ticket_escpos_est_un_vrai_ticket_a_largeur_fixe(): void
+    {
+        Sanctum::actingAs($this->cashier(), ['*']);
+        $id = $this->store(['quantity' => 2, 'amount_ttc' => '18.00', 'notes' => 'Merci de livrer au bureau'])->json('data.id');
+
+        $bytes = $this->decoded($id, '?width=42');
+
+        $this->assertStringStartsWith("\x1B@", $bytes, 'commande d\'initialisation ESC @');
+        $this->assertStringContainsString("\x1Bt\x13", $bytes, 'page de code CP858 (accents et €)');
+        $this->assertStringEndsWith(\App\Services\Hardware\EscPosCommandBuilder::cut(), $bytes, 'le ticket se termine par la coupe');
+
+        // Texte lisible : sans les commandes ESC/GS, chaque ligne tient dans le papier (42 colonnes).
+        $texte = iconv('CP858', 'UTF-8//IGNORE', $this->sansCommandes($bytes));
+        $this->assertStringContainsString('FACTURE', $texte);
+        $this->assertStringContainsString('FP-'.now()->format('Y').'-0001', $texte);
+        $this->assertStringContainsString('Transports Martin SARL', $texte);
+        $this->assertStringContainsString('2 x 2 repas', $texte);
+        $this->assertStringContainsString('Total HT', $texte);
+        $this->assertStringContainsString('16,36 €', $texte);
+        $this->assertStringContainsString('TVA 10 %', $texte);
+        $this->assertStringContainsString('TOTAL TTC', $texte);
+        $this->assertStringContainsString('18,00 €', $texte);
+        $this->assertStringContainsString('hors ticket de caisse', $texte);
+        $this->assertStringContainsString('Merci de livrer au bureau', $texte);
+        foreach (explode("\n", $texte) as $ligne) {
+            $this->assertLessThanOrEqual(42, mb_strlen(rtrim($ligne, "\r")), 'ligne trop large : '.$ligne);
+        }
+        // Les totaux sont alignés : libellé à gauche, montant à droite, sur UNE ligne (pas « tout collé »).
+        $this->assertMatchesRegularExpression('/^Total HT +16,36 €$/mu', $texte);
+    }
+
+    public function test_le_ticket_sans_client_ne_demande_rien_et_n_imprime_pas_de_bloc_client(): void
+    {
+        Sanctum::actingAs($this->cashier(), ['*']);
+        $id = $this->withHeaders(['X-Idempotency-Key' => (string) Str::uuid()])
+            ->postJson(self::BASE, ['amount_ttc' => '9.50'])->json('data.id');
+
+        $texte = iconv('CP858', 'UTF-8//IGNORE', $this->sansCommandes($this->decoded($id)));
+
+        $this->assertStringNotContainsString('FACTURE À', $texte);
+        $this->assertStringContainsString('1 x Repas', $texte);
+        $this->assertStringContainsString('9,50 €', $texte);
+    }
+
+    public function test_le_ticket_d_une_facture_annulee_le_dit(): void
+    {
+        Sanctum::actingAs($this->cashier(), ['*']);
+        $id = $this->store()->json('data.id');
+        $this->withHeaders(['X-Idempotency-Key' => (string) Str::uuid()])
+            ->postJson(self::BASE.'/'.$id.'/cancel', ['cancel_reason' => 'Erreur de saisie'])->assertOk();
+
+        $texte = iconv('CP858', 'UTF-8//IGNORE', $this->sansCommandes($this->decoded($id)));
+        $this->assertStringContainsString('ANNULÉE', $texte);
+        $this->assertStringContainsString('Erreur de saisie', $texte);
+    }
+
+    public function test_le_ticket_escpos_est_reserve_a_la_caisse_et_a_sa_branche(): void
+    {
+        $id = null;
+        Sanctum::actingAs($this->cashier(1), ['*']);
+        $id = $this->store()->json('data.id');
+
+        Sanctum::actingAs($this->cashier(2), ['*']);
+        $this->getJson(self::BASE.'/'.$id.'/escpos')->assertNotFound();
+
+        $sansDroit = User::factory()->create(['branch_id' => 1]);
+        Sanctum::actingAs($sansDroit, ['*']);
+        $this->getJson(self::BASE.'/'.$id.'/escpos')->assertStatus(403);
     }
 }

@@ -8,7 +8,12 @@ import fs from 'fs';
 import path from 'path';
 
 vi.mock('axios', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
+vi.mock('../../resources/js/helpers/posLocalPrinter', () => ({
+  isCaisseBridgeAvailable: vi.fn(),
+  printEscPosViaCaisseBridge: vi.fn(),
+}));
 import axios from 'axios';
+import { isCaisseBridgeAvailable, printEscPosViaCaisseBridge } from '../../resources/js/helpers/posLocalPrinter';
 import ProInvoicePage, { computeAmounts } from '../../resources/js/components/admin/pos/ProInvoicePage.vue';
 import CaisseSecondaryNav from '../../resources/js/components/admin/pos/CaisseSecondaryNav.vue';
 
@@ -53,8 +58,13 @@ describe('ProInvoicePage', () => {
   beforeEach(() => {
     axios.get.mockReset();
     axios.post.mockReset();
+    isCaisseBridgeAvailable.mockReset();
+    printEscPosViaCaisseBridge.mockReset();
+    isCaisseBridgeAvailable.mockResolvedValue(false); // par défaut : poste sans pont d'impression
+    document.querySelectorAll('[data-testid="fp-print-frame"]').forEach((n) => n.remove());
     axios.get.mockImplementation((url) => {
       if (url === 'admin/pos/pro-invoices') return Promise.resolve({ data: LIST });
+      if (/\/escpos$/.test(url)) return Promise.resolve({ data: { escpos_b64: 'G0A=' } });
       return Promise.resolve({ data: '<!DOCTYPE html><p>Facture</p>' });
     });
   });
@@ -74,15 +84,73 @@ describe('ProInvoicePage', () => {
     expect(w.text()).toContain('hors ticket de caisse');
   });
 
-  it('exige un mode de règlement avant tout envoi', async () => {
+  it('[2026-11-16] société et désignation sont facultatives ; seul le montant est saisi', async () => {
+    axios.post.mockResolvedValue({ data: { data: { id: 4, number: 'FP-2026-0004' } } });
     const w = mountPage();
     await flushPromises();
+    expect(w.find('[data-testid="fp-client-name"]').element.closest('label').textContent).toContain('facultatif');
+    expect(w.find('[data-testid="fp-label"]').element.closest('label').textContent).toContain('facultatif');
+    expect(w.find('[data-testid="fp-client-name"]').element.closest('label').querySelector('em')).toBeNull();
+    expect(w.find('[data-testid="fp-label"]').element.closest('label').querySelector('em')).toBeNull();
+
+    await w.find('[data-testid="fp-amount"]').setValue('12,50');
     await w.find('[data-testid="pro-invoice-form"]').trigger('submit');
-    expect(axios.post).not.toHaveBeenCalled();
-    expect(w.text()).toContain('Choisissez le mode de règlement.');
+    await flushPromises();
+
+    expect(axios.post).toHaveBeenCalledTimes(1);
+    expect(axios.post.mock.calls[0][1]).toMatchObject({ client_name: '', label: '', amount_ttc: '12,50', payment_method: 'especes' });
   });
 
-  it('envoie le formulaire avec une clé d\'idempotence puis imprime le document', async () => {
+  it('[2026-11-16] sans client, la liste affiche un tiret', async () => {
+    axios.get.mockImplementation((url) => Promise.resolve({ data: url === 'admin/pos/pro-invoices'
+      ? { data: [{ id: 9, number: 'FP-2026-0009', service_date: '2026-11-15', client_name: '', label: 'Repas', quantity: 1, amount_ttc: '9.00', payment_label: 'Espèces', cancelled: false }], meta: { total: 1 } }
+      : '' }));
+    const w = mountPage();
+    await flushPromises();
+    expect(w.find('[data-testid="fp-row-FP-2026-0009"]').text()).toContain('—');
+  });
+
+  it('[2026-11-16] avec le pont de caisse : le TICKET ESC/POS part à l\'imprimante, pas le document A4', async () => {
+    isCaisseBridgeAvailable.mockResolvedValue(true);
+    printEscPosViaCaisseBridge.mockResolvedValue({ ok: true, method: 'caisse-bridge' });
+    const w = mountPage();
+    await flushPromises();
+    await w.find('[data-testid="fp-reprint-2"]').trigger('click');
+    await flushPromises();
+
+    expect(axios.get).toHaveBeenCalledWith('admin/pos/pro-invoices/2/escpos');
+    expect(printEscPosViaCaisseBridge).toHaveBeenCalledWith('G0A=');
+    expect(axios.get).not.toHaveBeenCalledWith('admin/pos/pro-invoices/2/document', expect.anything());
+    expect(document.querySelector('[data-testid="fp-print-frame"]')).toBeNull();
+    expect(w.find('[data-testid="fp-info"]').text()).toContain('imprimante de caisse');
+  });
+
+  it('[2026-11-16] pont présent mais imprimante muette : message clair, jamais de A4 sur la thermique', async () => {
+    isCaisseBridgeAvailable.mockResolvedValue(true);
+    printEscPosViaCaisseBridge.mockResolvedValue(null);
+    const w = mountPage();
+    await flushPromises();
+    await w.find('[data-testid="fp-reprint-2"]').trigger('click');
+    await flushPromises();
+
+    expect(w.text()).toContain('L\'imprimante de caisse n\'a pas répondu');
+    expect(axios.get).not.toHaveBeenCalledWith('admin/pos/pro-invoices/2/document', expect.anything());
+    expect(document.querySelector('[data-testid="fp-print-frame"]')).toBeNull();
+  });
+
+  it('[2026-11-16] le bouton A4 imprime le document A4 même quand le pont existe', async () => {
+    isCaisseBridgeAvailable.mockResolvedValue(true);
+    const w = mountPage();
+    await flushPromises();
+    await w.find('[data-testid="fp-a4-2"]').trigger('click');
+    await flushPromises();
+
+    expect(axios.get).toHaveBeenCalledWith('admin/pos/pro-invoices/2/document', expect.any(Object));
+    expect(printEscPosViaCaisseBridge).not.toHaveBeenCalled();
+    expect(document.querySelector('[data-testid="fp-print-frame"]')).not.toBeNull();
+  });
+
+  it('envoie le formulaire avec une clé d\'idempotence puis imprime (sans pont : document A4)', async () => {
     axios.post.mockResolvedValue({ data: { data: { id: 3, number: 'FP-2026-0003' } } });
     const w = mountPage();
     await flushPromises();
@@ -105,13 +173,13 @@ describe('ProInvoicePage', () => {
   });
 
   it('affiche les erreurs 422 du serveur sous chaque champ', async () => {
-    axios.post.mockRejectedValue({ response: { status: 422, data: { errors: { client_name: ['Indiquez la raison sociale du client.'] } } } });
+    axios.post.mockRejectedValue({ response: { status: 422, data: { errors: { amount_ttc: ['Le montant TTC doit être supérieur à 0.'] } } } });
     const w = mountPage();
     await flushPromises();
     await w.find('[data-testid="fp-pay-carte"]').trigger('click');
     await w.find('[data-testid="pro-invoice-form"]').trigger('submit');
     await flushPromises();
-    expect(w.text()).toContain('Indiquez la raison sociale du client.');
+    expect(w.text()).toContain('Le montant TTC doit être supérieur à 0.');
   });
 
   it('annule avec un motif et recharge la liste', async () => {

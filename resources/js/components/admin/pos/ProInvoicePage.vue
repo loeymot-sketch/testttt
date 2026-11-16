@@ -19,7 +19,7 @@
                     <section class="fp-card">
                         <h2 class="fp-title">Client professionnel</h2>
                         <label class="fp-field">
-                            <span>Société (raison sociale) <em>*</em></span>
+                            <span>Société (raison sociale) <small class="fp-opt">facultatif</small></span>
                             <input v-model="form.client_name" type="text" maxlength="190" autocomplete="organization"
                                    data-testid="fp-client-name" :aria-invalid="!!err('client_name')">
                             <small v-if="err('client_name')" class="fp-err">{{ err('client_name') }}</small>
@@ -47,7 +47,7 @@
                         <h2 class="fp-title">Prestation</h2>
                         <div class="fp-row">
                             <label class="fp-field">
-                                <span>Date de la prestation <em>*</em></span>
+                                <span>Date de la prestation</span>
                                 <input v-model="form.service_date" type="date" :max="today" data-testid="fp-service-date">
                                 <small v-if="err('service_date')" class="fp-err">{{ err('service_date') }}</small>
                             </label>
@@ -58,8 +58,8 @@
                             </label>
                         </div>
                         <label class="fp-field">
-                            <span>Désignation <em>*</em></span>
-                            <input v-model="form.label" type="text" maxlength="190" placeholder="2 repas" data-testid="fp-label">
+                            <span>Désignation <small class="fp-opt">facultatif</small></span>
+                            <input v-model="form.label" type="text" maxlength="190" placeholder="Repas" data-testid="fp-label">
                             <small v-if="err('label')" class="fp-err">{{ err('label') }}</small>
                         </label>
                         <div class="fp-row">
@@ -80,7 +80,7 @@
                             </div>
                         </div>
                         <div class="fp-field">
-                            <span id="fp-pay-label">Règlement <em>*</em></span>
+                            <span id="fp-pay-label">Règlement</span>
                             <div class="fp-pay" role="radiogroup" aria-labelledby="fp-pay-label">
                                 <button v-for="m in paymentMethods" :key="m.value" type="button" role="radio"
                                         :aria-checked="form.payment_method === m.value" :class="{ on: form.payment_method === m.value }"
@@ -98,6 +98,7 @@
                         <div class="fp-line"><span>TVA {{ vatLabel }}</span><strong data-testid="fp-preview-vat">{{ money(preview.vat) }}</strong></div>
                         <div class="fp-line fp-line--ttc"><span>Total TTC</span><strong data-testid="fp-preview-ttc">{{ money(preview.ttc) }}</strong></div>
                         <p v-if="generalError" class="fp-err fp-err--block" role="alert">{{ generalError }}</p>
+                        <p v-else-if="info" class="fp-ok" role="status" data-testid="fp-info">{{ info }}</p>
                         <button type="submit" class="fp-submit" :disabled="submitting" data-testid="fp-submit">
                             {{ submitting ? 'Création…' : 'Créer et imprimer' }}
                         </button>
@@ -123,13 +124,16 @@
                                 <tr :class="{ cancelled: inv.cancelled }" :data-testid="'fp-row-' + inv.number">
                                     <td class="fp-num">{{ inv.number }}<span v-if="inv.cancelled" class="fp-badge">Annulée</span></td>
                                     <td>{{ frDate(inv.service_date) }}</td>
-                                    <td>{{ inv.client_name }}</td>
+                                    <td>{{ inv.client_name || '—' }}</td>
                                     <td>{{ inv.quantity > 1 ? inv.quantity + ' × ' : '' }}{{ inv.label }}</td>
                                     <td class="r">{{ money(inv.amount_ttc) }}</td>
                                     <td>{{ inv.payment_label }}</td>
                                     <td class="r fp-actions">
                                         <button type="button" class="fp-btn" :disabled="printingId === inv.id"
                                                 :data-testid="'fp-reprint-' + inv.id" @click="print(inv.id)">Réimprimer</button>
+                                        <button type="button" class="fp-btn" :disabled="printingId === inv.id"
+                                                title="Document A4 (imprimante bureau ou PDF)"
+                                                :data-testid="'fp-a4-' + inv.id" @click="print(inv.id, { a4: true })">A4</button>
                                         <button v-if="!inv.cancelled" type="button" class="fp-btn fp-btn--danger"
                                                 :data-testid="'fp-cancel-' + inv.id" @click="startCancel(inv)">Annuler</button>
                                     </td>
@@ -159,6 +163,7 @@
 
 <script>
 import axios from "axios";
+import { isCaisseBridgeAvailable, printEscPosViaCaisseBridge } from "../../../helpers/posLocalPrinter";
 import BreadcrumbComponent from "../components/BreadcrumbComponent";
 import CaisseSecondaryNav from "./CaisseSecondaryNav.vue";
 
@@ -193,7 +198,7 @@ const emptyForm = () => ({
     quantity: 1,
     amount_ttc: "",
     vat_rate: "10",
-    payment_method: "",
+    payment_method: "especes",
 });
 
 export default {
@@ -204,6 +209,7 @@ export default {
             form: emptyForm(),
             errors: {},
             generalError: "",
+            info: "",
             submitting: false,
             invoices: [],
             loadingList: false,
@@ -297,12 +303,42 @@ export default {
             }
         },
         /**
-         * Impression : le document A4 est rendu par le serveur (une seule source pour les mentions
-         * légales), chargé dans un cadre invisible puis imprimé. Pas de fenêtre surgissante à bloquer.
+         * [2026-11-16 · propriétaire] Impression sur l'IMPRIMANTE DE CAISSE, en vrai ticket : le serveur compose le
+         * ticket ESC/POS (même contrat que les tickets de commande), la caisse le pousse au pont d'impression local.
+         * Avant, tout passait par un document A4 que le pilote de l'imprimante thermique comprimait en « un bout de
+         * phrase tout collé ». Sans pont (poste de bureau, téléphone), repli sur le document A4 du navigateur ; le
+         * bouton « A4 » le demande explicitement.
+         * @returns {Promise<boolean>} true si le ticket a été traité (envoyé OU échec affiché), false si pas de pont.
          */
-        async print(id) {
-            this.printingId = id;
+        async printTicket(id) {
+            let bridge = false;
+            try { bridge = await isCaisseBridgeAvailable(); } catch (_) { bridge = false; }
+            if (!bridge) return false;
             try {
+                const { data } = await axios.get(`${BASE}/${id}/escpos`);
+                const result = data && data.escpos_b64 ? await printEscPosViaCaisseBridge(data.escpos_b64) : null;
+                if (result && result.ok) {
+                    this.generalError = "";
+                    this.info = "Ticket envoyé à l'imprimante de caisse.";
+                } else {
+                    this.info = "";
+                    this.generalError = "L'imprimante de caisse n'a pas répondu. Vérifiez le papier et l'alimentation, puis « Réimprimer ».";
+                }
+            } catch (e) {
+                this.info = "";
+                this.generalError = "Le ticket n'a pas pu être préparé. Réessayez avec « Réimprimer ».";
+            }
+            return true;
+        },
+        /**
+         * Document A4 : rendu par le serveur (une seule source pour les mentions légales), chargé dans un cadre
+         * invisible puis imprimé. Pas de fenêtre surgissante à bloquer.
+         */
+        async print(id, { a4 = false } = {}) {
+            this.printingId = id;
+            this.info = "";
+            try {
+                if (!a4 && (await this.printTicket(id))) return;
                 const { data: html } = await axios.get(`${BASE}/${id}/document`, { responseType: "text", transformResponse: [(d) => d] });
                 const frame = document.createElement("iframe");
                 frame.setAttribute("title", "Impression de la facture");
@@ -380,6 +416,8 @@ export default {
 .fp-hint, .fp-muted { margin: 10px 0 0; font-size: 12px; color: #6B6B85; }
 .fp-err { color: #B42318; font-weight: 600; font-size: 12.5px; }
 .fp-err--block { margin: 10px 0 0; }
+.fp-ok { margin: 10px 0 0; font-size: 13px; font-weight: 700; color: #1A7F37; }
+.fp-opt { font-weight: 400; color: #6B6B85; }
 .fp-table-wrap { overflow-x: auto; }
 .fp-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .fp-table th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: #6B6B85; padding: 8px; border-bottom: 1.5px solid #E5E5EF; white-space: nowrap; }

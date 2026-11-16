@@ -28,11 +28,13 @@ class ProInvoiceStoreRequest extends FormRequest
         $amount = $this->input('amount_ttc');
 
         $this->merge([
-            'client_name'       => $trim($this->input('client_name')),
+            // [2026-11-16 · propriétaire] Rien n'est obligatoire à part le montant : ni société, ni désignation.
+            'client_name'       => $trim($this->input('client_name')) ?: null,
             'client_address'    => $trim($this->input('client_address')) ?: null,
             'client_siret'      => is_string($siret) && trim($siret) !== '' ? preg_replace('/\s+/', '', $siret) : null,
             'client_vat_number' => is_string($vat) && trim($vat) !== '' ? strtoupper(preg_replace('/\s+/', '', $vat)) : null,
-            'label'             => $trim($this->input('label')),
+            'label'             => $trim($this->input('label')) ?: null,
+            'payment_method'    => $this->filled('payment_method') ? $this->input('payment_method') : ProInvoice::PAYMENT_METHODS[0],
             'notes'             => $trim($this->input('notes')) ?: null,
             'amount_ttc'        => is_string($amount) ? str_replace(',', '.', trim($amount)) : $amount,
             'quantity'          => $this->filled('quantity') ? $this->input('quantity') : 1,
@@ -46,12 +48,12 @@ class ProInvoiceStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'client_name'       => ['required', 'string', 'max:190'],
+            'client_name'       => ['nullable', 'string', 'max:190'],
             'client_address'    => ['nullable', 'string', 'max:500'],
             'client_siret'      => ['nullable', 'string', 'regex:/^(\d{9}|\d{14})$/'],
             'client_vat_number' => ['nullable', 'string', 'regex:/^[A-Z]{2}[0-9A-Z]{2,13}$/'],
             'service_date'      => ['required', 'date_format:Y-m-d', 'before_or_equal:today', 'after_or_equal:'.now()->subYear()->toDateString()],
-            'label'             => ['required', 'string', 'max:190'],
+            'label'             => ['nullable', 'string', 'max:190'],
             'quantity'          => ['required', 'integer', 'min:1', 'max:999'],
             'amount_ttc'        => ['required', 'regex:/^\d{1,5}(\.\d{1,2})?$/', 'numeric', 'gt:0', 'max:99999.99'],
             'vat_rate'          => ['required', 'in:'.implode(',', ProInvoice::VAT_RATES)],
@@ -63,7 +65,6 @@ class ProInvoiceStoreRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'client_name.required'      => 'Indiquez la raison sociale du client.',
             'client_name.max'           => 'La raison sociale est trop longue (190 caractères au plus).',
             'client_address.max'        => 'L\'adresse est trop longue (500 caractères au plus).',
             'client_siret.regex'        => 'Le SIRET doit compter 14 chiffres (ou 9 pour un SIREN).',
@@ -72,7 +73,6 @@ class ProInvoiceStoreRequest extends FormRequest
             'service_date.date_format'  => 'La date de la prestation est invalide.',
             'service_date.before_or_equal' => 'La date de la prestation ne peut pas être dans le futur.',
             'service_date.after_or_equal'  => 'La date de la prestation remonte à plus d\'un an.',
-            'label.required'            => 'Indiquez la désignation (ex. « 2 repas »).',
             'label.max'                 => 'La désignation est trop longue (190 caractères au plus).',
             'quantity.required'         => 'Indiquez la quantité.',
             'quantity.integer'          => 'La quantité doit être un nombre entier.',
