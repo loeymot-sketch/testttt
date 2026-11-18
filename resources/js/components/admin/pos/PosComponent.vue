@@ -1885,6 +1885,45 @@
                 🏷 {{ $t('label.discount') }}
             </button>
 
+            <!-- [REMISE EN UN APPUI 2026-11-18 · propriétaire « ça reste toujours complexe de faire une remise »]
+                 Avant : ouvrir le bloc, choisir % ou €, taper le montant, taper un motif, « Appliquer » — cinq gestes au
+                 clavier devant le client. Maintenant un appui sur « 10 % » (ou « 2 € ») applique la remise, avec le motif
+                 présélectionné « Geste commercial » (modifiable d'un appui) ; la saisie libre reste dessous. Le plafond de
+                 10 % sans responsable et le motif obligatoire (serveur) ne changent pas. -->
+            <div v-if="carts.length > 0 && discountPanelOpen" class="mb-2" data-testid="pos-discount-quick">
+                <div class="pos-remise-chips" role="group" aria-label="Remises rapides">
+                    <button
+                        v-for="r in remisesRapides"
+                        :key="r.cle"
+                        type="button"
+                        class="pos-remise-chip"
+                        :class="{ 'is-on': remiseRapideActive === r.cle }"
+                        :aria-pressed="remiseRapideActive === r.cle ? 'true' : 'false'"
+                        :data-testid="`pos-discount-quick-${r.cle}`"
+                        @click.prevent="appliquerRemiseRapide(r)"
+                    >{{ r.libelle }}</button>
+                    <button
+                        v-if="posDiscount"
+                        type="button"
+                        class="pos-remise-chip pos-remise-chip--retirer"
+                        data-testid="pos-discount-clear"
+                        @click.prevent="retirerRemise"
+                    >✕ Retirer la remise</button>
+                </div>
+                <div class="pos-remise-chips mt-1" role="group" aria-label="Motif de la remise">
+                    <button
+                        v-for="m in motifsRemise"
+                        :key="m"
+                        type="button"
+                        class="pos-remise-chip pos-remise-chip--motif"
+                        :class="{ 'is-on': (discountReason || '').trim() === m }"
+                        :aria-pressed="(discountReason || '').trim() === m ? 'true' : 'false'"
+                        :data-testid="`pos-discount-motif-${m}`"
+                        @click.prevent="choisirMotifRemise(m)"
+                    >{{ m }}</button>
+                </div>
+            </div>
+
             <!-- Discount block -->
             <div v-if="carts.length > 0 && discountPanelOpen" class="flex h-9 mb-2">
                 <div class="dropdown-group">
@@ -3497,6 +3536,29 @@ export default {
             const lignes = Array.isArray(this.carts) ? this.carts : [];
 
             return lignes.reduce((somme, ligne) => somme + (parseInt(ligne.quantity, 10) || 0), 0);
+        },
+        /** Remises en un appui. Au-delà de 10 % seulement pour qui en a le droit (même garde que la saisie libre). */
+        remisesRapides: function () {
+            const P = discountTypeEnum.PERCENTAGE, F = discountTypeEnum.FIXED;
+            const liste = [
+                { cle: 'p5', type: P, valeur: 5, libelle: '5 %' },
+                { cle: 'p10', type: P, valeur: 10, libelle: '10 %' },
+            ];
+            if (this.peutRemiseAuDela10) {
+                liste.push({ cle: 'p15', type: P, valeur: 15, libelle: '15 %' }, { cle: 'p20', type: P, valeur: 20, libelle: '20 %' });
+            }
+            liste.push({ cle: 'f1', type: F, valeur: 1, libelle: '1 €' }, { cle: 'f2', type: F, valeur: 2, libelle: '2 €' }, { cle: 'f5', type: F, valeur: 5, libelle: '5 €' });
+            return liste;
+        },
+        /** La remise rapide actuellement APPLIQUÉE (surbrillance), ou null. */
+        remiseRapideActive: function () {
+            if (!this.posDiscount) return null;
+            const v = parseFloat(String(this.discount || '').replace(',', '.'));
+            const r = this.remisesRapides.find((x) => x.type == this.discountType && x.valeur === v);
+            return r ? r.cle : null;
+        },
+        motifsRemise: function () {
+            return ['Geste commercial', 'Client fidèle', 'Personnel', 'Erreur de commande', 'Retard'];
         },
         discountPanelOpen: function () {
             if (this.discountPanelManual) return true;
@@ -6322,12 +6384,19 @@ export default {
                 // ne soit désactivée ne doit pas la restaurer telle quelle — même garde que
                 // Dine-In juste en dessous, sinon elle réapparaît sélectionnée hors du
                 // sélecteur (qui, lui, la masque déjà via `deliveryEnabled`).
-                if (savedOrderType === orderTypeEnum.DELIVERY && this.deliveryEnabled) {
-                    this.deliveryOrder();
-                } else if (savedOrderType === orderTypeEnum.DINING_TABLE && this.dineInEnabled) {
-                    this.dineInOrder();
-                } else {
-                    this.takeAwayOrder();
+                // Reprise d'une commande en attente : les champs sont restaurés juste après ; aucun report d'identité entre
+                // les deux modes ici (le nom en cours de saisie d'un AUTRE client ne doit pas entrer dans la commande reprise).
+                this._sansReportIdentite = true;
+                try {
+                    if (savedOrderType === orderTypeEnum.DELIVERY && this.deliveryEnabled) {
+                        this.deliveryOrder();
+                    } else if (savedOrderType === orderTypeEnum.DINING_TABLE && this.dineInEnabled) {
+                        this.dineInOrder();
+                    } else {
+                        this.takeAwayOrder();
+                    }
+                } finally {
+                    this._sansReportIdentite = false;
                 }
 
                 this.checkoutProps.form.branch_id = savedForm.branch_id ?? this.checkoutProps.form.branch_id;
@@ -6396,6 +6465,63 @@ export default {
         },
         selectDiscount(value) {
             this.discountType = value;
+        },
+        /** Un appui = la remise est appliquée (motif présélectionné si aucun n'est saisi). */
+        appliquerRemiseRapide(r) {
+            if (!r) return;
+            if (this.remiseRapideActive === r.cle) { this.retirerRemise(); return; } // second appui sur la même : on la retire
+            this.discountType = r.type;
+            this.discount = String(r.valeur);
+            if (String(this.discountReason || '').trim().length < 3) this.discountReason = this.motifsRemise[0];
+            this.applyDiscount();
+        },
+        /** Changer le motif d'une remise déjà posée la ré-applique : le motif envoyé au serveur suit l'écran. */
+        choisirMotifRemise(m) {
+            this.discountReason = m;
+            if (this.discountAmountValue > 0) this.applyDiscount();
+        },
+        retirerRemise() {
+            this.discount = null;
+            this.discountReason = '';
+            // Zéro NUMÉRIQUE dans le panier : « 0.00 » (texte) est « vrai » pour le gabarit, et la ligne « Remise − 0,00 € »
+            // restait affichée avec le bloc ouvert.
+            this.checkoutProps.form.discount = 0;
+            this.checkoutProps.form.discount_reason = null;
+            this.$store.dispatch('posCart/discount', 0).then().catch();
+            this.discountPanelManual = false;
+        },
+        /**
+         * [EMPORTER ⇄ LIVRAISON 2026-11-18 · propriétaire « passer de emporter à livraison efface ce que j'ai écrit »]
+         * Le nom et le téléphone vivent dans deux jeux de champs (à emporter : `pos_customer_*` ; livraison :
+         * `deliveryInline.*`). Changer de mode montrait des champs vides : le caissier retapait tout. Ce qui a été
+         * saisi d'un côté suit de l'autre — sans jamais écraser ce qui s'y trouve déjà.
+         */
+        reporterIdentiteVersLivraison() {
+            if (this._sansReportIdentite) return;
+            const f = this.checkoutProps.form;
+            if (!String(this.deliveryInline.name || '').trim() && String(f.pos_customer_name || '').trim()) {
+                this.deliveryInline.name = String(f.pos_customer_name).trim();
+            }
+            if (!String(this.deliveryInline.phone || '').trim() && String(f.pos_customer_phone || '').trim()) {
+                this.deliveryInline.phone = String(f.pos_customer_phone).trim();
+            }
+            // Adresse déjà confirmée avant un aller-retour par « À emporter » : son prix de livraison revient avec elle
+            // (aperçu ; le serveur recalcule à l'enregistrement).
+            const q = this.deliveryInline.quote;
+            if (this.deliveryInline.confirmed && q && q.allowed !== false && q.enabled !== false) {
+                f.delivery_charge = Number(q.fee) || 0;
+                f.delivery_distance_km = q.distance_km ?? null;
+            }
+        },
+        reporterIdentiteVersComptoir() {
+            if (this._sansReportIdentite) return;
+            const f = this.checkoutProps.form;
+            if (!String(f.pos_customer_name || '').trim() && String(this.deliveryInline.name || '').trim()) {
+                f.pos_customer_name = String(this.deliveryInline.name).trim().slice(0, 60);
+            }
+            if (!String(f.pos_customer_phone || '').trim() && String(this.deliveryInline.phone || '').trim()) {
+                f.pos_customer_phone = String(this.deliveryInline.phone).trim();
+            }
         },
         search: function () {
             this.itemList(1, { overlay: false });
@@ -7532,6 +7658,7 @@ export default {
             }
         },
         dineInOrder: function () {
+            this.reporterIdentiteVersComptoir();
             this.checkoutProps.form.address_id = null;
             this.selectedAddress = {};
             this.checkoutProps.form.delivery_charge = 0;
@@ -7547,6 +7674,7 @@ export default {
             this.$refs.deliveryOrderDiv.classList.remove('block');
         },
         takeAwayOrder: function () {
+            this.reporterIdentiteVersComptoir();
             this.checkoutProps.form.dining_table_id = null;
             this.checkoutProps.form.address_id = null;
             this.selectedAddress = {};
@@ -7564,6 +7692,7 @@ export default {
         },
         deliveryOrder: function () {
             this.checkoutProps.form.dining_table_id = null;
+            this.reporterIdentiteVersLivraison();
 
             this.$refs.deliveryOrderLabel?.classList.add('active');
             this.$refs.deliveryOrderDiv?.classList.add('block');
@@ -8592,6 +8721,17 @@ export default {
   overflow-wrap: break-word;
   word-break: normal;
 }
+/* [REMISE EN UN APPUI 2026-11-18] Puces de remise et de motif : cibles de 36 px, lisibles au doigt. */
+.pos-remise-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.pos-remise-chip {
+  min-height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid #D9DBE9; background: #FFFFFF;
+  color: #1F2937; font-size: 13px; font-weight: 700; cursor: pointer; transition: background-color .12s ease, border-color .12s ease;
+}
+.pos-remise-chip:hover { border-color: #F4501E; }
+.pos-remise-chip.is-on { background: #F4501E; border-color: #F4501E; color: #FFFFFF; }
+.pos-remise-chip--motif { font-weight: 600; font-size: 12px; }
+.pos-remise-chip--motif.is-on { background: #1A1A1A; border-color: #1A1A1A; }
+.pos-remise-chip--retirer { border-style: dashed; color: #B42318; border-color: #F3B4AE; }
 /* [CONTENU AVANT ACCEPTATION 2026-11-15] Le panneau garde une hauteur bornée : au-delà de ~2 commandes détaillées
    il défile, pour que la grille des produits ne descende pas pendant le coup de feu. */
 .pos-shortcuts__panel--web .pos-shortcuts__list {
