@@ -92,12 +92,25 @@ class HygieneTemperatureController extends HygieneController
         // jamais un seuil changé sans sa ligne au journal, jamais une ligne sans le changement
         DB::transaction(function () use ($model, $data, $request): void {
             $before = $model->only(self::TRACKED);
+            $hiddenSince = (! $model->is_active && $model->updated_at) ? $model->updated_at->copy() : null;
             $model->fill($data);
             $changes = [];
             foreach (self::TRACKED as $field) {
                 if ($model->isDirty($field)) $changes[] = [$field, $this->changeValue($field, $before[$field]), $this->changeValue($field, $model->{$field})];
             }
             $model->save();
+            // [2026-11-18] Réactivation d'un équipement masqué AVANT l'existence du journal : son moment de masquage ne vivait
+            // que dans `updated_at`, que cette réactivation vient d'écraser. On le recopie au journal (ligne datée du masquage)
+            // pour que le dossier sache que les jours masqués n'étaient pas attendus — sinon ils deviennent « non relevés ».
+            if ($hiddenSince !== null && $model->is_active
+                && ! HygieneEquipmentChange::query()->where('equipment_id', $model->id)->where('field', 'is_active')->where('new_value', '0')->exists()) {
+                $row = new HygieneEquipmentChange([
+                    'equipment_id' => $model->id, 'equipment_name' => mb_substr((string) $before['name'], 0, 80), 'field' => 'is_active',
+                    'old_value' => '1', 'new_value' => '0', 'user_id' => null, 'user_name' => null, 'changed_at' => $hiddenSince,
+                ]);
+                $row->branch_id = (int) $model->branch_id;
+                $row->save();
+            }
             $this->logChanges($request, $model, $changes);
         });
 

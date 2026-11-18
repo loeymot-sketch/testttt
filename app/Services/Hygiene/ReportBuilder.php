@@ -136,7 +136,7 @@ final class ReportBuilder
         $equipments = HygieneEquipment::query()->withTrashed()->whereIn('kind', Kinds::keys('temperature'))->get()->filter(fn ($e) => $this->stillRelevant($e));
 
         $covered = $live->groupBy('equipment_id')->map(fn ($g) => $g->map(fn ($r) => $this->localDate($r->recorded_at))->unique()->flip());
-        [$expected, $done, $todayTotal, $todayDone] = $this->coverage($equipments, $covered);
+        [$expected, $done, $todayTotal, $todayDone] = $this->coverage($equipments, $covered, $this->hiddenSpans($equipments->pluck('id')->all()));
 
         $alerts = $live->where('status', 'alert');
 
@@ -172,7 +172,37 @@ final class ReportBuilder
      * @param  \Illuminate\Support\Collection<int,HygieneEquipment>  $equipments
      * @return array{0:int,1:int,2:int,3:int} [attendus, couverts, aujourd'hui attendus, aujourd'hui faits]
      */
-    private function coverage($equipments, $coveredByEquipment): array
+    /**
+     * [2026-11-18] Périodes pendant lesquelles un équipement de température était MASQUÉ, d'après le journal de structure
+     * (`hygiene_equipment_changes`, champ `is_active`). Un frigo masqué trois semaines puis réactivé n'était pas attendu
+     * pendant ces trois semaines : sans cela, la réactivation transformait chaque jour masqué en « non relevé » au dossier.
+     *
+     * @param  array<int,int>  $equipmentIds
+     * @return array<int, list<array{0:string,1:?string}>>  par équipement : [jour du masquage, jour de la réactivation ou null]
+     */
+    private function hiddenSpans(array $equipmentIds): array
+    {
+        if ($equipmentIds === []) return [];
+        $spans = [];
+        $open = [];
+        $rows = \App\Models\HygieneEquipmentChange::query()->whereIn('equipment_id', $equipmentIds)->where('field', 'is_active')
+            ->orderBy('changed_at')->orderBy('id')->get(['equipment_id', 'new_value', 'changed_at']);
+        foreach ($rows as $r) {
+            $id = (int) $r->equipment_id;
+            $day = $this->localDate($r->changed_at);
+            if ((string) $r->new_value === '0') {
+                $open[$id] ??= $day;
+            } elseif (isset($open[$id])) {
+                $spans[$id][] = [$open[$id], $day];
+                unset($open[$id]);
+            }
+        }
+
+        return $spans; // un masquage encore ouvert est déjà traité par endDate() (équipement masqué = fin d'attente)
+    }
+
+    /** @param  array<int, list<array{0:string,1:?string}>>  $hiddenSpans */
+    private function coverage($equipments, $coveredByEquipment, array $hiddenSpans = []): array
     {
         $days = $this->pastDays();
         $today = now()->toDateString();
@@ -186,6 +216,13 @@ final class ReportBuilder
                 if ($d < $created || ($end !== null && $d > $end)) continue;
                 $isCovered = (bool) ($set && isset($set[$d]));
                 if (! $isCovered && ($d === $created || $d === $end)) continue;
+                // masqué ce jour-là (voir hiddenSpans) : pas attendu ; le jour du masquage et celui de la réactivation sont
+                // des journées partielles, comptées seulement si un relevé existe
+                $masque = false;
+                foreach ($hiddenSpans[$e->id] ?? [] as [$debut, $fin]) {
+                    if ($d >= $debut && $d <= $fin && ! ($isCovered && ($d === $debut || $d === $fin))) { $masque = true; break; }
+                }
+                if ($masque) continue;
                 $expected++;
                 if ($isCovered) $done++;
             }

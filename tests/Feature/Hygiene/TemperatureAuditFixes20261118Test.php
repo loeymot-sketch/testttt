@@ -392,6 +392,48 @@ class TemperatureAuditFixes20261118Test extends TestCase
         $this->assertSame('ok', $this->tile()['status']);
     }
 
+    // ───────────── Réactiver un équipement masqué n'invente pas de jours « non relevés » ─────────────
+
+    private function couverture(string $from = '2026-11-01', string $to = '2026-11-18'): array
+    {
+        $t = $this->getJson("/api/admin/hygiene/report/summary?from=$from&to=$to")->assertOk()->json('data.temperature');
+
+        return ['expected' => $t['expected'], 'covered' => $t['covered']];
+    }
+
+    public function test_reactiver_un_equipement_masque_ne_transforme_pas_ses_jours_masques_en_non_releves(): void
+    {
+        $ids = $this->three(); // 3 frigos depuis le 01/11
+        $this->clockAt('2026-11-05 12:00');
+        $this->putJson(self::BASE.'/equipment/'.$ids['Frigo 3'], ['is_active' => false])->assertOk(); // masqué le 05/11 (journalisé)
+        $this->clockAt('2026-11-19 10:00');
+        $avant = $this->couverture();
+
+        $this->putJson(self::BASE.'/equipment/'.$ids['Frigo 3'], ['is_active' => true])->assertOk();
+        $this->assertSame($avant, $this->couverture(), 'les jours masqués (06 → 18/11) ne sont pas attendus');
+
+        // le lendemain, le frigo réactivé est de nouveau attendu : un jour de plus par frigo (3), pas 3 + 14
+        $this->clockAt('2026-11-21 09:00');
+        $this->assertSame($avant['expected'] + 2 * 3 - 1, $this->couverture('2026-11-01', '2026-11-20')['expected'],
+            '19 et 20/11 pour les trois frigos, moins le 19 (jour de reprise, sans relevé) du Frigo 3');
+    }
+
+    public function test_un_equipement_masque_avant_l_existence_du_journal_garde_son_moment_de_masquage_a_la_reactivation(): void
+    {
+        $ids = $this->three();
+        // masqué le 05/11 SANS ligne au journal (état d'avant le journal : seul `updated_at` portait le moment)
+        HygieneEquipment::query()->whereKey($ids['Frigo 3'])->update(['is_active' => false, 'updated_at' => Carbon::parse('2026-11-05 12:00', config('app.timezone'))]);
+        $this->clockAt('2026-11-19 10:00');
+        $avant = $this->couverture();
+
+        $this->putJson(self::BASE.'/equipment/'.$ids['Frigo 3'], ['is_active' => true])->assertOk();
+
+        $this->assertSame($avant, $this->couverture());
+        $masquage = \App\Models\HygieneEquipmentChange::query()->where('equipment_id', $ids['Frigo 3'])->where('field', 'is_active')->where('new_value', '0')->first();
+        $this->assertNotNull($masquage, 'le moment du masquage est recopié au journal avant d\'être écrasé');
+        $this->assertSame('2026-11-05', Carbon::parse($masquage->changed_at)->timezone(config('app.timezone'))->toDateString());
+    }
+
     // ───────────── P2 : journal ─────────────
 
     public function test_p2_le_journal_dit_qui_a_annule_et_s_il_est_tronque(): void
