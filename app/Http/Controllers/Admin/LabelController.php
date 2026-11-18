@@ -1165,6 +1165,17 @@ class LabelController extends AdminController
             'shelf_life_unit' => 'unité',
             'storage' => 'conservation',
             'note' => 'mention',
+            // [2026-11-18 audit P2-a] jamais « Le champ actions.0.value… » à l'écran
+            'actions' => 'événements',
+            'actions.*.key' => 'événement',
+            'actions.*.value' => 'durée de l’événement',
+            'actions.*.unit' => 'unité de l’événement',
+            'allergens' => 'allergènes',
+            'allergens.*' => 'allergène',
+            'thawed_storage' => 'conservation après décongélation',
+            'duration_source' => 'source de la durée',
+            'default_copies' => 'nombre d’étiquettes',
+            'sort_order' => 'ordre',
         ]);
 
         // Repas témoin : au moins cinq jours (arrêté du 21/12/2009, art. 31) — une durée plus courte est refusée, pas imprimée.

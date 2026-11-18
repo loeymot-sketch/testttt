@@ -28,8 +28,10 @@ return [
         'cold_room' => ['domain' => 'temperature', 'label' => 'Chambre froide', 'short' => 'Chambre froide', 'min' => 0.0, 'max' => 4.0, 'negative' => false],
         'display' => ['domain' => 'temperature', 'label' => 'Vitrine réfrigérée', 'short' => 'Vitrine', 'min' => 0.0, 'max' => 4.0, 'negative' => false],
         'freezer' => ['domain' => 'temperature', 'label' => 'Congélateur', 'short' => 'Congélateur', 'min' => null, 'max' => -18.0, 'negative' => true],
-        // Maintien au chaud : on vérifie que le plat ne descend PAS sous 63 °C (relevé 20 à 99,9 °C : au-delà, faute de frappe).
-        'hot_holding' => ['domain' => 'temperature', 'label' => 'Bain-marie / maintien au chaud', 'short' => 'Bain-marie', 'min' => 63.0, 'max' => null, 'negative' => false, 'hot' => true, 'plausible' => [20.0, 99.9]],
+        // Maintien au chaud : on vérifie que le plat ne descend PAS sous 63 °C. Relevé plausible de 0 à 99,9 °C : un bain-marie ÉTEINT ou en panne est à
+        // température ambiante, voire moins (cuisine froide le matin) — c'est l'écart le plus grave et il DOIT entrer au registre avec son action
+        // corrective (2026-11-18 : 15 °C + « produits jetés » était refusé comme « pas plausible » quand la borne basse était à 20 °C). Au-delà de 99,9 : faute de frappe.
+        'hot_holding' => ['domain' => 'temperature', 'label' => 'Bain-marie / maintien au chaud', 'short' => 'Bain-marie', 'min' => 63.0, 'max' => null, 'negative' => false, 'hot' => true, 'plausible' => [0.0, 99.9]],
         // Friteuse : même référentiel d'équipements (comme Komia), mais jamais proposée au relevé de température d'enceinte froide.
         'fryer' => ['domain' => 'oil', 'label' => 'Friteuse', 'short' => 'Friteuse', 'min' => null, 'max' => null, 'negative' => false],
     ],
@@ -88,7 +90,11 @@ return [
         'other' => ['label' => 'Autre (à préciser)', 'note' => true],
     ],
 
-    /** Moments d'un relevé quotidien : avant 15 h = matin (ouverture), après = soir (fermeture). */
+    /**
+     * Moments d'un relevé quotidien : avant 15 h = matin (ouverture), après = soir (fermeture). Le relevé du SOIR n'est attendu que si le restaurant
+     * relève réellement le soir (au moins un relevé du soir dans les 7 derniers jours, TemperatureRules::eveningExpected — même règle que le rappel
+     * du soir ci-dessous) : sinon, le soir, « à relever » = équipement encore jamais relevé aujourd'hui.
+     */
     'periods' => ['morning' => 'Matin', 'evening' => 'Soir', 'other' => 'Autre'],
     'evening_from_hour' => 15,
 

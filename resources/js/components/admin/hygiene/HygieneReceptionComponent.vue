@@ -62,7 +62,7 @@
                                             <span class="hy-tag">{{ c.max === null ? "sans limite" : limitText(null, c.max) }}</span>
                                         </div>
                                         <HygieneMeasureInput v-model="form.temps[c.key]" :label="`Température ${c.label.toLowerCase()}`" :testid="`rcp-t-${c.key}`" />
-                                        <p v-if="rawError(c)" class="hy-sub" style="color:#991b1b" role="alert">Valeur illisible : tapez les chiffres (ex. 3 ou 3,5), le signe se règle avec ±.</p>
+                                        <p v-if="rawError(c)" class="hy-sub" style="color:#991b1b" role="alert" :data-testid="`rcp-raw-error-${c.key}`">{{ rawErrorText(c) }}</p>
                                         <p v-else-if="tempValue(c) !== null" class="hy-verdict" :class="tempStatus(c) === 'alert' ? 'is-alert' : 'is-ok'" :data-testid="`rcp-verdict-${c.key}`">
                                             {{ tempStatus(c) === "alert" ? "⚠ Au-dessus de la limite" : (c.max === null ? "Relevé noté" : "✓ Conforme") }}
                                         </p>
@@ -158,12 +158,15 @@
                             <li v-for="h in history" :key="h.id" class="hy-row" :class="{ 'is-alert': h.status === 'alert' && !h.voided, 'is-void': h.voided }">
                                 <span class="hy-row-when">{{ dayHm(h.received_at) }}</span>
                                 <span class="hy-row-name">{{ h.supplier_name }}</span>
-                                <span class="hy-row-meta">
+                                <span class="hy-row-meta" :data-testid="`rcp-history-meta-${h.id}`">
                                     <template v-if="h.delivery_note_no">{{ blText(h.delivery_note_no) }} · </template>
                                     <template v-for="t in h.temperatures" :key="t.category">{{ t.label }} {{ fmt(t.value_c) }} °C · </template>
+                                    <!-- [2026-11-18 audit P1] le contrôle visuel non conforme figure au journal comme dans la liste du jour -->
+                                    <template v-for="c in failedChecks(h)" :key="c.key">✗ {{ c.label }} · </template>
                                     {{ h.decision_label }}<template v-if="h.operator_name"> · {{ h.operator_name }}</template><template v-if="h.note"> · « {{ h.note }} »</template>
                                     <template v-if="h.voided"> · ANNULÉE : {{ h.void_reason }}</template>
                                 </span>
+                                <HygienePhotoView v-for="(pid, i) in photoIds(h)" :key="`hp${pid}`" :id="pid" :label="i === 0 ? '📷 Voir le BL' : `📷 Photo ${i + 1}`" />
                             </li>
                         </ul>
                     </template>
@@ -244,9 +247,34 @@ export default {
             return "";
         },
         canSubmit() { return Boolean(this.form) && this.blockReason === ""; },
+        /** Ce que l'opérateur a saisi (hors message d'erreur) : quand ça change, le message du serveur n'est plus vrai. */
+        formSignature() {
+            const f = this.form;
+            return f ? JSON.stringify([f.supplierId, f.newSupplier, f.supplierName, f.bl, f.driver, f.temps, f.checks, f.photo, f.decision, f.note]) : "";
+        },
+    },
+    watch: {
+        // [2026-11-18 audit P1] une erreur du serveur s'efface dès que la saisie change
+        formSignature(now, before) { if (this.form && before) this.form.error = ""; },
     },
     created() { this.load(); },
     methods: {
+        failedChecks(r) { return (Array.isArray(r.checks) ? r.checks : []).filter((x) => x && x.ok === false); },
+        /** Toutes les photos d'une livraison (BL puis les autres), sans doublon. */
+        photoIds(r) { return [...new Set([r.attachment_id, ...(Array.isArray(r.attachment_ids) ? r.attachment_ids : [])].filter((x) => Number.isInteger(x) && x > 0))]; },
+        /**
+         * [2026-11-18 audit P2-h] « 4,04 » n'est pas illisible : le thermomètre se lit au dixième. Même règle que l'écran Températures
+         * (parseTemperature : une décimale), mais un message exact qui propose la valeur arrondie au lieu de « illisible ».
+         */
+        rawErrorText(c) {
+            const t = this.form && this.form.temps[c.key];
+            const m = t ? String(t.raw).trim().replace(/^[−–—-]/, "").trim().match(/^(\d{1,2})[.,](\d{2,})$/) : null;
+            if (m) {
+                const rounded = Math.round(Number(`${m[1]}.${m[2]}`) * 10) / 10;
+                return `Une seule décimale (le thermomètre se lit au dixième) : tapez ${formatTemperature(rounded).replace("−", "")}.`;
+            }
+            return "Valeur illisible : tapez les chiffres (ex. 3 ou 3,5), le signe se règle avec ±.";
+        },
         hyDraft() { return this.form !== null || this.voidTarget !== null; },
         hyReload() { return this.load(); },
         fmt(v) { return formatTemperature(v); },

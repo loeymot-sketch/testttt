@@ -23,6 +23,16 @@ class OilController extends HygieneController
 {
     private const KIND = 'fryer';
 
+    public function __construct()
+    {
+        parent::__construct();
+
+        // [AUDIT E2E 2026-11-18 · P0 droits] Déclarer, renommer, masquer, supprimer une friteuse : réservé au responsable, même règle que les
+        // écrans Équipe et Alertes (permission `settings` EN PLUS de la porte du module). Tester, filtrer, vidanger, annuler avec motif et
+        // lire la liste restent ouverts à tout le personnel.
+        $this->middleware(\App\Services\Hygiene\StructureAccess::guard())->only(['quickSetup', 'storeFryer', 'updateFryer', 'destroyFryer']);
+    }
+
     // ───────────────────────────── L'écran du jour ─────────────────────────────
 
     public function today(Request $request): JsonResponse
@@ -83,7 +93,15 @@ class OilController extends HygieneController
             'attachment_id' => ['nullable', 'integer'],
             'operator_user_id' => ['nullable', 'integer'],
             'client_ref' => ['nullable', 'string', 'max:40'],
-        ], [], ['polar_pct' => 'composés polaires', 'bath_temp_c' => 'température du bain', 'oil_litres' => 'volume']);
+        ], [
+            // [AUDIT E2E 2026-11-18 · P2] nombre à la française (« 0,5 », jamais « 0.5 ») et unité dite
+            'oil_litres.between' => 'Le volume doit être compris entre 0,5 et 200 litres.',
+            'oil_litres.numeric' => 'Le volume doit être un nombre de litres (ex. 12 ou 12,5).',
+        ], [
+            'equipment_id' => 'friteuse', 'type' => 'opération', 'polar_pct' => 'composés polaires', 'bath_temp_c' => 'température du bain',
+            'oil_litres' => 'volume', 'oil_brand' => 'huile utilisée', 'corrective_action' => 'action corrective', 'corrective_note' => 'précision',
+            'note' => 'commentaire', 'attachment_id' => 'photo',
+        ]);
 
         if (! empty($v['client_ref'])) {
             $dup = HygieneOilControl::query()->where('client_ref', $v['client_ref'])->first();

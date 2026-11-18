@@ -43,7 +43,10 @@ class OperatorPinTest extends TestCase
         $this->sarah = User::factory()->create(['branch_id' => 1, 'name' => 'Sarah Lopez']);
         $this->sarah->assignRole('Chef');
         Sanctum::actingAs($this->tablet, ['*']);
+        // [2026-11-18 · P1-3] créer les équipements est réservé au responsable : la tablette le devient le temps de la mise en place, puis redevient la tablette
+        $this->tablet->givePermissionTo('settings');
         $this->postJson(self::TEMP.'/equipment/quick-setup', ['fridge' => 2, 'freezer' => 0])->assertCreated();
+        $this->tablet->revokePermissionTo('settings');
     }
 
     protected function tearDown(): void

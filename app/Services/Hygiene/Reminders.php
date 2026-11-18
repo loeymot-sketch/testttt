@@ -61,7 +61,7 @@ final class Reminders
     private function temperature(CarbonInterface $now): array
     {
         $all = HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->where('is_active', true)->orderBy('sort_order')->orderBy('id')->get(['id', 'name', 'kind', 'created_at']);
-        if ($all->isEmpty()) return [];
+        // (pas de sortie anticipée sans équipement actif : un suivi d'écart d'un équipement masqué aujourd'hui reste à rappeler, plus bas)
         $start = $now->copy()->startOfDay();
         $readings = HygieneTemperatureReading::query()->whereNull('voided_at')->where('recorded_at', '>=', $start)->whereIn('equipment_id', $all->pluck('id'))->get(['equipment_id', 'period']);
         $byPeriod = $readings->groupBy('period')->map(fn ($rows) => $rows->pluck('equipment_id')->unique()->all());
@@ -71,8 +71,8 @@ final class Reminders
         foreach (['morning' => 'matin', 'evening' => 'soir'] as $period => $label) {
             $deadline = $this->at($now, config("hygiene.reminders.temperature.$period"));
             if ($deadline === null || $now->lt($deadline)) continue;
-            // le soir : seulement si le restaurant relève réellement le soir (sinon le rappel râlerait chaque jour pour rien)
-            if ($period === 'evening' && ! HygieneTemperatureReading::query()->whereNull('voided_at')->where('period', 'evening')->where('recorded_at', '>=', $start->copy()->subDays(7))->exists()) continue;
+            // le soir : seulement si le restaurant relève réellement le soir (sinon le rappel râlerait chaque jour pour rien) — même règle que l'écran et la tuile
+            if ($period === 'evening' && ! TemperatureRules::eveningExpected($now)) continue;
             // Matin : « fait » = relevé de CE jour, quelle que soit l'heure (relevé pris à 15 h 05 ou une seule fois par jour à 16 h : pas de fausse
             // alerte permanente) ; soir : un relevé du soir. Un équipement créé APRÈS l'heure du rappel n'était pas encore attendu (même règle que le
             // dossier de contrôle) ; un bain-marie ne sert qu'au service : il n'est pas exigé au relevé du matin.
@@ -85,8 +85,10 @@ final class Reminders
         }
 
         // Écart traité mais PAS encore prouvé : la nouvelle mesure est attendue (`followup.minutes` après l'écart) — rappel urgent tant qu'elle manque.
-        $names = $all->pluck('name', 'id');
-        foreach (TemperatureFollowUp::pending($all->pluck('id')->all(), $now) as $equipmentId => $f) {
+        // [2026-11-18 · P1-3] y compris pour un équipement masqué AUJOURD'HUI : le masquer ne fait pas disparaître le suivi de son écart.
+        $hidden = HygieneEquipment::query()->withTrashed()->whereIn('kind', Kinds::keys('temperature'))->hiddenSince($start)->get(['id', 'name']);
+        $names = $all->pluck('name', 'id')->union($hidden->pluck('name', 'id'));
+        foreach (TemperatureFollowUp::pending($all->pluck('id')->merge($hidden->pluck('id'))->unique()->values()->all(), $now) as $equipmentId => $f) {
             if (! $f['overdue']) continue;
             $due = \Carbon\Carbon::parse($f['due_at'])->setTimezone($now->getTimezone());
             $at = \Carbon\Carbon::parse($f['recorded_at'])->setTimezone($now->getTimezone());

@@ -94,13 +94,15 @@
                         </div>
                     </section>
 
-                    <p v-if="message" class="hy-banner" :class="messageOk ? 'is-ok' : 'is-alert'" role="status" data-testid="al-message">{{ message }}</p>
-
-                    <div class="hy-bar">
-                        <span class="hy-muted">{{ dirty ? "Modifications non enregistrées" : "Réglages enregistrés" }}</span>
+                    <!-- [2026-11-18 · P1-1] le résultat (et surtout le REFUS) s'affiche DANS la barre d'action, toujours visible : un refus caché en bas du flux
+                         laissait croire au responsable que les alertes étaient actives. Collante seulement s'il y a quelque chose à enregistrer ou un refus à lire. -->
+                    <div class="hy-bar" :class="{ 'is-idle': barIdle }" data-testid="al-bar">
+                        <p v-if="message" class="hy-bar-msg" :class="messageOk ? 'is-ok' : 'is-alert'" :role="messageOk ? 'status' : 'alert'" data-testid="al-message">{{ message }}</p>
+                        <span class="hy-muted al-state"><span class="hy-long">{{ dirty ? "Modifications non enregistrées" : "Réglages enregistrés" }}</span><span class="hy-short">{{ dirty ? "Non enregistré" : "Enregistré" }}</span></span>
                         <span class="al-actions">
                             <button type="button" class="hy-btn" :disabled="busy || dirty || !saved.recipients.length" data-testid="al-test" :title="dirty ? 'Enregistrez d\'abord' : ''" @click="sendTest">
-                                {{ busy === "test" ? "Envoi…" : "Envoyer un e-mail d'essai" }}
+                                <template v-if="busy === 'test'">Envoi…</template>
+                                <template v-else><span class="hy-long">Envoyer un e-mail d'essai</span><span class="hy-short">Essai</span></template>
                             </button>
                             <button type="button" class="hy-btn hy-btn--primary" :disabled="busy || !dirty" data-testid="al-save" @click="save">
                                 {{ busy === "save" ? "Enregistrement…" : "Enregistrer" }}
@@ -151,6 +153,7 @@ export default {
     },
     computed: {
         dirty() { return this.dirtyFlag; },
+        barIdle() { return !this.dirty && !this.busy && (!this.message || this.messageOk); },
         staffEmails() { return this.staff.map((p) => p.email.toLowerCase()); },
         extraRecipients() { return this.form.recipients.filter((e) => !this.staffEmails.includes(e)); },
     },
@@ -223,7 +226,15 @@ export default {
                 alertService.success("Alertes enregistrées.");
             } catch (e) {
                 this.messageOk = false;
-                this.message = this.errorText(e, "Enregistrement impossible : vérifiez la connexion puis réessayez.");
+                // [2026-11-18 · P1-1] l'interrupteur revient à ce qui est RÉELLEMENT enregistré : « activé » affiché sur un refus faisait croire les alertes actives
+                const wanted = this.form.enabled;
+                this.form.enabled = this.saved.enabled;
+                this.dirtyFlag = JSON.stringify(this.form) !== JSON.stringify(this.saved);
+                const why = this.errorText(e, "Enregistrement impossible : vérifiez la connexion puis réessayez.");
+                this.message = wanted !== this.saved.enabled
+                    ? `${why} Les alertes restent ${this.saved.enabled ? "activées" : "désactivées"}.`
+                    : why;
+                alertService.error(this.message);
             } finally {
                 this.busy = "";
             }
@@ -258,4 +269,8 @@ export default {
 .al-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
 .al-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .al-extra { margin-top: 8px; }
+.al-state { padding: 0; }
+@media (max-width: 599.98px) {
+    .al-actions { gap: 6px; flex-wrap: nowrap; }
+}
 </style>

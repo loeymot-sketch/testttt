@@ -50,6 +50,22 @@
 .hy-toggle[aria-pressed="true"] .hy-box { background: #16a34a; border-color: #16a34a; }
 
 .hy-bar { position: sticky; bottom: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-top: 14px; padding: 12px; background: #fff; border: 2px solid #111827; border-radius: 14px; box-shadow: 0 -6px 18px rgba(15, 23, 42, .12); color: #111827; }
+/* [2026-11-18 · audit E2E P1-6] Rien à valider : la barre reprend sa place dans la page (collée, elle recouvrait des boutons et des interrupteurs). */
+.hy-bar.is-idle { position: static; box-shadow: none; border-color: #cbd5e1; }
+/* Résultat d'un enregistrement DANS la barre (toujours visible), pas perdu au fond du flux */
+.hy-bar-msg { flex: 1 1 100%; margin: 0; border-radius: 10px; padding: 8px 12px; font-weight: 800; font-size: 16px; }
+.hy-bar-msg.is-ok { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.hy-bar-msg.is-alert { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+/* Libellé long (tablette) / court (téléphone) d'un même bouton */
+.hy-short { display: none; }
+@media (max-width: 599.98px) {
+    .hy-bar { gap: 6px; padding: 6px 8px; margin-top: 10px; border-radius: 12px; }
+    .hy-bar .hy-btn { min-height: 44px; padding: 0 10px; font-size: 15px; }
+    .hy-bar > .hy-muted { padding: 0; font-size: 14px; }
+    .hy-bar-msg { font-size: 15px; padding: 6px 10px; }
+    .hy-long { display: none; }
+    .hy-short { display: inline; }
+}
 
 .hy-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .hy-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; color: #111827; }

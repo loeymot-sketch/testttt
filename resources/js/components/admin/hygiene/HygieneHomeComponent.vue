@@ -206,7 +206,12 @@ export default {
         doneSummary() {
             const parts = [];
             const t = this.tiles.find((x) => x.key === "temperature");
-            if (t && t.counts && t.counts.total > 0) parts.push(`${t.counts.done}/${t.counts.total} relevés`);
+            // deux relevés par jour (le restaurant relève le soir) : les deux se lisent, comme sur la tuile — « 3/3 » le matin ne dit rien du soir
+            if (t && t.counts && t.counts.total > 0) {
+                parts.push(t.counts.evening_expected
+                    ? `relevés matin ${t.counts.morning_done}/${t.counts.total} · soir ${t.counts.evening_done}/${t.counts.total}`
+                    : `${t.counts.done}/${t.counts.total} relevés`);
+            }
             const k = this.tiles.find((x) => x.key === "tasks");
             if (k && k.counts && k.counts.total > 0) parts.push(`${k.counts.done}/${k.counts.total} fiches de nettoyage`);
             return parts.join(" · ");

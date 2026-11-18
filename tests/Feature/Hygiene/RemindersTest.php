@@ -150,7 +150,11 @@ class RemindersTest extends TestCase
         [$reminders] = $this->overview();
         $this->assertArrayNotHasKey('temperature-late-evening', $reminders->all(), 'jamais de relevé du soir : pas de rappel qui râle pour rien');
 
-        $this->reading($f, '2026-10-17 21:00', 'evening'); // il relève le soir, d'habitude
+        $this->reading($f, '2026-10-17 21:00', 'evening'); // un seul soir : pas encore une habitude
+        [$reminders] = $this->overview();
+        $this->assertArrayNotHasKey('temperature-late-evening', $reminders->all(), 'un relevé tardif isolé n\'arme pas le rappel du soir');
+
+        $this->reading($f, '2026-10-18 21:00', 'evening'); // deux soirs : il relève le soir, d'habitude
         [$reminders] = $this->overview();
         $this->assertSame('Relevé du soir non fait : Frigo 1.', $reminders['temperature-late-evening']['text']);
 

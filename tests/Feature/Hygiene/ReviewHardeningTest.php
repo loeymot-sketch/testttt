@@ -56,6 +56,18 @@ class ReviewHardeningTest extends TestCase
         return $u;
     }
 
+    /** [AUDIT E2E 2026-11-18] La structure du plan de nettoyage est réservée au responsable (`settings`) : le compte courant le devient le temps de `$fn`. */
+    private function asManager(callable $fn)
+    {
+        $u = auth('sanctum')->user();
+        $u->givePermissionTo('settings');
+        try {
+            return $fn();
+        } finally {
+            $u->revokePermissionTo('settings');
+        }
+    }
+
     private function fridge(string $name = 'Frigo 1'): HygieneEquipment
     {
         $this->postJson(self::TEMP.'/equipment', ['name' => $name, 'kind' => 'fridge'])->assertCreated();
@@ -67,7 +79,7 @@ class ReviewHardeningTest extends TestCase
 
     public function test_a_threshold_cannot_be_disarmed_or_raised_out_of_bounds(): void
     {
-        $this->staff();
+        $this->staff()->givePermissionTo('settings'); // [2026-11-18 · P1-3] la structure des équipements de température est réservée au responsable
         $f = $this->fridge();
         $this->putJson(self::TEMP."/equipment/{$f->id}", ['min_c' => null, 'max_c' => null])->assertStatus(422)->assertJsonValidationErrors('max_c');
         $this->putJson(self::TEMP."/equipment/{$f->id}", ['max_c' => 60])->assertStatus(422)->assertJsonValidationErrors('max_c');
@@ -80,7 +92,7 @@ class ReviewHardeningTest extends TestCase
 
     public function test_a_partial_update_cannot_produce_incoherent_thresholds(): void
     {
-        $this->staff();
+        $this->staff()->givePermissionTo('settings'); // [2026-11-18 · P1-3] la structure des équipements de température est réservée au responsable
         $f = $this->fridge();
         $this->putJson(self::TEMP."/equipment/{$f->id}", ['max_c' => -30])->assertStatus(422); // min 0 déjà enregistré, max −30 hors bornes
         $this->putJson(self::TEMP."/equipment/{$f->id}", ['min_c' => 5])->assertStatus(422)->assertJsonValidationErrors('min_c'); // 5 > max 4
@@ -90,7 +102,7 @@ class ReviewHardeningTest extends TestCase
 
     public function test_freezer_bounds_are_its_own(): void
     {
-        $this->staff();
+        $this->staff()->givePermissionTo('settings'); // [2026-11-18 · P1-3] la structure des équipements de température est réservée au responsable
         $this->postJson(self::TEMP.'/equipment/quick-setup', ['freezer' => 1])->assertCreated();
         $z = HygieneEquipment::query()->where('kind', 'freezer')->firstOrFail();
         $this->putJson(self::TEMP."/equipment/{$z->id}", ['max_c' => 4])->assertStatus(422);
@@ -103,7 +115,7 @@ class ReviewHardeningTest extends TestCase
 
     public function test_a_client_ref_cannot_hide_a_reading_for_another_equipment_or_value(): void
     {
-        $this->staff();
+        $this->staff()->givePermissionTo('settings'); // [2026-11-18 · P1-3] la structure des équipements de température est réservée au responsable
         $a = $this->fridge('A');
         $b = $this->fridge('B');
         $this->postJson(self::TEMP.'/readings', ['readings' => [['equipment_id' => $a->id, 'value' => 3, 'client_ref' => 'same']]])->assertCreated();
@@ -121,7 +133,7 @@ class ReviewHardeningTest extends TestCase
     public function test_task_replay_with_another_template_is_a_conflict(): void
     {
         $this->staff();
-        $this->postJson(self::BASE.'/tasks/templates/install-recommended')->assertCreated();
+        $this->asManager(fn () => $this->postJson(self::BASE.'/tasks/templates/install-recommended')->assertCreated());
         [$t1, $t2] = HygieneTaskTemplate::query()->where('frequency', 'daily')->orderBy('id')->get()->all();
         $this->postJson(self::BASE.'/tasks/completions', ['template_id' => $t1->id, 'all' => true, 'client_ref' => 'k1'])->assertCreated();
         $this->postJson(self::BASE.'/tasks/completions', ['template_id' => $t2->id, 'all' => true, 'client_ref' => 'k1'])->assertStatus(409);
@@ -137,7 +149,7 @@ class ReviewHardeningTest extends TestCase
         $gone->assignRole('Chef');
         $names = collect($this->getJson(self::BASE.'/operators')->json('data'))->pluck('name')->all();
         $this->assertNotContains('Ancien Salarié', $names);
-        $this->postJson(self::BASE.'/tasks/templates/install-recommended')->assertCreated();
+        $this->asManager(fn () => $this->postJson(self::BASE.'/tasks/templates/install-recommended')->assertCreated());
         $t = HygieneTaskTemplate::query()->where('frequency', 'daily')->firstOrFail();
         $this->postJson(self::BASE.'/tasks/completions', ['template_id' => $t->id, 'all' => true, 'operator_user_id' => $gone->id])->assertStatus(422)->assertJsonValidationErrors('operator_user_id');
     }
@@ -161,7 +173,7 @@ class ReviewHardeningTest extends TestCase
     {
         $this->staff();
         foreach ([[['label' => ['a']]], [['key' => ['a'], 'label' => 'ok']], [123], [['nolabel' => 'x']]] as $bad) {
-            $this->postJson(self::BASE.'/tasks/templates', ['name' => 'X'.uniqid(), 'frequency' => 'daily', 'checklist' => $bad])->assertStatus(422);
+            $this->asManager(fn () => $this->postJson(self::BASE.'/tasks/templates', ['name' => 'X'.uniqid(), 'frequency' => 'daily', 'checklist' => $bad])->assertStatus(422));
         }
     }
 
@@ -234,7 +246,7 @@ class ReviewHardeningTest extends TestCase
 
     public function test_renommer_un_equipement_masque_ne_deplace_pas_sa_date_de_masquage_dans_le_dossier(): void
     {
-        $this->staff();
+        $this->staff()->givePermissionTo('settings'); // [2026-11-18 · P1-3] la structure des équipements de température est réservée au responsable
         $f = $this->fridge();
         $f->forceFill(['created_at' => Carbon::parse('2026-10-01')])->save();
         // masqué le 10/10
@@ -264,37 +276,37 @@ class ReviewHardeningTest extends TestCase
         $t->created_at = Carbon::parse('2026-10-01');
         $t->save();
         Carbon::setTestNow(Carbon::parse('2026-10-10 12:00:00', config('app.timezone')));
-        $this->patchJson(self::BASE.'/tasks/templates/'.$t->id, ['is_active' => false])->assertOk();
+        $this->asManager(fn () => $this->patchJson(self::BASE.'/tasks/templates/'.$t->id, ['is_active' => false])->assertOk());
         $maskedAt = $t->fresh()->updated_at;
         Carbon::setTestNow(Carbon::parse('2026-10-18 09:00:00', config('app.timezone')));
-        $this->patchJson(self::BASE.'/tasks/templates/'.$t->id, ['name' => 'Salle renommée'])->assertOk();
+        $this->asManager(fn () => $this->patchJson(self::BASE.'/tasks/templates/'.$t->id, ['name' => 'Salle renommée'])->assertOk());
         $this->assertSame($maskedAt->toDateTimeString(), $t->fresh()->updated_at->toDateTimeString());
         // une fiche ACTIVE renommée, elle, est bien horodatée (la règle ne vaut que pour un élément resté masqué)
         $g = new \App\Models\HygieneTaskTemplate(['name' => 'Cuisine', 'checklist' => [['key' => 'k1', 'label' => 'Sols']], 'frequency' => 'daily', 'sort_order' => 20, 'is_active' => true]);
         $g->branch_id = 1;
         $g->save();
         Carbon::setTestNow(Carbon::parse('2026-10-18 10:00:00', config('app.timezone')));
-        $this->patchJson(self::BASE.'/tasks/templates/'.$g->id, ['name' => 'Cuisine renommée'])->assertOk();
+        $this->asManager(fn () => $this->patchJson(self::BASE.'/tasks/templates/'.$g->id, ['name' => 'Cuisine renommée'])->assertOk());
         $this->assertSame('2026-10-18 10:00:00', $g->fresh()->updated_at->toDateTimeString());
     }
 
     // [VG-2026-10-21 M8-102] supprimer un élément DÉJÀ masqué ne repousse pas sa fin : le masquage reste la date de fin dans le dossier
     public function test_supprimer_une_fiche_masquee_ne_cree_pas_de_non_faites_fantomes(): void
     {
-        $this->staff(); // un caissier peut supprimer la fiche (« Modifier » puis « Supprimer la fiche ») : chemin réel du constat
+        $this->staff(); // [AUDIT E2E 2026-11-18] supprimer une fiche est désormais réservé au responsable (`settings`) : voir asManager
         $t = new HygieneTaskTemplate(['name' => 'Salle', 'checklist' => [['key' => 'k1', 'label' => 'Sols']], 'frequency' => 'daily', 'sort_order' => 10, 'is_active' => true]);
         $t->branch_id = 1;
         $t->created_at = Carbon::parse('2026-10-01 08:00:00', config('app.timezone'));
         $t->save();
         // masquée le 05/10 sans aucune validation : 02, 03, 04/10 non faites (le 01 = création, le 05 = retrait, jamais « manqués »)
         Carbon::setTestNow(Carbon::parse('2026-10-05 12:00:00', config('app.timezone')));
-        $this->patchJson(self::BASE.'/tasks/templates/'.$t->id, ['is_active' => false])->assertOk();
+        $this->asManager(fn () => $this->patchJson(self::BASE.'/tasks/templates/'.$t->id, ['is_active' => false])->assertOk());
         Carbon::setTestNow(Carbon::parse('2026-10-22 09:00:00', config('app.timezone')));
         $url = self::BASE.'/report/summary?from=2026-10-01&to=2026-10-21';
         $before = $this->getJson($url)->json('data.tasks');
         $this->assertSame(3, $before['missed']);
         // supprimée dix-sept jours plus tard
-        $this->deleteJson(self::BASE.'/tasks/templates/'.$t->id)->assertOk();
+        $this->asManager(fn () => $this->deleteJson(self::BASE.'/tasks/templates/'.$t->id)->assertOk());
         $this->assertNotNull(HygieneTaskTemplate::withTrashed()->find($t->id)->deleted_at);
         $after = $this->getJson($url)->json('data.tasks');
         $this->assertSame(3, $after['missed'], 'la suppression d\'une fiche masquée n\'invente aucun jour « non fait » après le masquage');
@@ -304,7 +316,7 @@ class ReviewHardeningTest extends TestCase
     // [VG-2026-10-21 M8-102] même règle pour un équipement (frigo) masqué puis supprimé
     public function test_supprimer_un_equipement_masque_ne_cree_pas_de_jours_attendus_fantomes(): void
     {
-        $this->staff();
+        $this->staff()->givePermissionTo('settings'); // [2026-11-18 · P1-3] la structure des équipements de température est réservée au responsable
         $f = $this->fridge();
         $f->forceFill(['created_at' => Carbon::parse('2026-10-01 08:00:00', config('app.timezone'))])->save();
         Carbon::setTestNow(Carbon::parse('2026-10-05 12:00:00', config('app.timezone')));
@@ -319,7 +331,7 @@ class ReviewHardeningTest extends TestCase
 
     public function test_hiding_an_equipment_does_not_erase_its_past_gaps_from_the_report(): void
     {
-        $this->staff();
+        $this->staff()->givePermissionTo('settings'); // [2026-11-18 · P1-3] la structure des équipements de température est réservée au responsable
         $f = $this->fridge();
         $f->forceFill(['created_at' => Carbon::parse('2026-10-10')])->save();
         // masqué le 15/10 sans un seul relevé depuis le 10/10

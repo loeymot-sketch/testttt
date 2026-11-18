@@ -49,9 +49,21 @@ class OilControllerTest extends TestCase
         return $u;
     }
 
+    /** [AUDIT E2E 2026-11-18] Déclarer/renommer une friteuse est réservé au responsable (`settings`) : le compte courant le devient le temps de `$fn`. */
+    private function asManager(callable $fn)
+    {
+        $u = auth('sanctum')->user();
+        $u->givePermissionTo('settings');
+        try {
+            return $fn();
+        } finally {
+            $u->revokePermissionTo('settings');
+        }
+    }
+
     private function fryers(int $n = 2): array
     {
-        $this->postJson(self::BASE.'/fryers/quick-setup', ['count' => $n])->assertCreated();
+        $this->asManager(fn () => $this->postJson(self::BASE.'/fryers/quick-setup', ['count' => $n])->assertCreated());
 
         return HygieneEquipment::query()->where('kind', 'fryer')->orderBy('sort_order')->pluck('id')->all();
     }
@@ -74,8 +86,10 @@ class OilControllerTest extends TestCase
         $this->staff();
         $this->fryers(3);
         $this->assertSame(['Friteuse 1', 'Friteuse 2', 'Friteuse 3'], HygieneEquipment::query()->orderBy('sort_order')->pluck('name')->all());
-        $this->postJson(self::BASE.'/fryers/quick-setup', ['count' => 3])->assertOk()->assertJsonPath('data.added', 0);
-        $this->postJson(self::BASE.'/fryers/quick-setup', ['count' => 0])->assertStatus(422);
+        $this->asManager(function () {
+            $this->postJson(self::BASE.'/fryers/quick-setup', ['count' => 3])->assertOk()->assertJsonPath('data.added', 0);
+            $this->postJson(self::BASE.'/fryers/quick-setup', ['count' => 0])->assertStatus(422);
+        });
     }
 
     public function test_a_single_fryer_has_no_number(): void
@@ -89,17 +103,19 @@ class OilControllerTest extends TestCase
     {
         $this->staff();
         [$f1] = $this->fryers(1);
-        $this->postJson(self::TEMP.'/equipment/quick-setup', ['fridge' => 1])->assertCreated();
+        $this->asManager(fn () => $this->postJson(self::TEMP.'/equipment/quick-setup', ['fridge' => 1])->assertCreated());
         $names = collect($this->getJson(self::TEMP.'/today')->json('data'))->pluck('name')->all();
         $this->assertSame(['Frigo'], $names);
         $this->assertSame(['Frigo'], collect($this->getJson(self::TEMP.'/equipment')->json('data'))->pluck('name')->all());
-        $this->putJson(self::TEMP."/equipment/$f1", ['name' => 'Piraté'])->assertNotFound();
-        $this->deleteJson(self::TEMP."/equipment/$f1")->assertNotFound();
-        $this->postJson(self::TEMP.'/equipment', ['name' => 'Autre', 'kind' => 'fryer'])->assertStatus(422);
+        $this->asManager(function () use ($f1) { // même le responsable ne touche pas une friteuse depuis l'écran des températures
+            $this->putJson(self::TEMP."/equipment/$f1", ['name' => 'Piraté'])->assertNotFound();
+            $this->deleteJson(self::TEMP."/equipment/$f1")->assertNotFound();
+            $this->postJson(self::TEMP.'/equipment', ['name' => 'Autre', 'kind' => 'fryer'])->assertStatus(422);
+        });
         $kinds = collect($this->getJson(self::TEMP.'/today')->json('meta.kinds'))->pluck('key')->all();
         $this->assertNotContains('fryer', $kinds);
         // et réciproquement : un nom pris par une friteuse est pris pour toute l'installation
-        $this->postJson(self::TEMP.'/equipment', ['name' => 'friteuse', 'kind' => 'fridge'])->assertStatus(422);
+        $this->asManager(fn () => $this->postJson(self::TEMP.'/equipment', ['name' => 'friteuse', 'kind' => 'fridge'])->assertStatus(422));
     }
 
     public function test_a_conforming_test_needs_no_action(): void
@@ -210,7 +226,7 @@ class OilControllerTest extends TestCase
         $this->assertCount(0, $this->getJson(self::BASE.'/today')->json('data'));
         $this->postJson(self::BASE.'/controls', ['equipment_id' => $f1, 'type' => 'filter'])->assertStatus(422);
         $this->postJson(self::BASE."/controls/$id/void", ['reason' => 'piratage'])->assertNotFound();
-        $this->putJson(self::BASE."/fryers/$f1", ['name' => 'Piraté'])->assertNotFound();
+        $this->asManager(fn () => $this->putJson(self::BASE."/fryers/$f1", ['name' => 'Piraté'])->assertNotFound()); // même un responsable d'une autre branche
 
         Sanctum::actingAs(User::factory()->create(['branch_id' => 1]), ['*']);
         $this->getJson(self::BASE.'/today')->assertForbidden();

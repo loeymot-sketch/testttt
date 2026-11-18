@@ -38,7 +38,7 @@ class TemperatureFollowUpTest extends TestCase
             'hygiene.reminders.temperature.morning' => '23:00', 'hygiene.reminders.temperature.evening' => '23:30']);
         $this->moment('2026-10-20 10:00');
         $u = User::factory()->create(['branch_id' => 1, 'name' => 'Karim Test']);
-        $u->givePermissionTo('pos-orders');
+        $u->givePermissionTo(['pos-orders', 'settings']); // [2026-11-18 · P1-3] créer les équipements est réservé au responsable
         $u->assignRole('POS Operator');
         Sanctum::actingAs($u, ['*']);
         $this->postJson(self::BASE.'/equipment/quick-setup', ['fridge' => 2, 'freezer' => 0, 'hot_holding' => 1])->assertCreated();

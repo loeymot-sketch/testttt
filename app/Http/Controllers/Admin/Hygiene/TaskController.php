@@ -22,6 +22,19 @@ use Illuminate\Validation\Rule;
  */
 class TaskController extends HygieneController
 {
+    /** Champs d'une fiche recopiés sur la fiche qui la remplace quand sa fréquence change (voir updateTemplate). */
+    private const CARRIED = ['catalog_key', 'name', 'zone', 'how_to', 'checklist', 'frequency', 'weekday', 'month_day', 'due_time', 'sort_order', 'is_active'];
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        // [AUDIT E2E 2026-11-18 · P0 droits] La STRUCTURE du plan (créer, modifier, supprimer une fiche, installer le plan de départ) est réservée
+        // au responsable : même règle que les écrans Équipe et Alertes (permission `settings` EN PLUS de la porte du module). Un caissier
+        // répondait 201/200. Valider une fiche du jour, annuler avec motif, lire le plan et le journal restent ouverts à tout le personnel.
+        $this->middleware(\App\Services\Hygiene\StructureAccess::guard())->only(['storeTemplate', 'updateTemplate', 'destroyTemplate', 'installRecommended']);
+    }
+
     // ───────────────────────────── Aujourd'hui ─────────────────────────────
 
     public function today(Request $request): JsonResponse
@@ -206,9 +219,79 @@ class TaskController extends HygieneController
     public function updateTemplate(Request $request, string $template): JsonResponse
     {
         $t = HygieneTaskTemplate::query()->findOrFail((int) $template);
-        $t->fill($this->validateTemplate($request, $t))->save();
+        $data = $this->validateTemplate($request, $t);
 
-        return response()->json(['data' => $this->presentTemplate($t->refresh())]);
+        // [AUDIT E2E 2026-11-18 · P0] Le dossier juge chaque jour PASSÉ avec la fréquence de la fiche : changer la fréquence en place
+        // réécrivait l'histoire (« Hotte et filtres » quotidienne → mensuelle : « 0 sur 17 · 17 non faites » devenait « 0 sur 0 »).
+        // Une fiche qui a déjà un passé n'est donc jamais modifiée sur ce point : elle est CLÔTURÉE (suppression douce, comme
+        // destroyTemplate — le dossier la juge jusqu'à sa date de fin, voir ReportBuilder::endDate) et une NOUVELLE fiche reprend tout avec
+        // la nouvelle fréquence. Toute autre modification reste une simple mise à jour.
+        //
+        // [2026-11-18 · tour 3] Même traitement pour la RÉACTIVATION d'une fiche masquée depuis un jour passé : le dossier
+        // date la fin d'attente d'une fiche masquée par son moment de masquage ; la réactiver en place effaçait ce moment
+        // et tous les jours masqués devenaient « non faits » (30 → 56 au dossier du mois). La fiche masquée reste donc
+        // close à sa date de masquage, et une nouvelle fiche active commence aujourd'hui.
+        $scheduleChange = $this->changesSchedule($t, $data);
+        $reactivation = ! $t->is_active && ! empty($data['is_active'])
+            && ($t->updated_at === null || $t->updated_at->lt(now()->startOfDay()));
+        if (! ($scheduleChange || $reactivation) || ! $this->hasPast($t)) {
+            $t->fill($data)->save();
+
+            return response()->json(['data' => $this->presentTemplate($t->refresh())]);
+        }
+
+        // [2026-11-18 · tour 3] Fiche déjà traitée AUJOURD'HUI : on ne change pas sa fréquence le jour même. La validation du
+        // jour (ou sa réserve) serait restée sur la fiche close : invisible à l'écran du jour, non annulable, et comptée
+        // deux fois au dossier si la fréquence revenait. Le responsable change demain, ou annule d'abord la validation.
+        if ($scheduleChange && HygieneTaskCompletion::query()->where('template_id', $t->id)->whereNull('voided_at')
+            ->whereDate('due_date', now()->toDateString())->exists()) {
+            $msg = 'Cette fiche a déjà été traitée aujourd’hui : changez sa fréquence demain, ou annulez d’abord la validation du jour.';
+
+            return response()->json(['message' => $msg, 'errors' => ['frequency' => [$msg]]], 422);
+        }
+
+        $next = DB::transaction(function () use ($t, $data): ?HygieneTaskTemplate {
+            $old = HygieneTaskTemplate::query()->whereKey($t->id)->lockForUpdate()->first();
+            if (! $old) return null; // une autre modification simultanée l'a déjà remplacée
+
+            $next = new HygieneTaskTemplate(array_merge($old->only(self::CARRIED), $data));
+            $next->branch_id = $old->branch_id;
+            // [2026-11-18 · tour 2] La relève naît au DÉBUT de la journée, pas à l'instant du changement : sinon son heure
+            // limite d'aujourd'hui « n'existait pas encore » (TaskSchedule::isLate) — une fiche en retard redevenait « à faire »
+            // et sa validation était écrite « à l'heure ».
+            $next->created_at = now()->startOfDay();
+            $old->delete();
+            $next->save();
+            return $next;
+        });
+        if (! $next) {
+            return response()->json(['message' => 'Cette fiche vient d’être modifiée ailleurs : rechargez la liste puis recommencez.'], 409);
+        }
+
+        return response()->json(['data' => $this->presentTemplate($next->refresh()), 'meta' => ['replaced' => true, 'previous_id' => $t->id]]);
+    }
+
+    /** La fréquence EFFECTIVE (celle que lit TaskSchedule::isDueOn) change-t-elle ? */
+    private function changesSchedule(HygieneTaskTemplate $t, array $data): bool
+    {
+        $key = fn (?string $freq, $weekday, $monthDay): string => match ($freq) {
+            'weekly' => 'weekly:'.((int) $weekday ?: 1),
+            'monthly' => 'monthly:'.((int) $monthDay ?: 1),
+            default => 'daily',
+        };
+        $after = $key(
+            $data['frequency'] ?? $t->frequency,
+            array_key_exists('weekday', $data) ? $data['weekday'] : $t->weekday,
+            array_key_exists('month_day', $data) ? $data['month_day'] : $t->month_day,
+        );
+
+        return $after !== $key($t->frequency, $t->weekday, $t->month_day);
+    }
+
+    /** Au moins un jour écoulé depuis sa création (sans date de création : ligne ancienne, donc oui). */
+    private function hasPast(HygieneTaskTemplate $t): bool
+    {
+        return $t->created_at === null || $t->created_at->lt(now()->startOfDay());
     }
 
     public function destroyTemplate(string $template): JsonResponse
@@ -304,7 +387,12 @@ class TaskController extends HygieneController
             'due_time' => ['nullable', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'is_active' => ['nullable', 'boolean'],
-        ], [], ['name' => 'nom', 'checklist' => 'points à vérifier', 'due_time' => 'horaire']);
+        ], [], [
+            // [AUDIT E2E 2026-11-18 · P2] jamais « Le champ month day … » à l'écran : chaque champ a son nom français
+            'name' => 'nom', 'zone' => 'zone', 'how_to' => 'méthode', 'checklist' => 'points à vérifier', 'checklist.*' => 'point à vérifier',
+            'frequency' => 'fréquence', 'weekday' => 'jour de la semaine', 'month_day' => 'jour du mois', 'due_time' => 'horaire',
+            'sort_order' => 'ordre', 'is_active' => 'fiche active',
+        ]);
 
         if (isset($v['checklist'])) {
             foreach ($v['checklist'] as $raw) {

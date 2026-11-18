@@ -99,6 +99,11 @@ class ReportController extends HygieneController
         return $iso ? \Carbon\Carbon::parse($iso)->timezone(config('app.timezone'))->format('d/m/Y H:i') : '';
     }
 
+    private function day(?string $ymd): string
+    {
+        return $ymd ? \Carbon\Carbon::createFromFormat('Y-m-d', $ymd)->format('d/m/Y') : '';
+    }
+
     private function num($v): string
     {
         return $v === null ? '' : str_replace('.', ',', (string) $v);
@@ -108,7 +113,11 @@ class ReportController extends HygieneController
     private function table(string $module, array $rows): array
     {
         $status = fn ($s) => ['ok' => 'conforme', 'alert' => 'écart', 'warn' => 'à surveiller'][$s] ?? (string) $s;
-        $void = fn ($r) => ! empty($r['voided']) ? 'ANNULÉ : '.($r['void_reason'] ?? '') : '';
+        // [AUDIT E2E 2026-11-18 · P2] l'annulation dit aussi QUI et QUAND quand le domaine les fournit (nettoyage, huile)
+        $void = fn ($r) => ! empty($r['voided'])
+            ? 'ANNULÉ : '.($r['void_reason'] ?? '').(! empty($r['voided_by']) ? ' — par '.$r['voided_by'] : '').(! empty($r['voided_at']) ? ' le '.$this->dt($r['voided_at']) : '')
+            : '';
+        $photo = fn ($r) => ! empty($r['photo']) ? 'oui' : '';
 
         switch ($module) {
             case 'temperature':
@@ -116,8 +125,9 @@ class ReportController extends HygieneController
                     array_map(fn ($r) => [$this->dt($r['at']), $r['equipment'], $this->num($r['value_c']), $this->num($r['min_c']), $this->num($r['max_c']), $status($r['status']), config("hygiene.periods.{$r['period']}") ?? $r['period'], $r['operator'],
                         ! empty($r['offline']) ? 'hors ligne, envoyé le '.$this->dt($r['synced_at']) : 'direct', $r['action'], $r['note'], $r['followup_closed'] ?? '', $void($r)], $rows)];
             case 'tasks':
-                return [['Date', 'Jour concerné', 'Fiche', 'Zone', 'Points faits', 'Points total', 'Complète', 'Après l\'heure', 'Points non faits', 'Commentaire', 'Opérateur', 'Engagement', 'Annulation'],
-                    array_map(fn ($r) => [$this->dt($r['at']), $r['due_date'], $r['task'], $r['zone'], $r['items_done'], $r['items_total'], $r['complete'], $r['late'], $r['not_done'], $r['note'], $r['operator'], ! empty($r['attested']) ? 'oui' : 'non', $void($r)], $rows)];
+                // « Jour concerné » au même format que les autres dates du fichier (18/11/2026, jamais 2026-11-18)
+                return [['Date', 'Jour concerné', 'Fiche', 'Zone', 'Points faits', 'Points total', 'Complète', 'Après l\'heure', 'Points non faits', 'Commentaire', 'Opérateur', 'Engagement', 'Annulation', 'Photo'], // « Photo » en dernier : les colonnes existantes gardent leur rang
+                    array_map(fn ($r) => [$this->dt($r['at']), $this->day($r['due_date']), $r['task'], $r['zone'], $r['items_done'], $r['items_total'], $r['complete'], $r['late'], $r['not_done'], $r['note'], $r['operator'], ! empty($r['attested']) ? 'oui' : 'non', $void($r), $photo($r)], $rows)];
             case 'receptions':
                 return [['Date', 'Fournisseur', 'N° BL', 'Livreur', 'Températures', 'Contrôles non conformes', 'Verdict', 'Décision', 'Commentaire', 'Opérateur', 'Annulation'],
                     array_map(fn ($r) => [$this->dt($r['at']), $r['supplier'], $r['delivery_note'], $r['driver'], implode(' | ', array_map(fn ($t) => $t['label'].' '.$this->num($t['value_c']).' °C', $r['temperatures'])), $r['checks_ko'], $status($r['status']), $r['decision'], $r['note'], $r['operator'], $void($r)], $rows)];
@@ -125,8 +135,10 @@ class ReportController extends HygieneController
                 return [['Date', 'Produit', 'Fournisseur', 'N° BL', 'N° de lot', 'DLC/DLUO', 'Type', 'Verdict', 'Commentaire', 'Opérateur', 'Annulation'],
                     array_map(fn ($r) => [$this->dt($r['at']), $r['product'], $r['supplier'], $r['delivery_note'], $r['lot'], $r['dlc_date'], strtoupper((string) $r['dlc_kind']), $status($r['status']), $r['note'], $r['operator'], $void($r)], $rows)];
             case 'oil':
-                return [['Date', 'Friteuse', 'Opération', 'Composés polaires %', 'Bain °C', 'Litres', 'Huile', 'Verdict', 'Action corrective', 'Commentaire', 'Opérateur', 'Annulation'],
-                    array_map(fn ($r) => [$this->dt($r['at']), $r['fryer'], $r['type'], $this->num($r['polar_pct']), $this->num($r['bath_temp_c']), $this->num($r['oil_litres']), $r['oil_brand'], $status($r['status']), $r['action'], $r['note'], $r['operator'], $void($r)], $rows)];
+                // Verdict : un test seulement (une vidange ou un filtrage n'est pas « conforme », il n'est pas jugé — le PDF le laisse vide aussi)
+                return [['Date', 'Friteuse', 'Opération', 'Composés polaires %', 'Bain °C', 'Litres', 'Huile', 'Verdict', 'Action corrective', 'Commentaire', 'Opérateur', 'Annulation', 'Photo'],
+                    array_map(fn ($r) => [$this->dt($r['at']), $r['fryer'], $r['type'], $this->num($r['polar_pct']), $this->num($r['bath_temp_c']), $this->num($r['oil_litres']), $r['oil_brand'],
+                        ($r['type_key'] ?? 'test') === 'test' ? $status($r['status']) : '', $r['action'], $r['note'], $r['operator'], $void($r), $photo($r)], $rows)];
             default: // dlc
                 $labels = \App\Models\DlcLabelProduct::ACTION_LABELS;
 

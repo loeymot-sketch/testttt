@@ -66,10 +66,25 @@ class AlertController extends HygieneController
             'max_sends' => ['required', 'integer', 'between:1,6'],
         ], [
             'recipients.*.email' => 'Cette adresse e-mail n\'est pas valide.',
+            'recipients.*.required' => 'Une adresse e-mail est vide : retirez-la ou complétez-la.',
             'recipients.max' => 'Dix destinataires au plus.',
-            'domains.min' => 'Choisissez au moins un type d\'alerte.',
+            'recipients.present' => 'La liste des destinataires manque : rechargez la page puis réessayez.',
+            // [2026-11-18 · P2] plus jamais « Le champ domains est obligatoire. » ni « Le champ send from … » : une phrase en français clair
+            'domains.required' => 'Choisissez au moins un type d\'alerte (« Pour quoi ? »).',
+            'domains.min' => 'Choisissez au moins un type d\'alerte (« Pour quoi ? »).',
+            'domains.*.in' => 'Type d\'alerte inconnu : rechargez la page puis réessayez.',
+            'enabled.required' => 'Dites si les alertes sont activées ou non.',
+            'send_from.required' => 'Indiquez l\'heure de début (« Pas avant », exemple : 09:00).',
             'send_from.regex' => 'Heure de début illisible (exemple : 09:00).',
+            'send_until.required' => 'Indiquez l\'heure de fin (« Pas après », exemple : 23:30).',
             'send_until.regex' => 'Heure de fin illisible (exemple : 23:30).',
+            'repeat_minutes.required' => 'Choisissez l\'intervalle de relance.',
+            'repeat_minutes.between' => 'L\'intervalle de relance va de 15 minutes à 4 heures.',
+            'max_sends.required' => 'Choisissez le nombre d\'envois maximum.',
+            'max_sends.between' => 'De 1 à 6 envois au plus par rappel et par jour.',
+        ], [
+            'enabled' => 'activation', 'recipients' => 'destinataires', 'recipients.*' => 'adresse e-mail', 'domains' => 'types d\'alertes',
+            'send_from' => 'heure de début', 'send_until' => 'heure de fin', 'repeat_minutes' => 'intervalle de relance', 'max_sends' => 'nombre d\'envois',
         ]);
 
         $recipients = array_values(array_unique(array_map(fn ($e) => mb_strtolower(trim($e)), $v['recipients'])));

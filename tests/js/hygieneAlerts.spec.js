@@ -98,7 +98,7 @@ describe('alertes e-mail — écran', () => {
         expect(q(w, 'al-staff-109').attributes('aria-pressed')).toBe('false');
     });
 
-    it('le refus du serveur est affiché tel quel et les réglages restent modifiables', async () => {
+    it('le refus du serveur est affiché tel quel ; l’interrupteur revient à l’état réellement enregistré (2026-11-18 P1-1) et les réglages restent modifiables', async () => {
         const w = await mountWith(async () => payload());
         const e = new Error('422');
         e.response = { status: 422, data: { message: 'x', errors: { recipients: ['Ajoutez au moins une adresse e-mail pour activer les alertes.'] } } };
@@ -107,7 +107,13 @@ describe('alertes e-mail — écran', () => {
         await q(w, 'al-save').trigger('click');
         await flushPromises();
         expect(q(w, 'al-message').text()).toContain('Ajoutez au moins une adresse e-mail');
-        expect(q(w, 'al-save').attributes('disabled')).toBeUndefined(); // on peut corriger et réessayer
+        // avant : l'interrupteur restait sur « activé » après le refus — le responsable croyait les alertes actives
+        expect(q(w, 'al-enabled').attributes('aria-pressed')).toBe('false');
+        // on peut corriger et réessayer : ajouter une adresse, réactiver, enregistrer
+        await q(w, 'al-new-email').setValue('chef@example.test');
+        await q(w, 'al-add').trigger('click');
+        await q(w, 'al-enabled').trigger('click');
+        expect(q(w, 'al-save').attributes('disabled')).toBeUndefined();
     });
 
     it('l’essai est refusé tant que des modifications ne sont pas enregistrées, puis part', async () => {

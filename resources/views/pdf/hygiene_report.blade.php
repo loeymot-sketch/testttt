@@ -60,6 +60,8 @@
     $p = $report['period'];
     $cut = fn ($m) => ($m['rows_total'] ?? 0) > count($m['rows'] ?? []) ? '<p class="warn">Liste réduite : les '.count($m['rows']).' lignes les plus récentes sur '.$m['rows_total'].'. Le détail complet est dans l\'export CSV.</p>' : '';
     $t = $report['temperature']; $k = $report['tasks']; $r = $report['receptions']; $z = $report['trace']; $o = $report['oil']; $l = $report['dlc'];
+    // [AUDIT E2E 2026-11-18 · P2] une annulation dit son motif, QUI et QUAND (nettoyage, huile : les seuls domaines qui les fournissent)
+    $voidTxt = fn ($x) => 'annulé : '.($x['void_reason'] ?? '').(!empty($x['voided_by']) ? ' — par '.$x['voided_by'] : '').(!empty($x['voided_at']) ? ' le '.$dt($x['voided_at']) : '');
 @endphp
 
 <div class="header">
@@ -118,7 +120,7 @@
     @foreach ($k['rows'] as $x)
         <tr class="{{ $x['voided'] ? 'void' : (!$x['complete'] ? 'bad' : '') }}"><td>{{ $dt($x['at']) }}</td><td>{{ $d($x['due_date']) }}</td><td>{{ $x['task'] }}</td>
             <td>{{ $x['items_done'] }}/{{ $x['items_total'] }}@if($x['late']) · après l'heure @endif</td>
-            <td>{{ implode(', ', $x['not_done']) }}@if($x['note']) — {{ $x['note'] }}@endif @if($x['voided']) annulé : {{ $x['void_reason'] }}@endif</td><td>{{ $x['operator'] }}</td><td>{{ !empty($x['attested']) ? 'oui' : 'non' }}</td></tr>
+            <td>{{ implode(', ', $x['not_done']) }}@if($x['note']) — {{ $x['note'] }}@endif @if(!empty($x['photo'])) · Photo : oui @endif @if($x['voided']) {{ $voidTxt($x) }}@endif</td><td>{{ $x['operator'] }}</td><td>{{ !empty($x['attested']) ? 'oui' : 'non' }}</td></tr>
     @endforeach
     </table>
 @endif
@@ -151,9 +153,9 @@
     {!! $cut($o) !!}
     <table class="data"><tr><th>Date</th><th>Friteuse</th><th>Opération</th><th>Polaires</th><th>Bain °C</th><th>Verdict</th><th>Action corrective</th><th>Opérateur</th></tr>
     @foreach ($o['rows'] as $x)
-        <tr class="{{ $x['voided'] ? 'void' : ($x['status'] === 'alert' ? 'bad' : '') }}"><td>{{ $dt($x['at']) }}</td><td>{{ $x['fryer'] }}</td><td>{{ $x['type'] }}@if($x['oil_litres']) · {{ $n($x['oil_litres']) }} L @endif</td>
-            <td>{{ $x['polar_pct'] !== null ? $pct($x['polar_pct']) : '' }}</td><td>{!! $tv($x['bath_temp_c']) !!}{{-- [VG-2026-10-21 M8] --}}</td><td>{!! $x['type'] === 'Test de l’huile' ? $st($x['status']) : '' !!}</td>
-            <td>{{ $x['action'] }} {{ $x['note'] }} @if($x['voided']) annulé : {{ $x['void_reason'] }}@endif</td><td>{{ $x['operator'] }}</td></tr>
+        <tr class="{{ $x['voided'] ? 'void' : ($x['status'] === 'alert' ? 'bad' : '') }}"><td>{{ $dt($x['at']) }}</td><td>{{ $x['fryer'] }}</td><td>{{ $x['type'] }}@if($x['oil_litres']) · {{ $n($x['oil_litres']) }} L @endif @if(!empty($x['oil_brand'])) · {{ $x['oil_brand'] }} @endif</td>
+            <td>{{ $x['polar_pct'] !== null ? $pct($x['polar_pct']) : '' }}</td><td>{!! $tv($x['bath_temp_c']) !!}{{-- [VG-2026-10-21 M8] --}}</td><td>{!! ($x['type_key'] ?? null) === 'test' || (!isset($x['type_key']) && $x['type'] === 'Test de l’huile') ? $st($x['status']) : '' !!}</td>
+            <td>{{ $x['action'] }} {{ $x['note'] }} @if(!empty($x['photo'])) · Photo : oui @endif @if($x['voided']) {{ $voidTxt($x) }}@endif</td><td>{{ $x['operator'] }}</td></tr>
     @endforeach
     </table>
 @endif

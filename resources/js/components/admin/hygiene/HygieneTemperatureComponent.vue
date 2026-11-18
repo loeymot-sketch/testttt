@@ -16,11 +16,15 @@
 
                 <!-- ── Démarrage : « j'ai 4 frigos et 2 congélateurs » ───────────────────────────── -->
                 <div v-else-if="loaded && !items.length && !manageHasRows" class="tmp-setup" data-testid="tmp-setup">
-                    <p>
+                    <p v-if="!canManage" data-testid="tmp-setup-forbidden">
+                        <strong>Aucun équipement pour l'instant.</strong> La création des frigos et congélateurs est réservée au responsable (droit « Paramètres ») :
+                        demandez-lui de les créer, les relevés pourront commencer aussitôt.
+                    </p>
+                    <p v-else>
                         <strong>Aucun équipement pour l'instant.</strong> Dites combien vous en avez : les équipements sont créés avec leurs seuils
                         (frigo 0 à +4 °C, congélateur −18 °C ou moins, bain-marie 63 °C ou plus). Vous pourrez les renommer ensuite.
                     </p>
-                    <div class="tmp-steppers">
+                    <div v-if="canManage" class="tmp-steppers">
                         <div v-for="k in setupKinds" :key="k.key" class="tmp-stepper">
                             <span class="tmp-stepper-label">{{ k.plural }}</span>
                             <button type="button" class="tmp-step" :aria-label="`Un ${k.label.toLowerCase()} de moins`" :data-testid="`tmp-setup-${k.key}-minus`"
@@ -30,19 +34,23 @@
                                     @click="setup[k.key] = Math.min(20, setup[k.key] + 1)">+</button>
                         </div>
                     </div>
-                    <button type="button" class="tmp-btn tmp-btn--primary" :disabled="saving || !setupTotal" data-testid="tmp-setup-go" @click="quickSetup">
+                    <button v-if="canManage" type="button" class="tmp-btn tmp-btn--primary" :disabled="saving || !setupTotal" data-testid="tmp-setup-go" @click="quickSetup">
                         {{ saving ? "Création…" : `Créer mes ${setupTotal} équipement${setupTotal > 1 ? "s" : ""}` }}
                     </button>
                 </div>
 
                 <template v-else-if="loaded">
-                    <p v-if="!items.length" class="tmp-muted" data-testid="tmp-all-hidden">Tous les équipements sont masqués : réactivez-en un dans « Équipements » ci-dessous.</p>
+                    <p v-if="!activeItems.length" class="tmp-muted" data-testid="tmp-all-hidden">
+                        Tous les équipements sont masqués : {{ canManage ? "réactivez-en un dans « Équipements » ci-dessous." : "demandez au responsable d'en réactiver un." }}
+                    </p>
                     <!-- ── Bandeau du jour ─────────────────────────────────────────────────────────── -->
                     <div class="tmp-summary" data-testid="tmp-summary">
                         <span class="tmp-period" data-testid="tmp-period">{{ periodLabel }}</span>
                         <span class="tmp-chip" :class="{ 'is-todo': summary.todo }" data-testid="tmp-sum-todo">{{ summary.todo }} à relever</span>
                         <span class="tmp-chip is-ok" data-testid="tmp-sum-ok">{{ summary.ok }} conforme{{ summary.ok > 1 ? "s" : "" }}</span>
-                        <span class="tmp-chip" :class="{ 'is-alert': summary.alert }" data-testid="tmp-sum-alert">{{ summary.alert }} écart{{ summary.alert > 1 ? "s" : "" }}</span>
+                        <span class="tmp-chip" :class="{ 'is-alert': summary.alert }" data-testid="tmp-sum-alert">
+                            {{ summary.alert }} écart{{ summary.alert > 1 ? "s" : "" }}<template v-if="summary.hidden_alert"> (dont {{ summary.hidden_alert }} masqué{{ summary.hidden_alert > 1 ? "s" : "" }})</template>
+                        </span>
                     </div>
                     <div class="tmp-who">
                         <HygieneOperatorPicker v-model="operatorId" v-model:token="operatorToken" @update:me="operatorMe = $event" />
@@ -58,6 +66,10 @@
                                 </div>
                                 <span class="tmp-limit" :class="{ 'is-neg': e.negative }">{{ limitText(e) }}</span>
                             </div>
+                            <!-- masqué AUJOURD'HUI avec un écart ou un suivi : il reste ici jusqu'à ce soir (l'écart ne disparaît pas en masquant) -->
+                            <p v-if="e.hidden_today" class="tmp-hidden-note" role="status" :data-testid="`tmp-hidden-${e.id}`">
+                                Masqué aujourd'hui : son écart reste compté jusqu'à ce soir et reste au journal.
+                            </p>
 
                             <!-- Suivi d'écart HÉRITÉ (écart d'hier soir, aucun relevé aujourd'hui) : le rappel de l'accueil dit « nouvelle mesure attendue » ; l'écran doit le dire
                                  aussi et laisser clore « mesure impossible » (avant : ce bloc n'existait que dans la carte « relevé fait aujourd'hui », donc nulle part ici). -->
@@ -88,6 +100,10 @@
                                 <span v-if="e.last_today.status === 'alert'" class="tmp-done-alert">
                                     {{ alertText(e.last_today) }}<template v-if="e.last_today.corrective_label"> — {{ e.last_today.corrective_label }}</template>
                                 </span>
+                                <!-- suivi clos par « Mesure impossible » : le motif se voit sur la carte, pas seulement au journal -->
+                                <span v-if="e.last_today.followup_closed" class="tmp-done-meta tmp-closed" :data-testid="`tmp-closed-${e.id}`">
+                                    Suivi clos, mesure impossible : {{ e.last_today.followup_close_reason }}
+                                </span>
                                 <span v-if="e.followup" class="tmp-followup" :class="{ 'is-overdue': followupOverdue(e) }" role="status" :data-testid="`tmp-followup-${e.id}`">
                                     ⏱ {{ followupOverdue(e) ? "Nouvelle mesure en retard : attendue depuis" : "Nouvelle mesure à faire avant" }} {{ hm(e.followup.due_at) }}
                                 </span>
@@ -105,13 +121,13 @@
                                 </div>
                                 <div class="tmp-done-actions">
                                     <button v-if="e.followup && closeTarget !== e.id" type="button" class="tmp-btn tmp-btn--small" :data-testid="`tmp-close-open-${e.id}`" @click="askCloseFollowup(e)">Mesure impossible</button>
-                                    <button v-if="!queuedFor(e)" type="button" class="tmp-btn tmp-btn--small" :class="{ 'tmp-btn--primary': e.followup }" :data-testid="`tmp-again-${e.id}`" @click="startEntry(e)">Nouveau relevé</button>
+                                    <button v-if="!queuedFor(e) && !e.hidden_today" type="button" class="tmp-btn tmp-btn--small" :class="{ 'tmp-btn--primary': e.followup }" :data-testid="`tmp-again-${e.id}`" @click="startEntry(e)">Nouveau relevé</button>
                                     <button type="button" class="tmp-btn tmp-btn--small" :data-testid="`tmp-void-${e.id}`" @click="askVoid(e.last_today)">Annuler ce relevé</button>
                                 </div>
                             </div>
 
-                            <!-- saisie -->
-                            <template v-else>
+                            <!-- saisie (jamais pour un équipement masqué : il n'est plus relevé) -->
+                            <template v-else-if="!e.hidden_today">
                                 <div v-if="queuedFor(e) && !entries[e.id]" class="tmp-queued" :data-testid="`tmp-queued-${e.id}`">
                                     <span class="tmp-done-value">⏳ {{ fmt(queuedFor(e).value) }} °C</span>
                                     <span class="tmp-done-meta">{{ hm(queuedFor(e).at) }} · gardé sur la tablette, en attente d'envoi</span>
@@ -180,17 +196,19 @@
                     </div>
 
                     <!-- ── Barre de validation ───────────────────────────────────────────────────── -->
-                    <div v-if="items.length" class="tmp-bar" data-testid="tmp-bar">
+                    <!-- collante seulement quand il y a quelque chose à valider (ou un refus à lire) : sinon elle recouvrait « Annuler le relevé / Garder » sur téléphone -->
+                    <div v-if="activeItems.length" class="tmp-bar" :class="{ 'is-idle': barIdle }" data-testid="tmp-bar">
                         <p v-if="formError" class="tmp-alert" role="alert" style="flex:1 1 100%;margin:0" data-testid="tmp-form-error">{{ formError }}</p>
                         <span class="tmp-bar-text">
-                            <strong data-testid="tmp-pending">{{ pendingList.length }}</strong> relevé{{ pendingList.length > 1 ? "s" : "" }} saisi{{ pendingList.length > 1 ? "s" : "" }}
+                            <strong data-testid="tmp-pending">{{ pendingList.length }}</strong> <span class="tmp-long">relevé{{ pendingList.length > 1 ? "s" : "" }}&nbsp;</span>saisi{{ pendingList.length > 1 ? "s" : "" }}
                             <template v-if="missingActions"> — <span class="tmp-bar-warn">{{ missingActions }} écart{{ missingActions > 1 ? "s" : "" }} sans action</span></template>
                         </span>
                         <button type="button" class="tmp-btn" :disabled="saving || !todoWithoutEntry" data-testid="tmp-fill-all" @click="startAll">
-                            Saisir tout ce qui reste ({{ todoWithoutEntry }})
+                            <span class="tmp-long">Saisir tout ce qui reste</span><span class="tmp-short">Tout saisir</span> ({{ todoWithoutEntry }})
                         </button>
                         <button type="button" class="tmp-btn tmp-btn--primary" :disabled="saving || !canSubmit" data-testid="tmp-submit" @click="submit">
-                            {{ saving ? "Enregistrement…" : "Valider les relevés" }}
+                            <template v-if="saving">Enregistrement…</template>
+                            <template v-else><span class="tmp-long">Valider les relevés</span><span class="tmp-short">Valider</span></template>
                         </button>
                     </div>
                 </template>
@@ -201,15 +219,31 @@
                         {{ showHistory ? "▾" : "▸" }} Journal des relevés
                     </button>
                     <div v-if="showHistory" data-testid="tmp-history">
-                        <label class="tmp-check"><input v-model="alertsOnly" type="checkbox" data-testid="tmp-alerts-only" @change="loadHistory" /> Écarts seulement</label>
+                        <div class="tmp-history-filters">
+                            <label class="tmp-check"><input v-model="alertsOnly" type="checkbox" data-testid="tmp-alerts-only" @change="loadHistory" /> Écarts seulement</label>
+                            <label class="tmp-check">Équipement
+                                <select v-model="historyEquipment" class="tmp-select" data-testid="tmp-history-equipment">
+                                    <option :value="null">Tous</option>
+                                    <option v-for="q in historyEquipmentOptions" :key="q.id" :value="q.id">{{ q.name }}</option>
+                                </select>
+                            </label>
+                        </div>
+                        <!-- la fenêtre du journal est DITE : une absence au-delà n'est pas « rien n'a eu lieu » (le dossier de contrôle couvre toute période) -->
+                        <p class="tmp-history-window" data-testid="tmp-history-window">
+                            {{ historyMeta.limit || 200 }} lignes au plus, sur les 30 derniers jours<template v-if="historyMeta.truncated"> — liste tronquée : choisissez un équipement pour voir le reste</template>.
+                            Pour une période précise : « Dossier de contrôle ».
+                        </p>
                         <p v-if="!history.length" class="tmp-muted">Aucun relevé sur la période.</p>
                         <ul v-else class="tmp-list">
                             <li v-for="r in history" :key="r.id" class="tmp-row" :class="{ 'is-void': r.voided, 'is-alert': r.status === 'alert' && !r.voided }" :data-testid="`tmp-row-${r.id}`">
                                 <span class="tmp-row-when">{{ dayHm(r.recorded_at) }}</span>
                                 <span class="tmp-row-name">{{ r.equipment_name }}</span>
                                 <strong class="tmp-row-value">{{ fmt(r.value_c) }} °C</strong>
+                                <span v-if="r.voided" class="tmp-void-tag" :data-testid="`tmp-row-voided-${r.id}`">
+                                    Annulé<template v-if="r.voided_by_name"> par {{ r.voided_by_name }}</template><template v-if="r.voided_at"> à {{ hm(r.voided_at) }}</template> : {{ r.void_reason }}
+                                </span>
                                 <span class="tmp-row-meta">
-                                    {{ r.voided ? `Annulé : ${r.void_reason}` : (r.status === "alert" ? `${alertText(r)}${r.corrective_label ? " — " + r.corrective_label : ""}${r.corrective_note ? " (" + r.corrective_note + ")" : ""}` : "Conforme") }}
+                                    {{ r.status === "alert" ? `${alertText(r)}${r.corrective_label ? " — " + r.corrective_label : ""}${r.corrective_note ? " (" + r.corrective_note + ")" : ""}` : "Conforme" }}
                                     · {{ periodName(r.period) }}<template v-if="r.operator_name"> · {{ r.operator_name }}</template><template v-if="r.offline"> · saisi hors ligne, envoyé à {{ hm(r.synced_at) }}</template><template v-if="r.followup_closed"> · suivi clos : {{ r.followup_close_reason }}</template>
                                 </span>
                             </li>
@@ -220,19 +254,49 @@
                 <!-- ── Équipements ───────────────────────────────────────────────────────────────── -->
                 <div v-if="loaded && (items.length || manageHasRows)" class="tmp-section">
                     <button type="button" class="tmp-toggle" :aria-expanded="manage ? 'true' : 'false'" data-testid="tmp-manage-toggle" @click="toggleManage">
-                        {{ manage ? "▾" : "▸" }} Équipements ({{ items.length }})
+                        {{ manage ? "▾" : "▸" }} Équipements ({{ activeItems.length }})
                     </button>
                     <div v-if="manage" data-testid="tmp-manage">
+                        <p v-if="!canManage" class="tmp-muted" data-testid="tmp-manage-readonly">
+                            Créer, renommer, masquer un équipement ou changer un seuil est réservé au responsable (droit « Paramètres »).
+                        </p>
                         <ul class="tmp-list">
-                            <li v-for="q in equipment" :key="q.id" class="tmp-row tmp-row--edit" :class="{ 'is-void': !q.is_active }" :data-testid="`tmp-eq-${q.id}`">
-                                <input v-model="q.name" type="text" maxlength="80" class="tmp-note tmp-eq-name" :aria-label="`Nom de ${q.name}`" :data-testid="`tmp-eq-name-${q.id}`" />
-                                <label class="tmp-eq-th">de <input v-model="q.min_c" type="text" inputmode="decimal" class="tmp-eq-num" placeholder="—" :aria-label="`Seuil bas de ${q.name}`" :data-testid="`tmp-eq-min-${q.id}`" /> °C</label>
-                                <label class="tmp-eq-th">à <input v-model="q.max_c" type="text" inputmode="decimal" class="tmp-eq-num" placeholder="—" :aria-label="`Seuil haut de ${q.name}`" :data-testid="`tmp-eq-max-${q.id}`" /> °C</label>
-                                <button type="button" class="tmp-btn tmp-btn--small" :data-testid="`tmp-eq-save-${q.id}`" @click="saveEquipment(q)">Enregistrer</button>
-                                <button type="button" class="tmp-btn tmp-btn--small" @click="toggleEquipment(q)">{{ q.is_active ? "Masquer" : "Réactiver" }}</button>
+                            <li v-for="q in equipment" :key="q.id" class="tmp-row tmp-row--edit" :class="{ 'is-hidden': !q.is_active }" :data-testid="`tmp-eq-${q.id}`">
+                                <template v-if="canManage">
+                                    <input v-model="q.name" type="text" maxlength="80" class="tmp-note tmp-eq-name" :aria-label="`Nom de ${q.name}`" :data-testid="`tmp-eq-name-${q.id}`" />
+                                    <label class="tmp-eq-th">de <input v-model="q.min_c" type="text" inputmode="decimal" class="tmp-eq-num" placeholder="—" :aria-label="`Seuil bas de ${q.name}`" :data-testid="`tmp-eq-min-${q.id}`" /> °C</label>
+                                    <label class="tmp-eq-th">à <input v-model="q.max_c" type="text" inputmode="decimal" class="tmp-eq-num" placeholder="—" :aria-label="`Seuil haut de ${q.name}`" :data-testid="`tmp-eq-max-${q.id}`" /> °C</label>
+                                    <button type="button" class="tmp-btn tmp-btn--small" :data-testid="`tmp-eq-save-${q.id}`" @click="saveEquipment(q)">Enregistrer</button>
+                                    <button type="button" class="tmp-btn tmp-btn--small" :data-testid="`tmp-eq-toggle-${q.id}`" @click="toggleEquipment(q)">{{ q.is_active ? "Masquer" : "Réactiver" }}</button>
+                                </template>
+                                <template v-else>
+                                    <span class="tmp-row-name">{{ q.name }}</span>
+                                    <span class="tmp-limit">{{ limitText({ min_c: thresholdPayload(q.min_c), max_c: thresholdPayload(q.max_c) }) }}</span>
+                                </template>
+                                <span v-if="!q.is_active" class="tmp-hidden-tag">Masqué</span>
+                                <button type="button" class="tmp-link" :aria-expanded="openChanges === q.id ? 'true' : 'false'" :data-testid="`tmp-eq-history-${q.id}`" @click="openChanges = openChanges === q.id ? null : q.id">
+                                    {{ openChanges === q.id ? "▾" : "▸" }} Historique ({{ q.changes_total || 0 }})
+                                </button>
+                                <!-- masquer un équipement qui a un écart du jour ou un suivi ouvert : confirmation EXPLICITE (l'écart ne disparaît pas pour autant) -->
+                                <div v-if="hideTarget === q.id" class="tmp-confirm" role="alertdialog" :aria-labelledby="`tmp-eq-confirm-text-${q.id}`" :data-testid="`tmp-eq-confirm-${q.id}`">
+                                    <p :id="`tmp-eq-confirm-text-${q.id}`">
+                                        « {{ q.name }} » a {{ openIssueText(q) }}. Le masquer ne l'efface pas : l'écart reste compté jusqu'à ce soir et reste au journal.
+                                        Masquer quand même ?
+                                    </p>
+                                    <div class="tmp-done-actions">
+                                        <button type="button" class="tmp-btn tmp-btn--small tmp-btn--danger" :data-testid="`tmp-eq-confirm-go-${q.id}`" @click="doToggleEquipment(q)">Masquer quand même</button>
+                                        <button type="button" class="tmp-btn tmp-btn--small" :data-testid="`tmp-eq-confirm-cancel-${q.id}`" @click="hideTarget = null">Garder</button>
+                                    </div>
+                                </div>
+                                <ul v-if="openChanges === q.id" class="tmp-changes" :data-testid="`tmp-eq-changes-${q.id}`">
+                                    <li v-if="!(q.changes || []).length" class="tmp-muted">Aucun changement tracé (le suivi des changements existe depuis le 18 novembre 2026).</li>
+                                    <li v-for="c in q.changes || []" :key="c.id" :data-testid="`tmp-eq-change-${c.id}`">
+                                        <span class="tmp-row-when">{{ dayHm(c.at) }}</span> <span>{{ c.by || "—" }}</span> · <strong>{{ c.text }}</strong>
+                                    </li>
+                                </ul>
                             </li>
                         </ul>
-                        <div class="tmp-add" data-testid="tmp-add">
+                        <div v-if="canManage" class="tmp-add" data-testid="tmp-add">
                             <input v-model="newEq.name" type="text" maxlength="80" class="tmp-note" placeholder="Nom (ex. Frigo boissons)" aria-label="Nom du nouvel équipement" data-testid="tmp-new-name" />
                             <select v-model="newEq.kind" class="tmp-select" aria-label="Type" data-testid="tmp-new-kind">
                                 <option v-for="k in kinds" :key="k.key" :value="k.key">{{ k.label }}</option>
@@ -291,8 +355,12 @@ export default {
             setup: { fridge: 4, freezer: 2, cold_room: 0, display: 0, hot_holding: 0 },
             charts: {},
             history: [],
+            historyMeta: {},
+            historyEquipment: null,
             showHistory: false,
             alertsOnly: false,
+            hideTarget: null,
+            openChanges: null,
             manage: false,
             newEq: { name: "", kind: "fridge" },
             voidTarget: null,
@@ -306,6 +374,13 @@ export default {
     },
     computed: {
         summary() { return this.meta.summary || { todo: 0, ok: 0, alert: 0, total: 0 }; },
+        /** Les équipements relevés aujourd'hui (les masqués du jour avec un écart restent affichés, mais ne sont plus à relever). */
+        activeItems() { return this.items.filter((e) => !e.hidden_today); },
+        /** Droit de structure (créer, masquer, seuils) dit par le SERVEUR ; absent (ancien serveur) = permis, le serveur refuse de toute façon. */
+        canManage() { return this.meta.can_manage !== false; },
+        /** Rien à valider et aucun refus à lire : la barre n'a pas à rester collée en bas de l'écran. */
+        barIdle() { return this.pendingList.length === 0 && !this.formError && !this.saving; },
+        historyEquipmentOptions() { return this.equipment.length ? this.equipment : this.items; },
         kinds() { return this.meta.kinds || []; },
         actions() { return this.meta.corrective_actions || []; },
         setupKinds() {
@@ -349,6 +424,10 @@ export default {
         todoWithoutEntry() {
             return this.items.filter((e) => !this.entries[e.id] && !e.done_this_period && !this.queuedFor(e)).length;
         },
+    },
+    watch: {
+        /** filtre du journal par équipement : relu dès que le choix change */
+        historyEquipment() { if (this.showHistory) this.loadHistory(); },
     },
     created() {
         this.loadToday();
@@ -478,7 +557,11 @@ export default {
         rawError(e) {
             const entry = this.entries[e.id];
             if (!entry || String(entry.raw).trim() === "") return "";
-            return parseTemperature(entry.raw) === null ? "Valeur illisible : tapez les chiffres (ex. 3 ou 3,5), le signe se règle avec le bouton ±." : "";
+            if (parseTemperature(entry.raw) !== null) return "";
+            // « 150 » est lisible : c'est la PLAGE qui est dépassée (au-delà de 99,9 °C), pas l'écriture
+            return parseTemperature(entry.raw, 4) !== null
+                ? `${String(entry.raw).trim()} °C est au-delà de la plage plausible : faute de frappe ?`
+                : "Valeur illisible : tapez les chiffres (ex. 3 ou 3,5), le signe se règle avec le bouton ±.";
         },
         /** Température signée prête à envoyer, ou null tant que la saisie est vide/illisible. */
         valueOf(e) {
@@ -514,9 +597,9 @@ export default {
                 const server = Date.parse(this.meta.server_now);
                 if (Number.isFinite(server)) this.serverOffsetMs = server - Date.now();
                 // une saisie en cours pour un équipement disparu n'a plus de carte
-                const ids = new Set(this.items.map((i) => i.id));
+                const ids = new Set(this.activeItems.map((i) => i.id));
                 this.entries = Object.fromEntries(Object.entries(this.entries).filter(([id]) => ids.has(Number(id))));
-                if (!this.items.length) {
+                if (!this.activeItems.length) {
                     // des équipements existent peut-être, tous masqués : pas de « démarrage » dans ce cas
                     const all = loadedBody(await axios.get("admin/hygiene/temperature/equipment"));
                     this.manageHasRows = all.data.length > 0;
@@ -532,8 +615,12 @@ export default {
         async loadHistory() {
             const id = historySeq.next();
             try {
-                const data = loadedBody(await axios.get("admin/hygiene/temperature/history", { params: { alerts_only: this.alertsOnly ? 1 : 0, limit: 200 } })); // [VG-2026-10-21 M8-103]
-                if (historySeq.isCurrent(id)) this.history = data.data;
+                const params = { alerts_only: this.alertsOnly ? 1 : 0, limit: 200, ...(this.historyEquipment ? { equipment_id: this.historyEquipment } : {}) };
+                const data = loadedBody(await axios.get("admin/hygiene/temperature/history", { params })); // [VG-2026-10-21 M8-103]
+                if (historySeq.isCurrent(id)) {
+                    this.history = data.data;
+                    this.historyMeta = data.meta || {};
+                }
             } catch (e) {
                 alertService.error(this.apiMessage(e, "Journal indisponible."));
             }
@@ -712,7 +799,8 @@ export default {
             const max = this.thresholdPayload(q.max_c);
             if (Number.isNaN(min) || Number.isNaN(max)) {
                 // jamais envoyé comme « aucun seuil » : NaN serait sérialisé en null et désarmerait silencieusement le contrôle
-                alertService.error(`Seuil illisible pour « ${q.name.trim()} » : tapez un nombre (ex. 4 ou −18), ou laissez vide pour aucun seuil.`);
+                // [P2] plus de « ou laissez vide pour aucun seuil » : le serveur refuse le vide là où le seuil protège (seuil haut du froid, seuil bas du chaud)
+                alertService.error(`Seuil illisible pour « ${q.name.trim()} » : tapez un nombre (ex. 4 ou −18).`);
                 return;
             }
             try {
@@ -725,7 +813,24 @@ export default {
                 alertService.error(this.apiMessage(e, "Enregistrement impossible."));
             }
         },
-        async toggleEquipment(q) {
+        /** Écart du jour (dernier relevé) ou suivi ouvert : ce que masquer ne doit pas faire oublier. */
+        openIssue(q) {
+            const it = this.items.find((i) => i.id === q.id);
+            if (!it) return null;
+            const alert = Boolean(it.last_today && it.last_today.status === "alert");
+            return alert || it.followup ? { alert, followup: Boolean(it.followup) } : null;
+        },
+        openIssueText(q) {
+            const o = this.openIssue(q) || {};
+            return [o.alert ? "un écart aujourd'hui" : "", o.followup ? "une nouvelle mesure attendue après un écart" : ""].filter(Boolean).join(" et ") || "un écart en cours";
+        },
+        /** [2026-11-18 · P1-3] Masquer un équipement qui a un écart du jour ou un suivi ouvert demande une confirmation explicite. */
+        toggleEquipment(q) {
+            if (q.is_active && this.openIssue(q)) { this.hideTarget = q.id; return; }
+            return this.doToggleEquipment(q);
+        },
+        async doToggleEquipment(q) {
+            this.hideTarget = null;
             try {
                 savedBody(await axios.put(`admin/hygiene/temperature/equipment/${q.id}`, { is_active: !q.is_active })); // [VG-2026-10-21 M8-101]
                 await Promise.all([this.loadEquipment(), this.loadToday()]);
@@ -817,8 +922,28 @@ export default {
 .tmp-void { border-top: 1px solid #fecaca; padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
 
 .tmp-bar { color: #111827; position: sticky; bottom: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-top: 14px; padding: 12px; background: #fff; border: 2px solid #111827; border-radius: 14px; box-shadow: 0 -6px 18px rgba(15, 23, 42, .12); }
+/* rien à valider : la barre reprend sa place dans la page (collée, elle recouvrait « Annuler le relevé / Garder » et la gestion des équipements) */
+.tmp-bar.is-idle { position: static; box-shadow: none; border-color: #cbd5e1; }
 .tmp-bar-text { font-size: 17px; }
 .tmp-bar-warn { color: #b91c1c; font-weight: 800; }
+.tmp-short { display: none; }
+/* Téléphone : UNE ligne compacte (176 à 290 px de haut avant), cibles de 44 px gardées */
+@media (max-width: 599.98px) {
+    .tmp-bar { flex-wrap: wrap; gap: 6px; padding: 6px 8px; margin-top: 10px; border-radius: 12px; }
+    .tmp-bar-text { font-size: 15px; flex: 0 1 auto; }
+    .tmp-bar .tmp-btn { min-height: 44px; padding: 0 10px; font-size: 15px; flex: 0 0 auto; }
+    .tmp-long { display: none; }
+    .tmp-short { display: inline; }
+}
+.tmp-hidden-note { margin: 0; padding: 6px 10px; border-radius: 10px; background: #fff7ed; border: 1px solid #fdba74; color: #7c2d12; font-weight: 700; font-size: 14px; }
+.tmp-closed { color: #334155; font-weight: 600; }
+.tmp-confirm { flex: 1 1 100%; border: 2px solid #f59e0b; background: #fffbeb; color: #78350f; border-radius: 10px; padding: 8px 10px; }
+.tmp-confirm p { margin: 0; font-weight: 600; }
+.tmp-changes { flex: 1 1 100%; list-style: none; margin: 0; padding: 6px 0 0; border-top: 1px dashed #cbd5e1; display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: #334155; }
+.tmp-hidden-tag { background: #f1f5f9; color: #475569; border-radius: 8px; padding: 2px 8px; font-weight: 700; font-size: 13px; }
+.tmp-history-filters { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+.tmp-history-window { color: #475569; font-size: 14px; margin: 4px 0 8px; }
+.tmp-void-tag { color: #7f1d1d; font-weight: 700; font-size: 14px; }
 
 .tmp-btn { min-height: 52px; padding: 0 18px; border-radius: 12px; border: 2px solid #cbd5e1; background: #fff; font-size: 16px; font-weight: 800; cursor: pointer; }
 .tmp-btn:disabled { opacity: .45; cursor: not-allowed; }
@@ -832,8 +957,11 @@ export default {
 .tmp-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .tmp-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
 .tmp-row.is-alert { border-color: #fecaca; background: #fef2f2; }
-.tmp-row.is-void { opacity: .55; text-decoration: line-through; }
+/* relevé annulé : lisible (contraste AA), seule la VALEUR est barrée ; qui et quand l'a annulé est écrit en toutes lettres */
+.tmp-row.is-void { background: #f8fafc; border-style: dashed; }
+.tmp-row.is-void .tmp-row-value { text-decoration: line-through; color: #64748b; }
 .tmp-row--edit { text-decoration: none; }
+.tmp-row--edit.is-hidden { background: #f8fafc; }
 .tmp-row-when { color: #64748b; min-width: 100px; }
 .tmp-row-name { font-weight: 700; min-width: 120px; }
 .tmp-row-meta { color: #475569; font-size: 14px; flex: 1; min-width: 200px; }

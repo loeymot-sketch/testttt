@@ -32,7 +32,10 @@ abstract class HygieneController extends AdminController
 
     protected function clock(): array
     {
-        return ['server_now' => now()->toIso8601String(), 'timezone' => config('app.timezone')];
+        // `can_manage` : le compte peut-il modifier la structure (plan, friteuses, équipements) ? Même règle que le serveur
+        // applique (StructureAccess) : l'écran n'a pas à deviner à partir d'une liste de droits.
+        return ['server_now' => now()->toIso8601String(), 'timezone' => config('app.timezone'),
+            'can_manage' => \App\Services\Hygiene\StructureAccess::allows(request()->user())];
     }
 
     protected function isUniqueViolation(QueryException $e): bool

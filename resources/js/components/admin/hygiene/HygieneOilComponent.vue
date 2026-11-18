@@ -12,13 +12,14 @@
 
                 <!-- ── Démarrage : « j'ai 2 friteuses » ───────────────────────────────────────── -->
                 <div v-else-if="loaded && !items.length && !manageHasRows" class="hy-card" style="background:#f8fafc;border-style:dashed" data-testid="oil-setup">
-                    <p><strong>Aucune friteuse pour l'instant.</strong> Dites combien vous en avez : elles sont créées d'un coup, vous pourrez les renommer ensuite.</p>
-                    <div class="hy-measure" style="max-width:320px">
+                    <p v-if="!canManage" data-testid="oil-setup-readonly"><strong>Aucune friteuse pour l'instant.</strong> Un responsable doit d'abord déclarer les friteuses du restaurant.</p>
+                    <p v-else><strong>Aucune friteuse pour l'instant.</strong> Dites combien vous en avez : elles sont créées d'un coup, vous pourrez les renommer ensuite.</p>
+                    <div v-if="canManage" class="hy-measure" style="max-width:320px">
                         <button type="button" class="hy-sign" aria-label="Une friteuse de moins" data-testid="oil-setup-minus" @click="setupCount = Math.max(1, setupCount - 1)">−</button>
                         <strong class="hy-measure-input" style="display:flex;align-items:center;justify-content:center" data-testid="oil-setup-count">{{ setupCount }}</strong>
                         <button type="button" class="hy-sign" aria-label="Une friteuse de plus" data-testid="oil-setup-plus" @click="setupCount = Math.min(12, setupCount + 1)">+</button>
                     </div>
-                    <button type="button" class="hy-btn hy-btn--primary" :disabled="saving" data-testid="oil-setup-go" @click="quickSetup">
+                    <button v-if="canManage" type="button" class="hy-btn hy-btn--primary" :disabled="saving" data-testid="oil-setup-go" @click="quickSetup">
                         {{ saving ? "Création…" : `Créer ${setupCount} friteuse${setupCount > 1 ? "s" : ""}` }}
                     </button>
                 </div>
@@ -40,6 +41,11 @@
                     </div>
 
                     <!-- ── Aujourd'hui ─────────────────────────────────────────────────────────── -->
+                    <p v-if="tab === 'today' && !items.length" class="hy-note" data-testid="oil-today-none">
+                        Aucune friteuse active : elles sont toutes masquées.
+                        <template v-if="canManage">Réactivez-en une dans l'onglet « Friteuses » pour la tester ici.</template>
+                        <template v-else>Demandez à un responsable d'en réactiver une.</template>
+                    </p>
                     <div v-if="tab === 'today'" class="hy-grid">
                         <div v-for="f in items" :key="f.id" class="hy-card" :class="cardClass(f)" :data-testid="`oil-card-${f.id}`">
                             <div class="hy-card-head">
@@ -106,7 +112,8 @@
                             <ul v-if="f.today.length" class="hy-list">
                                 <li v-for="t in f.today" :key="t.id" class="hy-row" :class="{ 'is-alert': t.status === 'alert' && !t.voided, 'is-void': t.voided }">
                                     <span class="hy-row-when">{{ hm(t.performed_at) }}</span>
-                                    <span class="hy-row-meta">{{ describe(t) }}<template v-if="t.operator_name"> · {{ t.operator_name }}</template><template v-if="t.voided"> · ANNULÉ : {{ t.void_reason }}</template></span>
+                                    <span class="hy-row-meta">{{ describe(t) }}<template v-if="correctiveText(t)"> — {{ correctiveText(t) }}</template><template v-if="t.operator_name"> · {{ t.operator_name }}</template><template v-if="t.voided"> · ANNULÉ : {{ t.void_reason }}</template></span>
+                                    <HygienePhotoView v-if="t.attachment_id" :id="t.attachment_id" label="📷 Voir" />
                                     <button v-if="!t.voided && voidTarget !== t.id" type="button" class="hy-btn hy-btn--small" :data-testid="`oil-void-${t.id}`" @click="voidTarget = t.id; voidReason = ''">Annuler</button>
                                     <span v-if="voidTarget === t.id" class="hy-field" style="flex:1 1 100%">
                                         <input v-model="voidReason" class="hy-input" maxlength="120" placeholder="Pourquoi annuler ? (obligatoire)" aria-label="Motif d'annulation" :data-testid="`oil-void-reason-${t.id}`" />
@@ -130,21 +137,26 @@
                             <li v-for="h in history" :key="h.id" class="hy-row" :class="{ 'is-alert': h.status === 'alert' && !h.voided, 'is-void': h.voided }">
                                 <span class="hy-row-when">{{ dayHm(h.performed_at) }}</span>
                                 <span class="hy-row-name">{{ h.equipment_name }}</span>
-                                <span class="hy-row-meta">{{ describe(h) }}<template v-if="h.corrective_label"> — {{ h.corrective_label }}</template><template v-if="h.operator_name"> · {{ h.operator_name }}</template><template v-if="h.voided"> · ANNULÉ : {{ h.void_reason }}</template></span>
+                                <span class="hy-row-meta">{{ describe(h) }}<template v-if="correctiveText(h)"> — {{ correctiveText(h) }}</template><template v-if="h.operator_name"> · {{ h.operator_name }}</template><template v-if="h.voided"> · ANNULÉ : {{ h.void_reason }}</template></span>
+                                <HygienePhotoView v-if="h.attachment_id" :id="h.attachment_id" label="📷 Voir" />
                             </li>
                         </ul>
                     </template>
 
                     <!-- ── Friteuses ──────────────────────────────────────────────────────────── -->
                     <template v-if="tab === 'fryers'">
+                        <p v-if="!canManage" class="hy-note" data-testid="oil-fryers-readonly">Les friteuses sont déclarées par un responsable : vous pouvez les consulter, et faire les tests, filtrages et vidanges.</p>
                         <ul class="hy-list">
                             <li v-for="q in fryers" :key="q.id" class="hy-row" :class="{ 'is-void': !q.is_active }" :data-testid="`oil-fryer-${q.id}`">
-                                <input v-model="q.name" class="hy-input" style="max-width:260px" maxlength="80" :aria-label="`Nom de ${q.name}`" :data-testid="`oil-fryer-name-${q.id}`" />
-                                <button type="button" class="hy-btn hy-btn--small" :data-testid="`oil-fryer-save-${q.id}`" @click="saveFryer(q)">Enregistrer</button>
-                                <button type="button" class="hy-btn hy-btn--small" @click="toggleFryer(q)">{{ q.is_active ? "Masquer" : "Réactiver" }}</button>
+                                <template v-if="canManage">
+                                    <input v-model="q.name" class="hy-input" style="max-width:260px" maxlength="80" :aria-label="`Nom de ${q.name}`" :data-testid="`oil-fryer-name-${q.id}`" />
+                                    <button type="button" class="hy-btn hy-btn--small" :data-testid="`oil-fryer-save-${q.id}`" @click="saveFryer(q)">Enregistrer</button>
+                                    <button type="button" class="hy-btn hy-btn--small" :data-testid="`oil-fryer-toggle-${q.id}`" @click="toggleFryer(q)">{{ q.is_active ? "Masquer" : "Réactiver" }}</button>
+                                </template>
+                                <span v-else class="hy-row-name">{{ q.name }}<template v-if="!q.is_active"> (masquée)</template></span>
                             </li>
                         </ul>
-                        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+                        <div v-if="canManage" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
                             <input v-model="newFryer" class="hy-input" style="max-width:260px" maxlength="80" placeholder="Nom de la nouvelle friteuse" aria-label="Nouvelle friteuse" data-testid="oil-new-name" />
                             <button type="button" class="hy-btn hy-btn--small hy-btn--primary" :disabled="saving || !newFryer.trim()" data-testid="oil-new-add" @click="addFryer">＋ Ajouter</button>
                         </div>
@@ -167,16 +179,24 @@ import alertService from "../../../services/alertService";
 import HygieneOperatorPicker from "./HygieneOperatorPicker";
 import HygieneMeasureInput from "./HygieneMeasureInput";
 import HygienePhotoField from "./HygienePhotoField";
+import HygienePhotoView from "./HygienePhotoView";
+import { hasPermissionAccess } from "../../../shared/permission-match";
 import { apiMessage, formatHm, formatDayHm, formatDay, newClientRef, refFor, latest, loadedBody, savedBody, loadFailedText } from "../../../helpers/hygieneCommon";
 import hygieneRefresh from "../../../helpers/hygieneRefresh";
 import { parseTemperature, formatTemperature } from "../../../helpers/hygieneTemperature";
 
 const historySeq = latest();
 
+/** Un refus de droit (403) dit QUI peut le faire, jamais un message technique. */
+function rightsMessage(e, fallback) {
+    if (e && e.response && e.response.status === 403) return "Réservé à un responsable : demandez-lui de gérer les friteuses.";
+    return apiMessage(e, fallback);
+}
+
 export default {
     name: "HygieneOilComponent",
     mixins: [hygieneRefresh],
-    components: { HygieneHubBar, HygieneOperatorPicker, HygieneMeasureInput, HygienePhotoField },
+    components: { HygieneHubBar, HygieneOperatorPicker, HygieneMeasureInput, HygienePhotoField, HygienePhotoView },
     data() {
         return {
             items: [], fryers: [], history: [],
@@ -193,6 +213,14 @@ export default {
         actions() { return this.meta.corrective_actions || []; },
         tabs() { return [{ key: "today", label: "Aujourd'hui" }, { key: "journal", label: "Journal" }, { key: "fryers", label: "Friteuses" }]; },
         todayLabel() { return formatDay(this.meta.server_now || new Date().toISOString(), this.meta.timezone); },
+        /** [AUDIT E2E 2026-11-18 · P0 droits] Gérer les friteuses : le droit que le SERVEUR exige (`settings`, comme Équipe et Alertes). Droits pas encore chargés : on propose. */
+        canManage() {
+            // Le serveur dit qui peut gérer la structure (`meta.can_manage`, règle StructureAccess : droit « Paramètres »
+            // OU rôle de responsable). Tant que la réponse n'est pas arrivée : repli sur la liste de droits.
+            if (this.meta && typeof this.meta.can_manage === "boolean") return this.meta.can_manage;
+            const perms = "$store" in this && this.$store.getters ? this.$store.getters.authPermission : null;
+            return hasPermissionAccess(perms, "settings");
+        },
     },
     created() { this.load(); },
     methods: {
@@ -208,6 +236,11 @@ export default {
             if (f.days_since_change === null) return "Aucune vidange enregistrée";
             if (f.days_since_change === 0) return "Huile changée aujourd'hui";
             return `Huile changée il y a ${f.days_since_change} jour${f.days_since_change > 1 ? "s" : ""}`;
+        },
+        /** [AUDIT E2E 2026-11-18 · P2] l'action corrective ET sa précision (« Autre (à préciser) — … ») partout où la ligne est lue. */
+        correctiveText(t) {
+            if (!t.corrective_label) return "";
+            return t.corrective_note ? `${t.corrective_label} : ${t.corrective_note}` : t.corrective_label;
         },
         describe(t) {
             if (t.type === "test") return `Test : ${this.pct(t.polar_pct)} % de composés polaires${t.bath_temp_c !== null ? ` · bain ${this.num(t.bath_temp_c)} °C` : ""}`;
@@ -242,7 +275,7 @@ export default {
                 savedBody(await axios.post("admin/hygiene/oil/fryers/quick-setup", { count: this.setupCount })); // [VG-2026-10-21 M8-101]
                 await this.load();
             } catch (e) {
-                this.loadError = apiMessage(e, "Création impossible. Vérifiez la connexion puis réessayez.");
+                this.loadError = rightsMessage(e, "Création impossible. Vérifiez la connexion puis réessayez.");
             } finally {
                 this.saving = false;
             }
@@ -360,7 +393,7 @@ export default {
                 await Promise.all([this.loadFryers(), this.load()]);
                 alertService.success(`« ${q.name.trim()} » enregistrée.`);
             } catch (e) {
-                alertService.error(apiMessage(e, "Enregistrement impossible."));
+                alertService.error(rightsMessage(e, "Enregistrement impossible."));
             }
         },
         async toggleFryer(q) {
@@ -368,7 +401,7 @@ export default {
                 savedBody(await axios.put(`admin/hygiene/oil/fryers/${q.id}`, { is_active: !q.is_active })); // [VG-2026-10-21 M8-101]
                 await Promise.all([this.loadFryers(), this.load()]);
             } catch (e) {
-                alertService.error(apiMessage(e, "Modification impossible."));
+                alertService.error(rightsMessage(e, "Modification impossible."));
             }
         },
         async addFryer() {
@@ -379,7 +412,7 @@ export default {
                 this.newFryer = "";
                 await Promise.all([this.loadFryers(), this.load()]);
             } catch (e) {
-                alertService.error(apiMessage(e, "Ajout impossible."));
+                alertService.error(rightsMessage(e, "Ajout impossible."));
             } finally {
                 this.saving = false;
             }

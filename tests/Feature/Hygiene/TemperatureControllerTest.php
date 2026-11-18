@@ -37,7 +37,9 @@ class TemperatureControllerTest extends TestCase
         parent::tearDown();
     }
 
-    private function staff(int $branch = 1, array $perms = ['pos-orders']): User
+    // [2026-11-18 · P1-3] la STRUCTURE (équipements, seuils, masquage) exige `settings` : le compte de ces tests est celui du responsable. Que le
+    // caissier (pos-orders seul) saisisse sans toucher à la structure est prouvé dans TemperatureAuditFixes20261118Test.
+    private function staff(int $branch = 1, array $perms = ['pos-orders', 'settings']): User
     {
         $user = User::factory()->create(['branch_id' => $branch, 'name' => 'Karim Test']);
         $user->givePermissionTo($perms);
@@ -460,8 +462,12 @@ class TemperatureControllerTest extends TestCase
         $this->staff();
         $this->postJson(self::BASE.'/equipment/quick-setup', ['hot_holding' => 1, 'fridge' => 1])->assertCreated();
         $this->postJson(self::BASE.'/readings', $this->readings(['Bain-marie' => 95]))->assertCreated();   // 95 °C : un bain-marie bouillant, plausible
-        $r = $this->postJson(self::BASE.'/readings', $this->readings(['Bain-marie' => 5]))->assertStatus(422);  // 5 °C : un thermomètre de frigo
+        // [2026-11-18 · P1-2] un bain-marie ÉTEINT est à température ambiante (5, 15 °C…) : c'est un écart réel, plus une « faute de frappe ».
+        // La plage plausible part de 0 °C ; en dessous (ou au-delà de 99,9 °C), le relevé reste refusé et le message dit la plage.
+        $r = $this->postJson(self::BASE.'/readings', $this->readings(['Bain-marie' => -5]))->assertStatus(422);
         $this->assertStringContainsString('équipement chaud', json_encode($r->json('errors'), JSON_UNESCAPED_UNICODE));
+        $this->postJson(self::BASE.'/readings', $this->readings(['Bain-marie' => 150]))->assertStatus(422);
+        $this->postJson(self::BASE.'/readings', $this->readings(['Bain-marie' => ['value' => 5, 'corrective_action' => 'products_discarded']]))->assertCreated();
         // et 95 °C reste absurde pour un frigo
         $f = $this->postJson(self::BASE.'/readings', $this->readings(['Frigo' => 95]))->assertStatus(422);
         $this->assertStringContainsString('enceinte froide', json_encode($f->json('errors'), JSON_UNESCAPED_UNICODE));

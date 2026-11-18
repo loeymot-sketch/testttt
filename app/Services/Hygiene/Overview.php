@@ -52,12 +52,12 @@ final class Overview
         'reception' => 'Réceptionner une livraison', 'trace' => 'Tracer un produit', 'oil' => 'Tester l’huile',
     ];
 
-    private function tile(string $key, string $label, string $icon, string $status, string $headline, string $detail = '', array $counts = []): array
+    private function tile(string $key, string $label, string $icon, string $status, string $headline, string $detail = '', array $counts = [], ?string $cta = null): array
     {
         return [
             'key' => $key, 'label' => $label, 'icon' => $icon, 'route' => $key === 'dlc' ? '/admin/labels/dlc' : '/admin/hygiene/'.$key, 'status' => $status,
             'headline' => $headline, 'detail' => $detail, 'counts' => $counts,
-            'cta' => $status === 'empty' ? 'Configurer' : (self::CTA[$key] ?? 'Ouvrir'),
+            'cta' => $cta ?? ($status === 'empty' ? 'Configurer' : (self::CTA[$key] ?? 'Ouvrir')),
         ];
     }
 
@@ -68,24 +68,56 @@ final class Overview
 
     private function temperature(): array
     {
-        $start = now()->startOfDay();
-        $equipments = HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->where('is_active', true)->get(['id']);
-        if ($equipments->isEmpty()) {
-            return $this->tile('temperature', 'Températures', 'fa-solid fa-temperature-half', 'empty', 'À configurer', 'Frigos et congélateurs');
-        }
-        $last = HygieneTemperatureReading::query()->whereNull('voided_at')->where('recorded_at', '>=', $start)->whereIn('equipment_id', $equipments->pluck('id'))
-            ->orderBy('recorded_at')->orderBy('id')->get()->groupBy('equipment_id')->map->last();
-        $total = $equipments->count();
-        $done = $last->count();
-        $alerts = $last->where('status', 'alert')->count();
+        $now = now();
+        $start = $now->copy()->startOfDay();
+        $kinds = Kinds::keys('temperature');
+        $equipments = HygieneEquipment::query()->whereIn('kind', $kinds)->where('is_active', true)->get(['id']);
+        // [2026-11-18 · audit E2E P1-3] un équipement masqué (ou supprimé) AUJOURD'HUI garde son écart du jour dans la tuile jusqu'à ce soir : « Masquer »
+        // ne doit pas faire passer « 3/3 · 2 écarts » à « 2/2 · 1 écart » sans motif. Il n'est plus « à relever » (plus attendu).
+        $hiddenIds = HygieneEquipment::query()->withTrashed()->whereIn('kind', $kinds)->hiddenSince($start)->pluck('id')->diff($equipments->pluck('id'))->values();
+        $ids = $equipments->pluck('id')->merge($hiddenIds)->values();
+        $rows = HygieneTemperatureReading::query()->whereNull('voided_at')->where('recorded_at', '>=', $start)->whereIn('equipment_id', $ids)
+            ->orderBy('recorded_at')->orderBy('id')->get()->groupBy('equipment_id');
+        $alertIds = $rows->filter(fn ($r) => $r->last()->status === 'alert')->keys();
+        $alerts = $alertIds->count();
+        $hiddenAlerts = $alertIds->intersect($hiddenIds)->count();
         // Écart traité mais PAS encore prouvé : la nouvelle mesure est attendue (même source que l'écran des relevés et les rappels). Tant qu'elle
         // manque, « tout est relevé » serait faux : la tuile reste « à faire » (elle passe en alerte quand l'échéance est dépassée, par le rappel).
-        $followups = TemperatureFollowUp::pending($equipments->pluck('id')->all());
-        $status = $alerts > 0 ? 'alert' : ($done < $total || $followups !== [] ? 'todo' : 'ok');
-        $due = $followups === [] ? null : \Carbon\Carbon::parse(collect($followups)->min('due_at'))->setTimezone(now()->getTimezone())->format('H:i');
-        $detail = $alerts > 0 ? $this->plural($alerts, 'écart') : ($done < $total ? ($total - $done).' à relever' : ($followups !== [] ? 'Nouvelle mesure à faire avant '.$due : 'Tout est relevé'));
+        $followups = TemperatureFollowUp::pending($ids->all(), $now);
 
-        return $this->tile('temperature', 'Températures', 'fa-solid fa-temperature-half', $status, "$done/$total relevés", $detail, ['done' => $done, 'total' => $total, 'alerts' => $alerts, 'followups' => count($followups)]);
+        if ($equipments->isEmpty() && $alerts === 0 && $followups === []) {
+            // [P2] tous masqués : le MÊME message que l'écran des relevés (« réactivez-en un »), pas « Créer mes équipements » qui en créerait de nouveaux
+            if (HygieneEquipment::query()->whereIn('kind', $kinds)->exists()) {
+                return $this->tile('temperature', 'Températures', 'fa-solid fa-temperature-half', 'empty', 'Tous masqués', 'Réactivez un équipement dans « Équipements »', [], 'Réactiver un équipement');
+            }
+
+            return $this->tile('temperature', 'Températures', 'fa-solid fa-temperature-half', 'empty', 'À configurer', 'Frigos et congélateurs');
+        }
+
+        // [2026-11-18 · audit E2E P1-5] « à relever » = non relevé pour le moment EN COURS (une règle : TemperatureRules::isDue, la même que l'écran).
+        // Un restaurant qui relève matin ET soir voit les deux : « Matin 3/3 · Soir 0/3 ».
+        $period = TemperatureRules::periodFor($now);
+        $evening = TemperatureRules::eveningExpected($now);
+        $total = $equipments->count();
+        $due = $morningDone = $eveningDone = 0;
+        foreach ($equipments as $e) {
+            $periods = $rows->get($e->id, collect())->pluck('period');
+            // « Matin x/n » : relevé le matin, ou (restaurant qui ne relève qu'une fois) n'importe quand dans la journée.
+            if ($evening ? $periods->contains('morning') : $periods->isNotEmpty()) $morningDone++;
+            if ($periods->contains('evening')) $eveningDone++;
+            if (TemperatureRules::isDue($period, $evening, $periods)) $due++;
+        }
+        $done = $total - $due;
+        $status = $alerts > 0 ? 'alert' : ($due > 0 || $followups !== [] ? 'todo' : 'ok');
+        $at = $followups === [] ? null : \Carbon\Carbon::parse(collect($followups)->min('due_at'))->setTimezone($now->getTimezone())->format('H:i');
+        $detail = $alerts > 0 ? $this->plural($alerts, 'écart').($hiddenAlerts > 0 ? ' (dont '.$hiddenAlerts.' sur un équipement masqué)' : '')
+            : ($due > 0 ? $due.' à relever'.($period === 'evening' && $evening ? ' ce soir' : '') : ($followups !== [] ? 'Nouvelle mesure à faire avant '.$at : 'Tout est relevé'));
+        $headline = $evening ? "Matin $morningDone/$total · Soir $eveningDone/$total" : "$done/$total relevés";
+
+        return $this->tile('temperature', 'Températures', 'fa-solid fa-temperature-half', $status, $headline, $detail, [
+            'done' => $done, 'total' => $total, 'alerts' => $alerts, 'followups' => count($followups), 'hidden_alerts' => $hiddenAlerts,
+            'period' => $period, 'evening_expected' => $evening, 'morning_done' => $morningDone, 'evening_done' => $eveningDone,
+        ]);
     }
 
     private function tasks(): array

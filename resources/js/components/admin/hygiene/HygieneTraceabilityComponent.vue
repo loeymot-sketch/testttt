@@ -84,7 +84,15 @@
                             </div>
 
                             <p v-if="form.error" class="hy-alert" role="alert" data-testid="trc-form-error">{{ form.error }}</p>
-                            <div style="display:flex;gap:8px;flex-wrap:wrap">
+                            <div v-if="form.duplicate" class="hy-card is-partial" role="alert" data-testid="trc-dup">
+                                <strong>Ce lot est déjà tracé {{ form.duplicate.when }} pour ce produit.</strong>
+                                <span class="hy-sub">Enregistrer une seconde ligne quand même (autre colis du même lot, par exemple) ?</span>
+                                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                                    <button type="button" class="hy-btn hy-btn--primary" :disabled="saving" data-testid="trc-dup-confirm" @click="confirmDuplicate">Enregistrer quand même</button>
+                                    <button type="button" class="hy-btn" data-testid="trc-dup-cancel" @click="form.duplicate = null">Ne pas enregistrer</button>
+                                </div>
+                            </div>
+                            <div v-else style="display:flex;gap:8px;flex-wrap:wrap">
                                 <button type="button" class="hy-btn hy-btn--primary" :disabled="saving || !canSubmit" data-testid="trc-submit" @click="submit">{{ saving ? "Enregistrement…" : "Enregistrer" }}</button>
                                 <button type="button" class="hy-btn" data-testid="trc-cancel" @click="form = null">Abandonner la saisie</button>
                             </div>
@@ -132,11 +140,12 @@
                             <li v-for="h in history" :key="h.id" class="hy-row" :class="{ 'is-alert': h.status === 'alert' && !h.voided, 'is-void': h.voided }">
                                 <span class="hy-row-when">{{ dayHm(h.traced_at) }}</span>
                                 <span class="hy-row-name">{{ h.product_name }}</span>
-                                <span class="hy-row-meta">
-                                    <template v-if="h.lot">Lot {{ h.lot }} · </template><template v-if="h.dlc_date">{{ day(h.dlc_date) }} · </template>
+                                <span class="hy-row-meta" :data-testid="`trc-history-meta-${h.id}`">
+                                    <template v-if="h.lot">Lot {{ h.lot }} · </template><template v-if="h.dlc_date">{{ kindText(h.dlc_kind) }} {{ day(h.dlc_date) }} · </template>
                                     <template v-if="h.supplier_name">{{ h.supplier_name }} · </template>{{ h.operator_name }}
                                     <template v-if="h.note"> · « {{ h.note }} »</template><template v-if="h.voided"> · ANNULÉ : {{ h.void_reason }}</template>
                                 </span>
+                                <HygienePhotoView v-if="h.attachment_id" :id="h.attachment_id" label="📷 Voir l'étiquette" />
                             </li>
                         </ul>
                     </template>
@@ -150,21 +159,34 @@
                             <button v-if="recall" type="button" class="hy-btn" data-testid="trc-recall-print" @click="printSheet">🖨 Imprimer la fiche</button>
                         </div>
                         <p v-if="recallError" class="hy-alert" role="alert" data-testid="trc-recall-error">{{ recallError }}</p>
-                        <div v-if="recall" data-testid="trc-recall">
+                        <div v-if="recall" class="trc-print-area" data-testid="trc-recall">
+                            <!-- [2026-11-18 audit P2-g] en-tête imprimé seulement : restaurant, date et heure d'édition -->
+                            <p class="trc-print-only trc-print-head" data-testid="trc-print-head"><template v-if="restaurantName"><strong>{{ restaurantName }}</strong> · </template>Fiche éditée le {{ printedAtText }}</p>
                             <h4 class="hy-h hy-h--big">Fiche de rappel — lot {{ recall.lot }}</h4>
                             <p class="hy-note" v-if="!recall.entries.length && !recall.receptions.length && !recall.labels.length" data-testid="trc-recall-none">Aucune trace de ce lot. Vérifiez l'écriture du numéro, ou cherchez une partie du lot dans l'onglet Journal.</p>
                             <template v-else>
-                                <p class="hy-sub" data-testid="trc-recall-sum">{{ recall.entries.length }} entrée{{ recall.entries.length > 1 ? "s" : "" }} · {{ recall.receptions.length }} livraison{{ recall.receptions.length > 1 ? "s" : "" }} · {{ recall.labels.length }} étiquette{{ recall.labels.length > 1 ? "s" : "" }} de préparation</p>
+                                <p class="hy-sub" data-testid="trc-recall-sum">{{ recall.entries.length }} entrée{{ recall.entries.length > 1 ? "s" : "" }} · {{ recall.receptions.length }} livraison{{ recall.receptions.length > 1 ? "s" : "" }}<template v-if="voidedReceptions"> (dont {{ voidedReceptions }} annulée{{ voidedReceptions > 1 ? "s" : "" }})</template> · {{ recall.labels.length }} étiquette{{ recall.labels.length > 1 ? "s" : "" }} de préparation</p>
                                 <h5 v-if="recall.entries.length" class="hy-h">Produit tracé</h5>
-                                <ul class="hy-list"><li v-for="e in recall.entries" :key="`e${e.id}`" class="hy-row">{{ dayHm(e.traced_at) }} · <strong>{{ e.product_name }}</strong> · {{ e.supplier_name }}<template v-if="e.dlc_date"> · {{ day(e.dlc_date) }}</template></li></ul>
+                                <ul class="hy-list">
+                                    <li v-for="e in recall.entries" :key="`e${e.id}`" class="hy-row" :data-testid="`trc-recall-entry-${e.id}`">
+                                        <span>{{ dayHm(e.traced_at) }} · <strong>{{ e.product_name }}</strong><template v-if="e.supplier_name"> · {{ e.supplier_name }}</template><template v-else> · fournisseur non renseigné</template><template v-if="e.dlc_date"> · {{ kindText(e.dlc_kind) }} {{ day(e.dlc_date) }}</template></span>
+                                        <HygienePhotoView v-if="e.attachment_id" class="trc-no-print" :id="e.attachment_id" label="📷 Voir l'étiquette" />
+                                    </li>
+                                </ul>
                                 <h5 v-if="recall.receptions.length" class="hy-h">Livraisons</h5>
-                                <ul class="hy-list"><li v-for="r in recall.receptions" :key="`r${r.id}`" class="hy-row" :class="{ 'is-alert': r.status === 'alert' }">{{ dayHm(r.received_at) }} · <strong>{{ r.supplier_name }}</strong><template v-if="r.delivery_note_no"> · {{ r.delivery_note_no }}</template> · {{ r.decision_label }}</li></ul>
+                                <ul class="hy-list">
+                                    <li v-for="r in recall.receptions" :key="`r${r.id}`" class="hy-row" :class="{ 'is-alert': r.status === 'alert' && !r.voided, 'trc-voided': r.voided }" :data-testid="`trc-recall-reception-${r.id}`">
+                                        <span :class="{ 'trc-struck': r.voided }">{{ dayHm(r.received_at) }} · <strong>{{ r.supplier_name || "fournisseur non renseigné" }}</strong><template v-if="r.delivery_note_no"> · {{ r.delivery_note_no }}</template> · {{ r.decision_label }}</span>
+                                        <strong v-if="r.voided" class="trc-void-tag" :data-testid="`trc-recall-reception-void-${r.id}`">ANNULÉE : {{ r.void_reason }}<template v-if="r.voided_at"> (le {{ dayHm(r.voided_at) }}<template v-if="r.voided_by_name">, par {{ r.voided_by_name }}</template>)</template></strong>
+                                        <HygienePhotoView v-for="(pid, i) in photoIds(r)" :key="`rp${pid}`" class="trc-no-print" :id="pid" :label="i === 0 ? '📷 Voir le BL' : `📷 Photo ${i + 1}`" />
+                                    </li>
+                                </ul>
                                 <h5 v-if="recall.labels.length" class="hy-h">Préparations issues du lot</h5>
                                 <ul class="hy-list" data-testid="trc-recall-labels">
                                     <li v-for="l in recall.labels" :key="`l${l.id}`" class="hy-row" :class="{ 'is-void': l.discard_reason === 'cancelled' }" :style="{ marginLeft: `${l.depth * 24}px` }">
                                         <span class="hy-row-when">{{ dayHm(l.opened_at) }}</span>
                                         <strong>{{ l.product_name }}</strong>
-                                        <span class="hy-row-meta">N° {{ l.lot }} · jusqu'au {{ dayHm(l.expires_at) }}<template v-if="l.discarded_at"> · {{ discardText(l.discard_reason) }} le {{ dayHm(l.discarded_at) }}</template><template v-else> · encore en cours</template></span>
+                                        <span class="hy-row-meta">N° {{ l.lot }} · jusqu'au {{ dayHm(l.expires_at) }}<template v-if="labelPrintNote(l)"> · {{ labelPrintNote(l) }}</template><template v-if="l.discarded_at"> · {{ discardText(l.discard_reason) }} le {{ dayHm(l.discarded_at) }}</template><template v-else> · encore en cours</template></span>
                                     </li>
                                 </ul>
                             </template>
@@ -189,8 +211,12 @@ import HygienePhotoField from "./HygienePhotoField";
 import HygienePhotoView from "./HygienePhotoView";
 import { apiMessage, formatHm, formatDayHm, formatDay, newClientRef, refFor, latest, loadedBody, savedBody, loadFailedText } from "../../../helpers/hygieneCommon";
 import hygieneRefresh from "../../../helpers/hygieneRefresh";
+import { searchProducts } from "../../../helpers/dlcSearch";
 
 const historySeq = latest();
+const norm = (s) => String(s || "").trim().toLowerCase();
+/** Classe posée sur <body> le temps d'imprimer la fiche de rappel (les règles @media print ne valent qu'avec elle). */
+const PRINT_CLASS = "trc-printing";
 
 export default {
     name: "HygieneTraceabilityComponent",
@@ -203,6 +229,7 @@ export default {
             lastOkAt: null, // [VG-2026-10-21 M8-103] dernier chargement réussi : un échec ensuite dit « chiffres périmés », jamais une liste vide
             tab: "today", operatorId: null, operatorToken: null, form: null, saving: false,
             voidTarget: null, voidReason: "", history: [], q: "", timer: null, recallLot: "", recall: null, recallError: "",
+            printedAt: null,
         };
     },
     computed: {
@@ -216,7 +243,28 @@ export default {
             const f = this.form;
             const t = f ? f.product.trim().toLowerCase() : "";
             if (!f || f.productId || t.length < 2) return [];
-            return (this.meta.products || []).filter((p) => p.name.toLowerCase().includes(t)).slice(0, 8);
+            // [2026-11-18 audit P2-c] même recherche tolérante que l'écran DLC (accents, pluriels, fautes, « l'ail »)
+            return searchProducts(this.meta.products || [], f.product).items.slice(0, 8);
+        },
+        /** Ce que l'opérateur a saisi (hors message d'erreur et avertissement) : quand ça change, le message du serveur n'est plus vrai. */
+        formSignature() {
+            const f = this.form;
+            return f ? JSON.stringify([f.product, f.productId, f.supplierId, f.supplierName, f.receptionId, f.lot, f.dlc, f.kind, f.photo, f.note]) : "";
+        },
+        voidedReceptions() { return this.recall ? this.recall.receptions.filter((r) => r.voided).length : 0; },
+        restaurantName() {
+            const company = this.$store && this.$store.getters ? this.$store.getters["company/lists"] : null;
+            const name = company && typeof company === "object" && !Array.isArray(company) ? company.company_name : "";
+            if (name) return String(name).trim();
+            // la page porte le nom du restaurant dans son titre (master.blade) ; le suivi des commandes peut y préfixer « (3) »
+            return typeof document !== "undefined" ? String(document.title || "").replace(/^\(\d+\)\s*/, "").trim() : "";
+        },
+        printedAtText() {
+            const at = this.printedAt || new Date().toISOString();
+            try {
+                return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: this.meta.timezone || "Europe/Paris" })
+                    .format(new Date(at)).replace(" ", " à ");
+            } catch (_) { return formatDayHm(at, this.meta.timezone); }
         },
         expired() { return Boolean(this.form && this.form.dlc && this.form.dlc < this.todayIso); },
         noteRequired() { return this.expired || (this.form && !this.form.lot.trim()); },
@@ -228,9 +276,41 @@ export default {
             return true;
         },
     },
+    watch: {
+        // [2026-11-18 audit P1] une erreur du serveur s'efface dès que la saisie change ; l'avertissement « lot déjà tracé » aussi
+        formSignature(now, before) {
+            if (!this.form || !before) return;
+            this.form.error = "";
+            this.form.duplicate = null;
+            this.form.duplicateOk = false;
+        },
+    },
     created() { this.load(); },
-    beforeUnmount() { if (this.timer) clearTimeout(this.timer); },
+    mounted() {
+        if (typeof window === "undefined") return;
+        this._onBeforePrint = () => this.preparePrint();
+        this._onAfterPrint = () => this.endPrint();
+        window.addEventListener("beforeprint", this._onBeforePrint);
+        window.addEventListener("afterprint", this._onAfterPrint);
+    },
+    beforeUnmount() {
+        if (this.timer) clearTimeout(this.timer);
+        if (typeof window !== "undefined" && this._onBeforePrint) {
+            window.removeEventListener("beforeprint", this._onBeforePrint);
+            window.removeEventListener("afterprint", this._onAfterPrint);
+        }
+        this.endPrint();
+    },
     methods: {
+        kindText(k) { return k === "dluo" ? "DLUO" : "DLC"; },
+        /** Toutes les photos d'une livraison (BL puis les autres), sans doublon. */
+        photoIds(r) { return [...new Set([r.attachment_id, ...(Array.isArray(r.attachment_ids) ? r.attachment_ids : [])].filter((x) => Number.isInteger(x) && x > 0))]; },
+        /** Une étiquette dont l'imprimante n'a pas confirmé la sortie reste sur la fiche, mais le dit. */
+        labelPrintNote(l) {
+            if (l.status === "unconfirmed" || l.status === "claimed") return "impression non confirmée";
+            if (l.status === "failed") return "impression incomplète";
+            return "";
+        },
         hyDraft() { return this.form !== null || this.voidTarget !== null; },
         hyReload() { return this.load(); },
         hm(iso) { return formatHm(iso, this.meta.timezone); },
@@ -262,14 +342,51 @@ export default {
         },
         debouncedHistory() { if (this.timer) clearTimeout(this.timer); this.timer = setTimeout(() => this.loadHistory(), 300); },
 
-        openForm() { this.form = { product: "", productId: null, supplierId: null, supplierName: "", receptionId: null, lot: "", dlc: "", kind: "dlc", photo: null, note: "", error: "", ref: newClientRef("t") }; },
+        openForm() { this.form = { product: "", productId: null, supplierId: null, supplierName: "", receptionId: null, lot: "", dlc: "", kind: "dlc", photo: null, note: "", error: "", duplicate: null, duplicateOk: false, ref: newClientRef("t") }; },
         pickProduct(p) { this.form.product = p.name; this.form.productId = p.id; },
         pickSupplier(s) { this.form.supplierId = s.id; this.form.supplierName = ""; },
+        /**
+         * [2026-11-18 audit P2-d] Même produit + même lot (à la casse près) déjà tracé : aujourd'hui (liste chargée) ou sur les 30 jours du
+         * journal. Rien n'est bloqué : l'écran demande seulement confirmation. Si le journal ne répond pas, on n'empêche pas d'enregistrer.
+         */
+        async findDuplicate(f) {
+            const lot = norm(f.lot);
+            if (!lot) return null;
+            const product = norm(f.product);
+            const same = (r) => !r.voided && norm(r.lot) === lot && ((f.productId && r.dlc_product_id === f.productId) || norm(r.product_name) === product);
+            let hit = this.rows.find(same) || null;
+            if (!hit) {
+                try {
+                    const data = loadedBody(await axios.get("admin/hygiene/trace/history", { params: { q: f.lot.trim(), limit: 50 } }));
+                    hit = (data.data || []).find(same) || null;
+                } catch (_) { hit = null; }
+            }
+            if (!hit) return null;
+            const today = formatDay(hit.traced_at, this.meta.timezone) === this.todayLabel;
+            return { id: hit.id, when: today ? `aujourd'hui à ${this.hm(hit.traced_at)}` : `le ${this.dayHm(hit.traced_at)}` };
+        },
+        confirmDuplicate() {
+            if (!this.form) return;
+            this.form.duplicateOk = true;
+            this.form.duplicate = null;
+            this.submit();
+        },
         async submit() {
             const f = this.form;
             if (!f || this.saving || !this.canSubmit) return;
             this.saving = true;
             f.error = "";
+            if (!f.duplicateOk) {
+                const sig = this.formSignature;
+                const dup = await this.findDuplicate(f);
+                // saisie abandonnée ou modifiée pendant la vérification : on n'envoie rien, l'opérateur relance
+                if (this.form !== f || this.formSignature !== sig) { this.saving = false; return; }
+                if (dup) {
+                    f.duplicate = dup;
+                    this.saving = false;
+                    return;
+                }
+            }
             try {
                 savedBody(await axios.post("admin/hygiene/trace", { // [VG-2026-10-21 M8-101]
                     ...(f.productId ? { dlc_product_id: f.productId } : { product_name: f.product.trim() }),
@@ -315,9 +432,40 @@ export default {
                 this.saving = false;
             }
         },
-        printSheet() { if (typeof window !== "undefined" && window.print) window.print(); },
+        /** [2026-11-18 audit P2-g] Impression : seule la fiche sort, avec l'heure d'édition (voir les règles @media print plus bas). */
+        preparePrint() {
+            if (this.tab !== "recall" || !this.recall) return false;
+            this.printedAt = new Date().toISOString();
+            if (typeof document !== "undefined" && document.body) document.body.classList.add(PRINT_CLASS);
+            return true;
+        },
+        endPrint() { if (typeof document !== "undefined" && document.body) document.body.classList.remove(PRINT_CLASS); },
+        async printSheet() {
+            if (typeof window === "undefined" || !window.print || !this.preparePrint()) return;
+            await this.$nextTick(); // l'heure d'édition est à l'écran avant que le navigateur ne mette en page
+            window.print();
+        },
     },
 };
 </script>
 
 <style src="./hygiene.css"></style>
+<style>
+/* [2026-11-18 audit] Fiche de rappel : réception annulée barrée, mention lisible ; impression de la fiche seule. */
+.trc-struck { text-decoration: line-through; color: #64748b; }
+.trc-void-tag { color: #991b1b; }
+.hy-row.trc-voided { border-color: #fecaca; background: #fff7f7; }
+.trc-print-only { display: none; }
+@media print {
+    /* N'agit que pendant l'impression demandée depuis la fiche (classe posée sur <body>) : aucune autre page n'est touchée. */
+    body.trc-printing *:not(:has(.trc-print-area)):not(.trc-print-area):not(.trc-print-area *) { display: none !important; }
+    body.trc-printing *:has(.trc-print-area) {
+        margin: 0 !important; padding: 0 !important; border: 0 !important; box-shadow: none !important; background: none !important;
+        position: static !important; transform: none !important; width: auto !important; max-width: none !important; min-height: 0 !important; overflow: visible !important;
+    }
+    body.trc-printing .trc-print-area { display: block !important; color: #000; }
+    body.trc-printing .trc-print-only { display: block !important; margin: 0 0 8px; font-size: 12px; }
+    body.trc-printing .trc-no-print { display: none !important; }
+    body.trc-printing .trc-print-area .hy-row { break-inside: avoid; background: #fff !important; }
+}
+</style>

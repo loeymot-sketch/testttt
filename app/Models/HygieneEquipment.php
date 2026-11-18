@@ -32,4 +32,19 @@ class HygieneEquipment extends Model
     {
         static::addGlobalScope(new BranchScope);
     }
+
+    /**
+     * [2026-11-18 · audit E2E P1-3] Masqué (ou supprimé) DEPUIS `$since` : masquer un équipement ne doit pas effacer son écart du jour (tuile, rappels,
+     * écran). Le moment du masquage est `updated_at` (KeepsHideMoment le préserve) ; à combiner avec `withTrashed()` pour voir les suppressions du jour.
+     */
+    public function scopeHiddenSince($query, \Carbon\CarbonInterface $since)
+    {
+        return $query->where(fn ($q) => $q->where(fn ($h) => $h->where('is_active', false)->where('updated_at', '>=', $since))
+            ->orWhere('deleted_at', '>=', $since));
+    }
+
+    public function changes()
+    {
+        return $this->hasMany(HygieneEquipmentChange::class, 'equipment_id');
+    }
 }

@@ -37,10 +37,16 @@ final class SetupProgress
         $cfg = AlertNotifier::settings();
         $alerts = $cfg['enabled'] && $cfg['recipients'] !== [] && AlertNotifier::mailReady();
 
+        // [2026-11-18 · P2] des équipements existent mais sont TOUS masqués : « Créer mes équipements » en ferait créer de nouveaux ; l'écran des relevés
+        // dit « réactivez-en un » — même message ici
+        $allHidden = $equipment === 0 && HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->exists();
+
         $s = fn (string $key, string $label, string $detail, bool $done, string $route, string $cta, bool $optional = false): array => compact('key', 'label', 'detail', 'done', 'route', 'cta', 'optional');
 
         $steps = [
-            $s('equipment', 'Créer vos frigos et congélateurs', $equipment ? "$equipment équipement".($equipment > 1 ? 's' : '').' prêt'.($equipment > 1 ? 's' : '').'.' : 'Dites combien vous en avez : un appui, les seuils sont déjà réglés.', $equipment > 0, '/admin/hygiene/temperature', 'Créer mes équipements'),
+            $s('equipment', 'Créer vos frigos et congélateurs', $equipment ? "$equipment équipement".($equipment > 1 ? 's' : '').' prêt'.($equipment > 1 ? 's' : '').'.'
+                : ($allHidden ? 'Tous vos équipements sont masqués : réactivez-en un dans Températures › Équipements.' : 'Dites combien vous en avez : un appui, les seuils sont déjà réglés.'),
+                $equipment > 0, '/admin/hygiene/temperature', $allHidden ? 'Réactiver un équipement' : 'Créer mes équipements'),
             $s('tasks', 'Installer votre plan de nettoyage', $tasks ? "$tasks fiche".($tasks > 1 ? 's' : '').' en place.' : 'Huit fiches recommandées, prêtes à l\'emploi, que vous pouvez adapter.', $tasks > 0, '/admin/hygiene/tasks', 'Installer le plan'),
             $s('durations', 'Valider vos durées de conservation',
                 $products === 0 ? 'Le catalogue de départ s\'installe à la première ouverture des étiquettes.'

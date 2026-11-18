@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\Hygiene\HygieneController;
 use App\Models\HygieneEquipment;
+use App\Models\HygieneEquipmentChange;
 use App\Models\HygieneTemperatureReading;
 use App\Services\Hygiene\TemperatureRules;
 use App\Support\Hygiene\Kinds;
@@ -20,21 +21,43 @@ use Illuminate\Validation\Rule;
  * LE SERVEUR EST LA SOURCE DE VÉRITÉ du verdict (conforme / écart), de l'horloge et du journal. Un relevé n'est jamais
  * modifié ni supprimé : une faute de frappe s'ANNULE (motif obligatoire) et la ligne reste au journal.
  *
- * Porte : la même que les étiquettes (permission:pos-orders|pos|kitchen-display-system) — le personnel qui tient la tablette.
+ * Porte : la même que les étiquettes (permission:pos-orders|pos|kitchen-display-system) — le personnel qui tient la tablette. La STRUCTURE
+ * (équipements, seuils, masquage) exige en plus `settings` (2026-11-18), et chaque changement de structure est tracé (hygiene_equipment_changes).
  * Domaine NEUF, ADDITIF, HORS NF525. Contrat du module : config/hygiene.php.
  */
 class HygieneTemperatureController extends HygieneController
 {
+    /** Champs dont un changement est tracé au journal de structure (hygiene_equipment_changes). */
+    private const TRACKED = ['name', 'kind', 'min_c', 'max_c', 'is_active'];
+
+    /** Changements montrés par équipement dans « Équipements › Historique » (les plus récents). */
+    private const CHANGES_SHOWN = 10;
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        // [2026-11-18 · audit E2E P1-3] La STRUCTURE du registre (créer, modifier, masquer un équipement, changer un seuil) est réservée au responsable :
+        // MÊME règle que les écrans Équipe et Alertes (permission `settings` en plus de la porte du module). La SAISIE d'un relevé, son annulation et la
+        // clôture motivée d'un suivi restent ouvertes à tout le personnel de la tablette.
+        $this->middleware(\App\Services\Hygiene\StructureAccess::guard())->only(['storeEquipment', 'updateEquipment', 'destroyEquipment', 'quickSetup']);
+    }
+
     // ───────────────────────────── Équipements ─────────────────────────────
 
-    public function equipment(): JsonResponse
+    public function equipment(Request $request): JsonResponse
     {
-        $rows = HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->orderBy('sort_order')->orderBy('id')->get()
-            ->map(fn (HygieneEquipment $e): array => $this->presentEquipment($e))->values();
+        $list = HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->orderBy('sort_order')->orderBy('id')->get();
+        // [P1-4] l'historique de structure de chaque équipement (seuils, nom, masquage) : réponse EXISTANTE enrichie, pas de nouvelle route
+        $changes = HygieneEquipmentChange::query()->whereIn('equipment_id', $list->pluck('id'))->orderByDesc('changed_at')->orderByDesc('id')->get()->groupBy('equipment_id');
+        $rows = $list->map(fn (HygieneEquipment $e): array => $this->presentEquipment($e) + [
+            'changes' => $changes->get($e->id, collect())->take(self::CHANGES_SHOWN)->map(fn (HygieneEquipmentChange $c) => $this->presentChange($c))->values()->all(),
+            'changes_total' => $changes->get($e->id, collect())->count(),
+        ])->values();
 
         return response()->json([
             'data' => $rows,
-            'meta' => ['kinds' => $this->kinds(), 'corrective_actions' => $this->correctiveActions()] + $this->clock(),
+            'meta' => ['kinds' => $this->kinds(), 'corrective_actions' => $this->correctiveActions(), 'can_manage' => $this->canManage($request)] + $this->clock(),
         ]);
     }
 
@@ -53,7 +76,10 @@ class HygieneTemperatureController extends HygieneController
             'is_active' => $data['is_active'] ?? true,
         ]);
         $e->branch_id = $this->branchId($request);
-        $e->save();
+        DB::transaction(function () use ($e, $request): void {
+            $e->save();
+            $this->logChanges($request, $e, [['created', null, $this->limitSummary($e->min_c, $e->max_c)]]);
+        });
 
         return response()->json(['data' => $this->presentEquipment($e->refresh())], 201);
     }
@@ -61,15 +87,31 @@ class HygieneTemperatureController extends HygieneController
     public function updateEquipment(Request $request, string $equipment): JsonResponse
     {
         $model = HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->findOrFail((int) $equipment);
-        $model->fill($this->validateEquipment($request, $model->id))->save();
+        $data = $this->validateEquipment($request, $model->id);
+        // [P1-4] un changement de seuil, de nom, de type ou un masquage laisse une trace (qui, quand, avant → après), dans la MÊME transaction :
+        // jamais un seuil changé sans sa ligne au journal, jamais une ligne sans le changement
+        DB::transaction(function () use ($model, $data, $request): void {
+            $before = $model->only(self::TRACKED);
+            $model->fill($data);
+            $changes = [];
+            foreach (self::TRACKED as $field) {
+                if ($model->isDirty($field)) $changes[] = [$field, $this->changeValue($field, $before[$field]), $this->changeValue($field, $model->{$field})];
+            }
+            $model->save();
+            $this->logChanges($request, $model, $changes);
+        });
 
         return response()->json(['data' => $this->presentEquipment($model->refresh())]);
     }
 
-    public function destroyEquipment(string $equipment): JsonResponse
+    public function destroyEquipment(Request $request, string $equipment): JsonResponse
     {
         // Suppression douce : le journal garde le nom et les seuils copiés à chaque relevé.
-        HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->findOrFail((int) $equipment)->delete();
+        $model = HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->findOrFail((int) $equipment);
+        DB::transaction(function () use ($model, $request): void {
+            $model->delete();
+            $this->logChanges($request, $model, [['deleted', null, null]]);
+        });
 
         return response()->json(['status' => 'ok']);
     }
@@ -105,7 +147,10 @@ class HygieneTemperatureController extends HygieneController
                 $e = new HygieneEquipment(['name' => $name, 'kind' => $kind, 'min_c' => $defaults['min'], 'max_c' => $defaults['max'],
                     'sort_order' => $order += 10, 'is_active' => true]);
                 $e->branch_id = $branch;
-                $e->save();
+                DB::transaction(function () use ($e, $request): void {
+                    $e->save();
+                    $this->logChanges($request, $e, [['created', null, $this->limitSummary($e->min_c, $e->max_c)]]);
+                });
                 $taken[] = mb_strtolower($name);
                 $added++;
             }
@@ -120,11 +165,17 @@ class HygieneTemperatureController extends HygieneController
      * L'écran du jour : chaque équipement actif avec son état (à faire / conforme / écart), son dernier relevé d'aujourd'hui et
      * celui de la veille (pour juger d'un coup d'œil), et les compteurs de la journée.
      */
-    public function today(): JsonResponse
+    public function today(Request $request): JsonResponse
     {
         $now = now();
         $start = $now->copy()->startOfDay();
-        $equipments = HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->where('is_active', true)->orderBy('sort_order')->orderBy('id')->get();
+        $kinds = Kinds::keys('temperature');
+        $equipments = HygieneEquipment::query()->whereIn('kind', $kinds)->where('is_active', true)->orderBy('sort_order')->orderBy('id')->get();
+        // [2026-11-18 · audit E2E P1-3] Masquer un équipement n'efface pas son écart du jour : un équipement masqué (ou supprimé) AUJOURD'HUI reste à
+        // l'écran jusqu'à la fin de la journée s'il porte un écart du jour ou un suivi ouvert — sans être « à relever » (il n'est plus attendu).
+        $hidden = HygieneEquipment::query()->withTrashed()->whereIn('kind', $kinds)->hiddenSince($start)->orderBy('sort_order')->orderBy('id')->get()
+            ->reject(fn (HygieneEquipment $e) => $equipments->contains('id', $e->id));
+        $ids = $equipments->pluck('id')->merge($hidden->pluck('id'))->values()->all();
 
         $todayRows = HygieneTemperatureReading::query()
             ->whereNull('voided_at')->where('recorded_at', '>=', $start)->orderBy('recorded_at')->orderBy('id')->get()
@@ -134,36 +185,51 @@ class HygieneTemperatureController extends HygieneController
             ->orderByDesc('recorded_at')->get()->unique('equipment_id')->keyBy('equipment_id');
 
         $period = TemperatureRules::periodFor($now);
-        $followUps = \App\Services\Hygiene\TemperatureFollowUp::pending($equipments->pluck('id')->all(), $now); // nouvelle mesure attendue après un écart traité
-        $items = $equipments->map(function (HygieneEquipment $e) use ($todayRows, $previous, $period, $followUps): array {
+        // [P1-5] « à relever » = non relevé pour le moment EN COURS (TemperatureRules::isDue) : la pastille et « Saisir tout ce qui reste » disent la même chose
+        $evening = TemperatureRules::eveningExpected($now);
+        $followUps = \App\Services\Hygiene\TemperatureFollowUp::pending($ids, $now); // nouvelle mesure attendue après un écart traité
+        $isAlert = fn ($rows) => $rows->isNotEmpty() && $rows->last()->status === HygieneTemperatureReading::STATUS_ALERT;
+        $hidden = $hidden->filter(fn (HygieneEquipment $e) => $isAlert($todayRows->get($e->id, collect())) || isset($followUps[$e->id]));
+
+        $present = function (HygieneEquipment $e, bool $hiddenToday) use ($todayRows, $previous, $period, $evening, $followUps, $isAlert): array {
             $rows = $todayRows->get($e->id, collect());
             $last = $rows->last();
             $prev = $previous->get($e->id);
+            $due = ! $hiddenToday && TemperatureRules::isDue($period, $evening, $rows->pluck('period'));
 
             return $this->presentEquipment($e) + [
-                'state' => $last === null ? 'todo' : ($last->status === HygieneTemperatureReading::STATUS_ALERT ? 'alert' : 'ok'),
+                'state' => $isAlert($rows) ? 'alert' : ($due ? 'todo' : ($last ? 'ok' : 'hidden')),
                 'last_today' => $last ? $this->presentReading($last) : null,
                 'previous' => $prev ? ['value_c' => $prev->value_c, 'recorded_at' => $prev->recorded_at->toIso8601String(), 'status' => $prev->status] : null,
                 'done_periods' => $rows->pluck('period')->unique()->values()->all(),
-                'done_this_period' => $rows->contains(fn ($r) => $r->period === $period),
+                'due' => $due,
+                'done_this_period' => ! $due,
+                'hidden_today' => $hiddenToday,
                 'followup' => $followUps[$e->id] ?? null,
             ];
-        })->values();
+        };
+        $active = $equipments->map(fn (HygieneEquipment $e) => $present($e, false))->values();
+        $masked = $hidden->map(fn (HygieneEquipment $e) => $present($e, true))->values();
+        $items = $active->concat($masked)->values();
 
         return response()->json([
             'data' => $items,
             'meta' => [
                 'period' => $period,
                 'periods' => config('hygiene.periods'),
+                'evening_expected' => $evening,
                 'summary' => [
-                    'total' => $items->count(),
-                    'todo' => $items->where('state', 'todo')->count(),
-                    'ok' => $items->where('state', 'ok')->count(),
+                    'total' => $active->count(),
+                    'todo' => $active->where('due', true)->count(),
+                    'ok' => $active->where('state', 'ok')->count(),
+                    // les écarts DU JOUR, y compris ceux d'un équipement masqué aujourd'hui
                     'alert' => $items->where('state', 'alert')->count(),
+                    'hidden_alert' => $masked->where('state', 'alert')->count(),
                 ],
                 'kinds' => $this->kinds(),
                 'corrective_actions' => $this->correctiveActions(),
                 'followup_minutes' => (int) config('hygiene.followup.minutes', 30),
+                'can_manage' => $this->canManage($request),
             ] + $this->clock(),
         ]);
     }
@@ -253,7 +319,9 @@ class HygieneTemperatureController extends HygieneController
             $value = round((float) $r['value'], 1);
             [$lo, $hi] = config("hygiene.kinds.{$equipment->kind}.plausible") ?? [$min, $max];
             if ($value < $lo || $value > $hi) {
-                $errors["readings.$i.value"] = ['« '.$equipment->name.' » : '.$this->fmt($value).' °C n’est pas plausible pour '.($this->isHot($equipment->kind) ? 'un équipement chaud' : 'une enceinte froide').' (faute de frappe ?).'];
+                // [2026-11-18] la plage est DITE : « pas plausible » seul laissait croire qu'un appareil éteint ne pouvait pas être déclaré
+                $errors["readings.$i.value"] = ['« '.$equipment->name.' » : '.$this->fmt($value).' °C est en dehors de la plage plausible pour '.($this->isHot($equipment->kind) ? 'un équipement chaud' : 'une enceinte froide')
+                    .' ('.$this->fmt((float) $lo).' à '.$this->fmt((float) $hi).' °C) — faute de frappe ?'];
                 continue;
             }
             $verdict = TemperatureRules::evaluate($value, $equipment->min_c, $equipment->max_c);
@@ -377,7 +445,7 @@ class HygieneTemperatureController extends HygieneController
         $op = $this->operator($request);
         $row->forceFill(['followup_closed_at' => now(), 'followup_closed_by' => $op['user_id'], 'followup_close_reason' => trim($v['reason'])])->save();
 
-        return response()->json(['data' => $this->presentReading($row->refresh())]);
+        return response()->json(['data' => $this->presentReading($row->refresh(), $this->voiderNames(collect([$row])))]);
     }
 
     /** Annule un relevé (faute de frappe) : motif obligatoire, la ligne reste au journal. */
@@ -390,8 +458,9 @@ class HygieneTemperatureController extends HygieneController
                 'voided_at' => now(), 'voided_by' => $this->operator($request)['user_id'], 'void_reason' => trim($v['reason']),
             ])->save();
         }
+        $row->refresh();
 
-        return response()->json(['data' => $this->presentReading($row->refresh())]);
+        return response()->json(['data' => $this->presentReading($row, $this->voiderNames(collect([$row])))]);
     }
 
     /** Journal : filtres période / équipement / écarts seuls ; annulés inclus (marqués). */
@@ -407,15 +476,22 @@ class HygieneTemperatureController extends HygieneController
         $from = isset($v['from']) ? \Carbon\Carbon::createFromFormat('Y-m-d', $v['from'], config('app.timezone'))->startOfDay() : now()->subDays(30)->startOfDay();
         $to = isset($v['to']) ? \Carbon\Carbon::createFromFormat('Y-m-d', $v['to'], config('app.timezone'))->endOfDay() : now()->endOfDay();
 
-        $rows = HygieneTemperatureReading::query()
+        $limit = (int) ($v['limit'] ?? 200);
+        $found = HygieneTemperatureReading::query()
             ->whereBetween('recorded_at', [$from, $to])
             ->when(! empty($v['equipment_id']), fn ($q) => $q->where('equipment_id', (int) $v['equipment_id']))
             ->when(! empty($v['alerts_only']), fn ($q) => $q->where('status', HygieneTemperatureReading::STATUS_ALERT))
             ->orderByDesc('recorded_at')->orderByDesc('id')
-            ->limit((int) ($v['limit'] ?? 200))->get()
-            ->map(fn ($r) => $this->presentReading($r))->values();
+            ->limit($limit + 1)->get(); // une ligne de plus : savoir si la liste est TRONQUÉE (et le dire)
+        $truncated = $found->count() > $limit;
+        $found = $found->take($limit);
+        $names = $this->voiderNames($found);
+        $rows = $found->map(fn ($r) => $this->presentReading($r, $names))->values();
 
-        return response()->json(['data' => $rows, 'meta' => $this->clock()]);
+        // [2026-11-18 · P2] la fenêtre du journal est DITE à l'écran (30 jours, 200 lignes) : une absence n'est pas « rien n'a eu lieu »
+        return response()->json(['data' => $rows, 'meta' => [
+            'from' => $from->toDateString(), 'to' => $to->toDateString(), 'limit' => $limit, 'truncated' => $truncated,
+        ] + $this->clock()]);
     }
 
     // ───────────────────────────── utilitaires ─────────────────────────────
@@ -515,7 +591,80 @@ class HygieneTemperatureController extends HygieneController
         ];
     }
 
-    private function presentReading(HygieneTemperatureReading $r): array
+    /** [P2] qui a annulé : `voided_by` → nom (une requête pour toute la liste). @return array<int,string> */
+    private function voiderNames(\Illuminate\Support\Collection $rows): array
+    {
+        $ids = $rows->pluck('voided_by')->filter()->unique()->values()->all();
+        if ($ids === []) return [];
+
+        return \App\Models\User::query()->whereIn('id', $ids)->pluck('name', 'id')->map(fn ($n) => $this->cleanName($n))->filter()->all();
+    }
+
+    /** Le compte connecté porte-t-il le droit de structure (même règle que le middleware, pour masquer les boutons) ? */
+    private function canManage(Request $request): bool
+    {
+        return \App\Services\Hygiene\StructureAccess::allows($request->user());
+    }
+
+    /** @param list<array{0:string,1:?string,2:?string}> $changes */
+    private function logChanges(Request $request, HygieneEquipment $e, array $changes): void
+    {
+        $user = $request->user();
+        foreach ($changes as [$field, $old, $new]) {
+            $row = new HygieneEquipmentChange([
+                'equipment_id' => $e->id, 'equipment_name' => mb_substr((string) $e->name, 0, 80), 'field' => $field,
+                'old_value' => $old, 'new_value' => $new,
+                'user_id' => $user?->id, 'user_name' => $this->cleanName($user?->name), 'changed_at' => now(),
+            ]);
+            $row->branch_id = (int) $e->branch_id;
+            $row->save();
+        }
+    }
+
+    private function changeValue(string $field, mixed $v): ?string
+    {
+        if ($v === null) return null;
+        if ($field === 'min_c' || $field === 'max_c') return $this->fmt((float) $v);
+        if ($field === 'is_active') return $v ? '1' : '0';
+
+        return mb_substr((string) $v, 0, 80);
+    }
+
+    /** « 0 à 4 °C », « ≤ −18 °C », « ≥ 63 °C » : les seuils d'un équipement à sa création. */
+    private function limitSummary(?float $min, ?float $max): string
+    {
+        $f = fn (float $v) => str_replace('-', '−', $this->fmt($v));
+        if ($min !== null && $max !== null) return $f($min).' à '.$f($max).' °C';
+        if ($max !== null) return '≤ '.$f($max).' °C';
+        if ($min !== null) return '≥ '.$f($min).' °C';
+
+        return 'sans seuil';
+    }
+
+    /** Une ligne du journal de structure, dite en clair : « Seuil max 4 °C → 8 °C », « Masqué », « Nom « A » → « B » ». */
+    private function presentChange(HygieneEquipmentChange $c): array
+    {
+        $deg = fn (?string $v) => $v === null ? 'aucun' : str_replace('-', '−', $v).' °C';
+        $kind = fn (?string $k) => $k === null ? '—' : (config("hygiene.kinds.$k.label") ?? $k);
+        $text = match ($c->field) {
+            'created' => 'Créé'.($c->new_value ? ' (seuils '.$c->new_value.')' : ''),
+            'name' => 'Nom « '.$c->old_value.' » → « '.$c->new_value.' »',
+            'kind' => 'Type '.$kind($c->old_value).' → '.$kind($c->new_value),
+            'min_c' => 'Seuil min '.$deg($c->old_value).' → '.$deg($c->new_value),
+            'max_c' => 'Seuil max '.$deg($c->old_value).' → '.$deg($c->new_value),
+            'is_active' => $c->new_value === '1' ? 'Réactivé' : 'Masqué',
+            'deleted' => 'Supprimé',
+            default => $c->field,
+        };
+
+        return [
+            'id' => $c->id, 'at' => $c->changed_at->toIso8601String(), 'by' => $c->user_name, 'field' => $c->field,
+            'old_value' => $c->old_value, 'new_value' => $c->new_value, 'text' => $text,
+        ];
+    }
+
+    /** @param array<int,string> $voiders */
+    private function presentReading(HygieneTemperatureReading $r, array $voiders = []): array
     {
         $action = $r->corrective_action;
 
@@ -543,6 +692,7 @@ class HygieneTemperatureController extends HygieneController
             'voided' => $r->voided_at !== null,
             'voided_at' => $r->voided_at?->toIso8601String(),
             'void_reason' => $r->void_reason,
+            'voided_by_name' => $r->voided_by ? ($voiders[(int) $r->voided_by] ?? null) : null,
             'client_ref' => $r->client_ref, // [VG-2026-10-21 M8-101] la tablette ne dit « enregistré » que si SA référence d'envoi revient
         ];
     }

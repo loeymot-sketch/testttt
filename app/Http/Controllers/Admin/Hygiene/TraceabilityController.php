@@ -8,6 +8,7 @@ use App\Models\HygieneReception;
 use App\Models\HygieneTraceEntry;
 use App\Models\LabelPrintLog;
 use App\Models\Supplier;
+use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -36,7 +37,8 @@ class TraceabilityController extends HygieneController
                     ->map(fn ($p) => ['id' => $p->id, 'name' => $p->name, 'category' => $p->category])->values(),
                 'suppliers' => Supplier::query()->where('branch_id', $branch)->orderBy('name')->limit(300)->get(['id', 'name'])
                     ->map(fn ($s) => ['id' => $s->id, 'name' => $s->name])->values(),
-                'receptions' => HygieneReception::query()->whereNull('voided_at')->where('received_at', '>=', $start->copy()->subDays(2))
+                // [2026-11-18 audit P2-e] une livraison REFUSÉE n'est pas entrée en cuisine : on ne propose pas d'y rattacher un lot
+                'receptions' => HygieneReception::query()->whereNull('voided_at')->where('decision', '!=', 'refused')->where('received_at', '>=', $start->copy()->subDays(2))
                     ->orderByDesc('received_at')->limit(30)->get(['id', 'supplier_id', 'supplier_name', 'delivery_note_no', 'received_at'])
                     ->map(fn ($r) => ['id' => $r->id, 'supplier_id' => $r->supplier_id, 'supplier_name' => $r->supplier_name, 'delivery_note_no' => $r->delivery_note_no, 'received_at' => $r->received_at->toIso8601String()])->values(),
             ] + $this->clock(),
@@ -185,14 +187,17 @@ class TraceabilityController extends HygieneController
         $receptionIds = $entries->pluck('reception_id')->filter()->unique()->all();
         $receptions = $receptionIds === [] ? collect() : HygieneReception::query()->whereIn('id', $receptionIds)->orderBy('received_at')->get();
 
+        // [2026-11-18 audit P1] une étiquette en ÉCHEC sans aucune page sortie n'a jamais existé physiquement : elle n'est pas une préparation
+        $neverPrinted = fn ($q) => $q->where(fn ($w) => $w->where('status', '!=', LabelPrintLog::STATUS_FAILED)->orWhere('printed_pages', '>', 0));
         $roots = LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)->whereRaw('LOWER(TRIM(supplier_lot)) = ?', [$lot])
             ->where(fn ($q) => $q->whereNull('discard_reason')->orWhere('discard_reason', '!=', LabelPrintLog::DISCARD_CANCELLED))
+            ->tap($neverPrinted)
             ->orderBy('opened_at')->limit(300)->get();
         $labels = $roots->map(fn ($l) => [$l, 0])->all();
         $seen = $roots->pluck('id')->flip()->all();
         $frontier = $roots->pluck('id')->all();
         for ($depth = 1; $depth <= 10 && $frontier !== [] && count($labels) < 500; $depth++) {
-            $children = LabelPrintLog::query()->whereIn('parent_log_id', $frontier)->orderBy('opened_at')->limit(300)->get();
+            $children = LabelPrintLog::query()->whereIn('parent_log_id', $frontier)->tap($neverPrinted)->orderBy('opened_at')->limit(300)->get();
             $frontier = [];
             foreach ($children as $c) {
                 if (isset($seen[$c->id])) continue;
@@ -202,17 +207,26 @@ class TraceabilityController extends HygieneController
             }
         }
 
+        // [2026-11-18 audit P0] une réception ANNULÉE reste sur la fiche (un rappel montre toute l'histoire), mais dite annulée : par qui, quand, pourquoi
+        $voiders = User::query()->whereIn('id', $receptions->pluck('voided_by')->filter()->unique()->all())->pluck('name', 'id');
+
         return response()->json([
             'data' => [
                 'lot' => trim($v['lot']),
                 'entries' => $entries->map(fn ($r) => $this->present($r))->values(),
                 'receptions' => $receptions->map(fn ($r) => [
                     'id' => $r->id, 'supplier_name' => $r->supplier_name, 'delivery_note_no' => $r->delivery_note_no,
-                    'received_at' => $r->received_at->toIso8601String(), 'status' => $r->status, 'decision_label' => config("hygiene.reception.decisions.{$r->decision}"),
+                    'received_at' => $r->received_at->toIso8601String(), 'status' => $r->status, 'decision' => $r->decision,
+                    'decision_label' => config("hygiene.reception.decisions.{$r->decision}"),
+                    'attachment_id' => $r->attachment_id, 'attachment_ids' => $r->attachment_ids ?? [],
+                    'voided' => $r->voided_at !== null, 'voided_at' => $r->voided_at?->toIso8601String(), 'void_reason' => $r->void_reason,
+                    'voided_by_name' => $r->voided_by ? ($voiders[$r->voided_by] ?? null) : null,
                 ])->values(),
                 'labels' => collect($labels)->map(fn ($pair) => [
                     'id' => $pair[0]->id, 'depth' => $pair[1], 'product_name' => $pair[0]->product_name, 'lot' => $pair[0]->lot,
                     'supplier_lot' => $pair[0]->supplier_lot, 'copies' => $pair[0]->copies,
+                    // [2026-11-18 audit P1] « non confirmée » (ou réservée sans verdict) : listée, mais dite telle
+                    'status' => $pair[0]->status, 'printed_pages' => $pair[0]->printed_pages,
                     'opened_at' => $pair[0]->opened_at?->toIso8601String(), 'expires_at' => $pair[0]->expires_at?->toIso8601String(),
                     'discarded_at' => $pair[0]->discarded_at?->toIso8601String(),
                     'discard_reason' => $pair[0]->discarded_at ? ($pair[0]->discard_reason ?: LabelPrintLog::DISCARD_DISCARDED) : null,

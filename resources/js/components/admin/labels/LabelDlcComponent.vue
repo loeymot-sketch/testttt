@@ -291,9 +291,13 @@
             </div>
             <div v-if="last" class="dlc-last" :class="last.ok ? (last.warn ? 'is-warn' : 'is-ok') : 'is-ko'" data-testid="dlc-last" role="status">
                 <div v-if="last.batch" class="dlc-last-text" data-testid="dlc-last-batch">
-                    <strong>{{ last.ok ? "✓" : "⚠" }} {{ last.total }} étiquette{{ last.total > 1 ? "s" : "" }} imprimée{{ last.total > 1 ? "s" : "" }}
+                    <strong v-if="last.total">{{ last.ok ? "✓" : "⚠" }} {{ last.total }} étiquette{{ last.total > 1 ? "s" : "" }} imprimée{{ last.total > 1 ? "s" : "" }}
                         — {{ last.batch.filter((b) => b.ok).map((b) => `${b.name} ×${b.copies}`).join(", ") }}</strong>
-                    <span v-if="last.failed.length" class="dlc-last-warn">Non imprimé : {{ last.failed.map((b) => `${b.name} (${b.message})`).join(" ; ") }}</span>
+                    <strong v-else>⚠ Aucune étiquette imprimée</strong>
+                    <span v-if="last.failed.length" class="dlc-last-warn" data-testid="dlc-last-failed">Non imprimé : {{ last.failed.map((b) => `${b.name} (${b.message})`).join(" ; ") }}</span>
+                    <span v-if="last.notTried && last.notTried.length" class="dlc-last-warn" data-testid="dlc-last-not-tried">
+                        Non imprimé, impression interrompue : {{ last.notTried.join(", ") }} — réessayez la sélection.
+                    </span>
                     <span v-if="last.skipped.length" class="dlc-last-warn" data-testid="dlc-last-skipped">
                         Non imprimé, à faire un par un : {{ last.skipped.join(", ") }}
                     </span>
@@ -1034,7 +1038,8 @@ export default {
                 const order = this.activeProducts.filter((x) => this.selection[x.id]);
                 const rank = (p) => { const i = this.visibleProducts.indexOf(p); return i < 0 ? 1e6 : i; };
                 order.sort((a, b) => rank(a) - rank(b));
-                for (const p of order) {
+                const notTried = []; // [2026-11-18 audit P2-i] interruption (panne, « Qui ? ») : les produits suivants sont NOMMÉS, jamais tus
+                for (const [idx, p] of order.entries()) {
                     const count = this.selection[p.id];
                     // la DLC du fabricant se saisit produit par produit ; un événement non prévu n'est JAMAIS remplacé par un autre
                     if (!this.selectable(p)) { skipped.push(p.name); continue; }
@@ -1044,14 +1049,17 @@ export default {
                         original_dlc: orig ? orig.original_dlc : undefined, supplier_lot: orig ? orig.supplier_lot : undefined,
                     });
                     batch.push({ name: p.name, copies: count, ok: result.ok, message: result.message, ids: result.ids || [], offline: result.offline });
-                    if (!result.ok && (!result.refused || result.operatorRefused)) break; // panne d'imprimante OU refus de « Qui ? » : inutile d'enchaîner, la sélection reste pour réessayer
+                    if (!result.ok && (!result.refused || result.operatorRefused)) { // panne d'imprimante OU refus de « Qui ? » : inutile d'enchaîner, la sélection reste pour réessayer
+                        order.slice(idx + 1).forEach((q) => (this.selectable(q) ? notTried.push(q.name) : skipped.push(q.name)));
+                        break;
+                    }
                     if (!result.ok) continue; // refusé (ce produit seulement) : il reste sélectionné, les autres partent
                     const { [p.id]: _done, ...rest } = this.selection;
                     this.selection = rest;
                 }
                 const failed = batch.filter((b) => !b.ok);
                 this.showLast({
-                    ok: failed.length === 0, warn: skipped.length > 0, batch, failed, skipped,
+                    ok: failed.length === 0, warn: skipped.length > 0, batch, failed, skipped, notTried,
                     total: batch.filter((b) => b.ok).reduce((n, b) => n + b.copies, 0), preview: "",
                     ids: batch.filter((b) => b.ok).flatMap((b) => b.ids), offline: batch.some((b) => b.offline),
                 });

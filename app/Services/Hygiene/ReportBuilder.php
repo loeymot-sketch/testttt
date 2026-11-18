@@ -237,6 +237,7 @@ final class ReportBuilder
         }
 
         $partials = $live->where('complete', false);
+        $voiders = $withRows ? $this->voiders($rows) : [];
 
         return [
             'count' => $live->count(), 'voided' => $rows->count() - $live->count(), 'expected' => $expected, 'done' => $done, 'partial' => $partial, 'missed' => $missed,
@@ -250,9 +251,9 @@ final class ReportBuilder
                 'at' => $r->completed_at->toIso8601String(), 'due_date' => $r->due_date->toDateString(), 'task' => $r->task_name, 'zone' => $r->zone,
                 'items_done' => $r->items_done, 'items_total' => $r->items_total, 'complete' => $r->complete, 'late' => $r->late, 'note' => $r->note,
                 'not_done' => collect($r->items)->where('done', false)->pluck('label')->values()->all(), 'operator' => $r->operator_name,
-                'attested' => $r->attested_at !== null,
+                'attested' => $r->attested_at !== null, 'photo' => $r->attachment_id !== null,
                 'voided' => $r->voided_at !== null, 'void_reason' => $r->void_reason,
-            ])->all()) : ['rows' => [], 'rows_total' => 0]),
+            ] + $this->voidMeta($r, $voiders))->all()) : ['rows' => [], 'rows_total' => 0]),
         ];
     }
 
@@ -330,6 +331,7 @@ final class ReportBuilder
         $covered = $tests->groupBy('equipment_id')->map(fn ($g) => $g->map(fn ($r) => $this->localDate($r->performed_at))->unique()->flip());
         [$expected, $done, $todayTotal, $todayDone] = $this->coverage($fryers, $covered);
         $alerts = $live->where('status', 'alert');
+        $voiders = $withRows ? $this->voiders($rows) : [];
 
         return [
             'tests' => $tests->count(), 'filters' => $live->where('type', 'filter')->count(), 'changes' => $this->oilChanges($live),
@@ -344,11 +346,11 @@ final class ReportBuilder
                 'operator' => $r->operator_name,
             ])->values()->all(),
             ...($withRows ? $this->capped($rows->map(fn ($r) => [
-                'at' => $r->performed_at->toIso8601String(), 'fryer' => $r->equipment_name, 'type' => config("hygiene.oil.types.{$r->type}"), 'polar_pct' => $r->polar_pct,
+                'at' => $r->performed_at->toIso8601String(), 'fryer' => $r->equipment_name, 'type' => config("hygiene.oil.types.{$r->type}"), 'type_key' => $r->type, 'polar_pct' => $r->polar_pct,
                 'bath_temp_c' => $r->bath_temp_c, 'oil_litres' => $r->oil_litres, 'oil_brand' => $r->oil_brand, 'status' => $r->status,
                 'action' => $r->corrective_action ? config("hygiene.oil.corrective_actions.{$r->corrective_action}.label") : null, 'note' => $r->corrective_note ?: $r->note,
-                'operator' => $r->operator_name, 'voided' => $r->voided_at !== null, 'void_reason' => $r->void_reason,
-            ])->all()) : ['rows' => [], 'rows_total' => 0]),
+                'operator' => $r->operator_name, 'photo' => $r->attachment_id !== null, 'voided' => $r->voided_at !== null, 'void_reason' => $r->void_reason,
+            ] + $this->voidMeta($r, $voiders))->all()) : ['rows' => [], 'rows_total' => 0]),
         ];
     }
 
@@ -385,6 +387,31 @@ final class ReportBuilder
             // échus et jamais sortis : le point que regarde un contrôleur
             'expired_not_out' => (int) $base()->whereNull('discarded_at')->whereNotNull('expires_at')->where('expires_at', '<', $now)->sum('copies'),
             ...$rows,
+        ];
+    }
+
+    /**
+     * [AUDIT E2E 2026-11-18 · P2] Une annulation dit QUI et QUAND (pas seulement le motif). `voided_by` est l'opérateur choisi au moment de
+     * l'annulation ; son nom est lu dans la fiche du personnel (aucune colonne ne le copie). Un seul appel par module, jamais par ligne.
+     *
+     * @return array<int,string>
+     */
+    private function voiders($rows): array
+    {
+        $ids = $rows->whereNotNull('voided_at')->pluck('voided_by')->filter()->unique()->values()->all();
+        if ($ids === []) return [];
+
+        // Requête simple : la portée de branche est sans effet sur User (BranchScope::apply) ; pas de withoutGlobalScopes().
+        return \App\Models\User::query()->whereIn('id', $ids)->pluck('name', 'id')
+            ->map(fn ($n) => trim((string) $n))->filter()->all();
+    }
+
+    /** @return array{voided_at: ?string, voided_by: ?string} */
+    private function voidMeta($r, array $voiders): array
+    {
+        return [
+            'voided_at' => $r->voided_at?->toIso8601String(),
+            'voided_by' => $r->voided_at !== null && $r->voided_by ? ($voiders[(int) $r->voided_by] ?? null) : null,
         ];
     }
 

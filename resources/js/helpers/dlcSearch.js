@@ -84,8 +84,18 @@ function fuzzyScore(t, w) {
 /**
  * @returns {{score: number, fuzzy: boolean}|null}  null = ne correspond pas.
  */
+/**
+ * Mots tapés à chercher. Une lettre isolée (article élidé : « l'ail », « d'oignon », « j' ») n'est pas un mot du produit :
+ * elle est ignorée — sauf si la saisie n'est faite QUE de lettres isolées (on tape encore : on garde ce qui est tapé).
+ */
+function typedWords(query) {
+    const all = fold(query).split(" ").filter(Boolean);
+    const words = all.filter((t) => !/^[a-z]$/.test(t));
+    return (words.length ? words : all).flatMap((t) => (SYNONYMS[stem(t)] || t).split(" ")).map(stem);
+}
+
 export function matchProduct(query, product) {
-    const typed = fold(query).split(" ").filter(Boolean).flatMap((t) => (SYNONYMS[stem(t)] || t).split(" ")).map(stem);
+    const typed = typedWords(query);
     if (!typed.length) return { score: 0, fuzzy: false };
     const nameWords = tokensOf(product.name);
     const catWords = tokensOf(product.category);

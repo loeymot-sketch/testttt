@@ -49,7 +49,19 @@ class TaskControllerTest extends TestCase
 
     private function install(): void
     {
-        $this->postJson(self::BASE.'/templates/install-recommended')->assertCreated();
+        $this->asManager(fn () => $this->postJson(self::BASE.'/templates/install-recommended')->assertCreated());
+    }
+
+    /** [AUDIT E2E 2026-11-18] La structure du plan est réservée au responsable (`settings`) : le compte courant le devient le temps de `$fn`. */
+    private function asManager(callable $fn)
+    {
+        $u = auth('sanctum')->user();
+        $u->givePermissionTo('settings');
+        try {
+            return $fn();
+        } finally {
+            $u->revokePermissionTo('settings');
+        }
     }
 
     private function template(string $key): HygieneTaskTemplate
@@ -69,13 +81,13 @@ class TaskControllerTest extends TestCase
         $this->staff();
         $this->install();
         $this->assertSame(8, HygieneTaskTemplate::query()->count());
-        $this->postJson(self::BASE.'/templates/install-recommended')->assertOk()->assertJsonPath('data.added', 0);
+        $this->asManager(fn () => $this->postJson(self::BASE.'/templates/install-recommended')->assertOk()->assertJsonPath('data.added', 0));
         $this->assertSame(8, HygieneTaskTemplate::query()->count());
     }
 
     public function test_auto_install_only_when_never_configured_and_never_after_a_deliberate_delete(): void
     {
-        $this->staff();
+        $this->staff(1, ['pos-orders', 'settings'], 'Branch Manager');
         $this->postJson(self::BASE.'/templates/install-recommended', ['only_if_empty' => true])->assertCreated();
         $this->template('salle')->delete();
         $this->postJson(self::BASE.'/templates/install-recommended', ['only_if_empty' => true])->assertOk()->assertJsonPath('data.added', 0);
@@ -265,7 +277,7 @@ class TaskControllerTest extends TestCase
         $t = $this->template('salle');
         $this->postJson(self::BASE.'/completions', ['template_id' => $t->id, 'all' => true])->assertCreated();
 
-        $this->putJson(self::BASE."/templates/{$t->id}", ['name' => 'Salle & terrasse', 'checklist' => [['key' => 'k1', 'label' => 'Tables']]])->assertOk();
+        $this->asManager(fn () => $this->putJson(self::BASE."/templates/{$t->id}", ['name' => 'Salle & terrasse', 'checklist' => [['key' => 'k1', 'label' => 'Tables']]])->assertOk());
         $row = HygieneTaskCompletion::query()->firstOrFail();
         $this->assertSame('Salle', $row->task_name);
         $this->assertCount(4, $row->items);
@@ -274,7 +286,7 @@ class TaskControllerTest extends TestCase
 
     public function test_template_validation_and_defaults(): void
     {
-        $this->staff();
+        $this->staff(1, ['pos-orders', 'settings'], 'Branch Manager');
         $this->postJson(self::BASE.'/templates', ['name' => 'X', 'checklist' => [], 'frequency' => 'daily'])->assertStatus(422);
         $this->postJson(self::BASE.'/templates', ['name' => 'X', 'checklist' => ['a'], 'frequency' => 'yearly'])->assertStatus(422);
         $this->postJson(self::BASE.'/templates', ['name' => 'X', 'checklist' => ['a'], 'frequency' => 'daily', 'due_time' => '25:00'])->assertStatus(422);
@@ -307,7 +319,7 @@ class TaskControllerTest extends TestCase
         $this->install();
         $id = $this->template('salle')->id;
 
-        $this->staff(2);
+        $this->staff(2, ['pos-orders', 'settings'], 'Branch Manager'); // même un responsable d'une autre branche ne voit ni ne touche la fiche
         $this->assertSame(0, $this->getJson(self::BASE.'/today')->json('meta.summary.total'));
         $this->postJson(self::BASE.'/completions', ['template_id' => $id, 'all' => true])->assertStatus(404);
         $this->putJson(self::BASE."/templates/$id", ['name' => 'Piraté'])->assertNotFound();

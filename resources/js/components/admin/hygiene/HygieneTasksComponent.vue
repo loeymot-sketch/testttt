@@ -31,7 +31,7 @@
                     <!-- ── À faire / Faites ─────────────────────────────────────────────────────── -->
                     <template v-if="tab === 'todo' || tab === 'done'">
                         <p v-if="!items.length" class="hy-muted" data-testid="tsk-empty">
-                            Aucune fiche n'est prévue aujourd'hui. Le plan complet est dans l'onglet « Plan de nettoyage ».
+                            Aucune fiche n'est prévue aujourd'hui. Le plan complet est dans l'onglet « Plan de nettoyage »<template v-if="!canManage">, préparé par un responsable</template>.
                         </p>
                         <p v-else-if="!shown.length && tab === 'todo' && summary.partial > 0" class="hy-note is-todo" data-testid="tsk-partial-left">
                             Plus de fiche à faire, mais {{ summary.partial }} fiche{{ summary.partial > 1 ? "s" : "" }} incomplète{{ summary.partial > 1 ? "s" : "" }} à reprendre : dans « Faites aujourd'hui », annulez la validation puis refaites la fiche.
@@ -63,6 +63,7 @@
                                         <li v-for="i in t.completion.items.filter((x) => !x.done)" :key="i.key" class="hy-row is-alert">Non fait : {{ i.label }}</li>
                                     </ul>
                                     <p v-if="t.completion.note" class="hy-sub">« {{ t.completion.note }} »</p>
+                                    <HygienePhotoView v-if="t.completion.attachment_id" :id="t.completion.attachment_id" label="📷 Voir" />
                                     <div v-if="voidTarget === t.completion.id" class="hy-field">
                                         <label class="hy-label" :for="`tsk-void-reason-${t.id}`">Pourquoi annuler ? (obligatoire)</label>
                                         <input :id="`tsk-void-reason-${t.id}`" v-model="voidReason" class="hy-input" maxlength="120" :data-testid="`tsk-void-reason-${t.id}`" />
@@ -127,13 +128,17 @@
                                     <template v-if="h.late"> · après l'heure</template><template v-if="h.note"> · « {{ h.note }} »</template>
                                     <template v-if="h.voided"> · ANNULÉE : {{ h.void_reason }}</template>
                                 </span>
+                                <HygienePhotoView v-if="h.attachment_id" :id="h.attachment_id" label="📷 Voir" />
                             </li>
                         </ul>
                     </template>
 
                     <!-- ── Plan de nettoyage ──────────────────────────────────────────────────── -->
                     <template v-if="tab === 'plan'">
-                        <p v-if="recommended.missing > 0" class="hy-note" data-testid="tsk-reco">
+                        <p v-if="!canManage" class="hy-note" data-testid="tsk-plan-readonly">
+                            Le plan de nettoyage est préparé par un responsable : vous pouvez le consulter, et valider les fiches du jour.
+                        </p>
+                        <p v-if="canManage && recommended.missing > 0" class="hy-note" data-testid="tsk-reco">
                             {{ recommended.missing }} fiche{{ recommended.missing > 1 ? "s" : "" }} du plan de départ manque{{ recommended.missing > 1 ? "nt" : "" }}.
                             <button type="button" class="hy-btn hy-btn--small" :disabled="saving" data-testid="tsk-install" @click="installRecommended(false)">Ajouter les fiches recommandées</button>
                         </p>
@@ -141,13 +146,13 @@
                             <li v-for="p in plan" :key="p.id" class="hy-row" :class="{ 'is-void': !p.is_active }" :data-testid="`tsk-plan-${p.id}`">
                                 <span class="hy-row-name hy-row-name--wide">{{ p.name }}</span>
                                 <span class="hy-row-meta">{{ p.zone || "—" }} · {{ frequencyText(p) }}<template v-if="p.due_time"> · avant {{ p.due_time }}</template> · {{ p.checklist.length }} point{{ p.checklist.length > 1 ? "s" : "" }}</span>
-                                <button type="button" class="hy-btn hy-btn--small" :data-testid="`tsk-plan-edit-${p.id}`" @click="startEdit(p)">Modifier</button>
+                                <button v-if="canManage" type="button" class="hy-btn hy-btn--small" :data-testid="`tsk-plan-edit-${p.id}`" @click="startEdit(p)">Modifier</button>
                             </li>
                         </ul>
-                        <button v-if="!edit" type="button" class="hy-btn hy-btn--primary" style="margin-top:12px" data-testid="tsk-plan-new" @click="startEdit(null)">＋ Nouvelle fiche</button>
+                        <button v-if="canManage && !edit" type="button" class="hy-btn hy-btn--primary" style="margin-top:12px" data-testid="tsk-plan-new" @click="startEdit(null)">＋ Nouvelle fiche</button>
 
-                        <div v-if="edit" class="hy-card is-open" style="margin-top:12px" data-testid="tsk-editor">
-                            <div class="hy-field"><label class="hy-label" for="tsk-e-name">Nom</label><input id="tsk-e-name" v-model="edit.name" class="hy-input" maxlength="80" data-testid="tsk-e-name" /></div>
+                        <div v-if="edit" ref="editor" class="hy-card is-open" style="margin-top:12px;scroll-margin-top:150px" data-testid="tsk-editor">
+                            <div class="hy-field"><label class="hy-label" for="tsk-e-name">Nom</label><input id="tsk-e-name" ref="editName" v-model="edit.name" class="hy-input" maxlength="80" data-testid="tsk-e-name" /></div>
                             <div class="hy-field"><label class="hy-label" for="tsk-e-zone">Zone</label><input id="tsk-e-zone" v-model="edit.zone" class="hy-input" maxlength="40" data-testid="tsk-e-zone" /></div>
                             <div class="hy-field">
                                 <label class="hy-label" for="tsk-e-freq">Fréquence</label>
@@ -155,6 +160,9 @@
                                     <option value="daily">Tous les jours</option><option value="weekly">Une fois par semaine</option><option value="monthly">Une fois par mois</option>
                                 </select>
                             </div>
+                            <p v-if="scheduleChanged" class="hy-note" data-testid="tsk-e-freq-note">
+                                Changer la fréquence remplace la fiche par une nouvelle : l'historique de l'ancienne reste au dossier tel qu'il a été attendu.
+                            </p>
                             <div v-if="edit.frequency === 'weekly'" class="hy-field">
                                 <label class="hy-label" for="tsk-e-weekday">Quel jour ?</label>
                                 <select id="tsk-e-weekday" v-model.number="edit.weekday" class="hy-select" data-testid="tsk-e-weekday">
@@ -177,10 +185,17 @@
                             </div>
                             <label class="hy-chip hy-chip--btn" style="display:inline-flex;gap:8px;align-items:center"><input v-model="edit.is_active" type="checkbox" data-testid="tsk-e-active" /> Fiche active</label>
                             <p v-if="edit.error" class="hy-alert" role="alert" data-testid="tsk-e-error">{{ edit.error }}</p>
-                            <div style="display:flex;gap:8px;flex-wrap:wrap">
+                            <div v-if="edit.confirmDelete" class="hy-field" role="group" aria-label="Confirmer la suppression" data-testid="tsk-e-delete-confirm">
+                                <span class="hy-sub">Supprimer « {{ edit.name }} » ? Elle ne sera plus demandée ; son historique reste au journal et au dossier.</span>
+                                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                                    <button type="button" class="hy-btn hy-btn--danger hy-btn--small" :disabled="saving" data-testid="tsk-e-delete-yes" @click="deleteEdit">Oui, supprimer</button>
+                                    <button type="button" class="hy-btn hy-btn--small" data-testid="tsk-e-delete-no" @click="edit.confirmDelete = false">Garder</button>
+                                </div>
+                            </div>
+                            <div v-else style="display:flex;gap:8px;flex-wrap:wrap">
                                 <button type="button" class="hy-btn hy-btn--primary" :disabled="saving" data-testid="tsk-e-save" @click="saveEdit">Enregistrer</button>
                                 <button type="button" class="hy-btn" @click="edit = null">Annuler</button>
-                                <button v-if="edit.id" type="button" class="hy-btn hy-btn--danger" :disabled="saving" data-testid="tsk-e-delete" @click="deleteEdit">Supprimer la fiche</button>
+                                <button v-if="edit.id" type="button" class="hy-btn hy-btn--danger" :disabled="saving" data-testid="tsk-e-delete" @click="edit.confirmDelete = true">Supprimer la fiche</button>
                             </div>
                         </div>
                     </template>
@@ -201,6 +216,8 @@ import axios from "axios";
 import alertService from "../../../services/alertService";
 import HygieneOperatorPicker from "./HygieneOperatorPicker";
 import HygienePhotoField from "./HygienePhotoField";
+import HygienePhotoView from "./HygienePhotoView";
+import { hasPermissionAccess } from "../../../shared/permission-match";
 import { apiMessage, formatHm, formatDayHm, formatDay, newClientRef, refFor, latest, loadedBody, savedBody, loadFailedText } from "../../../helpers/hygieneCommon";
 import hygieneRefresh from "../../../helpers/hygieneRefresh";
 
@@ -208,10 +225,23 @@ const historySeq = latest();
 
 const WEEKDAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
+/** Même lecture que TaskSchedule::isDueOn (jour absent = 1). */
+function scheduleKey(p) {
+    if (p.frequency === "weekly") return `weekly:${Number(p.weekday) || 1}`;
+    if (p.frequency === "monthly") return `monthly:${Number(p.month_day) || 1}`;
+    return "daily";
+}
+
+/** Un refus de droit (403) dit QUI peut le faire, jamais un message technique. */
+function rightsMessage(e, fallback) {
+    if (e && e.response && e.response.status === 403) return "Réservé à un responsable : demandez-lui de modifier le plan de nettoyage.";
+    return apiMessage(e, fallback);
+}
+
 export default {
     name: "HygieneTasksComponent",
     mixins: [hygieneRefresh],
-    components: { HygieneHubBar, HygieneOperatorPicker, HygienePhotoField },
+    components: { HygieneHubBar, HygieneOperatorPicker, HygienePhotoField, HygienePhotoView },
     data() {
         return {
             WEEKDAYS,
@@ -250,6 +280,23 @@ export default {
             ];
         },
         todayLabel() { return formatDay(this.meta.server_now || new Date().toISOString(), this.meta.timezone); },
+        /**
+         * [AUDIT E2E 2026-11-18 · P0 droits] Gérer le plan (créer, modifier, supprimer, installer) : le droit que le SERVEUR exige (`settings`,
+         * comme Équipe et Alertes). Liste de droits pas encore chargée : on propose (même règle que l'accueil) ; le refus 403 est alors dit clairement.
+         */
+        canManage() {
+            // Le serveur dit qui peut gérer la structure (`meta.can_manage`, règle StructureAccess : droit « Paramètres »
+            // OU rôle de responsable). Tant que la réponse n'est pas arrivée : repli sur la liste de droits.
+            if (this.meta && typeof this.meta.can_manage === "boolean") return this.meta.can_manage;
+            const perms = "$store" in this && this.$store.getters ? this.$store.getters.authPermission : null;
+            return hasPermissionAccess(perms, "settings");
+        },
+        /** La fréquence effective d'une fiche existante change-t-elle ? (le serveur la remplace alors par une nouvelle : voir l'avertissement) */
+        scheduleChanged() {
+            const e = this.edit;
+            if (!e || !e.id || !e.original) return false;
+            return scheduleKey(e) !== scheduleKey(e.original);
+        },
     },
     created() { this.load(); },
     methods: {
@@ -295,7 +342,7 @@ export default {
                 if (this.tab === "plan") await this.loadPlan();
                 if (!auto) alertService.success(added ? `${added} fiche${added > 1 ? "s" : ""} ajoutée${added > 1 ? "s" : ""}.` : "Le plan est déjà complet.");
             } catch (e) {
-                if (!auto) alertService.error(apiMessage(e, "Installation impossible : réessayez."));
+                if (!auto) alertService.error(rightsMessage(e, "Installation impossible : réessayez."));
             } finally {
                 this.saving = false;
             }
@@ -385,8 +432,16 @@ export default {
         startEdit(p) {
             this.edit = p
                 ? { id: p.id, name: p.name, zone: p.zone || "", how_to: p.how_to || "", frequency: p.frequency, weekday: p.weekday || 1, month_day: p.month_day || 1,
-                    due_time: p.due_time || "", is_active: p.is_active, checklist: p.checklist.map((c) => ({ ...c })), error: "" }
-                : { id: null, name: "", zone: "", how_to: "", frequency: "daily", weekday: 1, month_day: 1, due_time: "", is_active: true, checklist: [{ key: "", label: "" }], error: "" };
+                    due_time: p.due_time || "", is_active: p.is_active, checklist: p.checklist.map((c) => ({ ...c })), error: "", confirmDelete: false,
+                    original: { frequency: p.frequency, weekday: p.weekday, month_day: p.month_day } }
+                : { id: null, name: "", zone: "", how_to: "", frequency: "daily", weekday: 1, month_day: 1, due_time: "", is_active: true, checklist: [{ key: "", label: "" }], error: "", confirmDelete: false, original: null };
+            // [AUDIT E2E 2026-11-18 · P1] l'éditeur s'ouvre SOUS toute la liste : on l'amène à l'écran et on place le curseur sur le nom
+            this.$nextTick(() => {
+                const box = this.$refs.editor;
+                if (box && typeof box.scrollIntoView === "function") box.scrollIntoView({ behavior: "smooth", block: "start" });
+                const name = this.$refs.editName;
+                if (name && typeof name.focus === "function") name.focus({ preventScroll: true });
+            });
         },
         async saveEdit() {
             const e = this.edit;
@@ -400,13 +455,16 @@ export default {
             this.saving = true;
             e.error = "";
             try {
-                if (e.id) savedBody(await axios.put(`admin/hygiene/tasks/templates/${e.id}`, body)); // [VG-2026-10-21 M8-101]
-                else savedBody(await axios.post("admin/hygiene/tasks/templates", body)); // [VG-2026-10-21 M8-101]
+                const saved = e.id
+                    ? savedBody(await axios.put(`admin/hygiene/tasks/templates/${e.id}`, body)) // [VG-2026-10-21 M8-101]
+                    : savedBody(await axios.post("admin/hygiene/tasks/templates", body)); // [VG-2026-10-21 M8-101]
                 this.edit = null;
+                // la fiche remplacée (fréquence changée) a un NOUVEL identifiant : la liste et le jour sont rechargés
                 await Promise.all([this.loadPlan(), this.load()]);
-                alertService.success("Fiche enregistrée.");
+                const replaced = Boolean(saved && saved.meta && saved.meta.replaced);
+                alertService.success(replaced ? "Une nouvelle fiche remplace l'ancienne, dont l'historique reste au dossier tel qu'il a été attendu." : "Fiche enregistrée.");
             } catch (err) {
-                e.error = apiMessage(err, "Enregistrement impossible : réessayez.");
+                e.error = rightsMessage(err, "Enregistrement impossible : réessayez.");
             } finally {
                 this.saving = false;
             }
@@ -421,7 +479,8 @@ export default {
                 await Promise.all([this.loadPlan(), this.load()]);
                 alertService.success("Fiche supprimée (son historique reste au journal).");
             } catch (err) {
-                e.error = apiMessage(err, "Suppression impossible : réessayez.");
+                e.confirmDelete = false;
+                e.error = rightsMessage(err, "Suppression impossible : réessayez.");
             } finally {
                 this.saving = false;
             }
