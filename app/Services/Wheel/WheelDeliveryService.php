@@ -432,9 +432,11 @@ class WheelDeliveryService
      *      préfère un cadeau non chiffré SIGNALÉ à un cadeau chiffré sur le mauvais produit, qui
      *      ferait dériver l'inventaire de celui-là en silence.
      */
-    public function costItemId(string $prizeKey): ?int
+    public function costItemId(string $prizeKey, ?array $catalogue = null): ?int
     {
-        foreach (app(\App\Services\Wheel\WheelService::class)->catalogueComplet() as $s) { // lots retirés compris : un lot gagné reste dû
+        // `$catalogue` : le catalogue COMPLET (archives comprises) déjà lu par l'appelant, pour ne pas
+        // relire les réglages une fois par lot. Absent → relu ici.
+        foreach ($catalogue ?? app(\App\Services\Wheel\WheelService::class)->catalogueComplet() as $s) { // lots retirés compris : un lot gagné reste dû
             if ((string) ($s['key'] ?? '') !== $prizeKey) {
                 continue;
             }

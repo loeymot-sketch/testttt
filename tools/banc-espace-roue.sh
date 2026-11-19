@@ -19,8 +19,11 @@ php artisan tinker --execute="file_put_contents('$TMP/settings.json', json_encod
 SPIN_ID="$(php artisan tinker --execute="
 \$c = (string) config('wheel.campaign_key');
 DB::table('wheel_spins')->where('phone','$TEL')->delete();
-echo DB::table('wheel_spins')->insertGetId(['branch_id'=>1,'campaign_key'=>\$c,'phone'=>'$TEL','customer_name'=>'Testeur Banc','prize_key'=>'tiramisu','prize_label'=>'Tiramisu','prize_type'=>'free_item','prize_value'=>0,'points_awarded'=>0,'unlock_method'=>'staff','created_at'=>now(),'updated_at'=>now()]);
+echo DB::table('wheel_spins')->insertGetId(['branch_id'=>1,'campaign_key'=>\$c,'phone'=>'$TEL','customer_name'=>'Testeur Banc','prize_key'=>'banc_espace','prize_label'=>'Cadeau du banc','prize_type'=>'free_item','prize_value'=>0,'points_awarded'=>0,'unlock_method'=>'staff','created_at'=>now(),'updated_at'=>now()]);
 " | tail -1)"
+# Lot SANS produit de référence (clé hors catalogue) : sa remise n'écrit AUCUNE sortie de stock.
+# Un « Tiramisu » réel en écrivait une à chaque passage — ligne en ajout seul, impossible à effacer,
+# qui gonflait d'un cran à chaque banc l'avertissement « cadeaux remis sans sortir du stock ».
 echo "lot semé : #$SPIN_ID"
 
 restaurer() {

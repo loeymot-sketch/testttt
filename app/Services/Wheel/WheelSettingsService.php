@@ -77,7 +77,27 @@ class WheelSettingsService
      */
     public function prizeOverrides(): array
     {
+        return $this->prizeOverridesDepuis($this->stored());
+    }
+
+    /**
+     * LE CATALOGUE ET SES RÉGLAGES EN UNE SEULE LECTURE — [2026-11-19, optimisation mesurée].
+     * `catalogueStocke()` puis `prizeOverrides()` relisaient chacun le groupe de réglages ; appelés
+     * une fois PAR LOT (produit de référence, rupture…), ils faisaient 32 lectures identiques à chaque
+     * affichage de la roue publique et 47 à chaque chargement de l'espace commerçant.
+     *
+     * @return array{0: array<int, array<string, mixed>>|null, 1: array<string, array{weight?: int, quantity?: int}>}
+     */
+    public function lectureCatalogue(): array
+    {
         $stored = $this->stored();
+
+        return [$this->catalogueDepuis($stored), $this->prizeOverridesDepuis($stored)];
+    }
+
+    /** @return array<string, array{weight?: int, quantity?: int}> */
+    private function prizeOverridesDepuis(array $stored): array
+    {
         $out = [];
 
         foreach ($stored as $cle => $valeur) {
@@ -122,7 +142,13 @@ class WheelSettingsService
      */
     public function catalogueStocke(): ?array
     {
-        $brut = $this->stored()[self::CATALOGUE_KEY] ?? null;
+        return $this->catalogueDepuis($this->stored());
+    }
+
+    /** @return array<int, array<string, mixed>>|null */
+    private function catalogueDepuis(array $stored): ?array
+    {
+        $brut = $stored[self::CATALOGUE_KEY] ?? null;
         if (! is_string($brut) || trim($brut) === '') {
             return null;
         }

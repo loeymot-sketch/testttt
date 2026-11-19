@@ -409,5 +409,80 @@ class WheelMerchantSpaceTest extends TestCase
         ], $envoi)])->assertOk();
         $this->assertTrue(collect(app(WheelService::class)->catalogueComplet())->firstWhere('key', 'tiramisu')['archived']);
     }
+
+    // ── Optimisation mesurée (2026-11-19) ─────────────────────────────────────────────────────
+
+    /**
+     * Le catalogue et ses réglages sont lus UNE fois par appel, pas une fois par lot. Avant : chaque
+     * lot « produit offert » relisait tout le groupe de réglages (produit de référence, rupture), soit
+     * 32 lectures à chaque affichage de la roue publique. On compte les lectures avec 2 lots puis avec
+     * 12 : elles ne doivent pas grandir avec le nombre de lots.
+     */
+    public function test_les_reglages_ne_sont_pas_relus_une_fois_par_lot(): void
+    {
+        $lecturesPour = function (int $nb): int {
+            $lots = [];
+            for ($i = 0; $i < $nb; $i++) {
+                $lots[] = ['key' => 'lot' . $i, 'label' => 'Lot ' . $i, 'type' => 'free_item', 'value' => 0,
+                    'weight' => 5, 'daily_cap' => 0, 'quantity' => 0, 'cost_item_id' => $this->boisson->id];
+            }
+            app(WheelSettingsService::class)->saveCatalogue($lots);
+
+            $n = 0;
+            \DB::listen(function ($q) use (&$n) {
+                if (str_contains($q->sql, 'from `settings`') || str_contains($q->sql, 'from "settings"')) {
+                    $n++;
+                }
+            });
+            $avant = $n;
+            app(WheelService::class)->publicSegments($this->branchId);
+            app(WheelService::class)->spinnableKeys($this->branchId);
+
+            return $n - $avant;
+        };
+
+        $deux = $lecturesPour(2);
+        $douze = $lecturesPour(12);
+        $this->assertSame(12, count(app(WheelService::class)->spinnableKeys($this->branchId)), 'les 12 lots restent tirables');
+        $this->assertLessThanOrEqual($deux, $douze, "lectures des réglages : $deux pour 2 lots, $douze pour 12 — elles grandissent avec les lots");
+    }
+
+    // ── Relecture adverse du 2026-11-19 (round 1) ─────────────────────────────────────────────
+
+    /** A-003 : la liste couvre toujours la validité — sinon la pastille annonce des lots invisibles. */
+    public function test_la_liste_des_lots_couvre_toute_la_validite(): void
+    {
+        Config::set('wheel.prize_validity_days', 200);
+        $vieux = $this->gain('tiramisu', 'Tiramisu', '0688000150', now()->subDays(150));
+
+        $ids = collect($this->moi()->getJson('/admin/roue/espace/lots')->assertOk()->json('data'))->pluck('id')->all();
+        $this->assertContains($vieux->id, $ids, 'un lot de 150 jours encore valable doit être dans la liste');
+        $this->assertSame(1, $this->moi()->getJson('/admin/roue/espace/donnees')->json('data.aRemettre'));
+    }
+
+    /** A-004 : « encore à remettre » ne compte pas les expirés, comme la pastille d'à côté. */
+    public function test_encore_a_remettre_exclut_les_lots_expires(): void
+    {
+        Config::set('wheel.prize_validity_days', 3);
+        $this->gain('tiramisu', 'Tiramisu', '0688000201', now()->subDays(5));
+        $this->gain('boisson', 'Boisson', '0688000202', now()->subDay());
+
+        $d = $this->moi()->getJson('/admin/roue/espace/donnees')->assertOk()->json('data');
+        $this->assertSame(2, $d['bilan']['periodes']['semaine']['cadeaux_dus'], 'non remis, expirés compris');
+        $this->assertSame(1, $d['bilan']['periodes']['semaine']['cadeaux_a_remettre'], 'seuls les valables');
+        $this->assertSame(1, $d['aRemettre']);
+    }
+
+    /** A-014 : la liste dit « à remettre » tant que la remise l'accepte (fin du dernier jour). */
+    public function test_l_echeance_de_la_liste_est_celle_de_la_remise(): void
+    {
+        Config::set('wheel.prize_validity_days', 30);
+        $this->travelTo(now()->setTime(18, 0));
+        $spin = $this->gain('tiramisu', 'Tiramisu', '0688000303', now()->subDays(30)->setTime(8, 0));
+
+        $ligne = collect($this->moi()->getJson('/admin/roue/espace/lots')->json('data'))->firstWhere('id', $spin->id);
+        $this->assertSame('du', $ligne['etat'], 'gagné il y a 30 jours ce matin : valable jusqu\'à ce soir minuit');
+        $this->moi()->postJson('/admin/roue/espace/lots/' . $spin->id . '/remettre', ['phone' => '0688000303'])->assertOk();
+    }
 }
 

@@ -101,11 +101,16 @@ class WheelMerchantController extends Controller
         ]);
     }
 
-    /** Les lots gagnés, filtrables à l'écran (90 jours, 500 lignes). */
+    /**
+     * Les lots gagnés, filtrables à l'écran (90 jours au moins, 500 lignes). La fenêtre couvre
+     * TOUJOURS la validité des lots : avec une validité de 180 jours et une liste de 90, la pastille
+     * « à remettre » annonçait des lots que la liste ne montrait pas — donc impossibles à remettre.
+     */
     public function lots(Request $request): JsonResponse
     {
         $branchId = $this->branchId($request);
-        $lignes = $this->rapport->historique($branchId, 90, 500);
+        $jours = max(90, (int) config('wheel.prize_validity_days', 30) + 1);
+        $lignes = $this->rapport->historique($branchId, $jours, 500);
 
         return response()->json(['status' => true, 'data' => array_map(static function ($l) {
             return [

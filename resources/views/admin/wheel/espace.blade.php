@@ -47,6 +47,8 @@ a{color:inherit}
 /* ── Charpente ─────────────────────────────────────────────── */
 .side{position:fixed;inset:0 auto 0 0;width:256px;background:var(--ink);color:#fff;display:flex;flex-direction:column;z-index:30;transform:translateX(-100%);transition:transform .2s}
 .side.open{transform:none}
+/* Fermé sur téléphone/tablette : hors écran ET hors clavier (sinon Tab parcourt un menu invisible). */
+@media(max-width:1023px){.side{visibility:hidden;transition:transform .2s,visibility 0s .2s}.side.open{visibility:visible;transition:transform .2s}}
 .scrim{position:fixed;inset:0;background:rgba(26,26,26,.5);z-index:25;display:none}
 .scrim.open{display:block}
 @media(min-width:1024px){.side{transform:none}.scrim{display:none!important}.main{padding-left:256px}.burger{display:none!important}}
@@ -161,6 +163,19 @@ table.t th{text-align:left;font-size:12.5px;font-weight:600;color:var(--ink-soft
 table.t td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
 table.t tr:last-child td{border-bottom:0}
 .tablewrap{overflow-x:auto}
+/* Lots gagnés sur téléphone : une carte par lot, le bouton « Remettre » toujours à l'écran. */
+@media(max-width:719px){
+  table.lots thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  table.lots tr{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px 14px;border-bottom:1px solid var(--line)}
+  table.lots tr:last-child{border-bottom:0}
+  table.lots td{display:block;padding:0;border:0}
+  table.lots td.c-lot{grid-column:1;grid-row:1;font-size:15px}
+  table.lots td.c-act{grid-column:2;grid-row:1 / span 2;align-self:center}
+  table.lots td.c-quand{grid-column:1;grid-row:2}
+  table.lots td.c-client,table.lots td.c-code,table.lots td.c-statut{grid-column:1 / -1}
+  table.lots td.c-code:empty,table.lots td.c-code.vide{display:none}
+  table.lots td[colspan]{grid-column:1 / -1}
+}
 
 /* Lot (ticket) */
 .lotcard{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden}
@@ -328,7 +343,7 @@ table.t tr:last-child td{border-bottom:0}
             <p class="sub">La chance de chaque cadeau est calculée sur le total. Mettez <b>0</b> pour l'afficher sans jamais le faire gagner (un cadeau « vitrine »).</p>
             <div class="tablewrap">
               <table class="t" aria-label="Chances de chaque cadeau">
-                <thead><tr><th></th><th>Texte sur la roue</th><th>Cadeau</th><th>Poids</th><th class="num">Chance</th></tr></thead>
+                <thead><tr><th><span class="sr">Couleur</span></th><th>Texte sur la roue</th><th>Cadeau</th><th>Poids</th><th class="num">Chance</th></tr></thead>
                 <tbody id="tChances"></tbody>
               </table>
             </div>
@@ -469,7 +484,7 @@ table.t tr:last-child td{border-bottom:0}
         <div class="card sticky">
           <h2>Page du jeu</h2>
           <p class="sub">Adresse de la page que vos clients ouvrent en scannant le QR. Elle n'ouvre une partie qu'avec un QR valide émis au comptoir.</p>
-          <div class="in" id="cUrl" style="display:flex;align-items:center;word-break:break-all;font-size:14px"></div>
+          <div class="in" id="cUrl" style="display:flex;align-items:center;overflow-wrap:anywhere;font-size:14px"></div>
           <div class="row" style="margin-top:10px"><button class="btn ghost sm" id="btnCopier">Copier le lien</button></div>
         </div>
       </div>
@@ -482,19 +497,19 @@ table.t tr:last-child td{border-bottom:0}
           <div class="chips" id="filtres" role="group" aria-label="Filtrer les lots"></div>
           <div style="flex:1;min-width:220px;max-width:380px">
             <label class="sr" for="recherche">Rechercher</label>
-            <input class="in" type="search" id="recherche" placeholder="Code, prénom, 4 derniers chiffres, cadeau…" autocomplete="off">
+            <input class="in" type="search" id="recherche" placeholder="Code, prénom, fin du n°, cadeau" autocomplete="off">
           </div>
         </div>
       </div>
       <div class="card flush">
         <div class="tablewrap">
-          <table class="t" aria-label="Lots gagnés">
-            <thead><tr><th>Gagné le</th><th>Cadeau</th><th>Client</th><th>Code</th><th>Statut</th><th></th></tr></thead>
+          <table class="t lots" aria-label="Lots gagnés">
+            <thead><tr><th>Gagné le</th><th>Cadeau</th><th>Client</th><th>Code</th><th>Statut</th><th><span class="sr">Action</span></th></tr></thead>
             <tbody id="tLots"></tbody>
           </table>
         </div>
       </div>
-      <p class="muted small" style="margin-top:10px">Les 90 derniers jours. Le numéro du client n'est jamais affiché en entier.</p>
+      <p class="muted small" style="margin-top:10px">Les 90 derniers jours, et tous les lots encore valables. Le numéro du client n'est jamais affiché en entier.</p>
     </section>
 
     {{-- ── STATISTIQUES ── --}}
@@ -597,6 +612,7 @@ table.t tr:last-child td{border-bottom:0}
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
     });
   }
+  function restants(n) { return nb(n) + (Number(n) > 1 ? ' restants' : ' restant'); }
   function eur(n) { return (Number(n) || 0).toLocaleString('fr-FR', {style:'currency', currency:'EUR'}); }
   function nb(n) { return (Number(n) || 0).toLocaleString('fr-FR'); }
   function date(iso, heure) {
@@ -618,11 +634,14 @@ table.t tr:last-child td{border-bottom:0}
   function toast(msg, type) {
     var t = document.createElement('div');
     t.className = 'toast ' + (type || 'ok');
+    // Une erreur doit être ANNONCÉE (lecteur d'écran), pas seulement affichée.
+    t.setAttribute('role', type === 'err' ? 'alert' : 'status');
     t.textContent = msg;
     $('toasts').appendChild(t);
     setTimeout(function () { t.remove(); }, type === 'err' ? 7000 : 4000);
   }
 
+  var horsLigne = false;
   function api(url, opts) {
     opts = opts || {};
     var init = {method: opts.method || 'GET', credentials: 'same-origin',
@@ -632,7 +651,21 @@ table.t tr:last-child td{border-bottom:0}
       init.headers['X-CSRF-TOKEN'] = CSRF;
       init.body = JSON.stringify(opts.body);
     }
-    return fetch(url, init).then(function (r) {
+    // Réseau coupé : `fetch` rejette sans réponse. On le DIT une fois ici, pour tous les appels —
+    // sinon chaque bouton se réactivait en silence et l'exploitant croyait avoir enregistré.
+    var ecriture = init.method !== 'GET';
+    return fetch(url, init).catch(function () {
+      // Écriture : on dit que RIEN n'est enregistré (sauf dans la modale, qui l'écrit elle-même).
+      // Lecture : une seule alerte tant que la coupure dure — pas une toutes les 60 s.
+      if (ecriture) {
+        if (!$('modal').classList.contains('open')) toast('Connexion impossible : rien n’a été enregistré. Vérifiez le réseau puis réessayez.', 'err');
+      } else if (!horsLigne) {
+        horsLigne = true;
+        toast('Connexion perdue : les chiffres affichés ne sont plus à jour.', 'err');
+      }
+      var e = new Error('reseau'); e.reseau = true; throw e;
+    }).then(function (r) {
+      horsLigne = false;
       if (r.status === 401 || r.status === 419) {
         toast('Votre accès a expiré. Entrez de nouveau le code.', 'err');
         setTimeout(function () { location.href = '/admin/roue'; }, 1200);
@@ -661,13 +694,26 @@ table.t tr:last-child td{border-bottom:0}
   function fermerModale() { $('modal').classList.remove('open'); mAction = null; if (dernierFocus) dernierFocus.focus(); }
   $('mNon').addEventListener('click', fermerModale);
   $('modal').addEventListener('click', function (e) { if (e.target === $('modal')) fermerModale(); });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('modal').classList.contains('open')) fermerModale(); });
+  document.addEventListener('keydown', function (e) {
+    if (!$('modal').classList.contains('open')) return;
+    if (e.key === 'Escape') { fermerModale(); return; }
+    if (e.key !== 'Tab') return;
+    // Le focus reste DANS la fenêtre tant qu'elle est ouverte (aria-modal ne le garantit pas seul).
+    var f = Array.prototype.filter.call($('modal').querySelectorAll('button,input,select,textarea,a[href]'), function (x) { return !x.disabled && x.offsetParent !== null; });
+    if (!f.length) return;
+    var premier = f[0], dernier = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === premier) { e.preventDefault(); dernier.focus(); }
+    else if (!e.shiftKey && document.activeElement === dernier) { e.preventDefault(); premier.focus(); }
+  });
   $('mOui').addEventListener('click', function () {
     if (!mAction) return;
     $('mOui').disabled = true;
     Promise.resolve(mAction()).then(function (fermer) {
       if (fermer !== false) fermerModale(); else $('mOui').disabled = false;
-    }).catch(function () { $('mOui').disabled = false; });
+    }).catch(function (e) {
+      $('mOui').disabled = false;
+      if (e && e.reseau) $('mErr').textContent = 'Connexion impossible : réessayez.';
+    });
   });
   $('mCorps').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('mOui').click(); } });
   $('mCorps').addEventListener('input', function () { $('mErr').textContent = ''; });
@@ -676,6 +722,7 @@ table.t tr:last-child td{border-bottom:0}
   function vueCourante() { var h = (location.hash || '#tableau').slice(1); return TITRES[h] ? h : 'tableau'; }
   function montrer() {
     var v = vueCourante();
+    if (D && perimees[v]) { delete perimees[v]; RENDUS[v](); }
     document.querySelectorAll('section[data-view]').forEach(function (s) { s.hidden = s.getAttribute('data-view') !== v || !D; });
     document.querySelectorAll('#nav a').forEach(function (a) {
       if (a.getAttribute('data-v') === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
@@ -689,26 +736,44 @@ table.t tr:last-child td{border-bottom:0}
   function fermerMenu() { $('side').classList.remove('open'); $('scrim').classList.remove('open'); $('burger').setAttribute('aria-expanded', 'false'); }
   $('burger').addEventListener('click', function () {
     $('side').classList.add('open'); $('scrim').classList.add('open'); $('burger').setAttribute('aria-expanded', 'true');
+    var a = $('side').querySelector('a[aria-current]') || $('side').querySelector('a');
+    if (a) setTimeout(function () { a.focus(); }, 0); // après `visibility` rendue visible
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && $('side').classList.contains('open') && !$('modal').classList.contains('open')) { fermerMenu(); $('burger').focus(); }
   });
   $('scrim').addEventListener('click', fermerMenu);
-  window.addEventListener('beforeunload', function (e) { if (sale) { e.preventDefault(); e.returnValue = ''; } });
+  window.addEventListener('beforeunload', function (e) { if (sale || saisie.liens || saisie.jeu) { e.preventDefault(); e.returnValue = ''; } });
 
   // ── Chargement ──────────────────────────────────────────────
-  function charger() {
+  // `partiel` (rafraîchissement automatique) : seule la rubrique affichée est redessinée, les autres
+  // sont marquées périmées et redessinées quand on y va. Avant, les 8 rubriques — dont la liste
+  // complète des produits dans chaque carte cadeau — étaient reconstruites chaque minute.
+  function charger(partiel) {
     return api(BASE + '/donnees').then(function (j) {
       if (!j.status) { toast(j.message || 'Chargement impossible.', 'err'); return; }
       D = j.data;
       if (!sale) brouillon = JSON.parse(JSON.stringify(D.lots));
       $('chargement').hidden = true;
-      rendreTout();
+      if (partiel === true) {
+        rendreEtat();
+        Object.keys(RENDUS).forEach(function (k) { perimees[k] = true; });
+      } else {
+        rendreTout();
+      }
       montrer();
     }).catch(function (e) {
       if (e && e.message === 'locked') return;
-      $('chargement').textContent = 'Connexion impossible. Vérifiez le réseau puis rechargez la page.';
+      if (!D) $('chargement').textContent = 'Connexion impossible. Vérifiez le réseau puis rechargez la page.';
     });
   }
 
+  var RENDUS = {tableau: function () { rendreTableau(); }, roue: function () { rendreRoue(); }, cadeaux: function () { rendreCadeaux(); },
+    avis: function () { rendreLiens(); }, comptoir: function () { rendreComptoir(); }, lots: function () {},
+    stats: function () { rendreStats(); }, reglages: function () { rendreReglages(); }};
+  var perimees = {};
   function rendreTout() {
+    perimees = {};
     rendreEtat(); rendreTableau(); rendreRoue(); rendreCadeaux(); rendreLiens(); rendreComptoir(); rendreStats(); rendreReglages();
   }
 
@@ -764,7 +829,7 @@ table.t tr:last-child td{border-bottom:0}
     var p = D.bilan.periodes[periode];
     $('kpis').innerHTML =
       kpi('Parties jouées', nb(p.tours), p.libelle) +
-      kpi('Cadeaux remis', nb(p.cadeaux_remis), p.cadeaux_dus ? nb(p.cadeaux_dus) + ' encore à remettre' : 'tous remis') +
+      kpi('Cadeaux remis', nb(p.cadeaux_remis), p.cadeaux_a_remettre ? nb(p.cadeaux_a_remettre) + ' encore à remettre' : 'aucun en attente') +
       kpi('Lots à remettre', nb(D.aRemettre), 'encore valables, toutes périodes', true) +
       kpi('Valeur offerte', eur((p.valeur_offerte || 0) + (p.valeur_points || 0)), 'produits au prix carte + points');
   }
@@ -776,9 +841,11 @@ table.t tr:last-child td{border-bottom:0}
     var actifs = D.lots.filter(function (l) { return !l.archived; });
     $('resteLots').innerHTML = actifs.length ? actifs.map(function (l) {
       var pct = l.quantity > 0 ? Math.min(100, Math.round(100 * l.donnes / l.quantity)) : 0;
+      var vitrine = !(Number(l.weight) > 0);
       return '<li>' + vignette(l) + '<div class="grow"><div class="row between"><b class="trunc">' + esc(l.label) + '</b><span class="small muted num">' +
-        (l.quantity > 0 ? esc(nb(l.restant)) + ' / ' + esc(nb(l.quantity)) + ' restants' : 'illimité · ' + esc(nb(l.donnes)) + ' gagnés') + '</span></div>' +
-        (l.quantity > 0 ? '<div class="bar' + (pct >= 90 ? '' : ' gold') + '" style="margin-top:6px"><i style="width:' + pct + '%"></i></div>' : '') +
+        (vitrine ? 'Vitrine · jamais gagné'
+          : (l.quantity > 0 ? esc(nb(l.restant)) + ' / ' + esc(restants(l.quantity)) : 'illimité · ' + esc(nb(l.donnes)) + ' gagné' + (l.donnes > 1 ? 's' : ''))) + '</span></div>' +
+        (l.quantity > 0 && !vitrine ? '<div class="bar' + (pct >= 90 ? '' : ' gold') + '" style="margin-top:6px"><i style="width:' + pct + '%"></i></div>' : '') +
         (!l.tirable && l.weight > 0 ? '<span class="pill bad" style="margin-top:6px">Ne peut pas sortir en ce moment</span>' : '') + '</div></li>';
     }).join('') : '<li class="muted">Aucun cadeau sur la roue.</li>';
     $('derniers').innerHTML = D.derniers.length ? D.derniers.map(function (g) {
@@ -798,7 +865,8 @@ table.t tr:last-child td{border-bottom:0}
   function graphique(serie) {
     // Sur téléphone, un dessin plus étroit garde des graduations lisibles une fois mis à l'échelle.
     var etroit = window.innerWidth < 640;
-    var W = etroit ? 360 : 720, H = etroit ? 200 : 220, pad = 28, n = serie.length || 1, pas = etroit ? 10 : 5;
+    var W = etroit ? 320 : 720, H = 220, pad = etroit ? 30 : 28, n = serie.length || 1, pas = etroit ? 10 : 5;
+    var fs = etroit ? 13 : 12; // le dessin est mis à l'échelle de l'écran : 10 devenait ~9 px sur téléphone
     var brut = Math.max.apply(null, serie.map(function (r) { return Math.max(r.parties, r.remis); }).concat([0]));
     // Graduations ENTIÈRES : une échelle « 1, 1, 1, 0, 0 » ne veut rien dire.
     var max = Math.max(4, Math.ceil(brut / 4) * 4);
@@ -807,13 +875,13 @@ table.t tr:last-child td{border-bottom:0}
     for (var g = 0; g <= 4; g++) {
       var y = pad + (H - pad * 2) * g / 4;
       s += '<line x1="' + pad + '" x2="' + (W - pad) + '" y1="' + y + '" y2="' + y + '" stroke="#E8DFD3"/>';
-      s += '<text x="' + (pad - 6) + '" y="' + (y + 4) + '" font-size="10" text-anchor="end" fill="#5E5852">' + Math.round(max * (4 - g) / 4) + '</text>';
+      s += '<text x="' + (pad - 6) + '" y="' + (y + 4) + '" font-size="' + fs + '" text-anchor="end" fill="#5E5852">' + Math.round(max * (4 - g) / 4) + '</text>';
     }
     serie.forEach(function (r, i) {
       var x = pad + i * bw, h1 = (H - pad * 2) * r.parties / max, h2 = (H - pad * 2) * r.remis / max;
       s += '<rect x="' + (x + bw * 0.12) + '" y="' + (H - pad - h1) + '" width="' + (bw * 0.4) + '" height="' + h1 + '" rx="2" fill="#F4501E"><title>' + esc(date(r.jour)) + ' : ' + r.parties + ' partie(s)</title></rect>';
       s += '<rect x="' + (x + bw * 0.52) + '" y="' + (H - pad - h2) + '" width="' + (bw * 0.36) + '" height="' + h2 + '" rx="2" fill="#FFB800"><title>' + esc(date(r.jour)) + ' : ' + r.remis + ' remis</title></rect>';
-      if (i % pas === 0 || i === n - 1) s += '<text x="' + (x + bw / 2) + '" y="' + (H - 8) + '" font-size="10" text-anchor="middle" fill="#5E5852">' + esc(date(r.jour)) + '</text>';
+      if (i % pas === 0 || i === n - 1) s += '<text x="' + (x + bw / 2) + '" y="' + (H - 8) + '" font-size="' + fs + '" text-anchor="middle" fill="#5E5852">' + esc(date(r.jour)) + '</text>';
     });
     s += '</svg><div class="row small muted" style="margin-top:6px"><span class="row" style="gap:6px"><span class="swatch" style="background:#F4501E"></span>Parties</span><span class="row" style="gap:6px"><span class="swatch" style="background:#FFB800"></span>Cadeaux remis</span></div>';
     return s;
@@ -874,7 +942,7 @@ table.t tr:last-child td{border-bottom:0}
     $('wheelPreview').innerHTML = s;
     $('legend').innerHTML = act.map(function (l, i) {
       return '<li><span class="swatch" style="background:' + COULEURS[i % COULEURS.length][0] + '"></span><span class="grow trunc">' + esc(l.label) + '</span><b class="num">' + chance(l).toLocaleString('fr-FR') + ' %</b></li>';
-    }).join('') + '<li class="small muted" style="margin-top:4px">Total : 100 %. Le tirage se fait sur le serveur.</li>';
+    }).join('') + '<li class="small muted" style="margin-top:4px">Chances arrondies au dixième. Le tirage se fait sur le serveur.</li>';
   }
   $('tChances').addEventListener('input', function (e) {
     var t = e.target; if (!t.dataset || t.dataset.k !== 'weight') return;
@@ -956,7 +1024,7 @@ table.t tr:last-child td{border-bottom:0}
       h += '</div>';
       if (l.quantity > 0 && l.key) {
         var pct = Math.min(100, Math.round(100 * donnes / l.quantity));
-        h += '<div style="margin-top:12px"><div class="row between small"><span class="muted">Stock du jeu</span><b class="num">' + esc(nb(Math.max(0, l.quantity - donnes))) + ' restants</b></div><div class="bar gold" style="margin-top:4px"><i style="width:' + pct + '%"></i></div></div>';
+        h += '<div style="margin-top:12px"><div class="row between small"><span class="muted">Stock du jeu</span><b class="num">' + esc(restants(Math.max(0, l.quantity - donnes))) + '</b></div><div class="bar gold" style="margin-top:4px"><i style="width:' + pct + '%"></i></div></div>';
       }
       h += '<div class="row" style="margin-top:14px;justify-content:flex-end"><button class="btn danger sm" data-act="retirer">Retirer de la roue</button></div>';
     } else {
@@ -1016,18 +1084,25 @@ table.t tr:last-child td{border-bottom:0}
   // ── Avis & réseaux ──────────────────────────────────────────
   var LIENS = ['review_url', 'instagram_url', 'snapchat_url', 'facebook_url'];
   var PILL_LIEN = {saisi: ['ok', 'Votre lien'], retire: ['mute', 'Retiré'], defaut: ['warn', 'Valeur par défaut'], secours: ['warn', 'Lien de secours'], absent: ['mute', 'Absent']};
+  // Une saisie non enregistrée n'est JAMAIS écrasée par un rechargement (ex. ouvrir le jeu depuis
+  // une autre rubrique) : le formulaire est marqué « en cours » à la frappe, libéré à l'enregistrement.
+  var saisie = {liens: false, jeu: false};
   function rendreLiens() {
+    if (saisie.liens) { rendreEtatsLiens(); return; }
     var v = D.liens.valeurs;
     LIENS.forEach(function (k) { $(k).value = v[k] || ''; majTest(k); });
     $('review_required').checked = String(v.review_required) === '1';
     $('follow_required').checked = String(v.follow_required) === '1';
     $('review_dwell').value = v.review_dwell; $('follow_dwell').value = v.follow_dwell; $('min_order').value = v.min_order;
+    rendreEtatsLiens();
+    rendrePhone();
+  }
+  function rendreEtatsLiens() {
     D.liens.etats.forEach(function (e) {
       var p = PILL_LIEN[e.etat] || ['mute', e.etat];
       $('st_' + e.cle).innerHTML = '<span class="pill ' + p[0] + '" title="' + esc(e.dit) + '" style="margin-left:6px">' + esc(p[1]) + '</span>';
     });
     $('hint_review').textContent = D.liens.avisDerive ? 'Rien de collé : vos clients ouvrent une recherche Google Maps du restaurant. Collez votre vrai lien pour un avis en un appui.' : '';
-    rendrePhone();
   }
   function majTest(k) {
     var u = safeUrl($(k).value.trim()) || (k === 'review_url' ? safeUrl(D.liens.avisEffectif) : '');
@@ -1043,7 +1118,7 @@ table.t tr:last-child td{border-bottom:0}
       '<div class="stp' + (avis ? '' : ' off') + '"><i>1</i>Donner mon avis sur Google</div>' +
       '<div class="stp' + (suivre && res.length ? '' : ' off') + '"><i>2</i>' + (res.length ? 'Nous suivre sur ' + esc(res.join(', ')) : 'Aucun réseau renseigné') + '</div>';
   }
-  $('formLiens').addEventListener('input', function (e) { if (LIENS.indexOf(e.target.id) >= 0) majTest(e.target.id); rendrePhone(); });
+  $('formLiens').addEventListener('input', function (e) { saisie.liens = true; if (LIENS.indexOf(e.target.id) >= 0) majTest(e.target.id); rendrePhone(); });
   $('formLiens').addEventListener('submit', function (e) {
     e.preventDefault();
     var b = $('btnLiens'); b.disabled = true; $('errLiens').textContent = '';
@@ -1056,14 +1131,14 @@ table.t tr:last-child td{border-bottom:0}
     api(BASE + '/liens', {method: 'POST', body: body}).then(function (r) {
       b.disabled = false;
       if (!r.status) { $('errLiens').textContent = r.message || 'Enregistrement refusé.'; toast(r.message || 'Enregistrement refusé.', 'err'); return; }
-      toast(r.message); charger();
+      saisie.liens = false; toast(r.message); charger();
     }).catch(function () { b.disabled = false; });
   });
 
   // ── Comptoir ────────────────────────────────────────────────
   function rendreComptoir() {
     $('cMin').textContent = eur(D.jeu.min_order);
-    $('cUrl').textContent = D.jeu.roue_url || 'Adresse publique non configurée (WHEEL_PUBLIC_URL).';
+    $('cUrl').textContent = D.jeu.roue_url || 'Adresse publique de la roue pas encore réglée : demandez-la à votre installateur.';
     $('btnCopier').disabled = !D.jeu.roue_url;
   }
   $('btnCopier').addEventListener('click', function () {
@@ -1074,11 +1149,17 @@ table.t tr:last-child td{border-bottom:0}
 
   // ── Lots gagnés ─────────────────────────────────────────────
   var ETATS = {du: ['warn', 'À remettre'], remis: ['ok', 'Remis'], code: ['brand', 'Code de remise'], expire: ['mute', 'Expiré']};
+  var lotsCharges = false;
   function chargerLots() {
-    $('tLots').innerHTML = '<tr><td colspan="6" class="muted">Chargement…</td></tr>';
+    // « Chargement… » au PREMIER affichage seulement : au rafraîchissement, l'ancienne liste reste
+    // en place jusqu'à la nouvelle (sinon le tableau clignotait chaque minute et le focus sautait).
+    if (!lotsCharges) $('tLots').innerHTML = '<tr><td colspan="6" class="muted">Chargement…</td></tr>';
     return api(BASE + '/lots').then(function (r) {
       if (!r.status) { toast(r.message || 'Chargement impossible.', 'err'); return; }
-      lotsGagnes = r.data; rendreLots();
+      lotsGagnes = r.data; lotsCharges = true; rendreLots();
+    }).catch(function (e) {
+      if (e && e.message === 'locked') return;
+      if (!lotsCharges) $('tLots').innerHTML = '<tr><td colspan="6"><div class="empty"><b>Liste indisponible</b>Connexion impossible. Vérifiez le réseau puis rouvrez cette rubrique.</div></td></tr>';
     });
   }
   function rendreLots() {
@@ -1103,11 +1184,11 @@ table.t tr:last-child td{border-bottom:0}
       var e = ETATS[l.etat] || ['mute', l.etat];
       var detail = l.etat === 'remis' ? 'le ' + date(l.remis_le, true) + (l.remis_par ? ' par ' + l.remis_par : '')
         : (l.etat === 'du' && l.expire_le ? 'jusqu’au ' + date(l.expire_le) : '');
-      return '<tr><td class="num small">' + esc(date(l.quand, true)) + '</td><td><b>' + esc(l.lot) + '</b></td>' +
-        '<td class="small">' + esc(l.prenom || '—') + (l.tel_fin ? ' <span class="muted num">••' + esc(l.tel_fin) + '</span>' : '') + '</td>' +
-        '<td class="num small">' + esc(l.code || '—') + '</td>' +
-        '<td><span class="pill ' + e[0] + '">' + esc(e[1]) + '</span>' + (detail ? '<div class="small muted">' + esc(detail) + '</div>' : '') + '</td>' +
-        '<td style="text-align:right">' + (l.etat === 'du' ? '<button class="btn primary sm" data-remettre="' + l.id + '">Remettre</button>' : '') + '</td></tr>';
+      return '<tr><td class="num small c-quand">' + esc(date(l.quand, true)) + '</td><td class="c-lot"><b>' + esc(l.lot) + '</b></td>' +
+        '<td class="small c-client">' + esc(l.prenom || '—') + (l.tel_fin ? ' <span class="muted num">••' + esc(l.tel_fin) + '</span>' : '') + '</td>' +
+        '<td class="num small c-code' + (l.code ? '' : ' vide') + '">' + esc(l.code || '—') + '</td>' +
+        '<td class="c-statut"><span class="pill ' + e[0] + '">' + esc(e[1]) + '</span>' + (detail ? '<div class="small muted">' + esc(detail) + '</div>' : '') + '</td>' +
+        '<td class="c-act" style="text-align:right">' + (l.etat === 'du' ? '<button class="btn primary sm" data-remettre="' + l.id + '" aria-label="Remettre ' + esc(l.lot) + (l.tel_fin ? ' au client ••' + esc(l.tel_fin) : '') + '">Remettre</button>' : '') + '</td></tr>';
     }).join('');
   }
   $('filtres').addEventListener('click', function (e) { var b = e.target.closest('[data-f]'); if (!b) return; filtre = b.getAttribute('data-f'); rendreLots(); });
@@ -1124,7 +1205,7 @@ table.t tr:last-child td{border-bottom:0}
         if ((tel.match(/\d/g) || []).length < 6) { $('mErr').textContent = 'Saisissez le numéro complet du client.'; return false; }
         return api(BASE + '/lots/' + id + '/remettre', {method: 'POST', body: {phone: tel}}).then(function (r) {
           if (!r.status) { $('mErr').textContent = r.message || 'Remise refusée.'; return false; }
-          toast(r.message); chargerLots(); charger();
+          toast(r.message); charger(); // charger() → montrer() recharge la liste : un seul appel
         });
       });
   });
@@ -1153,14 +1234,17 @@ table.t tr:last-child td{border-bottom:0}
     var j = D.jeu;
     $('tOuvert').setAttribute('aria-checked', String(!!j.ouvert));
     $('campagne').textContent = j.campaign_key;
-    $('prize_validity_days').value = j.prize_validity_days;
-    $('daily_total_cap').value = j.daily_total_cap;
+    if (!saisie.jeu) {
+      $('prize_validity_days').value = j.prize_validity_days;
+      $('daily_total_cap').value = j.daily_total_cap;
+    }
     $('acces').innerHTML =
       '<li><span class="grow">Code de la maison</span>' + (j.pin_configure ? '<span class="pill ok">Configuré</span>' : '<span class="pill warn">Absent</span>') + '</li>' +
       '<li><span class="grow">Fermeture automatique après</span><b class="num">' + esc(nb(j.session_minutes)) + ' min</b></li>' +
       '<li><span class="grow">Depuis la caisse</span><span class="pill brand">Accès direct</span></li>';
   }
   $('tOuvert').addEventListener('click', function () { basculerJeu(this.getAttribute('aria-checked') !== 'true'); });
+  $('formJeu').addEventListener('input', function () { saisie.jeu = true; });
   $('formJeu').addEventListener('submit', function (e) {
     e.preventDefault();
     var b = $('btnJeu'); b.disabled = true; $('errJeu').textContent = '';
@@ -1168,7 +1252,7 @@ table.t tr:last-child td{border-bottom:0}
       prize_validity_days: Number($('prize_validity_days').value), daily_total_cap: Number($('daily_total_cap').value)}}).then(function (r) {
       b.disabled = false;
       if (!r.status) { $('errJeu').textContent = r.message; return; }
-      toast(r.message); charger();
+      saisie.jeu = false; toast(r.message); charger();
     }).catch(function () { b.disabled = false; });
   });
   $('btnCampagne').addEventListener('click', function () {
@@ -1187,8 +1271,20 @@ table.t tr:last-child td{border-bottom:0}
   setInterval(function () {
     if (sale || $('modal').classList.contains('open') || document.visibilityState !== 'visible') return;
     if (['tableau', 'lots', 'stats', 'comptoir'].indexOf(vueCourante()) < 0) return;
-    charger();
+    charger(true);
   }, 60000);
+  // Le graphique est dessiné pour une largeur (téléphone / écran large) : on le redessine quand on
+  // passe d'un format à l'autre (rotation, fenêtre redimensionnée), pas à chaque pixel.
+  var etaitEtroit = window.innerWidth < 640, minuteurLargeur = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(minuteurLargeur);
+    minuteurLargeur = setTimeout(function () {
+      var etroit = window.innerWidth < 640;
+      if (!D || etroit === etaitEtroit) return;
+      etaitEtroit = etroit;
+      $('chart').innerHTML = graphique(D.serie); $('chart2').innerHTML = graphique(D.serie);
+    }, 150);
+  });
 })();
 </script>
 @endverbatim

@@ -73,6 +73,9 @@ test('chaque rubrique se rend, sans erreur console ni clé brute', async ({ page
     const erreurs = [];
     page.on('console', (m) => { if (m.type() === 'error' && !/fonts\.g/.test(m.text())) erreurs.push(m.text()); });
     page.on('pageerror', (e) => erreurs.push(String(e)));
+    // Aucune réponse en erreur pendant la simple consultation : une 4xx/5xx avalée serait un échec muet.
+    const reponsesKo = [];
+    page.on('response', (r) => { if (r.status() >= 400 && !/fonts\.g/.test(r.url())) reponsesKo.push(r.status() + ' ' + r.url()); });
     await page.setViewportSize({ width: 1366, height: 900 });
     await ouvrir(page);
 
@@ -97,6 +100,7 @@ test('chaque rubrique se rend, sans erreur console ni clé brute', async ({ page
         await page.screenshot({ path: path.join(SORTIE, `mobile-${v}.png`), fullPage: true });
     }
     expect(erreurs).toEqual([]);
+    expect(reponsesKo).toEqual([]);
 });
 
 test('Ma roue : une chance modifiée est publiée et relue par le serveur', async ({ page }) => {
@@ -224,4 +228,30 @@ test('Réglages : ouvrir puis suspendre le jeu', async ({ page }) => {
     await toggle.click();
     await page.click('#mOui');
     await expect(toggle).toHaveAttribute('aria-checked', initial);
+});
+
+test('coupure réseau : l\'enregistrement dit que rien n\'est enregistré, la saisie reste ; menu mobile au clavier', async ({ page, context }) => {
+    await ouvrir(page);
+    await page.goto('/admin/roue/espace#reglages');
+    await expect(page.locator('section[data-view=reglages]')).toBeVisible();
+    await page.fill('#prize_validity_days', '45');
+    await context.setOffline(true);
+    await page.click('#btnJeu');
+    await expect(page.locator('.toast.err').last()).toContainText('rien n’a été enregistré');
+    await expect(page.locator('.toast.err').last()).toHaveAttribute('role', 'alert');
+    await expect(page.locator('#btnJeu')).toBeEnabled();
+    await context.setOffline(false);
+    // Un rechargement (ex. ouverture du jeu ailleurs) n'efface pas la saisie non enregistrée.
+    await page.evaluate(() => window.dispatchEvent(new HashChangeEvent('hashchange')));
+    await expect(page.locator('#prize_validity_days')).toHaveValue('45');
+
+    // Menu mobile : fermé = hors clavier ; ouvert = focus dedans ; Échap le ferme et rend le focus.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.locator('#side')).toBeHidden();
+    await page.click('#burger');
+    await expect(page.locator('#side')).toBeVisible();
+    await expect(page.locator('#side a:focus')).toHaveCount(1);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#side')).toBeHidden();
+    await expect(page.locator('#burger')).toBeFocused();
 });
