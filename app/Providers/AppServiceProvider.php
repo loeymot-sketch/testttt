@@ -96,6 +96,14 @@ class AppServiceProvider extends ServiceProvider
             // Ne jamais empecher le demarrage pour un reglage de confort.
         }
 
+        // [ESPACE ROUE 2026-11-19] Campagne, validite des lots et plafond du jour reglés depuis
+        // l'espace commercant : meme mecanique que les interrupteurs ci-dessus.
+        try {
+            app(\App\Services\Wheel\WheelSettingsService::class)->appliquerAuDemarrage();
+        } catch (\Throwable $e) {
+            // Idem : la configuration du fichier reprend la main.
+        }
+
         // [SESSION DURABLE 2026-10-30 · T-S2.1.1] Le Guard de Sanctum applique AUSSI un
         // plafond global `created_at` (sanctum.expiration, 480 min) qui coupait la session
         // client de 30 jours au bout de 8 h. Ce crochet ne rattrape que le jeton client

@@ -45,6 +45,9 @@ class EnsureWheelAccess
 {
     public const SESSION_KEY = 'wheel_unlocked_at';
 
+    /** [2026-11-19] Le caissier qui a ouvert les écrans par la passe de la caisse (sinon absent). */
+    public const PASS_USER_KEY = 'wheel_pass_user_id';
+
     public function handle(Request $request, Closure $next)
     {
         // Chemin 1 — une vraie session web habilitée. Rien n'est affaibli pour elle.
@@ -69,7 +72,7 @@ class EnsureWheelAccess
         $duree = ((int) config('wheel.access.session_minutes', 240)) * 60;
 
         if ($depuis <= 0 || (now()->getTimestamp() - $depuis) > $duree) {
-            $request->session()->forget(self::SESSION_KEY);
+            $request->session()->forget([self::SESSION_KEY, self::PASS_USER_KEY]);
 
             return $this->refus($request, 'Entre le code pour ouvrir les écrans de la roue.', 401);
         }
@@ -81,7 +84,9 @@ class EnsureWheelAccess
         // Ouvert par le code : il n'y a donc PAS d'utilisateur. La branche vient de la
         // configuration (V1 LOCAL = une seule caisse) et l'auteur reste nul — on ne va pas
         // attribuer un geste à quelqu'un qui ne s'est pas identifié.
-        $this->poserContexte($request, (int) config('wheel.counter_branch_id', 1), null);
+        // [2026-11-19] Ouvert par la PASSE de la caisse : on connaît le caissier, on l'attribue.
+        $parPasse = (int) $request->session()->get(self::PASS_USER_KEY, 0);
+        $this->poserContexte($request, (int) config('wheel.counter_branch_id', 1), $parPasse > 0 ? $parPasse : null);
 
         return $next($request);
     }

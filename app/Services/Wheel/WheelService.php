@@ -59,7 +59,26 @@ class WheelService
      */
     public function segments(): array
     {
-        $segments = (array) config('wheel.segments', []);
+        // Les lots RETIRÉS depuis l'espace commerçant ne sont ni tirés ni montrés.
+        return array_values(array_filter(
+            $this->catalogueComplet(),
+            static fn ($s) => ! (bool) ($s['archived'] ?? false)
+        ));
+    }
+
+    /**
+     * TOUS les lots, retirés compris — pour RETROUVER un lot déjà gagné (son produit de référence,
+     * sa préparation en cuisine). Un lot gagné hier reste dû aujourd'hui, même si le commerçant l'a
+     * retiré de la roue ce matin. Ne JAMAIS s'en servir pour tirer ou pour dessiner.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function catalogueComplet(): array
+    {
+        // [2026-11-19] Le catalogue saisi dans l'espace commerçant prime sur le fichier ; le fichier
+        // reste la valeur de départ tant que rien n'a été enregistré.
+        $segments = app(WheelSettingsService::class)->catalogueStocke()
+            ?? (array) config('wheel.segments', []);
         $reglages = app(WheelSettingsService::class)->prizeOverrides();
 
         if ($reglages === []) {
@@ -645,7 +664,8 @@ class WheelService
 
     private function maxDiscountFor(string $prizeKey): float
     {
-        foreach ($this->segments() as $s) {
+        // Catalogue COMPLET : un lot tiré puis retiré avant la réclamation garde son plafond.
+        foreach ($this->catalogueComplet() as $s) {
             if ((string) ($s['key'] ?? '') === $prizeKey) {
                 return (float) ($s['max_discount'] ?? 0);
             }

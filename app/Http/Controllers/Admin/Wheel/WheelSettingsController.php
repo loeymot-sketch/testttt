@@ -29,55 +29,9 @@ class WheelSettingsController extends Controller
 
     public function save(Request $request)
     {
-        // Une adresse doit être ouvrable DEPUIS UN TÉLÉPHONE. La règle `url` de la plateforme accepte
-        // des schémas qui n'ont rien à faire sur la tablette d'un client (`ftp://`, par exemple) : on
-        // exige donc explicitement http(s). Vérifié : `javascript:` et `data:` sont déjà refusés.
-        $adresseOuvrable = static function (string $champ, $valeur, $refuser): void {
-            if (! preg_match('#^https?://#i', (string) $valeur)) {
-                $refuser('Il faut une adresse complète qui commence par https:// — copie-la depuis la '
-                    . 'barre du navigateur.');
-            }
-        };
-
-        $regles = [
-            // `nullable` + `url` : un champ vidé DOIT pouvoir l'être (on retire un compte), mais une
-            // saisie non vide doit être une vraie adresse — un lien cassé sur la tablette envoie le
-            // client nulle part, et c'est pire que pas de lien du tout.
-            'review_url' => ['nullable', 'url', 'max:500', $adresseOuvrable],
-            'instagram_url' => ['nullable', 'url', 'max:500', $adresseOuvrable],
-            'snapchat_url' => ['nullable', 'url', 'max:500', $adresseOuvrable],
-            'facebook_url' => ['nullable', 'url', 'max:500', $adresseOuvrable],
-            'review_dwell' => ['nullable', 'integer', 'min:0', 'max:180'],
-            'follow_dwell' => ['nullable', 'integer', 'min:0', 'max:180'],
-            'min_order' => ['nullable', 'numeric', 'min:0', 'max:200'],
-        ];
-
-        /*
-         * ── LES MESSAGES SONT ÉCRITS ICI, EN FRANÇAIS ────────────────────────────────────────
-         * Les messages livrés avec la plateforme sont en anglais et citent le nom technique du champ
-         * (« The review_dwell must not be greater than 180 »). Sur l'écran qui débloque le jeu, ça ne
-         * dit rien à personne. Chaque message nomme le champ comme l'écran le nomme, et dit QUOI
-         * FAIRE.
-         */
-        $messages = [
-            'review_url.url' => 'Le lien d\'avis n\'est pas une adresse valide. Colle-la depuis la barre du navigateur.',
-            'instagram_url.url' => 'Le lien Instagram n\'est pas une adresse valide. Colle-la depuis la barre du navigateur.',
-            'snapchat_url.url' => 'Le lien Snapchat n\'est pas une adresse valide. Colle-la depuis la barre du navigateur.',
-            'facebook_url.url' => 'Le lien Facebook n\'est pas une adresse valide. Colle-la depuis la barre du navigateur.',
-            'review_url.max' => 'Le lien d\'avis est trop long (500 caractères maximum).',
-            'instagram_url.max' => 'Le lien Instagram est trop long (500 caractères maximum).',
-            'snapchat_url.max' => 'Le lien Snapchat est trop long (500 caractères maximum).',
-            'facebook_url.max' => 'Le lien Facebook est trop long (500 caractères maximum).',
-            'review_dwell.integer' => 'Le temps sur l\'avis se donne en secondes entières.',
-            'review_dwell.min' => 'Le temps sur l\'avis va de 0 à 180 secondes.',
-            'review_dwell.max' => 'Le temps sur l\'avis va de 0 à 180 secondes.',
-            'follow_dwell.integer' => 'Le temps sur l\'abonnement se donne en secondes entières.',
-            'follow_dwell.min' => 'Le temps sur l\'abonnement va de 0 à 180 secondes.',
-            'follow_dwell.max' => 'Le temps sur l\'abonnement va de 0 à 180 secondes.',
-            'min_order.numeric' => 'Le minimum de commande se donne en euros (exemple : 12 ou 12.5).',
-            'min_order.min' => 'Le minimum de commande va de 0 à 200 €.',
-            'min_order.max' => 'Le minimum de commande va de 0 à 200 €.',
-        ];
+        // [2026-11-19] Règles et messages des liens partagés avec l'espace commerçant : une seule
+        // définition, sinon les deux écrans finiraient par accepter des adresses différentes.
+        [$regles, $messages] = self::reglesEtMessagesLiens();
 
         /*
          * ── LES LOTS : PROBABILITÉ ET NOMBRE DE CADEAUX ──────────────────────────────────────
@@ -138,6 +92,67 @@ class WheelSettingsController extends Controller
         ));
 
         return view('admin.wheel.reglages', $this->donneesEcran(['enregistre' => true]));
+    }
+
+    /**
+     * Règles + messages (en français) des liens d'avis / réseaux et des réglages du parcours.
+     * Partagés par l'ancien écran de réglages et par l'espace commerçant.
+     *
+     * @return array{0: array<string, mixed>, 1: array<string, string>}
+     */
+    public static function reglesEtMessagesLiens(): array
+    {
+        // Une adresse doit être ouvrable DEPUIS UN TÉLÉPHONE. La règle `url` de la plateforme accepte
+        // des schémas qui n'ont rien à faire sur la tablette d'un client (`ftp://`, par exemple) : on
+        // exige donc explicitement http(s). Vérifié : `javascript:` et `data:` sont déjà refusés.
+        $adresseOuvrable = static function (string $champ, $valeur, $refuser): void {
+            if (! preg_match('#^https?://#i', (string) $valeur)) {
+                $refuser('Il faut une adresse complète qui commence par https:// — copie-la depuis la '
+                    . 'barre du navigateur.');
+            }
+        };
+
+        $regles = [
+            // `nullable` + `url` : un champ vidé DOIT pouvoir l'être (on retire un compte), mais une
+            // saisie non vide doit être une vraie adresse — un lien cassé sur la tablette envoie le
+            // client nulle part, et c'est pire que pas de lien du tout.
+            'review_url' => ['nullable', 'url', 'max:500', $adresseOuvrable],
+            'instagram_url' => ['nullable', 'url', 'max:500', $adresseOuvrable],
+            'snapchat_url' => ['nullable', 'url', 'max:500', $adresseOuvrable],
+            'facebook_url' => ['nullable', 'url', 'max:500', $adresseOuvrable],
+            'review_dwell' => ['nullable', 'integer', 'min:0', 'max:180'],
+            'follow_dwell' => ['nullable', 'integer', 'min:0', 'max:180'],
+            'min_order' => ['nullable', 'numeric', 'min:0', 'max:200'],
+        ];
+
+        /*
+         * ── LES MESSAGES SONT ÉCRITS ICI, EN FRANÇAIS ────────────────────────────────────────
+         * Les messages livrés avec la plateforme sont en anglais et citent le nom technique du champ
+         * (« The review_dwell must not be greater than 180 »). Sur l'écran qui débloque le jeu, ça ne
+         * dit rien à personne. Chaque message nomme le champ comme l'écran le nomme, et dit QUOI
+         * FAIRE.
+         */
+        $messages = [
+            'review_url.url' => 'Le lien d\'avis n\'est pas une adresse valide. Colle-la depuis la barre du navigateur.',
+            'instagram_url.url' => 'Le lien Instagram n\'est pas une adresse valide. Colle-la depuis la barre du navigateur.',
+            'snapchat_url.url' => 'Le lien Snapchat n\'est pas une adresse valide. Colle-la depuis la barre du navigateur.',
+            'facebook_url.url' => 'Le lien Facebook n\'est pas une adresse valide. Colle-la depuis la barre du navigateur.',
+            'review_url.max' => 'Le lien d\'avis est trop long (500 caractères maximum).',
+            'instagram_url.max' => 'Le lien Instagram est trop long (500 caractères maximum).',
+            'snapchat_url.max' => 'Le lien Snapchat est trop long (500 caractères maximum).',
+            'facebook_url.max' => 'Le lien Facebook est trop long (500 caractères maximum).',
+            'review_dwell.integer' => 'Le temps sur l\'avis se donne en secondes entières.',
+            'review_dwell.min' => 'Le temps sur l\'avis va de 0 à 180 secondes.',
+            'review_dwell.max' => 'Le temps sur l\'avis va de 0 à 180 secondes.',
+            'follow_dwell.integer' => 'Le temps sur l\'abonnement se donne en secondes entières.',
+            'follow_dwell.min' => 'Le temps sur l\'abonnement va de 0 à 180 secondes.',
+            'follow_dwell.max' => 'Le temps sur l\'abonnement va de 0 à 180 secondes.',
+            'min_order.numeric' => 'Le minimum de commande se donne en euros (exemple : 12 ou 12.5).',
+            'min_order.min' => 'Le minimum de commande va de 0 à 200 €.',
+            'min_order.max' => 'Le minimum de commande va de 0 à 200 €.',
+        ];
+
+        return [$regles, $messages];
     }
 
     /**

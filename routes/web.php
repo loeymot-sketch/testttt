@@ -270,6 +270,28 @@ Route::middleware(['installed', 'wheel.access'])->group(function () {
     */
     Route::get('/admin/roue-historique', [\App\Http\Controllers\Admin\Wheel\WheelPrizeController::class, 'history'])
         ->name('admin.wheel.history');
+
+    /*
+    | ROUE — ESPACE COMMERÇANT [2026-11-19 · propriétaire]. Un seul écran privé pour tout piloter :
+    | tableau de bord, lots (produits réels de la carte), lots gagnés et remise, comptoir, avis et
+    | réseaux, statistiques, réglages du jeu. Même porte que les écrans de comptoir.
+    */
+    $espace = \App\Http\Controllers\Admin\Wheel\WheelMerchantController::class;
+    Route::get('/admin/roue/espace', [$espace, 'page'])->name('admin.wheel.espace');
+    Route::get('/admin/roue/espace/donnees', [$espace, 'donnees'])
+        ->middleware('throttle:120,1,wheel-espace-read')->name('admin.wheel.espace.data');
+    Route::get('/admin/roue/espace/lots', [$espace, 'lots'])
+        ->middleware('throttle:120,1,wheel-espace-read')->name('admin.wheel.espace.lots');
+    Route::post('/admin/roue/espace/lots/{id}/remettre', [$espace, 'remettre'])
+        ->whereNumber('id')->middleware('throttle:60,1,wheel-espace-deliver')->name('admin.wheel.espace.deliver');
+    Route::post('/admin/roue/espace/roue', [$espace, 'enregistrerRoue'])
+        ->middleware('throttle:30,1,wheel-espace-save')->name('admin.wheel.espace.wheel');
+    Route::post('/admin/roue/espace/liens', [$espace, 'enregistrerLiens'])
+        ->middleware('throttle:30,1,wheel-espace-save')->name('admin.wheel.espace.links');
+    Route::post('/admin/roue/espace/jeu', [$espace, 'enregistrerJeu'])
+        ->middleware('throttle:30,1,wheel-espace-save')->name('admin.wheel.espace.game');
+    Route::post('/admin/roue/espace/campagne', [$espace, 'nouvelleCampagne'])
+        ->middleware('throttle:5,1,wheel-espace-campaign')->name('admin.wheel.espace.campaign');
 });
 
 // [C-001 test-e2e 2026-07-17] Un ASSET manquant (chunk périmé, image disparue…)

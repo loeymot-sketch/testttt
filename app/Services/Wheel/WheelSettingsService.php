@@ -97,6 +97,122 @@ class WheelSettingsService
         return $out;
     }
 
+    /*
+     * ── LE CATALOGUE DES LOTS, SAISI DEPUIS L'ESPACE COMMERÇANT ─────────────────────────────────
+     * [2026-11-19 · propriétaire : « la gestion des produits etc., vraiment toute la refonte »]
+     * Jusqu'ici la LISTE des lots vivait dans `config/wheel.php` : ajouter un dessert à la roue
+     * demandait un déploiement. L'espace commerçant enregistre désormais la liste complète ici, en
+     * base. Ce qui reste VRAI de la décision d'août : un lot « produit offert » est TOUJOURS adossé à
+     * un article réel de la carte (`cost_item_id` vérifié à l'enregistrement) — la roue ne peut pas
+     * promettre un produit qui n'existe pas, et le coût / le stock suivent ce produit-là.
+     *
+     * Les lots RETIRÉS ne sont pas effacés : ils restent dans le catalogue avec `archived = true`.
+     * Un client qui a gagné un « Tiramisu » hier doit pouvoir le recevoir aujourd'hui, même si le
+     * tiramisu a quitté la roue ce matin — et la remise a besoin de son produit de référence.
+     */
+    public const CATALOGUE_KEY = 'segments_catalogue';
+
+    /** Les réglages du jeu modifiables depuis l'espace (appliqués au démarrage, voir plus bas). */
+    public const JEU_KEYS = ['campaign_key', 'prize_validity_days', 'daily_total_cap'];
+
+    /**
+     * Le catalogue enregistré, archives comprises. `null` = jamais enregistré : le fichier fait foi.
+     *
+     * @return array<int, array<string, mixed>>|null
+     */
+    public function catalogueStocke(): ?array
+    {
+        $brut = $this->stored()[self::CATALOGUE_KEY] ?? null;
+        if (! is_string($brut) || trim($brut) === '') {
+            return null;
+        }
+
+        $liste = json_decode($brut, true);
+        if (! is_array($liste) || $liste === []) {
+            return null;
+        }
+
+        return array_values(array_filter($liste, static fn ($s) => is_array($s) && ($s['key'] ?? '') !== ''));
+    }
+
+    /**
+     * Enregistre le catalogue complet. Les clés `prize_<lot>_weight|quantity` sont réécrites en même
+     * temps, aux MÊMES valeurs : l'ancien écran de réglages les lit et les applique par-dessus le
+     * catalogue — deux vérités qui divergeraient montreraient une probabilité et en appliqueraient une
+     * autre.
+     *
+     * @param  array<int, array<string, mixed>>  $segments
+     */
+    public function saveCatalogue(array $segments): void
+    {
+        $ecrire = [self::CATALOGUE_KEY => json_encode(array_values($segments), JSON_UNESCAPED_UNICODE)];
+        foreach ($segments as $s) {
+            [$cleP, $cleQ] = self::prizeKeys((string) $s['key']);
+            $ecrire[$cleP] = (string) max(0, (int) ($s['weight'] ?? 0));
+            $ecrire[$cleQ] = (string) max(0, (int) ($s['quantity'] ?? 0));
+        }
+
+        Settings::group(self::GROUP)->set($ecrire);
+    }
+
+    /** Les réglages du jeu tels qu'ils tournent (configuration écrasée par l'espace). */
+    public function jeu(): array
+    {
+        return [
+            'campaign_key' => (string) config('wheel.campaign_key'),
+            'prize_validity_days' => (int) config('wheel.prize_validity_days', 30),
+            'daily_total_cap' => (int) config('wheel.daily_total_cap', 0),
+        ];
+    }
+
+    /** Enregistre les réglages du jeu ET les applique à la requête en cours. */
+    public function saveJeu(array $data): void
+    {
+        $ecrire = [];
+        foreach (self::JEU_KEYS as $cle) {
+            if (array_key_exists($cle, $data) && $data[$cle] !== null && $data[$cle] !== '') {
+                $ecrire[$cle] = (string) $data[$cle];
+            }
+        }
+
+        if ($ecrire === []) {
+            return;
+        }
+
+        Settings::group(self::GROUP)->set($ecrire);
+        $this->appliquerJeu($ecrire);
+    }
+
+    /**
+     * Au démarrage : les réglages du jeu saisis dans l'espace écrasent `config/wheel.php`.
+     *
+     * Même mécanique que les interrupteurs de pilotage (`InterrupteurService::appliquerAuDemarrage`) :
+     * une dizaine d'endroits lisent `config('wheel.campaign_key')` en direct — le tirage, les
+     * quantités, le rapport, la remise. Les réécrire un à un, c'est en oublier un et compter les
+     * quantités d'une campagne pendant que le tirage en applique une autre. Les surcharger ICI, une
+     * fois, les met tous d'accord sans les toucher.
+     */
+    public function appliquerAuDemarrage(): void
+    {
+        try {
+            $stocke = $this->stored();
+        } catch (\Throwable $e) {
+            return;
+        }
+
+        $this->appliquerJeu(array_intersect_key($stocke, array_flip(self::JEU_KEYS)));
+    }
+
+    private function appliquerJeu(array $valeurs): void
+    {
+        foreach ($valeurs as $cle => $v) {
+            if ($v === null || $v === '') {
+                continue;
+            }
+            config(['wheel.' . $cle => $cle === 'campaign_key' ? (string) $v : max(0, (int) $v)]);
+        }
+    }
+
     /** Les clés de réglage d'un lot, pour composer le formulaire et la validation. */
     public static function prizeKeys(string $prizeKey): array
     {

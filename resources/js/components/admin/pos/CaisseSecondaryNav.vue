@@ -93,17 +93,39 @@
                  alors des modifications non committées d'une autre session, et y ajouter une clé
                  m'aurait obligé à committer son travail inachevé. Ce fichier est maintenant
                  propre, la clé est posée, et le libellé passe par `$t(...)` comme ses voisins. -->
+            <!-- [ESPACE ROUE 2026-11-19 · propriétaire] Trois accès SÉPARÉS depuis la caisse : l'espace
+                 commerçant de la roue (tableau de bord, cadeaux, lots), les avis & réseaux (même espace,
+                 rubrique dédiée), et l'hygiène. La passe signée évite de retaper le code de la maison. -->
             <a
                 href="/admin/roue"
                 target="_blank"
                 rel="noopener"
                 class="csn-link"
                 data-testid="csn-roue"
-                @click="ouvrirRoue"
+                @click="ouvrirRoue($event, 'espace')"
             >
                 <span class="csn-ico" aria-hidden="true">🎡</span>
-                <span>{{ $t('menu.roue') }}</span>
+                <span>{{ $t('menu.espace_roue') }}</span>
             </a>
+            <a
+                href="/admin/roue"
+                target="_blank"
+                rel="noopener"
+                class="csn-link"
+                data-testid="csn-avis"
+                @click="ouvrirRoue($event, 'avis')"
+            >
+                <span class="csn-ico" aria-hidden="true">⭐</span>
+                <span>{{ $t('menu.avis_reseaux') }}</span>
+            </a>
+            <router-link
+                :to="{ name: 'admin.hygiene.home' }"
+                class="csn-link"
+                data-testid="csn-hygiene"
+            >
+                <span class="csn-ico" aria-hidden="true">🧼</span>
+                <span>{{ $t('menu.hygiene') }}</span>
+            </router-link>
         </div>
         <router-link
             :to="{ name: 'admin.pos' }"
@@ -141,7 +163,7 @@ export default {
          * devient impossible de poser l'adresse ensuite. On coupe donc le lien d'ouverture
          * APRÈS coup, ce qui donne la même protection.
          */
-        async ouvrirRoue(evenement) {
+        async ouvrirRoue(evenement, ecran = 'espace') {
             evenement.preventDefault();
 
             const onglet = window.open('about:blank', '_blank');
@@ -153,7 +175,7 @@ export default {
             }
 
             try {
-                const { data } = await axios.post('/admin/wheel/screen-pass', { ecran: 'accueil' });
+                const { data } = await axios.post('/admin/wheel/screen-pass', { ecran });
                 onglet.location = (data && data.url) ? data.url : '/admin/roue';
             } catch (e) {
                 // Compte sans droit caisse, réseau coupé, route absente : dans tous les cas la

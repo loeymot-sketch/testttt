@@ -269,6 +269,8 @@ class WheelReportService
             $tel = (string) $t->phone;
 
             return [
+                // [2026-11-19] L'identifiant, pour remettre le lot depuis l'espace commerçant.
+                'id' => (int) $t->id,
                 'quand' => $t->created_at,
                 'lot' => (string) $t->prize_label,
                 'type' => (string) $t->prize_type,
