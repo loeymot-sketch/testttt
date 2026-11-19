@@ -493,6 +493,7 @@ Loi de Finance France — non-négociable, prison time si violé.
 - **Exemptions documentées** (sentinel `EXEMPTED_MODELS`) :
   - `Branch` — self-reference (BranchScope sur Branch serait circulaire)
   - `Customer` — Sanctum customer-token recursion risk
+  - `WebPushSubscription` — appareil Web Push d'un CLIENT (2026-11-20), aucune branche, borné par `user_id` ; contrat : `config/webpush.php`
   - V1.0.2 BACKLOG baseline (10 models — single-tenant low-risk, V2 SaaS
     hard-fail) : FrontendDiningTable, ZReport, AuditLog, OrderDiscountLog,
     Message, DiningTableAuditLog, KioskPromo, UpsellRule, ActionLog,

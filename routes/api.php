@@ -2597,6 +2597,16 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
             ->name('qr.generate');
     });
 
+    // [NFC / NOTIFICATIONS 2026-11-20] Abonnement Web Push des appareils des clients (voir config/webpush.php).
+    // La clé publique est PUBLIQUE par construction (VAPID) ; s'abonner / se désabonner exige un client connecté.
+    Route::prefix('push')->name('push.')->group(function () {
+        Route::get('/key', [\App\Http\Controllers\Frontend\WebPushController::class, 'key'])->middleware('throttle:60,1,push-key');
+        Route::middleware(['auth:sanctum', 'block_kiosk_machine', 'throttle:30,1,push-subscription'])->group(function () {
+            Route::post('/subscription', [\App\Http\Controllers\Frontend\WebPushController::class, 'subscribe']);
+            Route::delete('/subscription', [\App\Http\Controllers\Frontend\WebPushController::class, 'unsubscribe']);
+        });
+    });
+
     // [C6] Kiosk observability — structured event logging for operators
     // Auth: kiosk:order ability; throttle: 30 events/min per token (prevents log spam)
     Route::post('/kiosk-event', [\App\Http\Controllers\Frontend\KioskEventController::class, 'store'])

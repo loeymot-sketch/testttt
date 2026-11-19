@@ -166,6 +166,8 @@ class EventServiceProvider extends ServiceProvider
             AwardLoyaltyPointsOnDelivery::class,
             // [PHASE-36-P1] FCM push notifications on status change
             SendFcmOnOrderStatusChange::class,
+            // [NFC / NOTIFICATIONS 2026-11-20] Web Push vers le client (inerte tant que WEBPUSH_ENABLED=false).
+            \App\Listeners\SendWebPushOnOrderStatusChange::class,
             // [E2E UBER 2026-10-24 · U2-001] EN DERNIER : la cuisine marque PRÊTE une commande dont le coursier Uber a déjà le sac →
             // rattrapage EN ROUTE / LIVRÉE. Placé après les notifications de « prête » pour qu'elles partent AVANT celles de « en route ».
             \App\Listeners\SyncUberCourseAfterKitchenReady::class,

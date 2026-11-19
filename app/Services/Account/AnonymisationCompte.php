@@ -105,6 +105,8 @@ class AnonymisationCompte
         $user->device_token = null;
         $user->web_token = null;
         $user->save();
+        // [NFC / NOTIFICATIONS 2026-11-20] Les appareils Web Push partent avec le compte : un compte supprimé ne reçoit plus rien.
+        \App\Models\WebPushSubscription::query()->where('user_id', $user->id)->delete();
     }
 
     /** Vrai quand l'identité de ce compte a déjà été effacée (sentinelle de téléphone posée par anonymiserIdentite). */

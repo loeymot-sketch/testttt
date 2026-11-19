@@ -49,6 +49,8 @@ class BranchScopeCoverageSentinelTest extends TestCase
         // Intentional / architectural exemptions
         'App\\Models\\Branch'        => 'self-reference (BranchScope on Branch would be circular)',
         'App\\Models\\Customer'      => 'Sanctum customer-token recursion risk (per CLAUDE.md §9)',
+        // [NFC / NOTIFICATIONS 2026-11-20] Appareil d'un CLIENT (n'appartient à aucune branche, comme Customer) : borné par user_id à chaque requête.
+        'App\\Models\\WebPushSubscription' => 'abonnement Web Push d\'un client — aucune branche (borné par user_id)',
 
         // V1.0.2 BACKLOG — temporary baseline exemptions (heal target per
         // Round 2 T-1.3.1 Arch F1 + Round 3 T-1.1.1 DBA F4 for OrderDiscountLog).

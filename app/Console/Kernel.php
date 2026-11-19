@@ -26,6 +26,9 @@ class Kernel extends ConsoleKernel
         // every 15 minutes as a safety net in addition to the opportunistic cleanup
         // in OtpManagerService::otp(). Uses DB facade directly to avoid loading the
         // full OtpManagerService for a simple DELETE query.
+        // [NFC / NOTIFICATIONS 2026-11-20] Ménage quotidien des abonnements Web Push morts.
+        $schedule->command('webpush:prune')->dailyAt('04:20')->name('webpush-prune')->withoutOverlapping();
+
         $schedule->call(function () {
             $expireMinutes = (int) \Smartisan\Settings\Facades\Settings::group('otp')->get('otp_expire_time') ?: 5;
             \Illuminate\Support\Facades\DB::table('otps')
