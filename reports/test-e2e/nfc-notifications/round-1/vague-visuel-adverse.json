@@ -1,0 +1,108 @@
+{
+  "role": "adverse-visuel",
+  "site": "http://127.0.0.1:8052 (worktree bb5eacc, compiled/*.js à jour)",
+  "dossier_captures": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/nfc-notifications/round-1/captures/",
+  "constats": [
+    {
+      "id": "V-01",
+      "severite": "P2",
+      "fichier": "styles-installation.css:3-13 (aucune règle pour le tiroir hamburger) ; comparer styles-mobile.css:637 ; racine.jsx:1030",
+      "titre": "Menu hamburger ouvert : le bandeau d'installation recouvre « Commandes » et « Fidélité » et ses boutons sont inertes (frôle P1 sur petit téléphone)",
+      "reproduction": "Android, ?src=nfc, beforeinstallprompt, 360x640, ouvrir le menu hamburger. À 390x844 et 360x740 le bandeau tient sous les 7 entrées : seul 360x640 est touché.",
+      "preuve": "captures/bandeau-menu-burger-360x640.png (« Commandes » coupée en deux, « Fidélité » entièrement cachée). Mesuré : un clic sur « Installer » (76,591) ne déclenche rien (prompt=0, menu reste ouvert) ; un clic à l'emplacement caché de « Fidélité » (180,510) navigue vers #loyalty. La barre du panier, elle, est masquée par `body.lc-nav-open .lc-menu-cartbar{display:none}` (styles-mobile.css:637) ; le bandeau n'a pas d'équivalent.",
+      "recommandation": "Ajouter `body.lc-nav-open .lc-iu-bandeau{display:none}` (ou passer l'état « menu ouvert » dans `masque` de racine.jsx:1030)."
+    },
+    {
+      "id": "V-02",
+      "severite": "P2",
+      "fichier": "styles-v5.css:365 (`.lcp-reglage-txt span{color:var(--gray-4)}`) écrase styles-installation.css:43 (`.lc-iu-erreur{color:var(--red-text)}`) ; installation-ui.jsx:176",
+      "titre": "Profil › Notifications : le message d'échec « Impossible d'activer… » s'affiche en gris 12,5 px, pas en rouge, sans icône : il ressemble à du texte d'aide",
+      "reproduction": "Android 360x640 (et tous), Profil › Notifications, appui sur l'interrupteur avec un abonnement push qui échoue après accord.",
+      "preuve": "captures/profil-notifs-erreur-360x640.png ; couleur calculée rgb(92,88,79) (mesure Playwright). Dans la carte de confirmation le même message est bien rouge #A8142A (captures/carte-erreur-activation-360x640.png).",
+      "recommandation": "Renforcer le sélecteur : `.lcp-reglage-txt .lc-iu-erreur{color:var(--red-text)}` (+ icône ou fond d'alerte)."
+    },
+    {
+      "id": "V-03",
+      "severite": "P2",
+      "fichier": "installation-ui.jsx:172 et :178 (rien pour les états ouvrir-safari / guide, contrairement à :139)",
+      "titre": "Profil › Notifications dans une vue embarquée (Instagram…) ou iPhone sans feuille de partage : « Installez d'abord Le Cayenne… » sans bouton ni consigne : impasse",
+      "reproduction": "iPhone 390x844, UA Instagram (ou navigator.share absent), connecté, Profil › Notifications.",
+      "preuve": "captures/profil-notifs-instagram-390x844.png et captures/profil-notifs-ios-sans-partage-390x844.png : seule la phrase générique. La carte de confirmation dit « Ouvrez cette page dans Safari » (captures/carte-ios-instagram-390x844.png). Dans Instagram on ne peut pas installer : le texte est faux.",
+      "recommandation": "Réutiliser dans ReglageNotificationsWeb les trois variantes de texte de CarteNotifications (ouvrir-safari / guide / générique)."
+    },
+    {
+      "id": "V-04",
+      "severite": "P2",
+      "fichier": "styles-installation.css:3-12 (bandeau fixed, pas de décalage du hero) ; :15 (réserve seulement en bas de page)",
+      "titre": "Première vue après la carte NFC : le bandeau coupe ou cache le bouton principal « COMMANDER » du hero",
+      "reproduction": "Accueil ?src=nfc, 360x640 (bouton totalement caché), 390x844 (iPhone partage : boutons « En ligne / Par téléphone » derrière le bandeau), 430x932 états Safari/guide (« COMMANDER » coupé en deux), 768x1024 (la pilule « Dernières commandes » et le texte du hero coupés).",
+      "preuve": "captures/bandeau-iphone-partage-390x844.png ; captures/bandeau-instagram-ouvrir-safari-430x932.png ; captures/bandeau-android-possible-360x640.png ; captures/bandeau-iphone-guide-sans-partage-768x1024.png. Le contenu défile et « Plus tard » ferme (donc P2), mais c'est la page d'arrivée de toute la campagne NFC. À 430x932 en état « partage » le bouton reste entier.",
+      "recommandation": "Option : n'afficher le bandeau qu'après un défilement ou une durée ; ou le réduire (une ligne + boutons) sur les écrans < 700 px de haut."
+    },
+    {
+      "id": "V-05",
+      "severite": "P3",
+      "fichier": "styles-installation.css:23 (`.lc-iu-actions` sans justify-content) dans la carte centrée de funnel.jsx:3615",
+      "titre": "Carte « Être prévenu ? » : texte centré mais boutons alignés à gauche (empilés à gauche à 360 px, vide à droite sur tablette)",
+      "reproduction": "Page de confirmation, 360x640 / 390x844 / 768x1024.",
+      "preuve": "captures/carte-a-demander-390x844.png ; captures/carte-a-demander-360x640.png ; captures/carte-a-demander-768x1024.png ; captures/carte-ios-hors-raccourci-partage-360x640.png (bouton « Installer » seul à gauche).",
+      "recommandation": "`.lc-iu-carte .lc-iu-actions{justify-content:center}`."
+    },
+    {
+      "id": "V-06",
+      "severite": "P3",
+      "fichier": "styles-v5.css:367 (`.lcp-switch-piste{background:var(--gray-2)}`)",
+      "titre": "Interrupteur « Notifications » désactivé : piste beige #D7D2C5 sur carte blanche = 1,51:1 (WCAG 1.4.11 exige 3:1)",
+      "reproduction": "Profil › Notifications, état désactivé, tous viewports.",
+      "preuve": "captures/profil-notifs-desactive-390x844.png ; calcul : #D7D2C5 vs #FFF = 1,51:1 ; état activé #FF5A1F vs #FFF = 3,12:1 (ok). Composant partagé avec d'autres réglages (pas nouveau).",
+      "recommandation": "Piste désactivée ≥ 3:1 (ex. #8F897C) ou contour."
+    },
+    {
+      "id": "V-07",
+      "severite": "P3",
+      "fichier": "racine.jsx:1181-1190 (toast prix : bottom:24, z 9999) ; styles-installation.css:16 (ne traite que `.lc-added-toast`)",
+      "titre": "Le toast « Le prix de … a été mis à jour » (4 s) recouvre les boutons du bandeau à 360x640 et le bouton « Passer commande » du tiroir",
+      "reproduction": "Panier non vide à prix périmé (mock : 8,40 vs 6,90), 360x640 sur #menu avec bandeau.",
+      "preuve": "captures/bandeau-iphone-panier-menu-360x640.png (boutons du bandeau à moitié cachés) ; captures/bandeau-tiroir-ouvert-360x640.png. pointer-events:none : aucun tap perdu. Prix périmé simulé par le mock, mais le cas réel existe.",
+      "recommandation": "Faire monter ce toast comme `.lc-added-toast` (var(--lc-iu-h))."
+    },
+    {
+      "id": "V-08",
+      "severite": "P3",
+      "fichier": "installation-ui.jsx:34 (le repli « Voir comment » ne dépend que de la hauteur ; rien pour Installer)",
+      "titre": "Paysage : le bandeau occupe 33-36 % de la hauteur (131 px sur 360)",
+      "reproduction": "640x360 et 844x390, états Android et iPhone partage.",
+      "preuve": "captures/bandeau-android-possible-paysage-640x360.png (hero quasi entièrement masqué) ; mesures 36 % / 33 %.",
+      "recommandation": "En paysage : une ligne, ou ne pas proposer."
+    },
+    {
+      "id": "V-09",
+      "severite": "P3",
+      "fichier": "installation-ui.jsx:128 vs :138/:148",
+      "titre": "Écriture inclusive incohérente : « Vous serez prévenu(e) » (carte active) contre « Être prévenu quand elle est prête ? »",
+      "reproduction": "Page de confirmation, états à-demander et actif.",
+      "preuve": "captures/carte-actif-390x844.png ; captures/carte-a-demander-390x844.png.",
+      "recommandation": "Choisir une forme (ex. « Recevoir une alerte quand elle est prête ? » / « Vous serez prévenu à chaque étape »)."
+    }
+  ],
+  "etats_captures": [
+    "bandeau Android, iPhone Safari (bouton Installer), iPhone Chrome, repli sans partage, Instagram : x4 viewports",
+    "bandeau + panier non vide ; + tiroir de commande ouvert ; + menu hamburger ouvert",
+    "paysage 640x360 et 844x390 ; iPad Mini UA réel",
+    "carte « Être prévenu ? » dans la vraie page de confirmation : a-demander, actif, refusé, iPhone hors raccourci (avec/sans partage), Instagram, erreur : x4",
+    "Profil › Notifications : désactivé, activé, bloqué, iPhone avec/sans partage, serveur coupé, erreur, Instagram : x4",
+    "thème sombre (prefers-color-scheme: dark)"
+  ],
+  "verifie_sans_defaut": [
+    "Aucune erreur de page (pageerror) ni erreur console dans les 150+ ouvertures ; aucune clé brute (Label.x, notifs.*).",
+    "Aucun défilement horizontal, aucun élément hors écran, aucun texte tronqué (mesure DOM sur bandeau, carte, profil, 4 viewports).",
+    "Cibles tactiles : tous les boutons et l'interrupteur >= 44 px (Installer 93x44, Plus tard 98x44, interrupteur 60x44).",
+    "Contrastes texte >= 4,5:1 : titre jaune et corps sur #0A0A0A, bouton Installer blanc sur #B4370A (6:1), erreur de carte #A8142A/#FFF4C2 6,78, carte active 5,94.",
+    "Aucun montant en euros dans bandeau / carte / interrupteur (points seulement ; le 9,50 € est le ticket de commande existant).",
+    "Tiroir de panier ouvert : bandeau retiré (0 occurrence) aux 4 viewports.",
+    "Bandeau + barre du panier : pas de chevauchement (écart de 39 px) ; bas de page réservé.",
+    "Zone sûre iPhone : non émulable (env() = 0 dans Chromium) ; revue statique seulement : bottom:calc(env(safe-area-inset-bottom)+12px/84px), viewport-fit=cover (index.html:60). Test réel sur iPhone nécessaire.",
+    "Site sans thème sombre : même rendu avec prefers-color-scheme dark.",
+    "Français des libellés relu : pas de faute."
+  ]
+}

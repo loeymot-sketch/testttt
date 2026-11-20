@@ -65,7 +65,12 @@ class SendWebPushOnOrderStatusChange
             // La mise en file a échoué : la clé de dédoublonnage ne doit pas survivre (le même changement, ré-émis par un autre chemin,
             // pourrait encore notifier — sinon le client est privé de cette notification pendant 6 h).
             if (isset($cleDoublon)) {
-                Cache::forget($cleDoublon);
+                try {
+                    Cache::forget($cleDoublon);
+                } catch (\Throwable) {
+                    // Cache injoignable : rien à libérer, et l'écouteur ne doit JAMAIS remonter d'exception à la caisse ou à la cuisine
+                    // (audit adverse tour 3, S3-01 : sinon le dernier écouteur de l'événement ne s'exécutait pas).
+                }
             }
             Log::warning('[webpush] listener isolé', ['erreur' => mb_substr($e->getMessage(), 0, 200)]);
         }

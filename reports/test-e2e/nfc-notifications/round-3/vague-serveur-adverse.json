@@ -1,0 +1,69 @@
+{
+  "role": "adverse-serveur-t3",
+  "constats": [
+    {
+      "id": "S3-01",
+      "severite": "P2",
+      "fichier": "app/Listeners/SendWebPushOnOrderStatusChange.php:67",
+      "titre": "Le nettoyage du catch (Cache::forget) peut relever l'exception : une notification peut bloquer un changement de statut",
+      "reproduction": "Test jetable hors depot (scratchpad/t3/AdverseT3Test.php) : commande web a emporter, abonnement present, Cache::add et Cache::forget levent RuntimeException (Redis coupe net). handle(new OrderStatusChanged(order, PENDING, PREPARED)) leve RuntimeException('redis down (forget)') au lieu de l'absorber.",
+      "preuve": "Lignes 53-54 : $cleDoublon posee puis Cache::add dans le try ; le catch (64-70) appelle Cache::forget SANS garde, avant Log::warning. L'evenement passe par DispatchableAfterCommit : l'exception sort de DB::transaction() APRES le commit, l'appelant caisse/KDS recoit un 500 alors que le statut est enregistre, et le dernier ecouteur (SyncUberCourseAfterKitchenReady) ne tourne pas. Contrat viole (l.16-18). Seul un Redis injoignable declenche (en OOM, DEL passe) et l'application degrade deja dans ce cas : P2.",
+      "recommandation": "Envelopper Cache::forget dans son propre try/catch(\\Throwable) ; ajouter le test 'cache en panne : l'ecouteur ne leve jamais'."
+    },
+    {
+      "id": "S3-02",
+      "severite": "P3",
+      "fichier": "app/Services/Push/WebPushSender.php:149",
+      "titre": "Panne passagere (5xx, 429, reseau) : abonnement garde mais notification perdue, aucune reprise",
+      "reproduction": "Vraie bibliotheque minishlink 9.0.4 contre faux service local (scratchpad/t3/RealSenderT3Test.php) : 500 -> acceptes=0, abonnement conserve, failure_count=0 ; reponse a 7 s -> coupee a 4032 ms, acceptes=0 ; connexion refusee idem. SendWebPushJob.php:57 ignore le retour de sendToUser.",
+      "preuve": "Un 503 de FCM au moment de 'prete' perd la notification (distinct du TTL connu).",
+      "recommandation": "Si 0 appareil accepte et un echec passager vu, relancer une fois ; sinon documenter."
+    },
+    {
+      "id": "S3-03",
+      "severite": "P3",
+      "fichier": "app/Services/Push/WebPushSender.php:149",
+      "titre": "Un 3xx compte comme echec de l'appareil (5 = suppression)",
+      "reproduction": "Faux service repondant 302 puis 307 (allow_redirects=false) : failure_count passe a 1 a chaque fois. 3xx n'est ni dans la liste passager ni 404/410.",
+      "preuve": "Risque theorique (les services reels ne redirigent pas) mais perte irreversible d'abonnements valides.",
+      "recommandation": "Ajouter 300-399 a $passager."
+    },
+    {
+      "id": "S3-04",
+      "severite": "P3",
+      "fichier": "app/Http/Controllers/Frontend/WebPushController.php:44",
+      "titre": "updateOrCreate non atomique (Laravel 9.52) : deux POST identiques simultanes = 500 sur l'index unique",
+      "reproduction": "Non rejoue en concurrence (sqlite memoire). Lecture : vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:577-582 (firstOrNew puis save) + endpoint_hash UNIQUE dans la migration.",
+      "preuve": "Le site se reabonne au plus une fois par jour : impact faible, aucun etat corrompu.",
+      "recommandation": "Attraper UniqueConstraintViolationException et refaire la mise a jour."
+    },
+    {
+      "id": "S3-05",
+      "severite": "P3",
+      "fichier": "app/Services/Push/OrderPushMessage.php:63",
+      "titre": "Livraison : cuisine terminee en moins de 5 s = aucune notification avant 'en route'",
+      "reproduction": "Matrice jetable : estPerimee(8,4)=true, et build(PREPARED) renvoie null pour une livraison (l.103) : ni 'validee' ni points avant le depart du livreur. Rare.",
+      "preuve": "Un silence, pas une fausse promesse.",
+      "recommandation": "Pour une livraison, ne pas juger 'validee' perimee par PREPARED."
+    },
+    {
+      "id": "S3-06",
+      "severite": "P3",
+      "fichier": "app/Console/Commands/WebPushTestCommand.php:30",
+      "titre": "Le message d'essai promet 'prete ou en route, avec vos points gagnes' sans condition",
+      "reproduction": "Lecture : une commande a emporter n'a jamais 'en route', une livraison jamais 'prete', les points ne sont dits que si le grand livre les confirme.",
+      "preuve": "Commande d'exploitation visant un client nomme.",
+      "recommandation": "Texte neutre : 'une alerte a chaque etape de votre commande'."
+    }
+  ],
+  "verifie_sans_defaut": [
+    "phpunit tests/Feature/Push : 79 tests, 289 assertions verts (PHP 8.2 local) ; aucune syntaxe 8.2 seule dans les fichiers du lot ; chaine minishlink 9.0.4 / web-token 3.4.13 exige PHP >= 8.1 (composer.lock).",
+    "SSRF : 47 adresses piegees (userinfo, antislash, %2f, tabulation, IP litterale, ports, point final, sous-domaines voisins, unicode) passees dans PushEndpoint ; aucune ne contourne ; 127.0.0.1;.push.apple.com accepte par la liste est rejete par libcurl ('Bad hostname') ; normaliser/estAutorise idempotents (0 ecart), donc aucune suppression a l'envoi d'une adresse acceptee a l'abonnement.",
+    "IDOR et fuites : desabonnement borne par user_id ; endpoint/p256dh/auth masques, reponse = subscribed seulement ; journaux = classe d'exception et code HTTP ; AnonymisationCompte purge les appareils.",
+    "Vraie bibliotheque : 410 et 404 suppriment ; 413, 500, 403, delai 4 s et connexion refusee ne comptent pas contre l'appareil ; 400 compte (legitime) ; 307 non suivie ; entetes observes TTL 900, Urgency normal, Authorization vapid.",
+    "Textes : 5 types de commande x 6 statuts imprimes ; aucun montant en euros, remboursement ni delai ; le site ne commande que livraison/a emporter (OrderRequest.php:178 et 284) ; points dits seulement si loyalty_transactions.earn existe pour (commande, destinataire).",
+    "Peremption : matrice 9 statuts x 6 conforme ; tag order-<id> et dedoublonnage (commande, statut) inchanges ; evenement apres commit, donc aucune cle orpheline sur annulation de transaction.",
+    "Caisse/borne : exclusion source_surface pos/kiosk, equipe et comptes de borne exclus ; hors S3-01 toute erreur de l'ecouteur et du job est absorbee.",
+    "Charge utile : titre <= 40 et corps <= 140 caracteres ; la bibliotheque rejette > 4078 octets."
+  ]
+}

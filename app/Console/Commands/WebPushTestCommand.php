@@ -27,7 +27,7 @@ class WebPushTestCommand extends Command
 
             return self::FAILURE;
         }
-        $acceptes = $sender->sendToUser($id, ['v' => 1, 'type' => 'test', 'title' => 'Le Cayenne', 'body' => 'Essai de notification.', 'tag' => 'essai', 'url' => '/']);
+        $acceptes = $sender->sendToUser($id, ['v' => 1, 'type' => 'test', 'title' => 'Notifications activées', 'body' => "Parfait\u{00A0}: vous recevrez ici les alertes de votre commande.", 'tag' => 'essai', 'url' => '/', 'urgency' => 'high']);
         $this->info($acceptes.' appareil(s) sur '.$n.' ont accepté la notification.');
 
         return $acceptes > 0 ? self::SUCCESS : self::FAILURE;

@@ -1,6 +1,6 @@
 # GOAL — Carte NFC, raccourci sur l'écran d'accueil, notifications et suivi en direct
 
-> Version 2 (détaillée et déterministe) — 2026-11-19. **EXÉCUTÉ localement le 2026-11-19/20 (voir §E en fin de document) ; NON déployé.**
+> Version 2 (détaillée et déterministe) — 2026-11-19. **EXÉCUTÉ et DÉPLOYÉ le 2026-11-19 (serveur `28503d2d9`, site `bb5eacc` = copie `site-copie-bb5eacc`) ; notifications ACTIVÉES en production le 2026-11-19 à 19:16 (voir §E « Activation »).**
 > Demande du propriétaire : une carte NFC qui pose le site comme une application sur le téléphone du client ; des
 > notifications une fois installé et autorisé ; les points de fidélité et le statut de commande qui se mettent à jour
 > seuls (« actuellement c'est statique, il doit rafraîchir lui-même ») ; le tout qui tient aux mises à jour.
@@ -150,17 +150,28 @@ abonnés. L'envoi ne ralentit ni ne fait échouer la caisse, la cuisine ou le pa
   `EventServiceProvider.php` à la suite de `SendFcmOnOrderStatusChange` (ligne ~168). Il ne fait que : filtrer, puis
   `SendWebPushJob::dispatch(...)->afterCommit()`, le tout dans un `try/catch` (modèle : `SendFcmOnOrderStatusChange.php:50-70`).
   Filtres : commande en ligne avec un client (pas la caisse, pas la borne) ; client ayant au moins un abonnement.
-- **T-1.3.2 Table des textes** (figée ; titre toujours « Le Cayenne ») :
+- **T-1.3.2 Table des textes** — **RÉÉCRITE le 2026-11-20** (demande propriétaire « améliore au max les messages », vaut validation de la porte G6) :
+  un TITRE qui dit l'état, un CORPS qui dit ce qui se passe puis ce qui suit. Vouvoiement, aucune formule dépendante du genre (« prévenu(e) »),
+  espace insécable dans « n° 17 », « 1 250 points » et avant « : ! ? ; », « 1 point » au singulier, aucune promesse invérifiable (remboursement,
+  délai), jamais un montant. Titre ≤ 40 caractères, corps ≤ 140 (lisible sur l'écran de verrouillage ; testé).
 
-  | Statut | Texte | Retard d'envoi |
+  | Statut | Titre · corps | Retard · urgence |
   |---|---|---|
-  | 4 validée | « Commande n° X validée, on la prépare. » + « +N points · solde M » si crédités | 5 s (laisse le crédit de points se poser) |
-  | 7 préparation | aucun envoi (trop bavard) | — |
-  | 8 prête | à emporter : « Votre commande n° X est prête, venez la chercher. » · livraison : aucun envoi | 0 |
-  | 10 en livraison | « Votre commande n° X est en route. » | 0 |
-  | 13 remise | « Bon appétit ! Merci pour votre commande. » | 0 |
-  | 16 / 19 annulée, refusée | « Votre commande n° X a été annulée. » + « Vos points ont été repris. » si c'était le cas | 0 |
+  | 4 validée (retrait) | « Commande n° X validée » · « On s'en occupe : vous recevrez une alerte dès qu'elle est prête. » | 5 s · high |
+  | 4 validée (livraison) | idem · « … vous recevrez une alerte au départ du livreur. » | 5 s · high |
+  | 4 + points crédités AU DESTINATAIRE | corps + « 120 points gagnés, solde : 250 points. » (seulement si `loyalty_transactions` le confirme : le code fidélité d'une commande peut créditer un autre compte) | — |
+  | 7 préparation | aucun envoi | — |
+  | 8 prête, à emporter | « Commande n° X prête ! » · « Elle vous attend au comptoir. » | 0 · high |
+  | 8 prête, sur place | « Commande n° X prête ! » · « Elle vous attend : venez la récupérer. » · livraison : aucun envoi | 0 · high |
+  | 10 en livraison | « Votre commande est en route » · « Le livreur est parti avec la commande n° X. Gardez votre téléphone à portée de main. » | 0 · high |
+  | 13 remise | « Bon appétit ! » · « Votre commande n° X vous a été remise. Merci et à très vite au Cayenne ! » | 0 · normal |
+  | 16 annulée | « Commande n° X annulée » · « Votre commande a été annulée. Le détail est dans Mes commandes. » | 0 · high |
+  | 19 refusée | « Commande n° X non acceptée » · « Elle n'a pas pu être acceptée. Le détail est dans Mes commandes. » | 0 · high |
   | 22 retournée | aucun envoi | — |
+
+  L'urgence est l'en-tête Web Push `Urgency` (conditions de livraison, PAS le son) : « normal » seulement pour la remise, que personne n'attend ;
+  une annulation « normale » pourrait arriver après « prête » (audit adverse tour 2). Message d'essai (`webpush:test`) : « Notifications activées ·
+  Parfait : vous recevrez ici les alertes de votre commande. »
 
 - **T-1.3.3 Charge utile** (JSON, 1 Ko max) : `{ v:1, type:"order", order_id, status, title, body, tag:"order-<id>",
   url:"/?suivi=<id>", points_awarded?, points_balance? }`. Même `tag` par commande : la nouvelle remplace l'ancienne.
@@ -333,7 +344,7 @@ Tout écart = pas fini.
 
 ## §E — Exécution (2026-11-19 → 2026-11-20) : fait, prouvé, écarts, reste à faire
 
-**Livré, NON déployé, NON poussé.** Site : worktree `lecayenne-web-deploy/site-nfc-2026-11-19`, branche locale `feat/nfc-notifications-2026-11-19`
+**Livré et DÉPLOYÉ le 2026-11-19 : serveur `28503d2d9` (poussé en avance rapide sur `pos/category-first-caisse-2026-06-23`, migration = 1 table, healthz 200, chaîne NF525 OK), site Vercel (empreintes des 17 fichiers servis = copie, `sw.js` v3, `?src=nfc` 200). `WEBPUSH_ENABLED` est ABSENT du `.env` de production : aucune notification ne part ; `GET push/key` répond `enabled:false` ; le bandeau d'installation, lui, est actif (carte NFC / 2e visite).** Site : worktree `lecayenne-web-deploy/site-nfc-2026-11-19`, branche locale `feat/nfc-notifications-2026-11-19`
 (6 commits sur `3eb0ae2`). Serveur : branche locale `feat/web-push-clients-2026-11-19` (un commit, créé sans toucher à la branche de travail partagée).
 
 | Vague | Résultat |
@@ -358,10 +369,21 @@ bandeau (contraste, ordinateur, petit écran, barre du panier) ; bouton « Insta
 « Sur l'écran d'accueil ». **NON PROUVÉ ici** : que cette feuille (ouverte par le site) propose bien « Sur l'écran d'accueil », et ce que renvoie `navigator.share` quand on le choisit → porte G4
 (vrai iPhone). Si l'option manque, revenir aux deux étapes écrites (repli déjà codé, `etat()==='guide'`). Android : un vrai bouton, une confirmation.
 
-**Pour mettre en ligne (rien de ceci n'est fait)** :
-1. Serveur d'abord : `composer install` sur le VPS (7 paquets ajoutés ; `symfony/http-client` exige PHP ≥ 8.2 mais n'est pas chargé par l'envoi ; le worker de file tourne en PHP 8.1) puis le script de déploiement
+**Reste à faire pour ACTIVER les notifications (rien de ceci n'est fait ; le code est en ligne)** :
+1. (Serveur et site : déjà en ligne.) `composer install` sur le VPS — le script de déploiement N'EN LANCE PAS (7 paquets ajoutés ; `symfony/http-client` exige PHP ≥ 8.2 mais n'est pas chargé par l'envoi ; le worker de file tourne en PHP 8.1) puis le script de déploiement
    (migration comprise). L'envoi reste coupé tant que `WEBPUSH_ENABLED=false`.
 2. Clés : `php artisan webpush:keys` UNE fois, poser dans le `.env` de production (porte G5), ne plus jamais les changer.
 3. Site : `node tools/compile-jsx.mjs --check` et `node tools/check-asset-versions.mjs --check`, puis déploiement Vercel depuis une copie sans `.git` ; la carte NFC doit pointer sur `https://www.lecayenne.fr/?src=nfc` (pas une page SEO).
 4. Activation : `WEBPUSH_ENABLED=true` après l'essai sur vrais téléphones (G4) avec `php artisan webpush:test <id client>` ; coupure d'urgence = remettre `false` (sans redéployer le site).
 5. Application des stores : `app/www` est un artefact à reconstruire (`node tools/build-app-www.mjs`) avant tout build ; les nouvelles pièces y sont inertes (application native = « installé », notifications « indisponibles »).
+
+
+### Activation en production (2026-11-19, 19:16) — fait
+- **Paquets** : le `vendor/` de la production était en RETARD sur `composer.lock` (≈ 40 paquets, dont `sabberworm/php-css-parser` 8 → 9 sous dompdf) et le script de déploiement ne lance pas `composer install`. Un `composer install` complet aurait donc
+  mis à jour tout cela d'un coup. Installation CHIRURGICALE à la place : verrou hybride (versions installées en production + les 7 nouveaux paquets seulement), installé dans une copie, vérifié sous PHP 8.1 ET 8.2
+  (signature VAPID, construction de `WebPush`, classes de l'application), puis échange du dossier `vendor/` (ancien conservé : `/var/www/lecayenne/vendor.avant-webpush-20261119`, 452 Mo, à supprimer quand l'essai téléphone est concluant).
+  `composer.lock` de production inchangé (arbre git propre).
+- **Clés VAPID** : générées SUR le serveur, posées dans le `.env` (jamais affichées ; `WEBPUSH_ENABLED=true`, sujet `https://www.lecayenne.fr`). **Ne plus jamais les changer.** Workers redémarrés (`queue:restart`).
+- **Vérifié** : `GET /api/frontend/push/key` sert `enabled:true` et la clé publique posée ; `healthz` 200 ; journaux sans erreur.
+- **Arrêt d'urgence** : `WEBPUSH_ENABLED=false` dans le `.env` de production (aucun redéploiement, le site cesse de proposer les notifications). Retour arrière des paquets : remettre `vendor.avant-webpush-20261119` en place de `vendor/`.
+- **Reste** : l'essai sur un vrai téléphone (porte G4) : commander, accepter « Être prévenu ? », vérifier les 3 notifications ; ou `php artisan webpush:test <id client>` une fois l'appareil abonné.

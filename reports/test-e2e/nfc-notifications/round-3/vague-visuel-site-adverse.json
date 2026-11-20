@@ -1,0 +1,69 @@
+{
+  "role": "adverse-visuel-site-t3",
+  "synthese": {"P0": 0, "P1": 0, "P2": 2, "P3": 3, "verdict": "aucun P0/P1 ; 2 P2 cosmétiques/latence, 3 P3"},
+  "constats": [
+    {
+      "id": "V3-01",
+      "severite": "P2",
+      "fichier": "loyalty-v2.jsx:428 (lcpResumeNotifs) et :745 ; notifications.js:197 et :225",
+      "titre": "Hub Profil : la ligne Notifications dit « Offres par e-mail » pour un client déjà abonné tant que la synchro de 3,5 s n'a pas tourné, et ne se corrige pas seule",
+      "reproduction": "Android, permission granted + abonnement actif, ouvrir Mon compte moins de ~3,5 s après le chargement : ligne = « Offres par e-mail ». Après 5 s : « Alertes de commande : activées ». Identique à 360x640, 390x844, 430x932. window.LC.notifs.etatConnu() vaut null au moment de l'ouverture. Le résumé est lu au rendu, aucune écoute de lc:notifs-changed.",
+      "preuve": "reports/test-e2e/nfc-notifications/round-3/captures/v3s-hub-actif-attente0-360x640.png (lue : « Offres par e-mail ») contre v3s-hub-actif-attente5000-360x640.png (lue : « Alertes de commande : activées »)",
+      "recommandation": "Faire relire le résumé sur lc:notifs-changed (ou appeler LC.notifs.etat() à l'ouverture du hub) ; sinon un abonné voit un libellé faux jusqu'au prochain rendu."
+    },
+    {
+      "id": "V3-02",
+      "severite": "P2",
+      "fichier": "installation-ui.jsx:90-92 (lcIuFr) et :94-99 (lcIuTexteBloque)",
+      "titre": "Chemin de déblocage coupé après « › » : le chevron reste en bout de ligne et le chemin se casse (Réglages › Notifications › / Le Cayenne)",
+      "reproduction": "Carte et Profil en état bloqué, Android et iPhone. Mesuré par découpe de lignes (Range) sur 36 cas x viewports : FIN-CHEVRON dans carte-refus-android 360/390/430, carte-refus-iphone 390/430, profil-bloque-android 360/390/430, profil-bloque-iphone 360. Aucun « ? » ni « : » en début de ligne, aucun « Le / Cayenne ».",
+      "preuve": "captures/v3s-carte-refuse-iphone-430x932.png (lue : « Réglages › Notifications › » en fin de ligne, « Le Cayenne. » en dessous) ; v3s-profil-notifs-bloque-430x932.png (lue : « Le Cayenne › » puis « Notifications). ») ; v3s-carte-refuse-android-360x640.png",
+      "recommandation": "Insécable APRÈS « › » aussi (regex / ([?!:;»›])/ + /([›]) /), ou envelopper chaque chemin dans un span nowrap."
+    },
+    {
+      "id": "V3-03",
+      "severite": "P3",
+      "fichier": "installation-ui.jsx:155 (refus), :107-109 (à installer), :94-99 (bloqué)",
+      "titre": "Veuves en dernière ligne : « ici. », « icône. », « Notifications). »",
+      "reproduction": "« ici. » : carte refus iPhone 360. « icône. » : carte guide 360, carte Instagram 390. « Notifications). » : Profil bloqué Android 360 et 430.",
+      "preuve": "captures/v3s-carte-refuse-iphone-360x640.png ; v3s-carte-ios-hors-raccourci-sans-partage-360x640.png ; v3s-profil-notifs-bloque-430x932.png (toutes lues)",
+      "recommandation": "text-wrap: balance (ou pretty) sur .lc-iu-carte span et .lcp-reglage-txt span."
+    },
+    {
+      "id": "V3-04",
+      "severite": "P3",
+      "fichier": "installation-ui.jsx:102, :173, :198 ; OrderPushMessage.php:103, :106, :121, :138-148",
+      "titre": "Promesses justes mais conditionnelles : « avec vos points gagnés » n'est envoyé que si les points sont crédités au destinataire ; « prête » jamais en livraison, « en route » jamais en retrait ; annulée / refusée / remise existent côté serveur mais ne sont pas annoncées",
+      "reproduction": "Comparaison texte du site contre la table serveur. Le « ou » rend la phrase exacte, rien de faux. Aucun montant, aucun « prévenu(e) ».",
+      "preuve": "captures/v3s-carte-a-demander-390x844.png (lue)",
+      "recommandation": "Optionnel : « …, avec vos points quand ils sont crédités » ; accepter que l'annulation soit une alerte non annoncée (bénéfique au client)."
+    },
+    {
+      "id": "V3-05",
+      "severite": "P3",
+      "fichier": "installation-ui.jsx:99",
+      "titre": "Texte « bloqué » Android long (7 lignes à 360 px) et son chemin « Paramètres › Applications › Le Cayenne » n'existe que si le site est installé",
+      "reproduction": "Carte refus Android 360x640, Profil bloqué Android.",
+      "preuve": "captures/v3s-carte-refuse-android-360x640.png (lue)",
+      "recommandation": "Raccourcir : « Autorisez-les dans les réglages du site de votre navigateur. »"
+    }
+  ],
+  "etats_captures": [
+    "carte : a-demander, actif, erreur d'activation, refus Android, refus iPhone (standalone), à installer Safari (partage), guide, Instagram x 360x640, 390x844, 430x932 (v3s-carte-*)",
+    "carte a-demander en schéma sombre 390x844 (le site ignore le sombre, aucun écart)",
+    "Profil › Notifications : éteint, allumé, bloqué Android, bloqué iPhone, à installer partage, guide, Instagram, serveur coupé, échec x 3 viewports (v3s-profil-notifs-*)",
+    "hub Profil abonné, attente 0 s et 5 s x 3 viewports (v3s-hub-actif-attente0/5000-*)",
+    "bandeau : Android possible, iPhone partage, guide, Instagram, Chrome iOS, avec panier x 3 viewports ; paysage ; iPad (v3s-bandeau-*)",
+    "menu hamburger ouvert x 3 viewports ; tiroir panier ouvert x 3 viewports (v3s-bandeau-menu-burger-*, v3s-bandeau-tiroir-ouvert-*)"
+  ],
+  "verifie_sans_defaut": [
+    "compile-jsx --check et check-asset-versions --check verts ; 8052 sert bien le texte neuf (Recevoir une alerte, Alertes de commande : activées, lc-nav-open)",
+    "aucun « prévenu(e) », aucun montant en euros, aucun libellé brut dans carte, Profil, sw.js, messages serveur",
+    "aucune erreur console ni de page, aucun débordement horizontal, aucun élément hors écran sur tous les états",
+    "cibles tactiles >= 44 px partout (interrupteur 60x44, boutons carte et réglage) ; aucun contraste < 4,5:1 hors piste d'interrupteur connue ; erreur rgb(168,20,42) 13 px 600 lisible dans carte et Profil",
+    "« ? », « : », « » » jamais en début de ligne ; « Le Cayenne » jamais coupé (36 cas x viewports)",
+    "hamburger ouvert : bandeau masqué aux 3 viewports, 7 liens cliquables de 52 px, bandeau restauré à la fermeture ; tiroir panier : bandeau retiré aux 3 viewports",
+    "textes alignés sur OrderPushMessage.php : validée toujours, prête seulement retrait ou sur place, en route seulement livraison, points seulement avec « validée » ; aucune promesse de délai ni de remboursement",
+    "texte « iPhone bloqué » (Réglages › Notifications › Le Cayenne) exact pour une web-app iOS ; carte et Profil disent la même chose"
+  ]
+}

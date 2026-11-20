@@ -58,7 +58,7 @@ class SendWebPushJobTest extends TestCase
                 public function queueNotification($subscription, ?string $payload = null, array $options = [], array $auth = []): void
                 {
                     $this->file[] = [$subscription->getEndpoint(), $payload];
-                    $this->vus[] = ['endpoint' => $subscription->getEndpoint(), 'payload' => $payload];
+                    $this->vus[] = ['endpoint' => $subscription->getEndpoint(), 'payload' => $payload, 'options' => $options];
                 }
 
                 public function flush(?int $batchSize = null): \Generator
@@ -113,6 +113,64 @@ class SendWebPushJobTest extends TestCase
         $this->assertSame('Bon appétit !', json_decode($vus[0]['payload'], true)['body']);
     }
 
+    // ───── Urgence et durée de vie : valeurs validées (audit adverse tours 1 et 2, S-02 / S2-02) ─────
+
+    public function test_l_urgence_du_message_est_transmise_au_service_et_jamais_chiffree(): void
+    {
+        $this->actif();
+        $u = User::factory()->create();
+        $this->abonner($u, 'A');
+        $vus = null;
+        $this->envoyeur(['A' => 201], $vus)->sendToUser($u->id, ['body' => 'x', 'urgency' => 'normal']);
+        $this->assertSame('normal', $vus[0]['options']['urgency']);
+        $this->assertArrayNotHasKey('urgency', json_decode($vus[0]['payload'], true), 'un réglage d\'envoi n\'est pas une donnée du message');
+        $this->envoyeur(['A' => 201], $vus)->sendToUser($u->id, ['body' => 'x']);
+        $this->assertSame('high', $vus[0]['options']['urgency'], 'sans urgence demandée : celle de la configuration');
+    }
+
+    public function test_une_urgence_invalide_retombe_sur_haute_au_lieu_de_vider_le_parc(): void
+    {
+        $this->actif();
+        $u = User::factory()->create();
+        $this->abonner($u, 'A');
+        foreach ([['urgency' => 'urgent!'], ['urgency' => ''], ['urgency' => ['x']], ['urgency' => 5]] as $charge) {
+            $vus = null;
+            $this->envoyeur(['A' => 201], $vus)->sendToUser($u->id, ['body' => 'x'] + $charge);
+            $this->assertSame('high', $vus[0]['options']['urgency'], json_encode($charge));
+        }
+        config(['webpush.urgency' => 'Normal ']); // casse et espaces tolérés
+        $vus = null;
+        $this->envoyeur(['A' => 201], $vus)->sendToUser($u->id, ['body' => 'x']);
+        $this->assertSame('normal', $vus[0]['options']['urgency']);
+        config(['webpush.urgency' => 'tres-urgent']); // faute de frappe dans le .env : jamais un 400 sur chaque appareil
+        $this->envoyeur(['A' => 201], $vus)->sendToUser($u->id, ['body' => 'x']);
+        $this->assertSame('high', $vus[0]['options']['urgency']);
+    }
+
+    public function test_une_duree_de_vie_hors_bornes_retombe_sur_quinze_minutes(): void
+    {
+        $this->actif();
+        $u = User::factory()->create();
+        $this->abonner($u, 'A');
+        foreach ([[-5, 900], [0, 900], [10, 900], [999999, 900], [3600, 3600], [900, 900]] as [$configure, $attendu]) {
+            config(['webpush.ttl' => $configure]);
+            $recu = null;
+            $sender = new WebPushSender(function (array $p) use (&$recu) {
+                $recu = $p['defaut'];
+
+                return new class extends WebPush {
+                    public function __construct() {}
+
+                    public function queueNotification($subscription, ?string $payload = null, array $options = [], array $auth = []): void {}
+
+                    public function flush(?int $batchSize = null): \Generator { yield from []; }
+                };
+            });
+            $sender->sendToUser($u->id, ['body' => 'x']);
+            $this->assertSame($attendu, $recu['TTL'], 'TTL configuré '.$configure);
+        }
+    }
+
     public function test_410_supprime_l_abonnement_mort_mais_garde_les_autres(): void
     {
         $this->actif();
@@ -143,7 +201,7 @@ class SendWebPushJobTest extends TestCase
         $this->actif(); // max_failures = 3
         $u = User::factory()->create();
         $a = $this->abonner($u, 'A');
-        foreach ([500, 502, 503, 429, 408, 500, 500, 500] as $code) {
+        foreach ([500, 502, 503, 429, 408, 413, 500, 500, 500] as $code) { // 413 = NOTRE message trop gros : jamais la faute de l'appareil
             $this->envoyeur(['A' => $code])->sendToUser($u->id, ['body' => 'x']);
         }
         $this->assertNotNull($a->fresh(), 'huit pannes passagères de suite : l\'abonnement valide est conservé');
@@ -154,7 +212,7 @@ class SendWebPushJobTest extends TestCase
         }
         $this->assertNotNull($a->fresh());
         $this->assertSame(0, $a->fresh()->failure_count);
-        // les refus définitifs propres à l'appareil (400, 413…), eux, comptent
+        // les refus définitifs propres à l'appareil (400…), eux, comptent
         $this->envoyeur(['A' => 400])->sendToUser($u->id, ['body' => 'x']);
         $this->assertSame(1, $a->fresh()->failure_count);
     }
@@ -231,10 +289,13 @@ class SendWebPushJobTest extends TestCase
             'user_id' => $u->id, 'branch_id' => \App\Models\Branch::factory()->create()->id, 'status' => \App\Enums\OrderStatus::ACCEPT, 'order_type' => \App\Enums\OrderType::TAKEAWAY,
             'queue_number' => 42, 'loyalty_points_awarded' => 120,
         ]);
+        \Illuminate\Support\Facades\DB::table('loyalty_transactions')->insert(['user_id' => $u->id, 'loyalty_code' => 'T1', 'order_id' => $order->id, 'type' => 'earn', 'points' => 120, 'balance_after' => 130, 'source_surface' => 'web', 'created_at' => now(), 'updated_at' => now()]);
         $vus = null;
         (new SendWebPushJob($u->id, null, $order->id, \App\Enums\OrderStatus::ACCEPT))->handle($this->envoyeur(['A' => 201], $vus));
         $charge = json_decode($vus[0]['payload'], true);
-        $this->assertSame('Commande n° 42 validée, on la prépare. +120 points · solde 130.', $charge['body']);
+        $this->assertSame('Commande n° 42 validée', $charge['title']);
+        $this->assertSame('On s’en occupe : vous recevrez une alerte dès qu’elle est prête. 120 points gagnés, solde : 130 points.', $charge['body']);
+        $this->assertArrayNotHasKey('urgency', $charge, 'l\'urgence est un réglage d\'envoi : jamais dans le message chiffré');
         $this->assertSame('order-'.$order->id, $charge['tag']);
         $this->assertSame(120, $charge['points_awarded']);
     }
@@ -374,10 +435,11 @@ class SendWebPushJobTest extends TestCase
         $this->abonner($u, 'A');
         // paiement en ligne : la politique d'auto-préparation a déjà passé la commande en préparation avant l'envoi retardé
         $order = \App\Models\Order::factory()->create(['user_id' => $u->id, 'branch_id' => \App\Models\Branch::factory()->create()->id, 'status' => \App\Enums\OrderStatus::PREPARING, 'order_type' => \App\Enums\OrderType::TAKEAWAY, 'queue_number' => 9, 'loyalty_points_awarded' => 80]);
+        \Illuminate\Support\Facades\DB::table('loyalty_transactions')->insert(['user_id' => $u->id, 'loyalty_code' => 'T2', 'order_id' => $order->id, 'type' => 'earn', 'points' => 80, 'balance_after' => 80, 'source_surface' => 'web', 'created_at' => now(), 'updated_at' => now()]);
         $vus = null;
         (new SendWebPushJob($u->id, null, $order->id, \App\Enums\OrderStatus::ACCEPT))->handle($this->envoyeur(['A' => 201], $vus));
         $this->assertCount(1, $vus, '« validée + points » n\'est PAS abandonnée par « en préparation »');
-        $this->assertStringContainsString('+80 points', json_decode($vus[0]['payload'], true)['body']);
+        $this->assertStringContainsString('80 points gagnés', json_decode($vus[0]['payload'], true)['body']);
     }
 
     public function test_la_tache_n_envoie_rien_pour_un_statut_muet(): void

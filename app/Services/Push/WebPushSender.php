@@ -48,6 +48,23 @@ class WebPushSender
         return (string) Utils::uriFor($endpoint);
     }
 
+    /**
+     * Urgence Web Push (RFC 8030 §5.3) : seules ces quatre valeurs existent. Une autre (faute de frappe dans WEBPUSH_URGENCY) est un 400
+     * du service de notification : elle ferait compter un échec contre CHAQUE appareil et viderait le parc (audit adverse S-02).
+     */
+    private static function urgence(mixed $voulue): string
+    {
+        $permises = ['very-low', 'low', 'normal', 'high'];
+        foreach ([$voulue, config('webpush.urgency', 'high')] as $v) {
+            $v = is_string($v) ? strtolower(trim($v)) : '';
+            if (in_array($v, $permises, true)) {
+                return $v;
+            }
+        }
+
+        return 'high';
+    }
+
     /** @param array<string,mixed> $charge */
     public function sendToUser(int $userId, array $charge): int
     {
@@ -59,6 +76,8 @@ class WebPushSender
             if ($abonnements->isEmpty()) {
                 return 0;
             }
+            $urgence = self::urgence($charge['urgency'] ?? null);
+            unset($charge['urgency']); // un réglage d'envoi, pas une donnée du message
             $corps = json_encode($charge, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}';
             $acceptes = 0;
             // Configuration VAPID invalide (clé tronquée, guillemets…) = faute du SERVEUR, jamais celle d'un appareil : on le dit et on ne
@@ -74,6 +93,13 @@ class WebPushSender
                 }
             } catch (\Throwable $e) {
                 Log::error('[webpush] configuration VAPID invalide : aucun envoi', ['erreur' => get_class($e)]);
+
+                return 0;
+            }
+            // OpenSSL incapable de créer une clé locale = faute du SERVEUR (extension, mémoire), jamais celle d'un appareil : sans cette
+            // sonde, la bibliothèque levait « Unable to create the local key. » et chaque abonnement valide était supprimé (audit adverse S-01).
+            if ($this->fabrique === null && @openssl_pkey_new(['curve_name' => 'prime256v1', 'private_key_type' => OPENSSL_KEYTYPE_EC]) === false) {
+                Log::error('[webpush] OpenSSL ne crée pas de clé locale : aucun envoi, aucun abonnement supprimé');
 
                 return 0;
             }
@@ -101,7 +127,8 @@ class WebPushSender
                             'authToken' => $a->auth,
                             'contentEncoding' => $a->content_encoding ?: 'aes128gcm',
                         ]),
-                        $corps
+                        $corps,
+                        ['urgency' => $urgence]
                     );
                     $rapports = iterator_to_array($webpush->flush(), false);
                 } catch (\Throwable $e) {
@@ -119,7 +146,7 @@ class WebPushSender
                     // Jamais comptés contre l'APPAREIL : une panne PASSAGÈRE du service de notification (5xx, 429, 408, coupure réseau) et un refus
                     // d'AUTHENTIFICATION de NOTRE serveur (401, 403 : clé VAPID inexacte — une clé privée à un caractère près signe sans erreur et
                     // n'est refusée que par le service). Ces cas relèvent du serveur : on le journalise, on n'efface aucun abonnement valide.
-                    $passager = $http === null || $http >= 500 || in_array($http, [401, 403, 408, 429], true);
+                    $passager = $http === null || $http >= 500 || in_array($http, [401, 403, 408, 413, 429], true);
                     if ($rapport->isSuccess() && ($http === null || ($http >= 200 && $http < 300))) {
                         $acceptes++;
                         $a->forceFill(['last_success_at' => now(), 'failure_count' => 0])->save();
@@ -160,7 +187,9 @@ class WebPushSender
                 'privateKey' => (string) config('webpush.private_key'),
             ],
         ];
-        $defaut = ['TTL' => (int) config('webpush.ttl', 900), 'urgency' => (string) config('webpush.urgency', 'high')];
+        // TTL hors bornes (négatif, absurde) = refus 400 du service de notification : retombe sur 15 min (audit adverse tour 2, S2-02).
+        $ttl = (int) config('webpush.ttl', 900);
+        $defaut = ['TTL' => ($ttl >= 60 && $ttl <= 86400) ? $ttl : 900, 'urgency' => self::urgence(null)];
         if ($this->fabrique !== null) {
             return ($this->fabrique)(['auth' => $auth, 'defaut' => $defaut]);
         }

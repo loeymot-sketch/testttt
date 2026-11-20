@@ -47,6 +47,15 @@ class OrderStatusPushTest extends TestCase
         ], $plus));
     }
 
+    /** Pose au grand livre la ligne « earn » que l'écouteur de fidélité écrit au crédit des points. */
+    private function crediter(Order $o, int $userId, int $points): void
+    {
+        \Illuminate\Support\Facades\DB::table('loyalty_transactions')->insert([
+            'user_id' => $userId, 'loyalty_code' => 'T'.$userId, 'order_id' => $o->id, 'type' => 'earn', 'points' => $points,
+            'balance_after' => $points, 'source_surface' => 'web', 'description' => 'essai', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
+
     private function abonner(User $u): void
     {
         $e = 'https://push.example.test/send/'.$u->id;
@@ -58,37 +67,105 @@ class OrderStatusPushTest extends TestCase
     public function test_table_des_textes_a_emporter(): void
     {
         $o = $this->commande();
-        $this->assertSame('Commande n° 17 validée, on la prépare.', OrderPushMessage::build($o, OrderStatus::ACCEPT)['body']);
+        $v = OrderPushMessage::build($o, OrderStatus::ACCEPT);
+        $this->assertSame('Commande n° 17 validée', $v['title']);
+        $this->assertSame('On s’en occupe : vous recevrez une alerte dès qu’elle est prête.', $v['body']);
         $this->assertNull(OrderPushMessage::build($o, OrderStatus::PREPARING), '« en préparation » ne notifie pas');
-        $this->assertSame('Votre commande n° 17 est prête, venez la chercher.', OrderPushMessage::build($o, OrderStatus::PREPARED)['body']);
+        $p = OrderPushMessage::build($o, OrderStatus::PREPARED);
+        $this->assertSame('Commande n° 17 prête !', $p['title']);
+        $this->assertSame('Elle vous attend au comptoir.', $p['body']);
         $this->assertNull(OrderPushMessage::build($o, OrderStatus::OUT_FOR_DELIVERY), 'pas de « en route » pour une commande à emporter');
-        $this->assertSame('Bon appétit ! Merci pour votre commande.', OrderPushMessage::build($o, OrderStatus::DELIVERED)['body']);
-        $this->assertSame('Votre commande n° 17 a été annulée.', OrderPushMessage::build($o, OrderStatus::CANCELED)['body']);
-        $this->assertSame('Votre commande n° 17 a été annulée.', OrderPushMessage::build($o, OrderStatus::REJECTED)['body']);
+        $d = OrderPushMessage::build($o, OrderStatus::DELIVERED);
+        $this->assertSame('Bon appétit !', $d['title']);
+        $this->assertSame('Votre commande n° 17 vous a été remise. Merci et à très vite au Cayenne !', $d['body']);
+        $c = OrderPushMessage::build($o, OrderStatus::CANCELED);
+        $this->assertSame('Commande n° 17 annulée', $c['title']);
+        $this->assertSame('Votre commande a été annulée. Le détail est dans Mes commandes.', $c['body']);
+        $r = OrderPushMessage::build($o, OrderStatus::REJECTED);
+        $this->assertSame('Commande n° 17 non acceptée', $r['title']);
+        $this->assertSame('Elle n’a pas pu être acceptée. Le détail est dans Mes commandes.', $r['body']);
         $this->assertNull(OrderPushMessage::build($o, OrderStatus::PENDING));
         $this->assertNull(OrderPushMessage::build($o, OrderStatus::RETURNED));
+    }
+
+    public function test_sur_place_ne_promet_pas_un_comptoir(): void
+    {
+        $o = $this->commande(['order_type' => OrderType::DINING_TABLE]);
+        $this->assertSame('Elle vous attend : venez la récupérer.', OrderPushMessage::build($o, OrderStatus::PREPARED)['body']);
     }
 
     public function test_livraison_prevenue_au_depart_du_livreur_pas_a_la_sortie_de_cuisine(): void
     {
         $o = $this->commande(['order_type' => OrderType::DELIVERY]);
         $this->assertNull(OrderPushMessage::build($o, OrderStatus::PREPARED));
-        $this->assertSame('Votre commande n° 17 est en route.', OrderPushMessage::build($o, OrderStatus::OUT_FOR_DELIVERY)['body']);
+        $this->assertSame('On s’en occupe : vous recevrez une alerte au départ du livreur.', OrderPushMessage::build($o, OrderStatus::ACCEPT)['body']);
+        $e = OrderPushMessage::build($o, OrderStatus::OUT_FOR_DELIVERY);
+        $this->assertSame('Votre commande est en route', $e['title']);
+        $this->assertSame('Le livreur est parti avec la commande n° 17. Gardez votre téléphone à portée de main.', $e['body']);
     }
 
     public function test_les_points_sont_dits_quand_ils_sont_credites_et_jamais_un_montant(): void
     {
-        $client = User::factory()->create(['loyalty_points' => 250]);
+        $client = User::factory()->create(['loyalty_points' => 1250]);
         $client->assignRole('Customer');
         $o = $this->commande(['loyalty_points_awarded' => 120, 'total' => 12.00], $client);
+        $this->crediter($o, $client->id, 120);
         $m = OrderPushMessage::build($o, OrderStatus::ACCEPT);
-        $this->assertSame('Commande n° 17 validée, on la prépare. +120 points · solde 250.', $m['body']);
+        $this->assertSame('On s’en occupe : vous recevrez une alerte dès qu’elle est prête. 120 points gagnés, solde : 1 250 points.', $m['body']);
         $this->assertSame(120, $m['points_awarded']);
-        $this->assertSame(250, $m['points_balance']);
+        $this->assertSame(1250, $m['points_balance']);
         $this->assertDoesNotMatchRegularExpression('/€|euro|dépens/iu', $m['body'], 'jamais de montant dépensé');
         $sans = OrderPushMessage::build($this->commande(['loyalty_points_awarded' => 0]), OrderStatus::ACCEPT);
-        $this->assertStringNotContainsString('points', $sans['body']);
+        $this->assertStringNotContainsString('point', $sans['body']);
         $this->assertArrayNotHasKey('points_awarded', $sans);
+    }
+
+    public function test_un_seul_point_s_accorde_au_singulier(): void
+    {
+        $client = User::factory()->create(['loyalty_points' => 1]);
+        $client->assignRole('Customer');
+        $o = $this->commande(['loyalty_points_awarded' => 1], $client);
+        $this->crediter($o, $client->id, 1);
+        $this->assertStringEndsWith(' 1 point gagné, solde : 1 point.', OrderPushMessage::build($o, OrderStatus::ACCEPT)['body']);
+    }
+
+    /** Audit adverse S-03 : le code fidélité saisi sur la commande peut créditer UNE AUTRE personne — on ne lui fait pas dire « points gagnés ». */
+    public function test_les_points_crédités_a_un_autre_compte_ne_sont_pas_annonces_au_titulaire(): void
+    {
+        $client = User::factory()->create(['loyalty_points' => 5]);
+        $client->assignRole('Customer');
+        $autre = User::factory()->create(['loyalty_points' => 120]);
+        $o = $this->commande(['loyalty_points_awarded' => 120], $client);
+        $this->crediter($o, $autre->id, 120); // le grand livre dit : crédité à l'AUTRE
+        $m = OrderPushMessage::build($o, OrderStatus::ACCEPT);
+        $this->assertStringNotContainsString('point', $m['body']);
+        $this->assertArrayNotHasKey('points_awarded', $m);
+        $this->assertArrayNotHasKey('points_balance', $m);
+    }
+
+    public function test_urgence_haute_sauf_la_remise_que_personne_n_attend(): void
+    {
+        $o = $this->commande(['order_type' => OrderType::DELIVERY]);
+        foreach ([OrderStatus::ACCEPT => 'high', OrderStatus::OUT_FOR_DELIVERY => 'high', OrderStatus::DELIVERED => 'normal', OrderStatus::CANCELED => 'high', OrderStatus::REJECTED => 'high'] as $statut => $attendu) {
+            $this->assertSame($attendu, OrderPushMessage::build($o, $statut)['urgency'], 'statut '.$statut);
+        }
+        $this->assertSame('high', OrderPushMessage::build($this->commande(), OrderStatus::PREPARED)['urgency']);
+    }
+
+    /** Une notification se lit en un coup d'œil : titre court, corps tenant sur l'écran de verrouillage, aucune clé interne de gabarit. */
+    public function test_longueurs_lisibles_sur_l_ecran_de_verrouillage(): void
+    {
+        $o = $this->commande(['queue_number' => 'A1234', 'order_type' => OrderType::DELIVERY, 'loyalty_points_awarded' => 2500]);
+        $this->crediter($o, $o->user_id, 2500);
+        foreach (OrderPushMessage::STATUTS as $statut) {
+            $m = OrderPushMessage::build($o, $statut);
+            if ($m === null) {
+                continue;
+            }
+            $this->assertLessThanOrEqual(40, mb_strlen($m['title']), 'titre : '.$m['title']);
+            $this->assertLessThanOrEqual(140, mb_strlen($m['body']), 'corps : '.$m['body']);
+            $this->assertDoesNotMatchRegularExpression('/\bLabel\.|undefined|null|€/u', $m['title'].' '.$m['body']);
+        }
     }
 
     public function test_la_charge_porte_le_tag_de_remplacement_et_le_lien_de_suivi(): void
@@ -97,9 +174,22 @@ class OrderStatusPushTest extends TestCase
         $m = OrderPushMessage::build($o, OrderStatus::PREPARED);
         $this->assertSame('order-'.$o->id, $m['tag']);
         $this->assertSame('/#orders', $m['url']);
-        $this->assertSame('Le Cayenne', $m['title']);
+        $this->assertSame('Commande n° 17 prête !', $m['title']);
         $this->assertSame(1, $m['v']);
         $this->assertLessThan(1024, strlen(json_encode($m)));
+    }
+
+    /** Audit adverse tour 3, S3-01 : un cache injoignable ne remonte JAMAIS d'exception à la caisse ni à la cuisine. */
+    public function test_une_panne_du_cache_n_arrete_jamais_la_chaine_des_ecouteurs(): void
+    {
+        $client = User::factory()->create(['loyalty_points' => 0]);
+        $client->assignRole('Customer');
+        $o = $this->commande([], $client);
+        $this->abonner($client);
+        Cache::shouldReceive('add')->andThrow(new \RuntimeException('redis down (add)'));
+        Cache::shouldReceive('forget')->andThrow(new \RuntimeException('redis down (forget)'));
+        $this->declencher($o, OrderStatus::ACCEPT); // ne doit rien lever
+        $this->addToAssertionCount(1);
     }
 
     // ───── Écouteur ─────

@@ -2,7 +2,7 @@
 // Web Push CHIFFRÉE (RFC 8291) vers un faux service de notification local, que ce script DÉCHIFFRE pour lire le texte.
 const http = require('http'); const crypto = require('crypto'); const fs = require('fs'); const path = require('path');
 const { execFileSync } = require('child_process');
-const ROOT = process.env.LC_BACKEND_ROOT; const API = 'http://127.0.0.1:8766';
+const ROOT = process.env.LC_BACKEND_ROOT; const API = process.env.LC_API || 'http://127.0.0.1:8766';
 const env = (k) => { const m = fs.readFileSync(path.join(ROOT, '.env'), 'utf8').match(new RegExp('^' + k + '=(.*)$', 'm')); return m ? m[1].trim().replace(/^"|"$/g, '') : ''; };
 const KEY = env('MIX_API_KEY');
 const tinker = (code) => execFileSync('php', ['artisan', 'tinker', '--execute', code], { cwd: ROOT, encoding: 'utf8', timeout: 90000 }).trim().split('\n').filter(Boolean).pop();
@@ -69,9 +69,11 @@ function dechiffrer(corps, ua) { // RFC 8188 / 8291, aes128gcm
   verifier(recus.length === 2, 'EXACTEMENT 2 notifications reçues (validée, prête) — « en préparation » reste muet', { recus: recus.length, textes });
   console.log('  ℹ chronologie (ms depuis t0) : statuts', JSON.stringify(marques), '· notifications', JSON.stringify(recus.map((r, i) => ({ statut: textes[i].status, t: r.t - t0 }))));
   const v = textes.find((t) => t.status === 4); const p = textes.find((t) => t.status === 8);
-  verifier(v && v.body.startsWith('Commande n° ' + numero + ' validée, on la prépare.'), 'validée : texte exact déchiffré' + (v ? ' « ' + v.body + ' »' : ''), v);
-  verifier(v && /\+120 points · solde 120/.test(v.body), 'validée : les points gagnés (120) et le solde sont dits grâce au retard de 5 s', v);
-  verifier(p && p.body === 'Votre commande n° ' + numero + ' est prête, venez la chercher.' && p.tag === v.tag && v.tag === 'order-' + id && p.url === '/#orders', 'prête : texte exact, même tag que « validée », lien « Mes commandes »', p);
+  const N = 'n°\u00a0' + numero;
+  verifier(v && v.title === 'Commande ' + N + ' validée' && v.body.startsWith('On s’en occupe\u00a0: vous recevrez une alerte dès qu’elle est prête.'), 'validée : titre et texte exacts déchiffrés' + (v ? ' « ' + v.title + ' — ' + v.body + ' »' : ''), v);
+  verifier(v && /120\u00a0points gagnés, solde\u00a0: 120\u00a0points\.$/.test(v.body), 'validée : les points gagnés (120) et le solde sont dits grâce au retard de 5 s', v);
+  verifier(v && !('urgency' in v) && !/€|euro|dépens/i.test(v.title + v.body), 'validée : l\'urgence n\'est pas dans le message chiffré, aucun montant', v);
+  verifier(p && p.title === 'Commande ' + N + ' prête\u00a0!' && p.body === 'Elle vous attend au comptoir.' && p.tag === v.tag && v.tag === 'order-' + id && p.url === '/#orders', 'prête : texte exact, même tag que « validée », lien « Mes commandes »', p);
   const h = recus[0].h;
   verifier(/^vapid t=.+, k=.+$/.test(h.authorization || '') && h['content-encoding'] === 'aes128gcm' && Number(h.ttl) > 0 && h.urgency === 'high', 'requête conforme VAPID : Authorization, aes128gcm, TTL, urgence haute', { auth: (h.authorization || '').slice(0, 40), enc: h['content-encoding'], ttl: h.ttl, urg: h.urgency });
   const iv = textes.findIndex((t) => t.status === 4); const delai = recus[iv].t - t0 - marques[4]; verifier(iv === 0 && recus[iv].t - t0 >= marques[4] + 3500, '« validée » part ~5 s après la validation (' + (recus[iv].t - t0 - marques[4]) + ' ms après le retour de l\'appel)', { delai, marques });
@@ -82,7 +84,8 @@ function dechiffrer(corps, ua) { // RFC 8188 / 8291, aes128gcm
   const rem = await api('POST', '/api/admin/pos-order/change-status/' + id, { token: pos.j.token, corps: { status: 13 } });
   for (let i = 0; i < 20 && recus.length < avant + 1; i++) await attendre(500);
   const dern = recus.length > avant ? JSON.parse(dechiffrer(recus[recus.length - 1].corps, ua)) : null;
-  verifier(rem.http === 200 && dern && dern.body === 'Bon appétit ! Merci pour votre commande.', 'remise : « Bon appétit ! »', { http: rem.http, j: rem.j, dern });
+  verifier(rem.http === 200 && dern && dern.title === 'Bon appétit\u00a0!' && dern.body === 'Votre commande ' + N + ' vous a été remise. Merci et à très vite au Cayenne\u00a0!', 'remise : « Bon appétit ! »', { http: rem.http, j: rem.j, dern });
+  verifier(recus[recus.length - 1].h.urgency === 'normal', 'remise : urgence « normale » (le client n\'attend plus rien)', { urg: recus[recus.length - 1].h.urgency });
   // 4 bis. cuisine ultra-rapide : 4 puis 8 dans la seconde → « validée » (retardée) est périmée, seule « prête » arrive, une seule fois
   const cmdR = await api('POST', '/api/frontend/order', { token: c.token, corps: { branch_id: 1, order_type: 10, source: 5, is_advance_order: 10, payment_method: 1,
     items: JSON.stringify([{ item_id: 58, item_price: 1, quantity: 1, discount: 0, total_price: 1, item_variations: [], item_extras: [], instruction: 'E2E-PUSH-R' }]) } });

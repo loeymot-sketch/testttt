@@ -15,7 +15,9 @@ return [
     'private_key' => env('WEBPUSH_PRIVATE_KEY', ''),
     // Contact exigé par le protocole (adresse du restaurant), jamais une donnée personnelle d'un client.
     'subject' => env('WEBPUSH_SUBJECT', 'mailto:contact@lecayenne.fr'),
+    // Durée de garde du message par le service de notification si le téléphone est éteint (secondes ; hors 60–86 400 → 900).
     'ttl' => (int) env('WEBPUSH_TTL', 900),
+    // Urgence PAR DÉFAUT (very-low|low|normal|high ; autre valeur → high). Les notifications de commande fixent la leur (OrderPushMessage).
     'urgency' => env('WEBPUSH_URGENCY', 'high'),
     // [audit adverse P1 SSRF] Seuls les services de notification des navigateurs reçoivent une requête (voir PushEndpoint).
     'allowed_hosts' => array_values(array_filter(array_map('trim', explode(',', (string) env('WEBPUSH_ALLOWED_HOSTS', implode(',', [
