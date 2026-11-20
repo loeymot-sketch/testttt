@@ -34,12 +34,13 @@ final class UberTicketPreviewBuilder
      * ou un dessert commandé seul porte `en_bas: true`. L'ordre de `lignes` ne bouge pas : l'écran
      * retire une ligne par son INDEX, qui doit rester celui de la commande lue.
      *
-     * @return array{cuisson:string, en_bas:list<string>, lignes:array<int,array{quantity:int,titre:string,symbolique:string,menu:string,supplements:array<int,string>,boissons:array<int,string>,note:string,non_mappe:bool,en_bas:bool}>}
+     * @return array{cuisson:string, en_bas:list<string>, lignes:array<int,array{quantity:int,titre:string,symbolique:string,menu:string,supplements:array<int,string>,boissons:array<int,string>,note:string,non_mappe:bool,en_bas:bool,doublon_de:?string}>}
      */
     public function build(array $mapped): array
     {
         $lignes = [];
         $enBas = [];
+        $cles = [];
 
         foreach ((array) ($mapped['items'] ?? []) as $line) {
             $nom = (string) ($line['name'] ?? '');
@@ -79,7 +80,30 @@ final class UberTicketPreviewBuilder
                 )),
                 'non_mappe' => str_contains($instruction, '[UBER NON MAPPÉ'),
                 'en_bas' => $seule,
+                'doublon_de' => null,
             ];
+            $cles[] = [
+                'seule' => $this->formatter->isDrinkItem($nom) ? $this->cleBoisson($nom) : null,
+                'menu' => array_values(array_filter(array_map(
+                    fn (string $b): ?array => $this->cleBoisson($b),
+                    $this->boissonsDuProduit($snapshot)
+                ))),
+            ];
+        }
+
+        // [DOUBLON BOISSON 2026-11-20 · owner] La lecture a déjà rendu la boisson d'un menu une 2ᵉ fois,
+        // comme article à part (ticket Méga réel). Sans le papier, impossible de savoir si le client en
+        // a payé une seconde : on SIGNALE, on ne retire jamais. L'humain tranche en un appui.
+        foreach ($cles as $i => $c) {
+            if ($c['seule'] === null) {
+                continue;
+            }
+            foreach ($cles as $j => $autre) {
+                if ($j !== $i && $this->memeBoisson($c['seule'], $autre['menu'])) {
+                    $lignes[$i]['doublon_de'] = $lignes[$j]['titre'];
+                    break;
+                }
+            }
         }
 
         $cuisson = $this->portions->forOrder(array_map(static fn (array $l): array => [
@@ -90,5 +114,50 @@ final class UberTicketPreviewBuilder
         ], (array) ($mapped['items'] ?? [])));
 
         return ['cuisson' => $cuisson['texte'], 'en_bas' => $enBas, 'lignes' => $lignes];
+    }
+
+    /** Noms des boissons portées par un produit (menu), desserts exclus. */
+    private function boissonsDuProduit(array $snapshot): array
+    {
+        $noms = [];
+        foreach ((array) ($snapshot['addons'] ?? []) as $a) {
+            $role = strtolower((string) ($a['role'] ?? ''));
+            if ($role === 'drink' || $role === 'menu_boisson' || str_contains($role, 'boisson')) {
+                $noms[] = (string) ($a['addon_name'] ?? $a['name'] ?? '');
+            }
+        }
+
+        return $noms;
+    }
+
+    /** Mots qui distinguent deux boissons de la même marque : « Coca » n'est pas « Coca zéro ». */
+    private const VARIANTES = ['zero', 'light', 'max', 'cherry', 'vanille', 'peche', 'citron', 'mangue',
+        'framboise', 'pomme', 'orange', 'tropical', 'hawai', 'hawaii', 'fraise', 'menthe', 'gazeuse', 'plate'];
+
+    /** @return list<string>|null mots significatifs du nom (volume, « canette », ponctuation retirés) */
+    private function cleBoisson(string $nom): ?array
+    {
+        $n = strtolower(\Illuminate\Support\Str::ascii($nom));
+        $n = preg_replace('/\d+([.,]\d+)?\s*(cl|ml|l)\b/u', ' ', $n) ?? $n;
+        $n = preg_replace('/[^a-z0-9]+/', ' ', $n) ?? $n;
+        $mots = array_values(array_diff(
+            array_filter(explode(' ', $n), static fn (string $m): bool => $m !== ''),
+            ['la', 'le', 'de', 'du', 'en', 'canette', 'bouteille', 'boisson', 'x']
+        ));
+
+        return $mots === [] ? null : array_values(array_unique($mots));
+    }
+
+    /** Même boisson : les mots de l'une sont tous dans l'autre, sans mot de variante en surplus. */
+    private function memeBoisson(array $seule, array $duMenu): bool
+    {
+        foreach ($duMenu as $m) {
+            [$court, $long] = count($seule) <= count($m) ? [$seule, $m] : [$m, $seule];
+            if (array_diff($court, $long) === [] && array_intersect(array_diff($long, $court), self::VARIANTES) === []) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

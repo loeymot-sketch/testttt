@@ -146,6 +146,13 @@
                                     <span v-for="(b, k) in l.boissons" :key="'b' + k" class="uber-cap-drink">{{ b }}</span>
                                 </div>
                                 <div v-if="l.note" class="uber-cap-note">{{ l.note }}</div>
+                                <!-- [DOUBLON BOISSON 2026-11-20] Signalé, jamais retiré : seul le papier dit
+                                     si le client a pris une boisson en plus de celle du menu. -->
+                                <div v-if="doublonVisible(capture.apercu, l)" class="uber-cap-doublon"
+                                     :data-testid="`uber-photo-doublon-${i}`">
+                                    <strong>Boisson peut-être lue deux fois</strong> : elle est déjà dans
+                                    « {{ l.doublon_de }} ». Si le client n'en a pris qu'une, appuyez sur Retirer.
+                                </div>
                                 <div class="uber-cap-raw">
                                     <input v-model="edition.items[i].title" type="text" maxlength="180"
                                            class="db-field-control" :data-testid="`uber-photo-title-${i}`" />
@@ -421,6 +428,12 @@ export default {
             return apercu.en_bas || [];
         },
 
+        // Le menu qui porte déjà cette boisson a pu être retiré entre-temps : l'alerte disparaît avec lui.
+        doublonVisible(apercu, ligne) {
+            if (!apercu || !ligne || !ligne.doublon_de) return false;
+            return (apercu.lignes || []).some((o) => o !== ligne && o.titre === ligne.doublon_de);
+        },
+
         aDesBoissonsOuDesserts(apercu) {
             if (!apercu) return false;
             return this.boissonsEnBas(apercu).length > 0 || (apercu.lignes || []).some((l) => l.en_bas);
@@ -650,6 +663,7 @@ export default {
 .uber-cap-line-sub { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
 .uber-cap-supp { font-weight: 700; color: #92400e; }
 .uber-cap-drink { color: #1d4ed8; font-weight: 600; }
+.uber-cap-doublon { margin-top: 8px; border: 1px solid #fcd34d; background: #fffbeb; color: #78350f; border-radius: 6px; padding: 8px 10px; font-size: 14px; }
 .uber-cap-note { margin-top: 6px; color: #b91c1c; font-weight: 700; }
 .uber-cap-raw { display: flex; gap: 8px; margin-top: 10px; }
 .uber-cap-qty-input { max-width: 90px; }

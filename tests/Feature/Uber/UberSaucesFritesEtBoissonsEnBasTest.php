@@ -566,4 +566,36 @@ class UberSaucesFritesEtBoissonsEnBasTest extends TestCase
         $this->assertTrue($apercu['lignes'][1]['en_bas']);
         $this->assertSame('Tiramisu', $apercu['lignes'][1]['symbolique'], 'En bas, un dessert seul s’écrit en entier.');
     }
+    /**
+     * [DOUBLON BOISSON 2026-11-20] Ticket Méga réel : le Coca zéro du menu a AUSSI été lu comme un article
+     * à part. On ne peut pas savoir sans le papier si le client en a pris un second : l'aperçu le
+     * SIGNALE (doublon_de = la ligne qui contient déjà cette boisson), il ne retire jamais rien.
+     */
+    public function test_une_boisson_seule_deja_dans_un_menu_est_signalee_sans_etre_retiree(): void
+    {
+        $mapped = app(UberPhotoOrderMapper::class)->map($this->lire([
+            ['title' => 'Menu sandwich Cayenne', 'quantity' => 1, 'note' => '',
+                'options' => ['SAUCE', '1x Algérienne', 'BOISSON', '1x Coca-Cola Zéro 33cl']],
+            ['title' => 'Coca zero', 'quantity' => 1, 'note' => '', 'options' => []],
+        ]));
+        $apercu = app(UberTicketPreviewBuilder::class)->build($mapped);
+
+        $this->assertCount(2, $apercu['lignes'], 'La boisson seule ne doit JAMAIS être retirée automatiquement.');
+        $this->assertSame($apercu['lignes'][0]['titre'], $apercu['lignes'][1]['doublon_de']);
+        $this->assertNull($apercu['lignes'][0]['doublon_de']);
+    }
+
+    public function test_une_autre_boisson_ou_une_autre_variante_n_est_pas_signalee(): void
+    {
+        foreach (['Fanta Orange 33cl', 'Coca-Cola 33cl', 'Tiramisu'] as $seule) {
+            $mapped = app(UberPhotoOrderMapper::class)->map($this->lire([
+                ['title' => 'Menu sandwich Cayenne', 'quantity' => 1, 'note' => '',
+                    'options' => ['SAUCE', '1x Algérienne', 'BOISSON', '1x Coca-Cola Zéro 33cl']],
+                ['title' => $seule, 'quantity' => 1, 'note' => '', 'options' => []],
+            ]));
+            $apercu = app(UberTicketPreviewBuilder::class)->build($mapped);
+
+            $this->assertNull($apercu['lignes'][1]['doublon_de'], $seule.' signalé à tort comme doublon du Coca zéro.');
+        }
+    }
 }
