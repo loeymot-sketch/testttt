@@ -29,11 +29,17 @@ final class UberTicketPreviewBuilder
 
     /**
      * @param  array{items?:array<int,array>}  $mapped  sortie de {@see UberPhotoOrderMapper::map()}
-     * @return array{cuisson:string, lignes:array<int,array{quantity:int,titre:string,symbolique:string,menu:string,supplements:array<int,string>,boissons:array<int,string>,note:string,non_mappe:bool}>}
+     * [SAUCES FRITES UBER 2026-11-20 · owner] Comme le ticket imprimé : les boissons et les desserts ne
+     * sont plus sous chaque produit mais dans `en_bas` (« pour qu'on n'oublie pas »), et une boisson
+     * ou un dessert commandé seul porte `en_bas: true`. L'ordre de `lignes` ne bouge pas : l'écran
+     * retire une ligne par son INDEX, qui doit rester celui de la commande lue.
+     *
+     * @return array{cuisson:string, en_bas:list<string>, lignes:array<int,array{quantity:int,titre:string,symbolique:string,menu:string,supplements:array<int,string>,boissons:array<int,string>,note:string,non_mappe:bool,en_bas:bool}>}
      */
     public function build(array $mapped): array
     {
         $lignes = [];
+        $enBas = [];
 
         foreach ((array) ($mapped['items'] ?? []) as $line) {
             $nom = (string) ($line['name'] ?? '');
@@ -42,17 +48,26 @@ final class UberTicketPreviewBuilder
 
             $boissons = $this->formatter->drinkLines($snapshot);
             $supplements = $this->formatter->supplementLines($snapshot, $instruction);
+            $quantite = max(1, (int) ($line['quantity'] ?? 1));
+            $basDeLaLigne = $this->formatter->boissonsEtDessertsUber($snapshot, $quantite);
+            array_push($enBas, ...$basDeLaLigne);
+            $seule = $this->formatter->isDrinkItem($nom) || $this->formatter->isDessertItem($nom);
 
             $lignes[] = [
-                'quantity' => max(1, (int) ($line['quantity'] ?? 1)),
+                'quantity' => $quantite,
                 'titre' => $nom,
-                'symbolique' => $this->formatter->mainLine($nom, $snapshot, $instruction),
+                // En bas du ticket, une boisson ou un dessert seul s'écrit en entier (« Tiramisu »).
+                'symbolique' => $seule ? $nom : $this->formatter->mainLine($nom, $snapshot, $instruction),
                 // Le BADGE, pas la simple ligne de menu : c'est lui qui sera imprimé, sauce des
                 // frites comprise. Un aperçu qui montrerait autre chose donnerait une fausse
                 // confiance à la personne qui valide.
                 'menu' => $this->formatter->menuBadge($snapshot, $nom, $instruction),
                 'supplements' => $supplements,
-                'boissons' => $boissons,
+                // Imprimées en bas (voir `en_bas`) : plus jamais sous le produit.
+                'boissons' => [],
+                // Ce que CETTE ligne envoie en bas : l'écran recalcule la rubrique quand une ligne
+                // est retirée (sinon le Coca d'un menu retiré resterait annoncé).
+                'boissons_en_bas' => $basDeLaLigne,
                 // La note passe par le MÊME nettoyeur que le ticket : ce qui n'y survivrait pas
                 // ne doit pas apparaître dans l'aperçu, sinon l'humain croit avoir transmis une
                 // consigne qui n'arrivera jamais en cuisine.
@@ -63,6 +78,7 @@ final class UberTicketPreviewBuilder
                     $supplements
                 )),
                 'non_mappe' => str_contains($instruction, '[UBER NON MAPPÉ'),
+                'en_bas' => $seule,
             ];
         }
 
@@ -73,6 +89,6 @@ final class UberTicketPreviewBuilder
             'instruction' => (string) ($l['instruction'] ?? ''),
         ], (array) ($mapped['items'] ?? [])));
 
-        return ['cuisson' => $cuisson['texte'], 'lignes' => $lignes];
+        return ['cuisson' => $cuisson['texte'], 'en_bas' => $enBas, 'lignes' => $lignes];
     }
 }

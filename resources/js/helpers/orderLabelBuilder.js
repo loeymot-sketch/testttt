@@ -16,6 +16,7 @@
 import { collapseBundledAddonItems } from './kdsBundledAddons.js';
 import { categorize, isDrinkName, kdsVariationGroupValue, sanitizeKdsInstruction } from './kdsCustomization.js';
 import {
+    addonName,
     buildSymbolic,
     classifyVariation,
     cruditeSymbol,
@@ -24,7 +25,9 @@ import {
     extraDisplayName,
     extraName,
     friesSauceNamesForOrder,
+    isUberPhotoDessertAddon,
     productSauceNames,
+    readAddons,
     readExtras,
     readVariations,
 } from './kdsSymbolic.js';
@@ -97,7 +100,13 @@ const NEGATION_RE = /^(sans|pas\s+d[eu']|no|without|w\/o)\b/i;
 /** Boissons de formule d'une ligne : canal addon, rubrique « Boisson menu: X » / « BOISSON: X », « Formule : … (X) ». */
 function drinksOfItem(item) {
     const out = [];
-    drinkAddonLabels(item).forEach((l) => out.push(String(l).replace(/^\d+\s*[x×]\s*/, '').trim()));
+    // [SAUCES FRITES UBER 2026-11-20] Le dessert d'une commande Uber photographiée passe par le même
+    // canal que les boissons pour l'écran cuisine ; sur l'étiquette, ce n'est pas « la boisson du menu ».
+    const desserts = new Set(readAddons(item).filter((a) => isUberPhotoDessertAddon(item, a)).map((a) => addonName(a)));
+    drinkAddonLabels(item)
+        .map((l) => String(l).replace(/^\d+\s*[x×]\s*/, '').trim())
+        .filter((n) => !desserts.has(n))
+        .forEach((n) => out.push(n));
     String(item.instruction || '').split('\n').forEach((line) => {
         const m = line.match(/^\s*(?:↳\s*)?boissons?(?:\s+menu)?\s*:\s*(.+)$/i);
         if (m) out.push(m[1].trim());
@@ -173,6 +182,11 @@ export function describeItem(rawItem, ctx = {}) {
         if (price <= 0) { garnitures.push(label); return; }
         const display = extraDisplayName(label, item.instruction);
         supplements.push(`${display}${qty > 1 && display === label ? ` ×${qty}` : ''}`);
+    });
+    // Dessert pris avec le produit (commande Uber photographiée) : écrit sur l'étiquette.
+    readAddons(item).filter((a) => isUberPhotoDessertAddon(item, a)).forEach((a) => {
+        const q = parseInt(a?.quantity, 10);
+        supplements.push(`${addonName(a)}${Number.isFinite(q) && q > 1 ? ` ×${q}` : ''}`);
     });
 
     // Formule : « menu » ou « seul ».

@@ -1020,6 +1020,57 @@ final class KitchenTicketSymbolicFormatter
     }
 
     /**
+     * [SAUCES FRITES UBER 2026-11-20 · owner] Un DESSERT de la carte (Glace, Tarte Daim, Tiramisu) ?
+     * Mêmes mots que la garde « dessert avant boisson » d'isDrinkItem(), plus ceux de la carte réelle.
+     * Un menu ou une formule n'en est jamais un (« Menu … + dessert » reste un menu).
+     */
+    public function isDessertItem(string $name): bool
+    {
+        $n = mb_strtolower(trim($name));
+        if ($n === '' || preg_match('/menu|formule/u', $n)) {
+            return false;
+        }
+
+        return (bool) preg_match('/dessert|cr[eê]pe|g[aâ]teau|\bglaces?\b|tiramisu|\btartes?\b|daim|cookie|brownie|muffin|donut|beignet|fondant|mousse au chocolat|panna cotta|sundae|milk ?shake/u', $n);
+    }
+
+    /**
+     * [SAUCES FRITES UBER 2026-11-20 · owner] Ce qu'une commande Uber photographiée imprime EN BAS du
+     * ticket cuisine, et non sous chaque produit : boissons et desserts pris avec le produit.
+     * Propriétaire : « on affiche les boissons et les desserts tout en bas, pour qu'on n'oublie pas ».
+     *
+     * Plus large que drinkLines() à dessein : la lecture du ticket a rangé chaque boisson sous son
+     * titre « BOISSON » — c'est une information du ticket, pas une devinette. La garde des noms de
+     * marque y ferait DISPARAÎTRE une boisson inconnue de la liste (« Lipton framboise »). Seul le
+     * conteneur de formule (« Menu (Frites + Boisson) ») est écarté.
+     *
+     * En bas du ticket, une boisson n'est plus lue à côté de « 2 x CAY » : la quantité imprimée est
+     * donc le TOTAL à servir (choix par exemplaire × nombre d'exemplaires de la ligne).
+     *
+     * @param  array<string,mixed>  $snapshot
+     * @param  int  $exemplaires  quantité de la ligne produit
+     * @return list<string>
+     */
+    public function boissonsEtDessertsUber(array $snapshot, int $exemplaires = 1): array
+    {
+        $out = [];
+        foreach (($snapshot['addons'] ?? []) as $a) {
+            $role = strtolower((string) ($a['role'] ?? ''));
+            if (! ($role === 'drink' || $role === 'menu_boisson' || str_contains($role, 'boisson') || $role === 'dessert')) {
+                continue;
+            }
+            $name = trim((string) ($a['addon_name'] ?? $a['name'] ?? ''));
+            if ($name === '' || $this->isMenuItem($name)) {
+                continue;
+            }
+            $q = max(1, (int) ($a['quantity'] ?? 1)) * max(1, $exemplaires);
+            $out[] = $q.' '.$name;
+        }
+
+        return $out;
+    }
+
+    /**
      * [W3-FIX-C 2026-07-06] Lignes boisson d'un item ("1 Coca-Cola 33cl") depuis ses
      * addons (role 'drink' / 'menu_boisson' / *boisson*) — le cuisinier PRÉPARE les
      * boissons, elles doivent sortir sur le ticket ET l'écran. Jumeau du JS
@@ -1033,11 +1084,21 @@ final class KitchenTicketSymbolicFormatter
         $out = [];
         foreach (($snapshot['addons'] ?? []) as $a) {
             $role = strtolower((string) ($a['role'] ?? ''));
-            if (! ($role === 'drink' || $role === 'menu_boisson' || str_contains($role, 'boisson'))) {
+            // [SAUCES FRITES UBER 2026-11-20] Dessert pris avec le produit d'une commande Uber
+            // PHOTOGRAPHIÉE (role 'dessert') : jamais filtré par la garde des noms de boisson. Limité à
+            // ce canal : la mise en page des autres commandes ne bouge pas. Jumeau JS drinkAddonLabels().
+            $dessertUber = $role === 'dessert' && ($snapshot['source'] ?? '') === 'uber_eats_photo';
+            if (! ($role === 'drink' || $role === 'menu_boisson' || str_contains($role, 'boisson') || $dessertUber)) {
                 continue;
             }
             $name = trim((string) ($a['addon_name'] ?? $a['name'] ?? ''));
             if ($name === '') {
+                continue;
+            }
+            if ($dessertUber) {
+                $q = (int) ($a['quantity'] ?? 1);
+                $out[] = ($q > 0 ? $q : 1).' '.$name;
+
                 continue;
             }
             // [CLUSTER-6 2026-07-11] Ne PAS émettre le conteneur de formule comme

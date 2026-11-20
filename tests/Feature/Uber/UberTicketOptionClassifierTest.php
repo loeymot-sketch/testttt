@@ -173,11 +173,16 @@ class UberTicketOptionClassifierTest extends TestCase
             ]],
         ]);
 
+        // [SAUCES FRITES UBER 2026-11-20] Le titre ne s'imprime toujours pas, mais il ÉTIQUETTE les
+        // choix qui le suivent : c'est lui qui dit à qui appartient une sauce (sandwich ou frites).
         $this->assertSame(
-            ['1x Galette', '1x Barbecue', '1x Salade', '1x Lipton Ice Tea'],
+            ['1x PAIN : Galette', '1x SAUCE : Barbecue', '1x CRUDITÉS : Salade', '1x BOISSON : Lipton Ice Tea'],
             $t['items'][0]['options'],
             'Les étiquettes nues sont restées et deviendraient des suppléments fantômes.'
         );
+        // … et chaque choix tombe dans SA case, aucun ne devient un supplément fantôme.
+        $cases = array_map(fn (string $o): string => $this->c->classify($o)['kind'], $t['items'][0]['options']);
+        $this->assertSame([C::SUPPORT, C::SAUCE, C::CRUDITE, C::BOISSON], $cases);
     }
 
     /** ⚠️ Une étiquette QUI PORTE UNE VALEUR n'est pas nue : la jeter effacerait le choix du client. */
@@ -211,10 +216,12 @@ class UberTicketOptionClassifierTest extends TestCase
         ]);
 
         $this->assertSame(
-            ['Pain', 'Fromagère maison'],
+            ['PAIN : Pain', 'SAUCE : Fromagère maison'],
             $t['items'][0]['options'],
             'Le pain CHOISI a été effacé avec le titre de rubrique.'
         );
+        $this->assertSame('Pain', $this->c->classify($t['items'][0]['options'][0])['label']);
+        $this->assertSame(C::SUPPORT, $this->c->classify($t['items'][0]['options'][0])['kind']);
     }
 
     /** Sans produit au-dessus, on ne replie pas : une ligne visible vaut mieux qu'un choix effacé. */

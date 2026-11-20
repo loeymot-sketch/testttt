@@ -433,6 +433,13 @@ final class OrderReceiptEscPosRenderer
         // est revendiqué, pour qu'une formule commandée SEULE reste toujours imprimée.
         // Filtre d'affichage uniquement : la ligne comptable reste intacte en base.
         $blocks = [];
+        // [SAUCES FRITES UBER 2026-11-20 · owner] Commande Uber : boissons et desserts EN BAS du ticket,
+        // jamais sous chaque produit — « on affiche les boissons et les desserts tout en bas, pour qu'on
+        // n'oublie pas ». Les frites, elles, restent avec leur produit (badge MENU / FRITES).
+        // Limité au canal Uber : la mise en page des commandes caisse, borne et site ne bouge pas.
+        $ticketUber = $this->isUberOrder($order);
+        $enBas = [];
+        $blocsEnBas = [];
         foreach ($this->bundledAddons->collapse($order->orderItems ?? collect()) as $oi) {
             $name = (string) ($oi->manual_label ?? $oi->name ?? optional($oi->orderItem)->name ?? 'Article');
             $snap = is_array($oi->composition_snapshot) ? $oi->composition_snapshot : [];
@@ -494,6 +501,10 @@ final class OrderReceiptEscPosRenderer
                     $this->symbolic->cleanInstruction($instruction, $name, $menuDrinks),
                     $menuSupps
                 ));
+                if ($ticketUber) {
+                    array_push($enBas, ...$this->symbolic->boissonsEtDessertsUber($snap, $qty));
+                    $menuDrinks = [];
+                }
                 $blocks[] = [
                     'head' => $qtyPrefix.$menuLine, 'menu' => null, 'supps' => $menuSupps, 'drinks' => $menuDrinks,
                     'notes' => array_values(array_filter(array_map('trim', explode("\n", $menuNote)))),
@@ -526,7 +537,11 @@ final class OrderReceiptEscPosRenderer
             // [GOAL REMARQUES 2026-10-03 · R-075] Le titre Uber non reconnu EST la ligne produit : son
             // marqueur technique ne se répète pas en note (la note du client, elle, reste).
             $note = $this->symbolic->sansMarqueurUber($note);
-            $blocks[] = [
+            if ($ticketUber) {
+                array_push($enBas, ...$this->symbolic->boissonsEtDessertsUber($snap, $qty));
+                $drinks = [];
+            }
+            $bloc = [
                 'head' => $head,
                 'menu' => $menu !== '' ? $menu : null,
                 'supps' => $supps,
@@ -537,10 +552,29 @@ final class OrderReceiptEscPosRenderer
                 'drinks' => $drinks,
                 'notes' => array_values(array_filter(array_map('trim', explode("\n", $note)))),
             ];
+            // Une boisson ou un dessert commandé SEUL descend aussi, écrit EN ENTIER (« Tiramisu »,
+            // pas « TIR ») : en bas, c'est le nom qui évite l'oubli.
+            if ($ticketUber && ($this->symbolic->isDrinkItem($name) || $this->symbolic->isDessertItem($name))) {
+                $bloc['head'] = $qtyPrefix.trim($name);
+                $blocsEnBas[] = $bloc;
+
+                continue;
+            }
+            $blocks[] = $bloc;
+        }
+        if ($enBas !== [] || $blocsEnBas !== []) {
+            $blocks[] = [
+                'head' => 'BOISSONS / DESSERTS', 'menu' => null, 'supps' => [], 'drinks' => $enBas,
+                'notes' => [], 'separateur' => true,
+            ];
+            array_push($blocks, ...$blocsEnBas);
         }
 
         $halfW = (int) max(8, floor($w / 2));
         foreach ($blocks as $blk) {
+            if (! empty($blk['separateur'])) {
+                $b .= EscPosCommandBuilder::separator('-', $w);
+            }
             // [T2-CUISINE 2026-07-05] Ligne produit en DOUBLE TAILLE (2×2) → grosse & lisible de
             // loin (owner : « ça sort trop petit »). Avec les codes 3 lettres (CAY/TER) elle tient
             // en général sur une ligne. Enroulée à la MOITIÉ de la largeur (double-largeur = 2 col

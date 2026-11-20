@@ -130,9 +130,12 @@
                             Ils partiront en cuisine avec leur nom d'origine — corrigez le nom si besoin.
                         </div>
 
+                        <!-- [SAUCES FRITES UBER 2026-11-20 · owner] Comme le ticket imprimé : boissons et
+                             desserts EN BAS, jamais sous chaque produit. Les lignes gardent leur ordre
+                             (« Retirer » vise un index) ; c'est `order` qui les fait descendre. -->
                         <ul class="uber-cap-lines">
                             <li v-for="(l, i) in capture.apercu.lignes" :key="i"
-                                :class="['uber-cap-line', l.non_mappe ? 'is-unknown' : '']">
+                                :class="['uber-cap-line', l.non_mappe ? 'is-unknown' : '', l.en_bas ? 'is-en-bas' : '']">
                                 <div class="uber-cap-line-main">
                                     <span class="uber-cap-qty">{{ l.quantity }}×</span>
                                     <span class="uber-cap-sym">{{ l.symbolique || l.titre }}</span>
@@ -150,6 +153,12 @@
                                            class="db-field-control uber-cap-qty-input" />
                                     <button type="button" class="uber-cap-line-del" @click="retirer_ligne(i)">Retirer</button>
                                 </div>
+                            </li>
+                            <li v-if="aDesBoissonsOuDesserts(capture.apercu)" class="uber-cap-bas"
+                                data-testid="uber-photo-en-bas">
+                                <span class="uber-cap-bas-titre">En bas du ticket · boissons et desserts</span>
+                                <span v-for="(b, k) in boissonsEnBas(capture.apercu)" :key="'eb' + k"
+                                      class="uber-cap-drink">{{ b }}</span>
                             </li>
                         </ul>
 
@@ -211,6 +220,10 @@
                                         <span v-for="(b, k) in l.boissons" :key="'b' + k" class="uber-cap-drink">{{ b }}</span>
                                         <span v-for="(s, k) in l.supplements" :key="'s' + k" class="uber-cap-supp">{{ s }}</span>
                                         <em v-if="l.note" class="uber-cap-note">{{ l.note }}</em>
+                                    </li>
+                                    <li v-if="r.apercu.en_bas && r.apercu.en_bas.length" class="uber-cap-bas">
+                                        <span class="uber-cap-bas-titre">En bas du ticket</span>
+                                        <span v-for="(b, k) in r.apercu.en_bas" :key="'eb' + k" class="uber-cap-drink">{{ b }}</span>
                                     </li>
                                 </ul>
 
@@ -396,6 +409,21 @@ export default {
                     note: it.note || "",
                 })),
             };
+        },
+
+        // Recalculé depuis les LIGNES : retirer une ligne retire aussi sa boisson de la rubrique.
+        boissonsEnBas(apercu) {
+            if (!apercu) return [];
+            const lignes = apercu.lignes || [];
+            if (lignes.some((l) => Array.isArray(l.boissons_en_bas))) {
+                return lignes.flatMap((l) => l.boissons_en_bas || []);
+            }
+            return apercu.en_bas || [];
+        },
+
+        aDesBoissonsOuDesserts(apercu) {
+            if (!apercu) return false;
+            return this.boissonsEnBas(apercu).length > 0 || (apercu.lignes || []).some((l) => l.en_bas);
         },
 
         retirer_ligne(i) {
@@ -608,7 +636,11 @@ export default {
 .uber-cap-alert--warn { border-color: #fcd34d; background: #fffbeb; color: #78350f; }
 .uber-cap-alert-sub { display: block; margin-top: 6px; font-size: 13px; }
 
-.uber-cap-lines { list-style: none; padding: 0; margin: 0; }
+.uber-cap-lines { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; }
+.uber-cap-lines > .uber-cap-bas { order: 1; }
+.uber-cap-lines > .is-en-bas { order: 2; }
+.uber-cap-bas { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; border-top: 2px dashed #94a3b8; padding: 10px 2px; margin-bottom: 10px; }
+.uber-cap-bas-titre { flex-basis: 100%; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #334155; }
 .uber-cap-line { border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
 .uber-cap-line.is-unknown { border-color: #fcd34d; background: #fffbeb; }
 .uber-cap-line-main { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }

@@ -104,7 +104,10 @@ class UberPhotoCaptureFlowTest extends TestCase
         $this->assertSame('MENU', $lignes[0]['menu']);
         // Le supplément payant reste EN TOUTES LETTRES (règle owner explicite).
         $this->assertSame(['+ Supplément Cheddar'], $lignes[0]['supplements']);
-        $this->assertSame(['1 Coca-Cola 33cl'], $lignes[0]['boissons']);
+        // [SAUCES FRITES UBER 2026-11-20 · owner] La boisson n'est plus sous le produit : elle sort EN BAS
+        // du ticket, avec les desserts (« pour qu'on n'oublie pas ») — l'aperçu montre la même chose.
+        $this->assertSame([], $lignes[0]['boissons']);
+        $this->assertContains('1 Coca-Cola 33cl', $res->json('apercu.en_bas'));
         // La note du client survit, même écrite en capitales.
         $this->assertStringContainsString('SANS OIGNONS SVP', $lignes[0]['note']);
 

@@ -62,6 +62,12 @@ final class UberTicketOptionClassifier
      * Mesuré en production sur une vraie photo : `CHEESE BURGER | O`.
      */
     public const RETRAIT = 'retrait';
+    /**
+     * [SAUCES FRITES UBER 2026-11-20 · owner] Un DESSERT pris avec le produit (« Dessert : Tiramisu »).
+     * Il ne se prépare pas au poste du sandwich : la cuisine le lit en bas du ticket, avec les
+     * boissons, « pour qu'on n'oublie pas ». Rangé en supplément, il se perdait sous le produit.
+     */
+    public const DESSERT = 'dessert';
 
     public function __construct(
         private readonly KitchenTicketSymbolicFormatter $formatter = new KitchenTicketSymbolicFormatter,
@@ -71,7 +77,10 @@ final class UberTicketOptionClassifier
     /**
      * Analyse une ligne d'option brute.
      *
-     * @return array{kind: string, label: string, quantity: int, price: float, raw: string}
+     * `etiquette` = la rubrique lue devant la valeur (« sauce », « supplements »…, normalisée), vide
+     * sinon : le mapper en a besoin pour ne pas ranger aux frites une sauce PAYANTE du sandwich.
+     *
+     * @return array{kind: string, label: string, quantity: int, price: float, raw: string, etiquette: string}
      */
     public function classify(string $raw): array
     {
@@ -111,12 +120,12 @@ final class UberTicketOptionClassifier
         if ($label === '') {
             // Une ligne réduite à son étiquette (« Sauce : ») n'apporte rien — on rend le brut
             // en supplément pour que le cuisinier voie quand même le texte d'origine.
-            return ['kind' => self::SUPPLEMENT, 'label' => $raw, 'quantity' => $quantity, 'price' => $price, 'raw' => $raw];
+            return ['kind' => self::SUPPLEMENT, 'label' => $raw, 'quantity' => $quantity, 'price' => $price, 'raw' => $raw, 'etiquette' => $etiquette];
         }
 
         $kind = $this->kindFromLabel($etiquette, $label, $price);
 
-        return ['kind' => $kind, 'label' => $label, 'quantity' => $quantity, 'price' => $price, 'raw' => $raw];
+        return ['kind' => $kind, 'label' => $label, 'quantity' => $quantity, 'price' => $price, 'raw' => $raw, 'etiquette' => $etiquette];
     }
 
     /**
@@ -132,7 +141,8 @@ final class UberTicketOptionClassifier
             return true;
         }
 
-        return (bool) preg_match('/^(sans|pas\s+d[eu\']|no|without|w\/o)\b/u', $this->norm($valeur));
+        // « RETIRER OIGNONS », « ENLEVER TOMATE » (sans deux-points) sont aussi des refus.
+        return (bool) preg_match('/^(sans|pas\s+d[eu\']|no|without|w\/o|retir\w*|enlev\w*|supprim\w*)\b/u', $this->norm($valeur));
     }
 
     /** Décide la case, étiquette d'abord, tables de la cuisine ensuite. */
@@ -145,41 +155,100 @@ final class UberTicketOptionClassifier
             return self::RETRAIT;
         }
 
-        // ── (1) Étiquette explicite : l'information la plus fiable du ticket.
-        if ($etiquette !== '') {
-            // AVANT « sauce » tout court : « Sauce frites » n'est pas la sauce du produit.
-            if (preg_match('/sauce\s*(pour\s*(les\s*)?)?frites?|dip/u', $etiquette)) {
-                return self::SAUCE_FRITES;
-            }
-            if (preg_match('/viande|meat|proteine/u', $etiquette)) {
-                return self::VIANDE;
-            }
-            if (preg_match('/sauce/u', $etiquette)) {
-                return self::SAUCE;
-            }
-            if (preg_match('/pain|galette|support|base|bread/u', $etiquette)) {
-                return self::SUPPORT;
-            }
-            if (preg_match('/crudite|garniture|legume|salade/u', $etiquette)) {
-                return self::CRUDITE;
-            }
-            if (preg_match('/boisson|drink|soda/u', $etiquette)) {
-                return self::BOISSON;
-            }
-            if (preg_match('/menu|formule|accompagnement/u', $etiquette)) {
-                // « Accompagnement : Frites » = la part frites d'une formule ; « Accompagnement :
-                // Salade » n'en est pas une. On ne décide donc que sur la VALEUR.
-                return $this->estFormuleAvecFrites($valeur) ? self::MENU : self::SUPPLEMENT;
-            }
-            if (preg_match('/supplement|extra|option|ajout/u', $etiquette)) {
-                // Un supplément peut malgré tout être une viande ou une sauce identifiable : la
-                // cuisine préfère « + Viande : Poulet » reconnu qu'un texte opaque. On laisse
-                // donc les tables trancher plus bas plutôt que de figer ici.
-                $etiquette = '';
-            }
+        $parEtiquette = $etiquette !== '' ? $this->kindParEtiquette($etiquette, $valeur, $price) : null;
+        $parTable = $this->kindParTable($valeur, $price);
+        if ($parEtiquette === null) {
+            return $parTable;
         }
 
-        // ── (2) Tables de la CUISINE — référence unique du projet.
+        // [SAUCES FRITES UBER 2026-11-20 · relecture adverse] L'étiquette vient souvent d'un TITRE DE
+        // RUBRIQUE posé sur les choix qui le suivent. Qu'un titre soit mal lu (« BOISSON » absent de
+        // la photo) et le Coca suivant porterait « SAUCE » : il partirait DANS le sandwich. Quand les
+        // tables de la cuisine reconnaissent sans ambiguïté une boisson, un dessert, une viande ou une
+        // sauce, la nature du choix l'emporte sur l'étiquette. Seule exception : entre les deux
+        // canaux de sauce, c'est l'étiquette qui dit à qui va la sauce (produit ou frites).
+        if (in_array($parTable, [self::BOISSON, self::DESSERT, self::VIANDE, self::SAUCE, self::MENU, self::FRITES, self::SUPPORT, self::CRUDITE], true)
+            && $parTable !== $parEtiquette) {
+            if ($parTable === self::SAUCE && $parEtiquette === self::SAUCE_FRITES) {
+                return self::SAUCE_FRITES;
+            }
+
+            return $parTable;
+        }
+
+        // [relecture adverse 2] Un choix PAYANT qu'aucune table ne reconnaît (« Cheddar +1,00 € »)
+        // sous une étiquette de sauce ou de viande est un supplément : il s'écrit en toutes lettres,
+        // jamais en code de sauce inventé (« CHE »).
+        // Sous le titre des FRITES, une sauce payante inconnue des tables reste la sauce des frites
+        // (« une seule incluse, les autres payantes » — propriétaire).
+        if ($price > 0 && $parTable === self::SUPPLEMENT
+            && in_array($parEtiquette, [self::SAUCE, self::VIANDE], true)) {
+            return self::SUPPLEMENT;
+        }
+
+        return $parEtiquette;
+    }
+
+    /** Case désignée par une étiquette reconnue, null si l'étiquette ne dit rien d'utile. */
+    private function kindParEtiquette(string $etiquette, string $valeur, float $price): ?string
+    {
+        // ── (1) Étiquette explicite : l'information la plus fiable du ticket.
+        // AVANT « sauce » tout court : « Sauce frites » n'est pas la sauce du produit.
+        // [SAUCES FRITES UBER 2026-11-20] Toutes les façons dont un titre de rubrique désigne les
+        // frites : « SAUCE FRITES », « SAUCES FRITES », « SAUCE POUR VOS FRITES », « FRITES » (le
+        // choix sous ce titre est leur sauce), « DIP ». « SAUCES » seul reste la sauce du produit.
+        if ($this->etiquetteDesFrites($etiquette)) {
+            // Sous le titre « FRITES », seule une SAUCE est la sauce des frites ; une taille
+            // (« Grande ») reste la portion à plonger.
+            if (preg_match('/^\s*frites?\s*$/u', $etiquette) && $this->formatter->knownSauceSymbol($valeur) === '') {
+                return preg_match('/^(grande?|petite?|maxi|xl|\d+)?\s*(frites?)?$/u', $this->norm($valeur)) ? self::FRITES : self::SUPPLEMENT;
+            }
+
+            return self::SAUCE_FRITES;
+        }
+        if (preg_match('/dessert/u', $etiquette)) {
+            return self::DESSERT;
+        }
+        if (preg_match('/viande|meat|proteine/u', $etiquette)) {
+            return self::VIANDE;
+        }
+        if (preg_match('/sauce/u', $etiquette)) {
+            return self::SAUCE;
+        }
+        if (preg_match('/pain|galette|support|base|bread/u', $etiquette)) {
+            return self::SUPPORT;
+        }
+        if (preg_match('/crudite|garniture|legume|salade/u', $etiquette)) {
+            // Une crudité PAYANTE sous le titre CRUDITÉS reste un supplément écrit en toutes
+            // lettres : sans titre, les tables la rangeaient déjà ainsi (règle « crudités
+            // payantes réellement servies », 2026-11-11). Le titre ne doit pas la replier en STO.
+            return $price > 0 ? self::SUPPLEMENT : self::CRUDITE;
+        }
+        if (preg_match('/boisson|drink|soda/u', $etiquette)) {
+            return self::BOISSON;
+        }
+        if (preg_match('/menu|formule|accompagnement/u', $etiquette)) {
+            // « Accompagnement : Frites » = la part frites d'une formule ; « Accompagnement :
+            // Salade » n'en est pas une. On ne décide donc que sur la VALEUR.
+            if ($this->estFormuleAvecFrites($valeur)) {
+                return self::MENU;
+            }
+
+            // « ACCOMPAGNEMENT : Grande frites » = des frites à plonger, comme sans titre.
+            return preg_match('/^(grande?|petite?|maxi|xl|\d+)?\s*frites?$/u', $this->norm($valeur))
+                ? self::FRITES
+                : self::SUPPLEMENT;
+        }
+        // « supplement / extra / option / ajout » : un supplément peut malgré tout être une
+        // viande ou une sauce identifiable — la cuisine préfère « + Viande : Poulet » reconnu
+        // qu'un texte opaque. Les tables tranchent ; comme une étiquette inconnue.
+
+        return null;
+    }
+
+    /** ── (2) Tables de la CUISINE — référence unique du projet. */
+    private function kindParTable(string $valeur, float $price): string
+    {
         // « Sauce frites Ketchup » sans deux-points reste une sauce frites : on teste le libellé
         // entier avant tout le reste, sinon la table des sauces l'attraperait comme sauce produit.
         if (preg_match('/\bsauce\s*(pour\s*(les\s*)?)?frites?\b/u', $this->norm($valeur))) {
@@ -204,8 +273,15 @@ final class UberTicketOptionClassifier
         if ($this->estFormuleAvecFrites($valeur)) {
             return self::MENU;
         }
+        // « Menu » / « En menu » choisi seul (choix « seul ou en menu ») = la formule complète.
+        if (preg_match('/^(en\s+)?(menus?|formules?)(\s+complete?)?$/u', $this->norm($valeur))) {
+            return self::MENU;
+        }
         if ($this->formatter->isDrinkItem($valeur)) {
             return self::BOISSON;
+        }
+        if ($this->formatter->isDessertItem($valeur)) {
+            return self::DESSERT;
         }
         if (preg_match('/\b(pain|galette)\b/u', $this->norm($valeur))) {
             return self::SUPPORT;
@@ -227,6 +303,12 @@ final class UberTicketOptionClassifier
 
         return (bool) preg_match('/\bfrites?\b/u', $n)
             && (bool) preg_match('/\bmenu\b|\bformule\b|\bboisson\b|\+/u', $n);
+    }
+
+    /** Un titre de rubrique qui désigne les FRITES (et donc leur sauce). */
+    private function etiquetteDesFrites(string $etiquette): bool
+    {
+        return (bool) preg_match('/(sauces?|dips?).*\bfrites?\b|\bfrites?\b.*(sauces?|dips?)|^\s*dips?\s*$|^\s*frites?\s*$/u', $etiquette);
     }
 
     private function norm(string $s): string

@@ -680,13 +680,28 @@ function isDrinkAddonRole(role) {
     return r === 'drink' || r === 'menu_boisson' || r.includes('boisson');
 }
 
+/** [SAUCES FRITES UBER 2026-11-20] Dessert d'une commande Uber PHOTOGRAPHIÉE (jumeau PHP drinkLines). */
+export function isUberPhotoDessertAddon(orderItem, a) {
+    return String(a?.role || '').toLowerCase() === 'dessert'
+        && orderItem?.composition_snapshot?.source === 'uber_eats_photo';
+}
+
 /** Lignes boisson d'un item ("1× Coca-Cola 33cl") depuis ses addons. */
 export function drinkAddonLabels(orderItem) {
     const out = [];
     for (const a of readAddons(orderItem)) {
-        if (!isDrinkAddonRole(a?.role)) continue;
+        const dessertUber = isUberPhotoDessertAddon(orderItem, a);
+        if (!dessertUber && !isDrinkAddonRole(a?.role)) continue;
         const name = addonName(a);
         if (!name) continue;
+        // [SAUCES FRITES UBER 2026-11-20] Un DESSERT pris avec le produit (ticket Uber photographié,
+        // role 'dessert') se voit à l'écran comme une boisson : il ne passe pas la garde des noms
+        // de boisson (« Tiramisu » n'en est pas une), mais il ne doit jamais disparaître de l'écran.
+        if (dessertUber) {
+            const qd = parseInt(a?.quantity, 10);
+            out.push(`${Number.isFinite(qd) && qd > 0 ? qd : 1}× ${name}`);
+            continue;
+        }
         // [CLUSTER-6 2026-07-11] Ne PAS émettre le conteneur de formule : role
         // 'menu_boisson' porte parfois le nom du conteneur (« Menu (Frites + Boisson) »),
         // qui n'est PAS une boisson. La garde isDrinkName rejette « menu/formule », la
