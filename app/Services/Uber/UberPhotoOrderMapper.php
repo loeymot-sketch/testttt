@@ -115,6 +115,7 @@ final class UberPhotoOrderMapper
         $sauceDuProduitVue = false;
         $formuleApresLesSauces = false;
         $saucesTardives = [];
+        $formuleFritesChoisie = false;
 
         // Un titre de rubrique encore présent (« SAUCE FRITES », lecture ancienne ou titre composé)
         // étiquette les choix qui le suivent, au lieu de passer pour un choix lui-même.
@@ -205,6 +206,9 @@ final class UberPhotoOrderMapper
 
                 case UberTicketOptionClassifier::FRITES:
                     $formuleApresLesSauces = $formuleApresLesSauces || $sauceDuProduitVue;
+                    // [2026-11-20] « Frites seules » est le CHOIX DE FORMULE de la
+                    // carte Uber (seul / en menu / frites seules) : la sauce qui suit est celle des frites.
+                    $formuleFritesChoisie = $formuleFritesChoisie || (bool) preg_match('/seule|avec/u', mb_strtolower($o['label']));
                     // Frites seules : la cuisine affiche « FRITES » (et non « MENU », qui lui
                     // ferait servir aussi la boisson — une fuite de marchandise), et le bandeau
                     // de cuisson compte la portion à plonger. Le nom conserve « Grande » : une
@@ -268,7 +272,7 @@ final class UberPhotoOrderMapper
             $roles = array_column($addons, 'role');
             // Un vrai menu : formule complète, ou des frites PLUS une boisson / un titre « Menu … ».
             $menu = in_array('menu_full', $roles, true)
-                || (in_array('menu_frites', $roles, true) && ($estMenu || in_array('drink', $roles, true)));
+                || (in_array('menu_frites', $roles, true) && ($estMenu || $formuleFritesChoisie || in_array('drink', $roles, true)));
             if ($menu) {
                 array_push($saucesFrites, ...$saucesTardives);
             } else {
@@ -347,6 +351,16 @@ final class UberPhotoOrderMapper
         $direct = $this->catalog->resolveItemId($title);
         if ($direct !== null) {
             return [$direct, $estMenu];
+        }
+
+        // [2026-11-20] La carte Uber ajoute un slogan après une virgule ou un
+        // tiret : « Sandwich Cayenne, Ultra GOURMAND et Original ». Le produit est AVANT.
+        $avant = trim((string) preg_split('/\s*[,–—]\s*|\s+-\s+/u', $title)[0]);
+        if ($avant !== '' && $avant !== trim($title)) {
+            [$id] = $this->resoudreArticle($avant);
+            if ($id !== null) {
+                return [$id, $estMenu];
+            }
         }
 
         $mots = preg_split('/\s+/u', trim($title)) ?: [];

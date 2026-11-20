@@ -235,7 +235,7 @@ final class UberTicketOptionClassifier
             }
 
             // « ACCOMPAGNEMENT : Grande frites » = des frites à plonger, comme sans titre.
-            return preg_match('/^(grande?|petite?|maxi|xl|\d+)?\s*frites?$/u', $this->norm($valeur))
+            return preg_match('/^(grande?|petite?|maxi|xl|\d+)?\s*frites?(\s+seules?)?$|^avec\s+(des\s+)?frites?$/u', $this->norm($valeur))
                 ? self::FRITES
                 : self::SUPPLEMENT;
         }
@@ -256,7 +256,7 @@ final class UberTicketOptionClassifier
         }
         // Frites en accompagnement, hors formule (« Frites », « Grande frites »). Testé AVANT les
         // tables : c'est du travail au bain de friture, pas un supplément à recopier.
-        if (preg_match('/^(grande?|petite?|maxi|xl|\d+)?\s*frites?$/u', $this->norm($valeur))) {
+        if (preg_match('/^(grande?|petite?|maxi|xl|\d+)?\s*frites?(\s+seules?)?$|^avec\s+(des\s+)?frites?$/u', $this->norm($valeur))) {
             return self::FRITES;
         }
         if ($this->formatter->meatSymbol($valeur) !== '') {

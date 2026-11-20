@@ -473,6 +473,41 @@ class UberSaucesFritesEtBoissonsEnBasTest extends TestCase
         $this->assertNotContains('RETIRER OIGNONS', array_column($line['composition_snapshot']['extras'], 'extra_name'));
     }
 
+    // ── Formes de ticket Uber de la carte Le Cayenne (formule « seul / en menu / frites seules »,
+    //    titre suivi d'un slogan) ──
+
+    /** Suprême pris « Frites seules » : la sauce qui suit la formule est celle des frites. */
+    public function test_ticket_supreme_frites_seules_la_sauce_suivante_va_aux_frites(): void
+    {
+        $line = $this->ligne('Suprême', ['1x Galette', '1x Mayonnaise', '1x Salade', '1x Oignon', '1x Frites seules', '1x Mayonnaise']);
+
+        $this->assertSame(['Mayonnaise'], $this->sauces($line), 'La sauce des frites est encore dans le sandwich.');
+        $this->assertStringContainsString('Sauce frites : Mayonnaise', $line['instruction']);
+        $this->assertContains('menu_frites', $this->roles($line), 'Les frites seules ne sont pas comptées au bain.');
+    }
+
+    /** Un titre suivi d'un slogan après la virgule désigne toujours le produit. */
+    public function test_ticket_titre_avec_slogan_trouve_le_produit(): void
+    {
+        $catId = \Illuminate\Support\Facades\DB::table('item_categories')->insertGetId(['name' => 'Sandwich', 'slug' => 'sandwich-t', 'status' => 5, 'created_at' => now(), 'updated_at' => now()]);
+        \Illuminate\Support\Facades\DB::table('items')->insert(['name' => 'Cayenne', 'slug' => 'cayenne-t', 'item_category_id' => $catId, 'price' => 8, 'status' => 5, 'created_at' => now(), 'updated_at' => now()]);
+
+        $line = $this->ligne('Sandwich Cayenne, Ultra GOURMAND et Original', ['Pain', 'Barbecue', 'Tomate', 'Oignon', 'Cheddar (recommandé)', 'En menu (frites + boisson incluses)', 'Fuze Tea']);
+
+        $this->assertSame('Cayenne', $line['name']);
+        $this->assertSame(['Barbecue'], $this->sauces($line));
+        $this->assertContains('menu_full', $this->roles($line));
+    }
+
+    /** Méga en menu, sauces AVANT la formule = sauces du produit, aucune sauce frites. */
+    public function test_ticket_mega_en_menu_les_sauces_restent_au_produit(): void
+    {
+        $line = $this->ligne('Méga', ['Poulet mariné', 'Viande hachée', 'Salade', 'Tomate', 'Oignon', 'Pain', 'Mayonnaise', 'Harissa', 'En menu (frites + boisson incluses)', 'Coca-Cola zéro']);
+
+        $this->assertSame(['Mayonnaise', 'Harissa'], $this->sauces($line));
+        $this->assertStringNotContainsString('Sauce frites', $line['instruction']);
+    }
+
     /** ⚠️ Le rôle « dessert » ne change rien hors commande Uber photographiée. */
     public function test_un_dessert_hors_uber_photo_ne_change_pas_la_mise_en_page(): void
     {
