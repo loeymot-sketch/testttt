@@ -36,10 +36,12 @@ bridgeJs  = scriptDir & "\caisse-bridge.js"
 nodeExe = "node"
 
 ' NOM EXACT de l'imprimante caisse (a adapter) — passe en argument au pont.
-' [CHANGEMENT-IMPRIMANTE 2026-08-09] SAGA remplacee par une Epson TM-m30II.
+' [CHANGEMENT-IMPRIMANTE 2026-11-20] Retour a la SAGA (SGPR-200II, 80 mm) : la caisse
+' avait ete passee sur une Epson TM-m30II le 2026-08-09 ; l'ancien nom laissait les tickets
+' partir dans la file de l'Epson SANS erreur visible (le spouleur accepte les octets).
 ' Verifier le nom AU CARACTERE PRES avec :  Get-Printer | Select-Object Name
-' (le pilote Epson cree parfois "EPSON TM-m30II Receipt" et non "Epson TM-m30II").
-printerName = "Epson TM-m30II"
+' (nom donne par le proprietaire : "SAGA POS-80").
+printerName = "SAGA POS-80"
 
 ' Guillemets autour des chemins + du nom d'imprimante (espaces eventuels).
 cmd = """" & nodeExe & """ """ & bridgeJs & """ """ & printerName & """"

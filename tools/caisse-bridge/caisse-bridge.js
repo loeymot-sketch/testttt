@@ -40,10 +40,12 @@
  *
  * LANCER (PowerShell/CMD sur le PC caisse) :
  *     node caisse-bridge.js "NOM_EXACT_IMPRIMANTE"
- *   (le nom = Panneau de config > Périphériques et imprimantes, ex "Epson TM-m30II")
- *   ou via variable : set CAISSE_PRINTER=Epson TM-m30II && node caisse-bridge.js
+ *   (le nom = Panneau de config > Périphériques et imprimantes, ex "SAGA POS-80")
+ *   ou via variable : set CAISSE_PRINTER=SAGA POS-80 && node caisse-bridge.js
  *
- * [CHANGEMENT-IMPRIMANTE 2026-08-09] SAGA → Epson TM-m30II. Le nom ci-dessous n'est
+ * [CHANGEMENT-IMPRIMANTE 2026-11-20] Retour à la SAGA (SGPR-200II, 80 mm, file Windows
+ * « SAGA POS-80 ») ; la caisse était sur une Epson TM-m30II depuis le 2026-08-09. Le nom
+ * ci-dessous n'est
  * qu'un DÉFAUT de repli : le lanceur du PC caisse (C:\lecayenne\start-caisse.ps1 et
  * watchdog.ps1) passe le nom en ARGUMENT, ce qui écrase ce défaut. Changer l'imprimante
  * du restaurant impose donc de changer AUSSI ces deux scripts — sinon les tickets
@@ -66,7 +68,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 const PORT = parseInt(process.env.CAISSE_BRIDGE_PORT || '9100', 10);
-const PRINTER = process.argv[2] || process.env.CAISSE_PRINTER || 'Epson TM-m30II';
+const PRINTER = process.argv[2] || process.env.CAISSE_PRINTER || 'SAGA POS-80';
 const OFFLINE_GATE = process.env.CAISSE_OFFLINE_GATE !== '0';
 const STALE_JOB_SECONDS = Math.max(0, parseInt(process.env.CAISSE_STALE_JOB_SECONDS || '120', 10) || 0);
 const BOOT_STALE_SECONDS = Math.min(30, STALE_JOB_SECONDS) || (STALE_JOB_SECONDS > 0 ? 30 : 0);

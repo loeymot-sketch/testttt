@@ -18,14 +18,14 @@
     - Node.js installe (node.exe). Passer -NodePath si absent du PATH.
     - Connaitre le NOM EXACT de l'imprimante -> `Get-Printer | Select-Object Name`
       (Panneau de config -> Peripheriques et imprimantes donne le meme nom).
-      [CHANGEMENT-IMPRIMANTE 2026-08-09] La SAGA a ete remplacee par une Epson TM-m30II.
-      Le pilote Epson cree parfois la file sous "EPSON TM-m30II Receipt" : recopier la
-      chaine EXACTE renvoyee par Get-Printer, au caractere pres (un nom errone n'echoue
-      PAS bruyamment, il empile les tickets dans une file morte).
+      [CHANGEMENT-IMPRIMANTE 2026-11-20] Retour a la SAGA (SGPR-200II, 80 mm), file Windows
+      "SAGA POS-80" (la caisse etait sur une Epson TM-m30II depuis le 2026-08-09).
+      Recopier la chaine EXACTE renvoyee par Get-Printer, au caractere pres (un nom errone
+      n'echoue PAS bruyamment, il empile les tickets dans une file morte).
 
   EXEMPLE :
     powershell -ExecutionPolicy Bypass -File install-caisse-service.ps1 `
-      -BridgePath "C:\caisse-bridge\caisse-bridge.js" -Printer "Epson TM-m30II"
+      -BridgePath "C:\caisse-bridge\caisse-bridge.js" -Printer "SAGA POS-80"
 
   DESINSTALLER :  nssm stop FoodKingCaisseBridge ; nssm remove FoodKingCaisseBridge confirm
 
@@ -42,7 +42,7 @@
 param(
   [string]$ServiceName = "FoodKingCaisseBridge",
   [string]$BridgePath  = "C:\caisse-bridge\caisse-bridge.js",
-  [string]$Printer     = "Epson TM-m30II",
+  [string]$Printer     = "SAGA POS-80",
   [string]$NodePath    = "node",
   [string]$NssmPath    = "nssm",
   [string]$LogDir      = "C:\caisse-bridge\logs"
