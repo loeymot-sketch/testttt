@@ -598,4 +598,89 @@ class UberSaucesFritesEtBoissonsEnBasTest extends TestCase
             $this->assertNull($apercu['lignes'][1]['doublon_de'], $seule.' signalé à tort comme doublon du Coca zéro.');
         }
     }
+    /**
+     * [VRAIS TICKETS 2026-11-20 soir] Forme rendue par la lecture APRÈS le correctif : certains choix déjà
+     * étiquetés (« 1x SAUCE : Andalouse »), et des titres que la passe ne connaissait pas — « FORMULE »,
+     * « SUPPLÉMENTS BURGERS », « SAUCE GRATUITE FRITES », « SAUCE SUPPLÉMENTAIRE FRITES ». Ils
+     * s'imprimaient comme des lignes, « FORMULE » devenait un MENU, et la sauce des frites restait en vrac.
+     */
+    private function ticketReel(array $items): array
+    {
+        $mapped = app(UberPhotoOrderMapper::class)->map($this->lire($items));
+
+        return [$mapped, $this->ticketCuisine($mapped)];
+    }
+
+    public function test_vrai_ticket_FORMULE_Seul_ne_donne_ni_menu_ni_frites(): void
+    {
+        [$mapped, $t] = $this->ticketReel([['title' => 'Terminator', 'quantity' => 1, 'note' => '', 'options' => [
+            '1x VIANDES : Viande hachée', '1x VIANDES : Cordon Bleu', '1x SAUCE : Andalouse', '1x PAIN : Galette',
+            '1x SUPPLÉMENTS : Oignons frits', 'FORMULE', '1x Seul',
+        ]]]);
+
+        $roles = array_column($mapped['items'][0]['composition_snapshot']['addons'] ?? [], 'role');
+        $this->assertNotContains('menu_full', $roles, $t);
+        $this->assertNotContains('menu_frites', $roles, $t);
+        $this->assertDoesNotMatchRegularExpression('/\bMENU\b|\bSeul\b|FORMULE/u', $t, $t);
+    }
+
+    public function test_vrai_ticket_SAUCE_GRATUITE_FRITES_va_devant_les_frites(): void
+    {
+        [$mapped, $t] = $this->ticketReel([['title' => 'Cheese Burger', 'quantity' => 1, 'note' => '', 'options' => [
+            '1x SAUCE : Sauce Burger', 'SUPPLÉMENTS BURGERS', '1x Boursin', 'FORMULE', '1x Frites seules',
+            'SAUCE GRATUITE FRITES', '1x Sauce Burger',
+        ]]]);
+
+        $this->assertSame(['Sauce Burger'], $this->sauces($mapped['items'][0]), $t);
+        $this->assertMatchesRegularExpression('/FRITES : \S/u', $t, $t);
+        $this->assertStringContainsString('Boursin', $t);
+        $this->assertDoesNotMatchRegularExpression('/SAUCE GRATUITE|SUPPLÉMENTS BURGERS|FORMULE|\bMENU\b/u', $t, $t);
+    }
+
+    public function test_vrai_ticket_SAUCE_SUPPLEMENTAIRE_FRITES_va_devant_les_frites(): void
+    {
+        [$mapped, $t] = $this->ticketReel([['title' => 'Tacos M', 'quantity' => 1, 'note' => '', 'options' => [
+            '1x VIANDE : Poulet mariné', '1x SAUCE : Blanche', '1x SAUCE : Fromagère maison', 'FORMULE',
+            '1x Frites seules', 'SAUCE SUPPLÉMENTAIRE FRITES', '1x Américaine',
+        ]]]);
+
+        $this->assertSame(['Blanche', 'Fromagère maison'], $this->sauces($mapped['items'][0]), $t);
+        $this->assertMatchesRegularExpression('/FRITES : AME/u', $t, $t);
+        $this->assertDoesNotMatchRegularExpression('/SAUCE SUPPL|FORMULE/u', $t, $t);
+    }
+
+    public function test_vrai_ticket_SUPPLEMENTS_BOWLS_et_tiramisu_au_slogan(): void
+    {
+        // La carte réelle : « maison » seul correspondait à « Sauce Fromagère maison » — le tiramisu
+        // partait en cuisine sous le nom d'une sauce.
+        $catId = \Illuminate\Support\Facades\DB::table('item_categories')->insertGetId(['name' => 'Desserts', 'slug' => 'desserts-t', 'status' => 5, 'created_at' => now(), 'updated_at' => now()]);
+        foreach (['Sauce Fromagère maison', 'Tiramisu'] as $k => $nom) {
+            \Illuminate\Support\Facades\DB::table('items')->insert(['name' => $nom, 'slug' => 'art-t-'.$k, 'item_category_id' => $catId, 'price' => 3, 'status' => 5, 'created_at' => now(), 'updated_at' => now()]);
+        }
+
+        [$mapped, $t] = $this->ticketReel([
+            ['title' => 'Bol frites', 'quantity' => 1, 'note' => '', 'options' => [
+                '1x VIANDE : Tenders', '1x SAUCE : Fromagère maison', 'SUPPLÉMENTS BOWLS', '1x Cheddar']],
+            ['title' => 'Tiramisu maison, Ultra Gourmand !', 'quantity' => 1, 'note' => '', 'options' => []],
+        ]);
+
+        $this->assertStringContainsString('Cheddar', $t);
+        $this->assertStringNotContainsString('SUPPLÉMENTS BOWLS', $t, $t);
+        $this->assertStringContainsString('BOISSONS / DESSERTS', $t, $t);
+        $this->assertSame('Tiramisu', $mapped['items'][1]['name'], 'Le tiramisu est devenu « '.$mapped['items'][1]['name'].' ».');
+        $this->assertMatchesRegularExpression('/BOISSONS \/ DESSERTS.*Tiramisu/su', $t, $t);
+        $this->assertStringNotContainsString('FROMAG', $t, $t);
+    }
+    /** La passe des titres est rejouée par le mapper : la rejouer ne doit rien changer (FORMULE inclus). */
+    public function test_vrai_ticket_la_passe_des_titres_reste_idempotente(): void
+    {
+        foreach ([
+            ['SEUL OU EN MENU', 'MENU', 'BOISSON', '1x Coca-Cola 33cl'],
+            ['1x SAUCE : Sauce Burger', 'SUPPLÉMENTS BURGERS', '1x Boursin', 'FORMULE', '1x Frites seules', 'SAUCE GRATUITE FRITES', '1x Sauce Burger'],
+            ['1x VIANDES : Viande hachée', 'FORMULE', '1x Seul'],
+        ] as $options) {
+            $une = \App\Services\Uber\UberTicketRubriques::attacher($options);
+            $this->assertSame($une, \App\Services\Uber\UberTicketRubriques::attacher($une), json_encode($options, JSON_UNESCAPED_UNICODE));
+        }
+    }
 }

@@ -44,10 +44,10 @@ final class UberTicketRubriques
      * crudités refusées). Formes admises : « SAUCES », « VOS SAUCES », « CHOIX DE LA BOISSON »,
      * « SAUCE(S) (POUR VOS) FRITES », « DIP FRITES ».
      */
-    private const FORME_DE_TITRE = '/^((au\s+)?choix\s+(de\s+(la\s+|du\s+|des\s+|l\s*)?|du\s+|des\s+)?|choisissez\s+(vos\s+|votre\s+|la\s+|le\s+|les\s+)?|vos\s+|votre\s+|tes\s+|ta\s+|ton\s+|type\s+de\s+)?(pains?|sauces?|crudites?|boissons?|supplements?|garnitures?|viandes?|accompagnements?|desserts?|options?|extras?)(\s+\d)?$|^sauces?\s+gratinees?$|^boissons?\s+\d+\s*cl$|^(sauces?|dips?)\s+(pour\s+)?(les\s+|vos\s+|tes\s+|des\s+)?frites?$|^sauces?\s+supplementaires?$|^supplements?\s+sauces?$|^seul\s+ou\s+en\s+menu$/u';
+    private const FORME_DE_TITRE = '/^((au\s+)?choix\s+(de\s+(la\s+|du\s+|des\s+|l\s*)?|du\s+|des\s+)?|choisissez\s+(vos\s+|votre\s+|la\s+|le\s+|les\s+)?|vos\s+|votre\s+|tes\s+|ta\s+|ton\s+|type\s+de\s+)?(pains?|sauces?|crudites?|boissons?|supplements?|garnitures?|viandes?|accompagnements?|desserts?|options?|extras?)(\s+\d)?$|^sauces?\s+gratinees?$|^boissons?\s+\d+\s*cl$|^(sauces?|dips?)(\s+(gratuites?|offertes?|incluses?|supplementaires?|payantes?|extras?|en\s+plus))?\s+(pour\s+|avec\s+)?(les\s+|vos\s+|tes\s+|des\s+)?frites?(\s+(gratuites?|offertes?|incluses?|supplementaires?|payantes?|extras?|en\s+plus))?$|^sauces?\s+supplementaires?$|^supplements?\s+sauces?$|^supplements?\s+(?!frites?$)[a-z]+$|^seul\s+ou\s+en\s+menu$/u';
 
     /** Le titre des sauces des FRITES, reconnu même écrit en casse normale (« Sauce frites »). */
-    private const TITRE_SAUCE_FRITES = '/^(sauces?|dips?)\s+(pour\s+)?(les\s+|vos\s+|tes\s+|des\s+)?frites?$/u';
+    private const TITRE_SAUCE_FRITES = '/^(sauces?|dips?)(\s+(gratuites?|offertes?|incluses?|supplementaires?|payantes?|extras?|en\s+plus))?\s+(pour\s+|avec\s+)?(les\s+|vos\s+|tes\s+|des\s+)?frites?(\s+(gratuites?|offertes?|incluses?|supplementaires?|payantes?|extras?|en\s+plus))?$/u';
 
     /**
      * Étiquette chaque choix par le titre de rubrique qui le précède ; les titres disparaissent.
@@ -66,9 +66,9 @@ final class UberTicketRubriques
         $rubrique = null;
 
         $options = array_values(array_filter(array_map(static fn ($o): string => trim((string) $o), $options), static fn (string $o): bool => $o !== ''));
-        foreach ($options as $option) {
+        foreach ($options as $i => $option) {
 
-            if (self::estTitre($option)) {
+            if (self::estTitre($option) || self::estTitreDeFormule($option, $options[$i + 1] ?? null)) {
                 $rubrique = self::libelle($option);
 
                 continue;
@@ -119,6 +119,24 @@ final class UberTicketRubriques
         $t = trim((string) preg_replace('/\s+\d+(\s*cl)?$/iu', '', self::sansQuota($titre)));
 
         return $t !== '' ? $t : trim($titre);
+    }
+
+    /**
+     * [VRAIS TICKETS 2026-11-20 soir] « FORMULE » (ou « MENU ») en capitales est le TITRE de la rubrique
+     * « Seul / Frites seules / En menu » quand un choix chiffré le suit (« FORMULE », « 1x Seul »).
+     * Suivi d'autre chose, c'est le CHOIX lui-même (« SEUL OU EN MENU », « FORMULE ») : il reste un menu.
+     */
+    private static function estTitreDeFormule(string $option, ?string $suivante): bool
+    {
+        $brut = trim($option);
+        if ($suivante === null || $brut !== mb_strtoupper($brut, 'UTF-8')
+            // Choix chiffré ET pas encore étiqueté : « 1x BOISSON : Coca » (passe rejouée par le mapper)
+            // appartient à une autre rubrique — sans cette garde, la passe n'était plus idempotente.
+            || ! preg_match('/^\s*\d{1,2}\s*[x×][^:：]+$/iu', $suivante)) {
+            return false;
+        }
+
+        return (bool) preg_match('/^(votre\s+|ta\s+|choix\s+de\s+(la\s+)?)?(formules?|menus?)$/u', self::norm(self::sansQuota($brut)));
     }
 
     /** Titre de rubrique : sans quantité ni prix, fait de mots de rubrique ; jamais une formule. */

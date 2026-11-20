@@ -121,7 +121,7 @@ final class UberPhotoOrderMapper
         // étiquette les choix qui le suivent, au lieu de passer pour un choix lui-même.
         foreach (UberTicketRubriques::attacher(array_map('strval', (array) ($line['options'] ?? []))) as $option) {
             $option = trim((string) $option);
-            if ($option === '') {
+            if ($option === '' || self::estChoixSansFormule($option)) {
                 continue;
             }
             $o = $this->classifier->classify($option);
@@ -369,6 +369,24 @@ final class UberPhotoOrderMapper
             if (mb_strlen($candidat) < 3) {
                 break;
             }
+            // [VRAIS TICKETS 2026-11-20 soir] « maison » seul trouvait « Sauce Fromagère maison » (recherche
+            // « contient ») : le tiramisu partait en cuisine sous le nom d'une sauce. Un mot qui qualifie
+            // sans nommer ne désigne jamais un produit.
+            if (self::queDesQualificatifs($candidat)) {
+                continue;
+            }
+            $id = $this->catalog->resolveItemId($candidat);
+            if ($id !== null) {
+                return [$id, $estMenu];
+            }
+        }
+
+        // Le produit EN TÊTE, qualificatif derrière : « Tiramisu maison » → « Tiramisu ».
+        for ($i = count($mots) - 1; $i >= 1; $i--) {
+            $candidat = trim(implode(' ', array_slice($mots, 0, $i)));
+            if (mb_strlen($candidat) < 3 || self::queDesQualificatifs($candidat)) {
+                continue;
+            }
             $id = $this->catalog->resolveItemId($candidat);
             if ($id !== null) {
                 return [$id, $estMenu];
@@ -443,5 +461,30 @@ final class UberPhotoOrderMapper
         $clean = preg_replace('/[^A-Za-z0-9]/', '', $displayId) ?? '';
 
         return $clean !== '' ? 'U'.mb_strtoupper(mb_substr($clean, -4)) : null;
+    }
+
+    /**
+     * [VRAIS TICKETS 2026-11-20 soir] « FORMULE : Seul » (Terminator, commande réelle) = le client a pris
+     * le produit SANS menu. Ce choix n'apporte rien à préparer : il ne s'imprime pas (il sortait en
+     * supplément « Seul » sous un faux « MENU »).
+     */
+    private static function estChoixSansFormule(string $option): bool
+    {
+        $n = strtolower(trim((string) preg_replace('/[^a-z0-9:]+/i', ' ', \Illuminate\Support\Str::ascii($option))));
+        $n = trim((string) preg_replace('/^\d{1,2}\s*x\s*/', '', $n));
+        $n = trim((string) preg_replace('/^(formules?|menus?|seul ou en menu)\s*:\s*/', '', $n));
+
+        return (bool) preg_match('/^(seule?s?|sans (menu|formule)|a l unite)$/', $n);
+    }
+
+    /** Mots qui qualifient un produit sans le nommer (« maison », « gourmand », « original »…). */
+    private static function queDesQualificatifs(string $candidat): bool
+    {
+        $mots = preg_split('/\s+/', strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', ' ', \Illuminate\Support\Str::ascii($candidat))))) ?: [];
+        $qualificatifs = ['maison', 'gourmand', 'gourmande', 'ultra', 'original', 'originale', 'classique', 'nouveau',
+            'nouvelle', 'special', 'speciale', 'signature', 'extra', 'xl', 'maxi', 'et', 'le', 'la', 'les',
+            'du', 'de', 'des', 'au', 'aux', 'a', 'avec', 'en', 'fait', 'faite', 'frais', 'fraiche', 'croustillant', 'fondant'];
+
+        return array_diff(array_filter($mots, static fn (string $m): bool => $m !== ''), $qualificatifs) === [];
     }
 }
