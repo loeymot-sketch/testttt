@@ -150,7 +150,7 @@
                                      si le client a pris une boisson en plus de celle du menu. -->
                                 <div v-if="doublonVisible(capture.apercu, l)" class="uber-cap-doublon"
                                      :data-testid="`uber-photo-doublon-${i}`">
-                                    <strong>Boisson peut-être lue deux fois</strong> : elle est déjà dans
+                                    <strong>Boisson peut-être lue deux fois</strong> : elle est déjà dans le menu
                                     « {{ l.doublon_de }} ». Si le client n'en a pris qu'une, appuyez sur Retirer.
                                 </div>
                                 <div class="uber-cap-raw">
