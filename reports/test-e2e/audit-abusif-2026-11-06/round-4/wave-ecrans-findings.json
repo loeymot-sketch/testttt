@@ -1,0 +1,58 @@
+{
+  "wave": "ECRANS",
+  "round": 4,
+  "date": "2026-11-06",
+  "head": "f74b6bc5f",
+  "environment": "artisan serve :8787 --no-reload (arbre testttt, base foodking_e2e, HORAIRES_REFUSER_HORS_SERVICE=false), pages servies sous l'origine :8766 compilée et relayées vers :8787 ; soketi :6001 + queue:work redis --queue=high,default lancés puis arrêtés ; Chromium Playwright, Node v22.23.2",
+  "bundles": "public/js/pos-shell.4061ff5d.js et admin-shell.464236cf.js du 2026-11-06 13:17:12 (commit 13:17:36) ; le pos-shell SERVI par :8787 contient carts:{handler:function(e,t){…if(Array.isArray(t)&&t.length>0){…removeItem(\"pos.cle-encaissement\")…}} et pos-delivery-stop-cancelled ; admin-shell contient coupon-save-error",
+  "artefacts": "/private/tmp/claude-501/-Users-1millnonstop-Downloads-projet-foodking-web-web-testttt/ba5c0c5a-173e-4e70-9b44-6580aa4c3e65/scratchpad/r4ecrans/ (pos4.mjs, board4.mjs, coupon4.mjs, sync.mjs, kiosk3.mjs, hyg3.mjs, horaires.mjs, out-*.json, png/)",
+  "points": {
+    "1_cle_encaissement": {
+      "ECR-R3-001_encaissement_perdue_F5_nouvel_essai": {"verdict": "FERMÉ", "preuve": "1er POST 201 coupé (commande 9855, fiscal 3608), toast FR « Connexion perdue… », F5 : clé localStorage IDENTIQUE (1793967743016_83nvdp6m4_1) et panier restauré (1 ligne, 1,90 €), nouvel essai même clé → 409 IDEMPOTENCY_KEY_CONFLICT, toast « Commande déjà enregistrée — vérifier le ticker avant de relancer. » Base : une seule commande, un seul fiscal_sequence_no. out-f5-1440.json"},
+      "voie_telephone_perdue_F5": {"verdict": "FERMÉ", "preuve": "9856 créée (PENDING_COUNTER, fiscal NULL), F5, clé conservée, 2e envoi → 409 ; base : une seule commande. out-tel-f5-1280.json"},
+      "voie_livraison_perdue_F5": {"verdict": "FERMÉ", "preuve": "adresse BAN Hénin, devis 3,90 € ; 9857 créée (order_type 5, PENDING_COUNTER) ; F5 → la caisse revient en « À emporter », on rechoisit Livraison + même téléphone (client 1158 retrouvé, adresse enregistrée) → même empreinte, même clé → 409 ; base : une seule livraison. out-livr-f5-1920.json"},
+      "contre_epreuve_vente_suivante": {"verdict": "FERMÉ", "preuve": "vente 1 OK + reçu fermé → clé effacée ; même panier saisi à nouveau → clé neuve, 2e vente réelle : 9858/9859, fiscal 3609/3610. out-suivante-1280.json"},
+      "vente_ok_puis_F5_recu_ouvert": {"verdict": "P3 (ECR-R4-001)", "preuve": "9860 scellée (fiscal 3611), reçu ouvert, F5 → le panier PAYÉ revient en « Commande en cours » (Perrier 1,90 €, total 1,90 €) sans aucune mention de paiement, même clé ; un nouvel encaissement → 409 « Commande déjà enregistrée », aucune 2e vente (base). L'hypothèse R3-ADV-003 (rejeu silencieux) ne se produit pas : le serveur refuse, il ne rejoue pas. out-ok-f5-1440.json"}
+    },
+    "2_correctifs_P2": {
+      "ECR-R3-002_coupon": {"verdict": "FERMÉ (reste P3 ECR-R4-002)", "preuve": "formulaire vide → 422 et <p role=alert data-testid=coupon-save-error> « Le code promo n'est pas enregistré : corrigez les champs signalés en rouge. » juste SOUS « Enregistrer » ; réseau coupé → « …Vérifiez la connexion et réessayez. », visible, aucune erreur JS (le catch ne plante plus). PNG coupon-vide-1280 / coupon-reseau-coupe-1280 lus."},
+      "ECR-R3-003_split": {"verdict": "FERMÉ", "preuve": "#0611269504 et #0611269747 : « Encaissé 9,60 € (plusieurs moyens) » ; API collect_method split ; en-têtes 14,20 € / 23,80 € cohérents. PNG board-1920 lu."},
+      "ECR-R3-004_annulee_en_route": {"verdict": "FERMÉ (reste P3 ECR-R4-003)", "preuve": "#0611269502 et #0611269748 (orders.status 16) : « Annulée · rien à encaisser » en gris, API cancelled=true, 2 éléments pos-delivery-stop-cancelled. PNG board-1920 et board-1930-1280 lus."}
+    },
+    "3_non_regression": {
+      "triple_clic_encaisser": {"verdict": "FERMÉ", "preuve": "3 clics + clic forcé → 1 POST 201 (9867, fiscal 3616)."},
+      "borne_planB": {"verdict": "FERMÉ", "preuve": "Cayenne (wizard + retour arrière) + 2 articles, upsell, « Payer à la caisse », double appui + clic forcé → 1 POST 201 ; 9868 status 4, payment_status 15, fiscal NULL ; écran « Rendez-vous en caisse … 14,20 € » (PNG lu). Les 3× 422 pricing/preview existaient déjà au tour 3."},
+      "synchro_KDS_OSS": {"verdict": "FERMÉ", "preuve": "vente caisse 9864 : carte KDS et OSS « En préparation » présentes dès la fin du parcours ; borne 9865 : KDS 408 ms, « à encaisser » caisse immédiat ; « Prêt » → OSS colonne Prêt 2,6 s ; carte retirée du KDS jumeau (présence vérifiée avant le clic)."},
+      "deux_KDS_jumeaux": {"verdict": "FERMÉ", "preuve": "9866 : K1 202, K2 409 « Order status was updated elsewhere » ; une seule transition ; K2 la montre dans « Récemment servies » (PNG KDS 1280 lu). Toujours sans toast sur le 409 (déjà noté au tour 3)."},
+      "horaires_saisie_invalide": {"verdict": "FERMÉ", "preuve": "2 cas 422, message FR à 12 px au-dessus d'« Enregistrer », visible ; enregistrement identique 200 + toast ; configuration identique avant/après."},
+      "hygiene_double_validation": {"verdict": "FERMÉ", "preuve": "double clic relevé → 1 POST 201, 1 ligne (8000) en base ; fiche en parallèle A 201 / B 422 « Déjà validée. »"}
+    }
+  },
+  "findings": [
+    {"id": "ECR-R4-001", "severity": "P3", "category": "misleading_state", "state_artifact": "png/ok-f5-2-apres-F5-1440.png + out-ok-f5-1440.json",
+     "evidence": "Vente réussie (9860, fiscal 3611), F5 avant « Fermer » du reçu : le panier payé réapparaît comme commande en cours, sans indication qu'il est déjà encaissé ; nouvel encaissement → 409 + toast, pas de 2e vente. Cause : la remise à zéro du panier n'a lieu qu'à la fermeture du reçu (PaymentComponent.vue:1082-1091, zone gelée) et la clé suit le panier (PosComponent.vue:8228-8237).",
+     "fix_hint": "Vider le panier (ou marquer la clé « vente faite ») dès la réponse 201, la photo du reçu restant affichée ; ou, au 409, proposer « Vider le panier ».", "status": "open", "first_seen_round": 4},
+    {"id": "ECR-R4-002", "severity": "P3", "category": "text_truncation", "state_artifact": "png/coupon-vide-1280.png",
+     "evidence": "Code promo 1280×800 : le message d'échec est sous « Enregistrer » ; sa 2e ligne (« rouge. ») tombe sous le bas de l'écran (ecartBouton -92 px, dansEcran=false). Le début est lisible.",
+     "fix_hint": "Message au-dessus du bouton (patron Horaires) ou scrollIntoView du message.", "status": "open", "first_seen_round": 4},
+    {"id": "ECR-R4-003", "severity": "P3", "category": "misleading_state", "state_artifact": "png/board-1920.png",
+     "evidence": "Planche Tournées : un arrêt annulé en route garde le sélecteur « Nos livreurs / Confier à Uber » (grisé) et « Le livreur est déjà parti », plus « Arrivé 03:22 » / « En route ». Le serveur refuse bien Uber sur une commande annulée (UberDirectDispatchService.php:95-97).",
+     "fix_hint": "Masquer le sélecteur et l'état de route quand s.cancelled.", "status": "open", "first_seen_round": 4}
+  ],
+  "toujours_ouverts_du_tour_3": {"ECR-R3-007": "revu : toujours présent (ticket 1280 coupe la rangée nom/téléphone, PNG tel-f5-3-nouvel-essai-1280)", "ECR-R3-005": "non revérifié", "ECR-R3-006": "non revérifié", "ECR-R3-008": "non revérifié"},
+  "non_defauts_instrument": [
+    "1er passage synchro faux (KDS 3,4 s par le polling, OSS ne se mettait pas à jour) : mon queue:work écoutait seulement « default » alors que DispatchDomainEventsJob part sur « high » (app/Jobs/DispatchDomainEventsJob.php:46) ; domain_events.broadcast_at restait NULL. Relancé avec --queue=high,default (comme docs/QUEUE_WORKER_SETUP.md:61) : tout est revenu en < 3 s. Pas un défaut produit.",
+    "Contrôles natifs « Choose File », « --:-- -- » : Chromium sans interface française.",
+    "ERR_CONNECTION_REFUSED 9100/9101 : agent d'impression absent."
+  ],
+  "summary": {"P0": 0, "P1": 0, "P2": 0, "P3": 3, "closed_from_round_3": ["ECR-R3-001", "ECR-R3-002", "ECR-R3-003", "ECR-R3-004"]},
+  "verdict": "GREEN (P0/P1/P2 = 0)",
+  "cleanup": {
+    "annulees": {"9856": "téléphone, counter-collect cancel 200", "9857": "livraison, pos-order change-status 16 → 200 (counter-collect refusé : pas un paiement comptoir)", "9862": "borne", "9865": "borne", "9868": "borne"},
+    "scellees_NF525_non_annulables": {"9855": 3608, "9858": 3609, "9859": 3610, "9860": 3611, "9861": 3612, "9863": 3613, "9864": 3614, "9866": 3615, "9867": 3616},
+    "fixtures": "équipement 3523 supprimé (relevé 8000 annulé), fiche 2675 supprimée (validation 9127 annulée) ; aucun code promo créé (422 puis réseau coupé)",
+    "processus": "serveur :8787 (et ses 6 workers), soketi :6001, queue:work : arrêtés, ports libres",
+    "fiscal_verify_chain_all": "SWEEP COMPLETE — CHAIN OK on every active branch (7 total)",
+    "fichiers_suivis": "aucun modifié, aucun commit"
+  }
+}

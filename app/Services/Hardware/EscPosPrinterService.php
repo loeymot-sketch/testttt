@@ -94,16 +94,30 @@ final class EscPosPrinterService
             // documents that the bypass is intentional (admin-driven cash
             // drawer open targets the explicit $branchId, not the caller's
             // own branch).
+            // [ONB-10 2026-08-27] Le filtre `status = ACTIVE` manquait sur ces deux
+            // recherches, alors que les TROIS autres chemins d'impression du produit
+            // l'appliquent (KitchenTicketAutoPrinter::kitchenPrinter,
+            // PosReceiptPrintController, PrintFiscalReceiptAndOpenDrawerOnCounterPaid).
+            //
+            // Conséquence, avec `orderBy('id')` : un commerçant qui remplace son
+            // imprimante de caisse et archive l'ancienne voit ses tickets partir
+            // correctement sur la NOUVELLE — mais la commande d'ouverture du tiroir
+            // continuait d'être envoyée à l'ANCIENNE, parce qu'elle a l'identifiant le
+            // plus petit. Le tiroir ne s'ouvre plus, sans message, au comptoir, en
+            // plein service. Archiver une imprimante doit vouloir dire la même chose
+            // partout.
             if ($printerId !== null && $printerId > 0) {
                 $printer = Printer::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                     ->where('branch_id', $branchId)
                     ->where('id', $printerId)
+                    ->where('status', \App\Enums\Status::ACTIVE)
                     ->first();
             } else {
                 // Receipt role is stored in `station` (schema: type = escpos_tcp|…, station = receipt|kitchen_…).
                 $printer = Printer::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                     ->where('branch_id', $branchId)
                     ->where('station', 'receipt')
+                    ->where('status', \App\Enums\Status::ACTIVE)
                     ->orderBy('id')
                     ->first();
             }

@@ -1,0 +1,240 @@
+{
+  "etapes": {
+    "0-terrain": {
+      "phone": "0679939598",
+      "nom": "E2E-C2 Client 39598",
+      "max_order_id_avant": 8868,
+      "n_orders_avant": 4640
+    },
+    "1-mode-livraison": {
+      "commande_livraison": true,
+      "commande_telephone_absent": true,
+      "total_articles": 2.9
+    },
+    "4-sans-telephone": {
+      "toast": "Le téléphone du client est nécessaire : le livreur doit pouvoir l'appeler à la porte.\n×",
+      "n_orders_avant": 4640,
+      "n_orders_apres": 4640,
+      "livraisons_creees_par_pos": 0,
+      "remarque": "compte global inchangé"
+    },
+    "3-hors-zone": {
+      "suggestion": "1 Rue de la Bourse 59800 Lille",
+      "texte_devis": "Au-delà de 10 km : livraison impossible. Proposez Uber Eats au client.",
+      "toast_tentative": "Au-delà de 10 km : livraison impossible. Proposez Uber Eats au client.\n×",
+      "devis_serveur": {
+        "status": true,
+        "enabled": true,
+        "allowed": false,
+        "fee": 0,
+        "tier": "outside",
+        "suggest_uber_eats": true,
+        "address": {
+          "label": "1 Rue de la Bourse 59800 Lille",
+          "street": "1 Rue de la Bourse",
+          "city": "Lille",
+          "postal_code": "59800"
+        },
+        "distance_km": 25.22,
+        "travel_minutes": null,
+        "waves": []
+      },
+      "livraisons_creees": 0
+    },
+    "2-devis-henin": {
+      "suggestion": "Boulevard Albert Schweitzer 62110 Hénin-Beaumont",
+      "texte_devis": "Hénin-Beaumont · 3,90 € · 1,04 km · ~6 min\nDépart prévu aujourd'hui à 22:00",
+      "depart": "Départ prévu aujourd'hui à 22:00",
+      "devis_serveur": {
+        "fee": 3.9,
+        "distance_km": 1.04,
+        "travel_minutes": 6,
+        "tier": "home",
+        "address": {
+          "label": "Boulevard Albert Schweitzer 62110 Hénin-Beaumont",
+          "street": "Boulevard Albert Schweitzer",
+          "city": "Hénin-Beaumont",
+          "postal_code": "62110"
+        },
+        "waves": [
+          {
+            "wave_at": "2026-10-23 21:00:00",
+            "time": "21:00",
+            "label": "21:00",
+            "stops": 6,
+            "full": true
+          },
+          {
+            "wave_at": "2026-10-23 21:30:00",
+            "time": "21:30",
+            "label": "21:30",
+            "stops": 6,
+            "full": true
+          },
+          {
+            "wave_at": "2026-10-23 22:00:00",
+            "time": "22:00",
+            "label": "22:00",
+            "stops": 3,
+            "full": false
+          },
+          {
+            "wave_at": "2026-10-23 22:30:00",
+            "time": "22:30",
+            "label": "22:30",
+            "stops": 0,
+            "full": false
+          }
+        ]
+      }
+    },
+    "5-commande-base": {
+      "toast": "Livraison enregistrée · 6,80 € à encaisser à la porte par le livreur\n×",
+      "devis_commande_total_ttc": 6.8,
+      "commande": {
+        "id": 8869,
+        "serial": "2310268869",
+        "order_type": 5,
+        "status": 7,
+        "payment_status": 15,
+        "payment_method": 1,
+        "pos_payment_method": 6,
+        "source_surface": "delivery",
+        "fiscal": null,
+        "creator_id": 3,
+        "delivery_charge": 3.9,
+        "subtotal": 2.9,
+        "total": 6.8,
+        "address_id": null,
+        "user": "E2E-C2 Client 39598",
+        "user_phone": "0679939598",
+        "addr": {
+          "address": "Boulevard Albert Schweitzer 62110 Hénin-Beaumont",
+          "apartment": null,
+          "city": "Hénin-Beaumont",
+          "postal_code": "62110",
+          "latitude": "50.418361",
+          "longitude": "2.968711"
+        },
+        "stop": {
+          "id": 312,
+          "wave_at": "2026-10-23 22:00:00",
+          "eta_minutes": 27,
+          "distance_km": 1.041,
+          "collect": "cash",
+          "due": 680,
+          "boy": null
+        }
+      }
+    },
+    "2b-aller-simple": {
+      "haversine_km": 1.041,
+      "devis_km": 1.04,
+      "stop_km": 1.041,
+      "devis_min": 6,
+      "eta_arret_min": 27
+    },
+    "5-file-comptoir": {
+      "present_api": false,
+      "present_ecran": false,
+      "extrait_file": "💰\nÀ ENCAISSER — COMPTOIR (15)\nN°A0032\n00:03\nFanta Orange 33cl\n📞 Tél\n1,90 €\n🖨️ Cuisine\n🖨️ Client\n💳 Encaisser\nN°A0101\n00:16\nCHEESE BURGER | Mex | STO | MAY\n🌐 E2E-SITE-A-319467 Client · 0699219467\n6,00 €\n🖨️ Cuisine\n🖨️ Client\n💳 Encaisser\nN°A0106\n01:28\n🛵 Départ prévu aujourd'hui à 20:30\nEau Pla"
+    },
+    "6a-planche-naturelle": {
+      "wave_at": "2026-10-23 22:00:00",
+      "etat": "à venir",
+      "n_arrets": 4,
+      "texte_tour": "⏱ Tournée aller-retour ≈ 34 min · retour au restaurant vers 22:34 (itinéraire routier réel · dont 3 min de retour)",
+      "tour_api": {
+        "tour_minutes": 34,
+        "out_minutes": 31,
+        "return_minutes": 3,
+        "stops": 4,
+        "distance_km": 2.1,
+        "back_at": "2026-10-23 22:34:00",
+        "source": "road"
+      },
+      "eta_max_aller_simple": 27,
+      "montant_planche": "Espèces 6,80 €\nÀ partir"
+    },
+    "6b-page-livraisons": {
+      "texte_tour": "⏱ Tournée aller-retour ≈ 34 min · retour au restaurant vers 22:34 (itinéraire routier réel · dont 3 min de retour)",
+      "identique_planche": true
+    },
+    "6c-heure-depassee": {
+      "slot": "2026-10-23 15:00:00",
+      "etat": "heure dépassée, pas encore partie",
+      "texte_tour": "⏱ Tournée aller-retour ≈ 12 min · retour au restaurant vers 20:38 (itinéraire routier réel · dont 3 min de retour)",
+      "tour_api": {
+        "tour_minutes": 12,
+        "out_minutes": 9,
+        "return_minutes": 3,
+        "stops": 1,
+        "distance_km": 2.1,
+        "back_at": "2026-10-23 20:38:05",
+        "source": "road"
+      },
+      "eta_aller_simple_arret": 27
+    },
+    "7a-livreur-liste": {
+      "texte_tour": "⏱ Tournée aller-retour ≈ 12 min · retour au restaurant vers 20:38\nItinéraire routier réel · dont 3 min de retour",
+      "tour_api_livreur": {
+        "tour_minutes": 12,
+        "out_minutes": 9,
+        "return_minutes": 3,
+        "stops": 1,
+        "distance_km": 2.1,
+        "back_at": "2026-10-23 20:38:07",
+        "source": "road"
+      },
+      "tour_api_caisse": {
+        "tour_minutes": 12,
+        "out_minutes": 9,
+        "return_minutes": 3,
+        "stops": 1,
+        "distance_km": 2.1,
+        "back_at": "2026-10-23 20:38:05",
+        "source": "road"
+      },
+      "montant_affiche": "Encaisser en espèces : 6,80 €"
+    },
+    "7b-base-apres-remise": {
+      "status": 13,
+      "payment_status": 5,
+      "fiscal": 3191,
+      "delivery_boy_id": 10,
+      "fiscal_meme_numero": 1,
+      "left": "2026-10-23 20:26:09",
+      "arrived": "2026-10-23 20:26:11",
+      "delivered": "2026-10-23 20:26:12",
+      "collected": 680,
+      "due": 680,
+      "arrival": [
+        50.418361,
+        2.968711
+      ],
+      "photo": true,
+      "payments": [],
+      "rejeu_remise": {
+        "status": 409,
+        "body": "{\n    \"message\": \"Cette commande est d\\u00e9j\\u00e0 remise.\"\n}"
+      },
+      "dialogues": [
+        "Confirmez-vous avoir encaissé 6,80 € ?"
+      ]
+    },
+    "7c-planche-apres-remise": {
+      "texte_arret": "#2310268869 · E2E-C2 Client 39598\nBoulevard Albert Schweitzer 62110 Hénin-Beaumont\nEncaissé 6,80 € (espèces)\nRemise 20:26 · 📷",
+      "tour_visible": 0
+    },
+    "8-reseau": {
+      "erreurs_app": [
+        {
+          "url": "/api/frontend/delivery-run/stops/312/deliver",
+          "method": "POST",
+          "status": 409,
+          "surface": "livreur"
+        }
+      ]
+    }
+  }
+}

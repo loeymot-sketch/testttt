@@ -1,0 +1,704 @@
+{
+  "base": "http://127.0.0.1:8766",
+  "date": "2026-09-02T06:58:52.914Z",
+  "cas": [
+    {
+      "slug": "burger",
+      "rayon": "Burgers",
+      "produit": "Chicken Burger",
+      "itemId": 38,
+      "role": "CAS MESURÉ",
+      "journal": [
+        "rayon ouvert : Burgers"
+      ],
+      "panier_avant": {
+        "lignes": [],
+        "nb_lignes": 0,
+        "total": "Total0,00 €",
+        "etat_vide_affiche": true
+      },
+      "capture_rayon": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/chef-mesure/caisse-burger/burger-01-rayon.png",
+      "nb_cartes_ciblees": 1,
+      "aria_label_carte": "Ajouter Chicken Burger, 4,90 €",
+      "reseau": [
+        "200 http://127.0.0.1:8766/api/admin/item?paginate=0&order_column=id&order_type=asc&item_category_id=4&status=5&surface=pos&branch_id=1&page=1",
+        "200 http://127.0.0.1:8766/api/admin/item/details/45?surface=pos&branch_id=1",
+        "200 http://127.0.0.1:8766/api/admin/item/details/38?surface=pos&branch_id=1",
+        "200 http://127.0.0.1:8766/api/admin/pos/counter-collect/pending",
+        "200 http://127.0.0.1:8766/api/admin/pos/web-orders/paid",
+        "200 http://127.0.0.1:8766/api/admin/pos/web-orders/pending"
+      ],
+      "wizard_apparu": true,
+      "capture_wizard": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/chef-mesure/caisse-burger/burger-02-wizard.png",
+      "wizard": {
+        "root_present": true,
+        "single_page": true,
+        "barre_etapes": [],
+        "nb_sections": 5,
+        "sections": [
+          {
+            "titre": "🥬 Crudités",
+            "classe": "wizard-2col-block crudites-section",
+            "visible": true
+          },
+          {
+            "titre": "🥄 Sauce",
+            "classe": "wizard-2col-block sauce-section",
+            "visible": true
+          },
+          {
+            "titre": null,
+            "classe": "wizard-2col-block supplements-section",
+            "visible": true
+          },
+          {
+            "titre": "🍟🥤 Formule",
+            "classe": "wizard-section formule-section",
+            "visible": true
+          },
+          {
+            "titre": "📝 Instruction spéciale",
+            "classe": "wizard-section comment-section",
+            "visible": true
+          }
+        ],
+        "viande_section_presente": false,
+        "viande_section_visible": false,
+        "viande_titre": null,
+        "viande_badge": null,
+        "viande_hint": null,
+        "nb_tuiles_viande": 0,
+        "nb_tuiles_viande_visibles": 0,
+        "noms_viandes": [],
+        "erreur_validation": null,
+        "erreur_validation_visible": false,
+        "boutons": [
+          {
+            "texte": "−",
+            "visible": true,
+            "disabled": false,
+            "classe": "wizard-qty-btn"
+          },
+          {
+            "texte": "+",
+            "visible": true,
+            "disabled": false,
+            "classe": "wizard-qty-btn"
+          },
+          {
+            "texte": "🚫 Sans crudités",
+            "visible": true,
+            "disabled": false,
+            "classe": "garniture-toggle-btn"
+          },
+          {
+            "texte": "🥬 ✓ Salade",
+            "visible": true,
+            "disabled": false,
+            "classe": "garniture-toggle-btn included"
+          },
+          {
+            "texte": "🍅 ✓ Tomate",
+            "visible": true,
+            "disabled": false,
+            "classe": "garniture-toggle-btn included"
+          },
+          {
+            "texte": "🧅 ✓ Oignon",
+            "visible": true,
+            "disabled": false,
+            "classe": "garniture-toggle-btn included"
+          },
+          {
+            "texte": "🧅 ✕ Sans Oignons cuits",
+            "visible": true,
+            "disabled": false,
+            "classe": "garniture-toggle-btn removed"
+          },
+          {
+            "texte": "🍅Ketchupofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🥚Mayonnaiseofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🥛Blancheofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🌶️Algérienneofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "⚔️Samouraïofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🫑Andalouseofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🌟Américaineofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🔥Barbecueofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🍛Curryofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🌶️Harissaofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🦁Hannibalofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🧀Fromagère maisonofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🥵Spicy maisonofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🚫Sans sauceofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "➕ Suppléments ▼",
+            "visible": true,
+            "disabled": false,
+            "classe": "suppl-toggle"
+          },
+          {
+            "texte": "🍅Ketchupofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🥚Mayonnaiseofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🥛Blancheofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🌶️Algérienneofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "⚔️Samouraïofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🫑Andalouseofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🌟Américaineofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🔥Barbecueofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🍛Curryofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🌶️Harissaofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🦁Hannibalofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🧀Fromagère maisonofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🥵Spicy maisonofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🚫Sans sauceofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "Annuler",
+            "visible": true,
+            "disabled": false,
+            "classe": "wizard-btn-cancel"
+          },
+          {
+            "texte": "Ajouter au panier",
+            "visible": true,
+            "disabled": false,
+            "classe": "wizard-btn-cart"
+          }
+        ],
+        "titre_produit": "Chicken Burger",
+        "prix_affiche": "€4.90"
+      },
+      "etat_interne": {
+        "data_wizard_total": null,
+        "flag_composer_aware": true
+      },
+      "details_api": {
+        "http": 401,
+        "profil": null,
+        "attributs": [],
+        "variations_par_attribut": []
+      },
+      "nb_boutons_ajout": 1,
+      "bouton_ajout": {
+        "texte": "Ajouter au panier",
+        "visible": true,
+        "disabled": false
+      },
+      "capture_apres_ajout": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/chef-mesure/caisse-burger/burger-03-apres-ajout.png",
+      "wizard_apres_ajout": {
+        "root_present": true,
+        "single_page": true,
+        "barre_etapes": [],
+        "nb_sections": 5,
+        "sections": [
+          {
+            "titre": "🥬 Crudités",
+            "classe": "wizard-2col-block crudites-section",
+            "visible": true
+          },
+          {
+            "titre": "🥄 Sauce",
+            "classe": "wizard-2col-block sauce-section",
+            "visible": true
+          },
+          {
+            "titre": null,
+            "classe": "wizard-2col-block supplements-section",
+            "visible": true
+          },
+          {
+            "titre": "🍟🥤 Formule",
+            "classe": "wizard-section formule-section",
+            "visible": true
+          },
+          {
+            "titre": "📝 Instruction spéciale",
+            "classe": "wizard-section comment-section",
+            "visible": true
+          }
+        ],
+        "viande_section_presente": false,
+        "viande_section_visible": false,
+        "viande_titre": null,
+        "viande_badge": null,
+        "viande_hint": null,
+        "nb_tuiles_viande": 0,
+        "nb_tuiles_viande_visibles": 0,
+        "noms_viandes": [],
+        "erreur_validation": "⚠️ Sélectionnez au moins une sauce",
+        "erreur_validation_visible": true,
+        "boutons": [
+          {
+            "texte": "−",
+            "visible": true,
+            "disabled": false,
+            "classe": "wizard-qty-btn"
+          },
+          {
+            "texte": "+",
+            "visible": true,
+            "disabled": false,
+            "classe": "wizard-qty-btn"
+          },
+          {
+            "texte": "🚫 Sans crudités",
+            "visible": true,
+            "disabled": false,
+            "classe": "garniture-toggle-btn"
+          },
+          {
+            "texte": "🥬 ✓ Salade",
+            "visible": true,
+            "disabled": false,
+            "classe": "garniture-toggle-btn included"
+          },
+          {
+            "texte": "🍅 ✓ Tomate",
+            "visible": true,
+            "disabled": false,
+            "classe": "garniture-toggle-btn included"
+          },
+          {
+            "texte": "🧅 ✓ Oignon",
+            "visible": true,
+            "disabled": false,
+            "classe": "garniture-toggle-btn included"
+          },
+          {
+            "texte": "🧅 ✕ Sans Oignons cuits",
+            "visible": true,
+            "disabled": false,
+            "classe": "garniture-toggle-btn removed"
+          },
+          {
+            "texte": "🍅Ketchupofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🥚Mayonnaiseofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🥛Blancheofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🌶️Algérienneofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "⚔️Samouraïofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🫑Andalouseofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🌟Américaineofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🔥Barbecueofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🍛Curryofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🌶️Harissaofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🦁Hannibalofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🧀Fromagère maisonofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🥵Spicy maisonofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🚫Sans sauceofferte+€0.50",
+            "visible": true,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "➕ Suppléments ▼",
+            "visible": true,
+            "disabled": false,
+            "classe": "suppl-toggle"
+          },
+          {
+            "texte": "🍅Ketchupofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🥚Mayonnaiseofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🥛Blancheofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🌶️Algérienneofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "⚔️Samouraïofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🫑Andalouseofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🌟Américaineofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🔥Barbecueofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🍛Curryofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🌶️Harissaofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🦁Hannibalofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🧀Fromagère maisonofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🥵Spicy maisonofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🚫Sans sauceofferte+€0.50",
+            "visible": false,
+            "disabled": false,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "Annuler",
+            "visible": true,
+            "disabled": false,
+            "classe": "wizard-btn-cancel"
+          },
+          {
+            "texte": "Ajouter au panier",
+            "visible": true,
+            "disabled": false,
+            "classe": "wizard-btn-cart"
+          }
+        ],
+        "titre_produit": "Chicken Burger",
+        "prix_affiche": "€4.90"
+      },
+      "panier_apres": {
+        "lignes": [],
+        "nb_lignes": 0,
+        "total": "Total0,00 €",
+        "etat_vide_affiche": true
+      },
+      "wizard_encore_ouvert": true,
+      "contre_epreuve": {
+        "nb_tuiles_viande_cliquables": 0,
+        "verdict": "AUCUNE tuile viande à cliquer : le caissier n'a rien à sélectionner.",
+        "capture": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/chef-mesure/caisse-burger/burger-04-aucune-issue.png",
+        "nb_boutons_essayes": 14,
+        "capture_apres_tout_cliquer": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/chef-mesure/caisse-burger/burger-05-apres-tout-cliquer.png",
+        "wizard": {
+          "root_present": false,
+          "modales_vue_visibles": []
+        },
+        "panier": {
+          "lignes": [
+            "Chicken Burger✎⧉STOO̲ · Ketchup, Mayonnaise, Blanche, Algérienne, Samouraï, Andalouse, Américaine, Barbecue, Curry10,00 €🗑+",
+            "Chicken Burger✎⧉STOO̲ · Ketchup, Mayonnaise, Blanche, Algérienne, Samouraï, Andalouse, Américaine, Barbecue, Curry",
+            "Chicken Burger✎⧉",
+            "Chicken Burger",
+            "✎",
+            "⧉",
+            "STOO̲ · Ketchup, Mayonnaise, Blanche, Algérienne, Samouraï, Andalouse, Américaine, Barbecue, Curry",
+            "·",
+            "10,00 €",
+            "🗑+"
+          ],
+          "nb_lignes": 10,
+          "total": "Total10,00 €",
+          "etat_vide_affiche": false
+        }
+      },
+      "phase_b": {
+        "panier_avant": {
+          "lignes": [
+            "Chicken Burger✎⧉STOO̲ · Ketchup, Mayonnaise, Blanche, Algérienne, Samouraï, Andalouse, Américaine, Barbecue, Curry10,00 €🗑+",
+            "Chicken Burger✎⧉STOO̲ · Ketchup, Mayonnaise, Blanche, Algérienne, Samouraï, Andalouse, Américaine, Barbecue, Curry",
+            "Chicken Burger✎⧉",
+            "Chicken Burger",
+            "✎",
+            "⧉",
+            "STOO̲ · Ketchup, Mayonnaise, Blanche, Algérienne, Samouraï, Andalouse, Américaine, Barbecue, Curry",
+            "·",
+            "10,00 €",
+            "🗑+"
+          ],
+          "nb_lignes": 10,
+          "total": "Total10,00 €",
+          "etat_vide_affiche": false
+        },
+        "nb_viandes": 0,
+        "sauce_trouvee": 1,
+        "capture_avant_ajout": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/chef-mesure/caisse-burger/burger-B1-avant-ajout.png",
+        "total_wizard": "AnnulerTotal€4.90 Ajouter au panier",
+        "bouton_vue_cache": {
+          "texte": "Ajouter au panier · 4,90 €",
+          "dans_wizard_root": false,
+          "visible": false
+        },
+        "capture_apres_ajout": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/chef-mesure/caisse-burger/burger-B2-apres-ajout.png",
+        "wizard": {
+          "root_present": false,
+          "modales_vue_visibles": []
+        },
+        "wizard_ferme": true,
+        "panier_apres": {
+          "lignes": [
+            "Chicken Burger✎⧉STOO̲ · Ketchup, Mayonnaise, Blanche, Algérienne, Samouraï, Andalouse, Américaine, Barbecue, Curry10,00 €🗑+",
+            "Chicken Burger✎⧉STOO̲ · Ketchup, Mayonnaise, Blanche, Algérienne, Samouraï, Andalouse, Américaine, Barbecue, Curry",
+            "Chicken Burger✎⧉",
+            "Chicken Burger",
+            "✎",
+            "⧉",
+            "STOO̲ · Ketchup, Mayonnaise, Blanche, Algérienne, Samouraï, Andalouse, Américaine, Barbecue, Curry",
+            "·",
+            "10,00 €",
+            "🗑+"
+          ],
+          "nb_lignes": 20,
+          "total": "Total14,90 €",
+          "etat_vide_affiche": false
+        },
+        "lignes_produit": [
+          "Chicken Burger✎⧉STOO̲ · Ketchup, Mayonnaise, Blanche, Algérienne, Samouraï, Andalouse, Américaine, Barbecue, Curry10,00 €🗑+",
+          "Chicken Burger✎⧉STOO̲ · Ketchup, Mayonnaise, Blanche, Algérienne, Samouraï, Andalouse, Américaine, Barbecue, Curry",
+          "Chicken Burger✎⧉",
+          "Chicken Burger"
+        ]
+      }
+    }
+  ],
+  "console": [
+    {
+      "t": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    }
+  ]
+}

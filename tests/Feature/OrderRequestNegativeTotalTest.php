@@ -39,7 +39,7 @@ class OrderRequestNegativeTotalTest extends TestCase
             'total' => -50,
             'delivery_charge' => 0,
             'is_advance_order' => 0,
-            'source' => 1,
+            'source' => 5,
             'items' => json_encode([['item_id' => $item->id, 'price' => 10, 'quantity' => 1]]),
         ];
 
@@ -67,7 +67,7 @@ class OrderRequestNegativeTotalTest extends TestCase
             'total' => 10,
             'delivery_charge' => 0,
             'is_advance_order' => 0,
-            'source' => 1,
+            'source' => 5,
             'items' => json_encode([['item_id' => $item->id, 'price' => 10, 'quantity' => 1]]),
         ];
 
@@ -96,7 +96,7 @@ class OrderRequestNegativeTotalTest extends TestCase
             'total' => 10,
             'delivery_charge' => 0,
             'is_advance_order' => 0,
-            'source' => 1,
+            'source' => 5,
             'items' => json_encode([['item_id' => $item->id, 'price' => 10, 'quantity' => 1]]),
         ];
 

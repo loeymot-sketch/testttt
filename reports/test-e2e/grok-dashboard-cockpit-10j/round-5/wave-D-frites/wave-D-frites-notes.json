@@ -1,0 +1,105 @@
+{
+  "wave": "D-frites",
+  "round": 5,
+  "goal": "W3-recapture",
+  "base_url": "http://127.0.0.1:8766",
+  "login": {
+    "status": 201,
+    "url": "http://127.0.0.1:8766/admin/dashboard"
+  },
+  "dashboard_to_catalogue": true,
+  "pos_clicked": false,
+  "published": false,
+  "products_created": false,
+  "flags_flipped": false,
+  "chosen_category": {
+    "testid": "catalog-studio-category-row-7",
+    "id": "7",
+    "name": "Frites",
+    "count_text": "6 articles",
+    "product_count": 6,
+    "empty": false
+  },
+  "wizard_clicked": true,
+  "wizard_wait": {
+    "overlay_visible": true,
+    "iframe_src": "/admin/categories/7/composer",
+    "frame_ready": true,
+    "full_page_composer": false,
+    "wait_error": null
+  },
+  "composer": {
+    "mode": "drawer-iframe",
+    "overlay_title": "Wizard de la catégorie : Frites",
+    "overlay_help": "Ce wizard s'applique à TOUS les produits de cette catégorie.",
+    "iframe_src": "/admin/categories/7/composer",
+    "inner": {
+      "url": "http://127.0.0.1:8766/admin/categories/7/composer",
+      "title": "Le Cayenne",
+      "composer_name": "Wizard de la catégorie : Petite Frites",
+      "composer_category": "Les produits déjà dans la catégorie reçoivent ce wizard au moment de Publier. Un produit ajouté ensuite : republier. Dépublier le retire de la caisse.",
+      "publish_state": "Brouillon",
+      "draft_not_till": "",
+      "empty_state": "Comment fonctionne le wizard ? Le wizard est le parcours que ton client suit pour personnaliser ce produit (choix de la viande, sauce, taille, etc.). Chaque page = une étape de choix. Préférable : choisis un template (Tacos, Sandwich…) pour partir d'une base prête. Sinon : ajoute une page manuelle pour configurer ton propre parcours. Choisir un template Ajouter une page manuellement",
+      "load_error": "",
+      "pages_heading": "PAGES",
+      "pages_count_from_body": 0,
+      "step_count": 0,
+      "step_labels": [],
+      "steps": [],
+      "vue_steps": [],
+      "vue_step_keys": [],
+      "vue_meta": {
+        "found": true,
+        "is_published": null,
+        "pages_count": 0
+      },
+      "body_has_viande_2": false,
+      "body_has_viande_3": false,
+      "body_has_brouillon": true,
+      "body_has_ajouter_une_page": true,
+      "raw_labels": [],
+      "body_snippet": "Français Anglais Français Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 250,90 € Modifier Le Profil Changer Le Mot De Passe Appareils Connectés Déconnexion Tableau de bord POS Produits & Stock Conso & Stock Ajustement stock Catalogue Attribut d’articles Ingrédients Scan Facture Commandes caisse Historique Encaissement Vue caisse unifiée Caisse livreur Ticket promo Réglages ticket promo Commande Uber (photo) La roue CAISSE ET COMMANDES Écran cuisine Suivi client COMMUNICATIONS Notification pushs Messages Abonnés UTILISATEURS Administrateurs Employés Chefs COMPTES Transactions RAPPORTS Rapport des ventes Rapport articles CONFIGURATION Paramètres État du système WIZARD DE LA CATÉGORIE Wizard de la catégorie : Petite Frites Les produits déjà dans la catégorie reçoivent ce wizard au moment de Publier. Un produit ajouté ensuite : republier. Dépublier le retire de la caisse. Portee branche Toutes les branches Collier and Sons Branch Skiles-Johns Branch Brekke, Kub and Reichert Branch Shields Inc Branch Stiedemann and Sons Branch Le Cayenne (principal) Retour À La Catégorie Choisir Un Template Ajouter Une Page PAGES 0 Ajoutez une page pour commencer. Edition de la page Ajoutez une page pour commencer. Brouillon Comment fonctionne le wizard ? Le wizard est le parcours que ton client suit pour personnaliser ce produit (choix de la viande, sauce, taille, etc.). Chaque page = une étape de choix. Préférable : choisis un template (Tacos, Sandwich…) pour partir d'une base prête. Sinon : ajoute une page manuelle pour configurer ton propre parcours. Choisir un template Ajouter une page manuellement Apercu live Rafraichi apres modification. 500ms Aperçu Kiosk + POS Comparez ce que la borne et la caisse afficheront pour cette branche. Filiale Le Cayenne (principal) Rafraîchir Caisse (POS) Disponible Petite Frites Frites 2.5 Parcours d'achat client Aucune étape — le client achète directement le produit. Borne Disponible Petite Frites Frites 2.5 Parcours d'achat client Aucune étape — le client achète directement le produit. Filiale Le Cayenne (principal) Sauvegarder Le Brouillon Différences À Publier Publier"
+    }
+  },
+  "api_profile": null,
+  "facts": {
+    "step_keys": [],
+    "step_labels": [],
+    "step_count": 0,
+    "page_count": 0,
+    "pages_count_from_body": 0,
+    "has_viande_2": false,
+    "has_viande_3": false,
+    "body_has_viande_2": false,
+    "is_published": null,
+    "template": null,
+    "publish_state": "Brouillon",
+    "empty_state": "Comment fonctionne le wizard ? Le wizard est le parcours que ton client suit pour personnaliser ce produit (choix de la viande, sauce, taille, etc.). Chaque page = une étape de choix. Préférable : choisis un template (Tacos, Sandwich…) pour partir d'une base prête. Sinon : ajoute une page manuelle pour configurer ton propre parcours. Choisir un template Ajouter une page manuellement",
+    "steps": []
+  },
+  "step_keys": [],
+  "step_labels": [],
+  "page_count": 0,
+  "has_viande_2": false,
+  "has_viande_3": false,
+  "states": [
+    {
+      "name": "D-frites-wizard",
+      "url": "http://127.0.0.1:8766/admin/items/studio",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-D-frites/03-frites-wizard.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-D-frites/03-frites-wizard.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-D-frites/03-frites-wizard.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-D-frites/03-frites-wizard.network.json",
+      "notes": "From Dashboard Accès rapides Catalogue, clicked « Frites » then « Wizard de la catégorie ». Overlay=true iframe_src=/admin/categories/7/composer. Inner title=Wizard de la catégorie : Petite Frites. PAGES 0, step_keys=[], empty-state visible, profile GET 404. Did not publish / create / flip flags / POS."
+    }
+  ],
+  "blockers": [],
+  "final_url": "http://127.0.0.1:8766/admin/items/studio",
+  "api_profile_note": "GET /api/admin/composer/categories/7/profile returned 404; previous notes wrongly fell back to Galette category_id=2 profile. Inner extract + PNG are SSOT: PAGES 0.",
+  "profile_http": {
+    "method": "GET",
+    "url": "http://127.0.0.1:8766/api/admin/composer/categories/7/profile",
+    "status": 404
+  }
+}

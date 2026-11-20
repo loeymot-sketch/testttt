@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Frontend;
 
+use App\Enums\Activity;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentGateway;
 use App\Enums\PaymentStatus;
@@ -13,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
+use Smartisan\Settings\Facades\Settings;
 use Throwable;
 
 /**
@@ -46,6 +48,27 @@ class MolliePaymentController extends Controller
             return response()->json([
                 'status'  => false,
                 'message' => 'Mollie non configuré.',
+            ], 503);
+        }
+
+        /*
+         * [ULTRA-AUDIT 2026-09-26 · A13] `isMollieConfigured()` ne vérifie que des
+         * réglages TECHNIQUES (clé API + flag d'infra `payment.mollie.enabled`) —
+         * jamais le réglage MÉTIER `site_online_payment_gateway` (Réglages > Site >
+         * "Passerelle de paiement en ligne"), que le propriétaire bascule lui-même.
+         * Repro confirmée en base locale : ce réglage vaut DISABLE alors que Mollie
+         * reste techniquement configuré — un client pouvait donc toujours obtenir
+         * une VRAIE session Mollie malgré la désactivation explicite du propriétaire.
+         * Défaut ABSENT (jamais seedé en tests) traité comme ENABLE : aucune régression
+         * sur les tests Mollie existants, qui ne posent jamais cette clé — seule une
+         * désactivation EXPLICITE ferme désormais le chemin, symétrique du choix déjà
+         * fait pour la Livraison (order_setup_delivery, PosComponent.vue).
+         */
+        $onlinePaymentEnabled = (int) Settings::group('site')->get('site_online_payment_gateway', Activity::ENABLE);
+        if ($onlinePaymentEnabled !== Activity::ENABLE) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Paiement en ligne désactivé.',
             ], 503);
         }
 
@@ -86,6 +109,28 @@ class MolliePaymentController extends Controller
                 'status'  => false,
                 'message' => 'Commande annulée — paiement impossible.',
             ], 422);
+        }
+
+        // [GOAL APP HYBRIDE · W4 · 2026-11-03] D'où vient le paiement : `web` (site, défaut) ou `app` (application
+        // des stores). Liste blanche STRICTE — la valeur choisit la page où Mollie renvoie le client, rien d'autre.
+        // Absent / null (ConvertEmptyStringsToNull) = site, octet pour octet comme avant.
+        $client = $request->input('client') ?? 'web';
+        if (! is_string($client) || ! in_array($client, Mollie::CLIENTS, true)) {
+            return response()->json(['status' => false, 'message' => 'Client de paiement inconnu.'], 422);
+        }
+        if ($client === 'app') {
+            // Interrupteur du propriétaire, appliqué ICI et pas seulement affiché : une application installée qui
+            // l'ignorerait (vieux paquet, défaut) est refusée avant tout appel Mollie.
+            if (! (bool) config('app_mobile.online_payment_enabled', false)) {
+                return response()->json(['status' => false, 'message' => "Le paiement dans l'application est désactivé."], 503);
+            }
+            // L'application n'a ni champs carte ni feuille Apple Pay JS (absente de la vue web) : elle passe par la
+            // page Mollie hébergée, où Mollie présente carte, Apple Pay et Google Pay. Un jeton ici = appel incohérent.
+            foreach (['card_token', 'method', 'apple_pay_token', 'google_pay_token'] as $champ) {
+                if ($request->filled($champ)) {
+                    return response()->json(['status' => false, 'message' => "Le paiement dans l'application passe par la page sécurisée."], 422);
+                }
+            }
         }
 
         // [OWNER 2026-08-01 · PAIEMENT DANS LA PAGE] Token à usage unique produit par Mollie
@@ -162,7 +207,7 @@ class MolliePaymentController extends Controller
         }
 
         try {
-            $created = $gateway->createPayment($frontendOrder, $cardToken, $walletMethod, $applePayToken, $googlePayToken);
+            $created = $gateway->createPayment($frontendOrder, $cardToken, $walletMethod, $applePayToken, $googlePayToken, $client);
         } catch (Throwable $e) {
             return response()->json([
                 'status'  => false,
@@ -268,7 +313,7 @@ class MolliePaymentController extends Controller
 
             return response()->json([
                 'status'  => false,
-                'message' => "Apple Pay n'a pas pu vérifier le site. Ta commande n'est pas envoyée ni débitée. Réessaie dans un instant ou choisis un autre moyen de paiement.",
+                'message' => "Apple Pay n'a pas pu vérifier le site. Votre commande n'est pas envoyée ni débitée. Réessayez dans un instant ou choisissez un autre moyen de paiement.",
             ], 502);
         }
 

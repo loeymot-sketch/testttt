@@ -25,10 +25,11 @@ describe('delivery geocode failure UI contracts', () => {
         expect(source).toContain('deliveryGeocodeError');
         expect(source).toContain('Adresse non reconnue');
         expect(source).toContain('focusDeliveryAddressField');
-        // C3 (c27e0d16e): le garde coordonnées ne s'applique qu'en mode Google Maps —
-        // le repli distance-manuelle (deliveryInline.manual) passe sans lat/lng.
-        expect(source).toContain('if (!this.deliveryInline.manual && (!this.deliveryInline.latitude || !this.deliveryInline.longitude))');
-        expect(source).toContain('manualDistanceKm');
+        // [LIVRAISON 2026-10-20] Plus de repli « distance saisie à la main » : une adresse n'est acceptée que
+        // si le SERVEUR l'a géocodée et chiffrée (devis) ; sinon la caisse refuse et le dit.
+        expect(source).toContain('!this.deliveryInline.confirmed');
+        expect(source).toContain("Choisissez l\\'adresse de livraison dans la liste proposée.");
+        expect(source).toContain('livraison.quoteAddress(axios');
         expect(source).not.toContain('Frais de livraison appliqués au tarif minimum.');
     });
 });

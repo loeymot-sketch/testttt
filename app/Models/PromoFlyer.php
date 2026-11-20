@@ -23,6 +23,11 @@ class PromoFlyer extends Model
     public const STATUS_PRINTED = 'printed';
     public const STATUS_FAILED  = 'failed';
 
+    /** [TICKET PROMO 2026-11-03] Offres imprimables, au choix du caissier. */
+    public const OFFER_PERCENT       = 'percent';
+    public const OFFER_FREE_DELIVERY = 'free_delivery';
+    public const OFFERS = [self::OFFER_PERCENT, self::OFFER_FREE_DELIVERY];
+
     /**
      * Au-delà de ce nombre de tentatives, la caisse cesse de réclamer le
      * ticket. Sans ce plafond, une imprimante en panne ferait boucler la
@@ -54,6 +59,7 @@ class PromoFlyer extends Model
         'created_by_user_id',
         'created_by_device',
         'rendered_payload',
+        'offer',
     ];
 
     protected $casts = [

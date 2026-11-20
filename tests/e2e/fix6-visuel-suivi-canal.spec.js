@@ -16,7 +16,7 @@ const path = require('path');
 const { loginAsAdmin } = require('./helpers/login');
 
 /**
- * [2026-09-01] Plus aucun identifiant d'article figé dans les fixtures de cette spec.
+ * [2026-09-02] Plus aucun identifiant d'article figé dans les fixtures de cette spec.
  * Cliquet : tests/js/e2eFixturesSansIdentifiantCode.spec.js. Le NOM est la clé stable —
  * les identifiants, eux, ont dérivé (relevé du 2026-08-25 : 27 des 36 identifiants codés
  * en dur dans tests/e2e/ ne visaient plus aucun article existant). On résout donc l'article
@@ -31,7 +31,6 @@ function phpItemId(nom) {
     const n = String(nom).replace(/'/g, "\\'");
     return `(int) DB::table('items')->whereNull('deleted_at')->where('name', '${n}')->orderBy('id')->value('id')`;
 }
-
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const SHOTS_DIR = path.join(REPO_ROOT, 'tests', 'e2e', '__screenshots__', 'fix6-suivi-canal');

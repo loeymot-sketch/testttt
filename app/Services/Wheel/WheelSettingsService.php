@@ -77,7 +77,27 @@ class WheelSettingsService
      */
     public function prizeOverrides(): array
     {
+        return $this->prizeOverridesDepuis($this->stored());
+    }
+
+    /**
+     * LE CATALOGUE ET SES RÉGLAGES EN UNE SEULE LECTURE — [2026-11-19, optimisation mesurée].
+     * `catalogueStocke()` puis `prizeOverrides()` relisaient chacun le groupe de réglages ; appelés
+     * une fois PAR LOT (produit de référence, rupture…), ils faisaient 32 lectures identiques à chaque
+     * affichage de la roue publique et 47 à chaque chargement de l'espace commerçant.
+     *
+     * @return array{0: array<int, array<string, mixed>>|null, 1: array<string, array{weight?: int, quantity?: int}>}
+     */
+    public function lectureCatalogue(): array
+    {
         $stored = $this->stored();
+
+        return [$this->catalogueDepuis($stored), $this->prizeOverridesDepuis($stored)];
+    }
+
+    /** @return array<string, array{weight?: int, quantity?: int}> */
+    private function prizeOverridesDepuis(array $stored): array
+    {
         $out = [];
 
         foreach ($stored as $cle => $valeur) {
@@ -95,6 +115,128 @@ class WheelSettingsService
         }
 
         return $out;
+    }
+
+    /*
+     * ── LE CATALOGUE DES LOTS, SAISI DEPUIS L'ESPACE COMMERÇANT ─────────────────────────────────
+     * [2026-11-19 · propriétaire : « la gestion des produits etc., vraiment toute la refonte »]
+     * Jusqu'ici la LISTE des lots vivait dans `config/wheel.php` : ajouter un dessert à la roue
+     * demandait un déploiement. L'espace commerçant enregistre désormais la liste complète ici, en
+     * base. Ce qui reste VRAI de la décision d'août : un lot « produit offert » est TOUJOURS adossé à
+     * un article réel de la carte (`cost_item_id` vérifié à l'enregistrement) — la roue ne peut pas
+     * promettre un produit qui n'existe pas, et le coût / le stock suivent ce produit-là.
+     *
+     * Les lots RETIRÉS ne sont pas effacés : ils restent dans le catalogue avec `archived = true`.
+     * Un client qui a gagné un « Tiramisu » hier doit pouvoir le recevoir aujourd'hui, même si le
+     * tiramisu a quitté la roue ce matin — et la remise a besoin de son produit de référence.
+     */
+    public const CATALOGUE_KEY = 'segments_catalogue';
+
+    /** Les réglages du jeu modifiables depuis l'espace (appliqués au démarrage, voir plus bas). */
+    public const JEU_KEYS = ['campaign_key', 'prize_validity_days', 'daily_total_cap'];
+
+    /**
+     * Le catalogue enregistré, archives comprises. `null` = jamais enregistré : le fichier fait foi.
+     *
+     * @return array<int, array<string, mixed>>|null
+     */
+    public function catalogueStocke(): ?array
+    {
+        return $this->catalogueDepuis($this->stored());
+    }
+
+    /** @return array<int, array<string, mixed>>|null */
+    private function catalogueDepuis(array $stored): ?array
+    {
+        $brut = $stored[self::CATALOGUE_KEY] ?? null;
+        if (! is_string($brut) || trim($brut) === '') {
+            return null;
+        }
+
+        $liste = json_decode($brut, true);
+        if (! is_array($liste) || $liste === []) {
+            return null;
+        }
+
+        return array_values(array_filter($liste, static fn ($s) => is_array($s) && ($s['key'] ?? '') !== ''));
+    }
+
+    /**
+     * Enregistre le catalogue complet. Les clés `prize_<lot>_weight|quantity` sont réécrites en même
+     * temps, aux MÊMES valeurs : l'ancien écran de réglages les lit et les applique par-dessus le
+     * catalogue — deux vérités qui divergeraient montreraient une probabilité et en appliqueraient une
+     * autre.
+     *
+     * @param  array<int, array<string, mixed>>  $segments
+     */
+    public function saveCatalogue(array $segments): void
+    {
+        $ecrire = [self::CATALOGUE_KEY => json_encode(array_values($segments), JSON_UNESCAPED_UNICODE)];
+        foreach ($segments as $s) {
+            [$cleP, $cleQ] = self::prizeKeys((string) $s['key']);
+            $ecrire[$cleP] = (string) max(0, (int) ($s['weight'] ?? 0));
+            $ecrire[$cleQ] = (string) max(0, (int) ($s['quantity'] ?? 0));
+        }
+
+        Settings::group(self::GROUP)->set($ecrire);
+    }
+
+    /** Les réglages du jeu tels qu'ils tournent (configuration écrasée par l'espace). */
+    public function jeu(): array
+    {
+        return [
+            'campaign_key' => (string) config('wheel.campaign_key'),
+            'prize_validity_days' => (int) config('wheel.prize_validity_days', 30),
+            'daily_total_cap' => (int) config('wheel.daily_total_cap', 0),
+        ];
+    }
+
+    /** Enregistre les réglages du jeu ET les applique à la requête en cours. */
+    public function saveJeu(array $data): void
+    {
+        $ecrire = [];
+        foreach (self::JEU_KEYS as $cle) {
+            if (array_key_exists($cle, $data) && $data[$cle] !== null && $data[$cle] !== '') {
+                $ecrire[$cle] = (string) $data[$cle];
+            }
+        }
+
+        if ($ecrire === []) {
+            return;
+        }
+
+        Settings::group(self::GROUP)->set($ecrire);
+        $this->appliquerJeu($ecrire);
+    }
+
+    /**
+     * Au démarrage : les réglages du jeu saisis dans l'espace écrasent `config/wheel.php`.
+     *
+     * Même mécanique que les interrupteurs de pilotage (`InterrupteurService::appliquerAuDemarrage`) :
+     * une dizaine d'endroits lisent `config('wheel.campaign_key')` en direct — le tirage, les
+     * quantités, le rapport, la remise. Les réécrire un à un, c'est en oublier un et compter les
+     * quantités d'une campagne pendant que le tirage en applique une autre. Les surcharger ICI, une
+     * fois, les met tous d'accord sans les toucher.
+     */
+    public function appliquerAuDemarrage(): void
+    {
+        try {
+            $stocke = $this->stored();
+        } catch (\Throwable $e) {
+            return;
+        }
+
+        $this->appliquerJeu(array_intersect_key($stocke, array_flip(self::JEU_KEYS)));
+    }
+
+    private function appliquerJeu(array $valeurs): void
+    {
+        foreach ($valeurs as $cle => $v) {
+            if ($v === null || $v === '') {
+                continue;
+            }
+            config(['wheel.' . $cle => $cle === 'campaign_key' ? (string) $v : max(0, (int) $v)]);
+        }
     }
 
     /** Les clés de réglage d'un lot, pour composer le formulaire et la validation. */
@@ -152,7 +294,27 @@ class WheelSettingsService
         $connues = array_keys($this->defaults());
         $aEcrire = [];
         foreach ($data as $k => $v) {
-            if (in_array($k, $connues, true)) {
+            // [ONB-09 2026-08-28] La liste blanche ne contenait QUE les 9 cles de
+            // `defaults()` — aucune `prize_*`. Or le formulaire poste
+            // `prize_<lot>_weight` et `prize_<lot>_quantity` pour chaque lot
+            // (`reglages.blade.php:289-290`), et le controleur construit pour chacune
+            // une regle de validation et six messages d'erreur en francais
+            // (`WheelSettingsController.php:98-110`).
+            //
+            // Toutes etaient donc ecartees EN SILENCE, et l'ecran affichait quand meme
+            // « Reglages enregistres. ». `prizeOverrides()` ne trouvait jamais rien et
+            // `WheelService::segments()` servait `config/wheel.php` intact : le
+            // commercant plafonnait son budget cadeaux — « 10 burgers ce mois-ci »,
+            // « Terminator a zero » — lisait un succes, et rien n'etait garde. Seul un
+            // developpeur editant le fichier de configuration pouvait borner la depense.
+            //
+            // L'INTENTION DU FILTRE EST CONSERVEE : un formulaire ne doit pas pouvoir
+            // ecrire n'importe quelle cle de reglage. On accepte donc les cles `prize_*`
+            // par leur FORME EXACTE — la meme expression que celle que `prizeOverrides()`
+            // relit — et rien d'autre.
+            $estCleDeLot = (bool) preg_match('/^prize_(.+)_(weight|quantity)$/', (string) $k);
+
+            if (in_array($k, $connues, true) || $estCleDeLot) {
                 $aEcrire[$k] = is_bool($v) ? ($v ? '1' : '0') : (string) $v;
             }
         }
@@ -279,6 +441,24 @@ class WheelSettingsService
         return max(0, (int) $this->get('follow_dwell', 8));
     }
 
+    /**
+     * [ONB-05 2026-08-28] LE MINIMUM DE COMMANDE, UNE SEULE PORTE D'ENTRÉE.
+     *
+     * Cette méthode n'avait qu'UN appelant (`WheelPrizeController:242`), pendant que
+     * cinq autres endroits lisaient `config('wheel.min_order_amount')` en direct —
+     * dont `WheelController:332`, qui APPLIQUE la contrainte au client.
+     *
+     * L'exploitant réglait « minimum 15 € », l'écran de contrôle affichait 15 €, et
+     * la roue continuait d'appliquer la valeur du fichier. Un réglage qui ment coûte
+     * plus cher qu'un réglage absent : il donne la certitude fausse d'avoir agi.
+     *
+     * Les replis divergeaient en prime : 10 ici, 0 chez les lecteurs directs.
+     *
+     * C'est exactement ce que le docblock de `WheelService::segments()` interdit
+     * depuis août — « lire la config en direct ailleurs, ce serait ignorer les
+     * réglages du propriétaire sur une surface et pas sur l'autre ». Le principe
+     * était écrit et appliqué aux segments ; il ne l'était pas ici.
+     */
     public function minOrder(): float
     {
         return max(0, (float) $this->get('min_order', 10));

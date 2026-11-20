@@ -65,6 +65,7 @@
         "otp": "OTP",
         "theme": "Thema",
         "time_slots": "Zeitfenster",
+        "horaires": "Öffnungszeiten",
         "app": "App",
         "cookies": "Kekse",
         "social_media": "Sozialen Medien",
@@ -127,7 +128,8 @@
         "ingredients": "Zutaten",
         "advanced_tools": "Erweiterte Werkzeuge",
         "demo_wizard_advanced": "Demo erweiterter Wizard",
-        "system_health": "System health"
+        "system_health": "System health",
+        "Assistant téléphone": "Telefon-Assistent"
     },
     "label": {
         "pos_customer_name_placeholder": "Nom du client (optionnel)",
@@ -1455,6 +1457,7 @@
             "supplements_empty": "Aucun supplément disponible pour cet article",
             "supplements_step_title": "Quel supplément ?",
             "supplements_badge_paid": "Options payantes",
+            "supplement_recommended": "Empfohlen",
             "supplement_default_desc": "Supplément",
             "instruction": {
                 "taille": "Taille : {label}",
@@ -1577,6 +1580,7 @@
                 "sauce": {
                     "title": "Quelle sauce ?",
                     "first_free": "1re sauce gratuite",
+                    "included_many": "{n} sauces offertes",
                     "extra_one": "+{n} sauce supplémentaire ({price})",
                     "extra_many": "+{n} sauces supplémentaires ({price})",
                     "hint": "Sélectionnez au moins une sauce",

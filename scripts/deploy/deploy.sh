@@ -11,7 +11,7 @@
 #
 # DESIGN
 #   - Idempotent — re-runs MUST be safe (no destructive ops on existing state).
-#   - Discovery > assumptions — verifies host has php8.4/composer/mysql/nginx/
+#   - Discovery > assumptions — verifies host has php8.1+/composer/mysql/nginx/
 #     redis/node BEFORE touching anything, exits early with a clear list of
 #     missing components (the contract is "server-setup ran"; we check the
 #     outcomes, not the file).
@@ -62,12 +62,17 @@ for bin in "${REQUIRED_BINS[@]}"; do
     fi
 done
 
-# PHP must be 8.4+
+# [2026-09-03] Le socle vient de composer.json (`php: ^8.1.0`), pas d'un chiffre choisi ici.
+# Ce garde exigeait 8.4 : il REFUSAIT donc de tourner sur la machine de production, qui a
+# PHP 8.1.2 et php8.1-fpm. Un script officiel inutilisable renvoie les déploiements à la main,
+# hors procédure — c'est ainsi que `config:cache` a fini par être lancé en production.
+# Attaché à composer.json par tests/Feature/Deploy/SocleDePhpUniqueTest.php.
+# PHP must match composer.json's floor (8.1+)
 if command -v php >/dev/null 2>&1; then
     PHP_VER="$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null || echo "0.0")"
-    PHP_OK="$(php -r 'echo (PHP_VERSION_ID >= 80400) ? "1" : "0";' 2>/dev/null || echo "0")"
+    PHP_OK="$(php -r 'echo (PHP_VERSION_ID >= 80100) ? "1" : "0";' 2>/dev/null || echo "0")"
     if [[ "$PHP_OK" != "1" ]]; then
-        MISSING+=("php8.4+ (found PHP $PHP_VER)")
+        MISSING+=("php8.1+ (found PHP $PHP_VER)")
     fi
 fi
 
@@ -76,7 +81,7 @@ if [[ ${#MISSING[@]} -gt 0 ]]; then
     printf '  - %s\n' "${MISSING[@]}"
     echo
     echo "Run scripts/deploy/server-setup.sh first, or install:"
-    echo "  apt install -y php8.4-{cli,fpm,mysql,redis,mbstring,xml,curl,zip,intl,bcmath,gd}"
+    echo "  apt install -y php8.1-{cli,fpm,mysql,redis,mbstring,xml,curl,zip,intl,bcmath,gd}"
     echo "  apt install -y composer mysql-server nginx redis-server nodejs npm supervisor"
     exit 1
 fi

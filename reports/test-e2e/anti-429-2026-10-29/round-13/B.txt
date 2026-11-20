@@ -1,0 +1,11 @@
+✅ étape pain : 2 vraies photos chargées (naturalWidth>0) — [{"src":"http://127.0.0.1:8766/images/menu/thumbs/sandwich-cayenne.webp?v=1788391475","w":640},{"src":"/storage/69/conversions/g-cayenne-preview.png","w":600}]
+✅ détail produit : refus 429 rejoués puis servi — [429,429,"real"]
+✅ panier borne : la ligne « Galette » porte la photo de la galette — "/storage/69/conversions/g-cayenne-preview.png"
+✅ corbeille et « + » ne se chevauchent plus — {"overlap_px2":0}
+✅ commande créée UNE seule fois malgré 2 refus 429 — {"before":4982,"after":4983,"orderLog":[{"n":1,"ans":429,"idem":"4b1e1136-5734-436c-96cb-5374a3d5005d"},{"n":2,"ans":429,"idem":"4b1e1136-5734-436c-96cb-5374a3d5005d"},{"n":3,"ans":"real","idem":"4b1e1136-5734-436c-96cb-5374a3d5005d"}]}
+✅ rejeu : même X-Idempotency-Key à l'identique — ["4b1e1136-5734-436c-96cb-5374a3d5005d","4b1e1136-5734-436c-96cb-5374a3d5005d","4b1e1136-5734-436c-96cb-5374a3d5005d"]
+✅ rejeu : corps de la requête identique (pas de double sérialisation) — {"len":[851,851,851],"head":"{\"order_type\":10,\"loyalty_code\":null,\"loyalty_redeem_points\":0,\"kiosk_promo_code\":null,\"is_advance_order\":10,\"source\":5,"}
+✅ numéro de confirmation affiché — "#A0046"
+✅ devis : 2 refus 429 rejoués en silence, puis servi — [429,429,"real","real"]
+✅ AUCUN « trop de requêtes » vu à l'écran — []
+✅ CONTRÔLE : sans rejeu, le banc VOIT bien le toast (instrument prouvé) — [{"t":1793287556407,"text":"Trop de requêtes — patientez 1s avant de réessayer.\n×"}]

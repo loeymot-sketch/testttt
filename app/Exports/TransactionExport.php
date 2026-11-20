@@ -31,7 +31,12 @@ class TransactionExport implements FromCollection, WithHeadings
             $transactionArray[] = [
                 $transaction->transaction_no,
                 AppLibrary::datetime($transaction->created_at),
-                $transaction->payment_method,
+                // [ONB-07 2026-08-28] Sortait l'identifiant machine brut
+                // (« COUNTER_CASH ») là où l'écran affiche « Espèces (Caisse) ». Le
+                // correctif du 2026-07-07 a couvert les écrans, puis les tickets,
+                // puis le PDF — jamais le tableur, qui est pourtant le seul document
+                // que le commerçant transmet à son comptable.
+                \App\Support\LibellePaiement::pour($transaction->payment_method),
                 optional($transaction->order)->order_serial_no,
                 $transaction->sign.' '.AppLibrary::flatAmountFormat($transaction->amount),
             ];

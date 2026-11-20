@@ -687,11 +687,12 @@ export default {
                 if (d.customer) this.client = d.customer;
 
                 const pts = Number(d.points_awarded) || 0;
-                // Zéro point n'est pas un échec : la commande n'a pas encore atteint son
-                // déclencheur. Dire « +0 point » serait inquiétant ; dire « c'est noté » est juste.
+                // Zéro point n'est pas un échec : la commande est encore EN ATTENTE (pas validée). Dire
+                // « +0 point » serait inquiétant ; dire « c'est noté » est juste.
+                // [POINTS À LA VALIDATION 2026-11-06] Le crédit tombe dès que la commande est validée.
                 this.succes = pts > 0
                     ? `+${pts} points pour ${this.client.name}.`
-                    : 'Client rattaché — ses points seront crédités à la fin de la commande.';
+                    : 'Client rattaché — ses points seront crédités dès que la commande sera validée.';
 
                 this.$emit('attached', d);
             } catch (e) {

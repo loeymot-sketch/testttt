@@ -68,6 +68,8 @@ class User extends Authenticatable implements HasMedia
         'is_guest'          => 'integer',
         'status'            => 'integer',
         'email_verified_at' => 'datetime',
+        // [STORES 2026-11-12 · Apple 5.1.1(v)] Jeton Apple chiffré au repos (révoqué à la suppression du compte).
+        'apple_refresh_token' => 'encrypted',
     ];
 
     /**
@@ -78,6 +80,7 @@ class User extends Authenticatable implements HasMedia
     protected $hidden = [
         'password',
         'remember_token',
+        'apple_refresh_token',
     ];
 
 
@@ -112,9 +115,10 @@ class User extends Authenticatable implements HasMedia
                 // a phone. Logging the inject + caller lets ops surface
                 // sentinel-polluted users for follow-up (the DELIVERY path
                 // already rejects them via OrderRequest + ValidPhone).
+                // [W7-D cycle B · P3 2026-11-04] Plus de nom ni d'e-mail en clair dans le journal : l'identité suffit (id posé
+                // après insertion, e-mail masqué « a***@domaine »).
                 \Illuminate\Support\Facades\Log::warning('User created without phone — sentinel injected', [
-                    'name'     => $user->name ?? null,
-                    'email'    => $user->email ?? null,
+                    'email'    => isset($user->email) ? preg_replace('/^(.).*?(@.*)$/u', '$1***$2', (string) $user->email) : null,
                     'sentinel' => $sentinel,
                 ]);
                 $user->phone = $sentinel;

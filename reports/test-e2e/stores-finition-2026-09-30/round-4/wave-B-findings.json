@@ -1,0 +1,234 @@
+{
+  "wave": "B",
+  "round": 4,
+  "reviewer": "superviseur adverse (lecture seule)",
+  "date": "2026-10-02",
+  "artifacts_dir": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/B-r4/",
+  "code_under_test": {
+    "site": "site-wt-stores-2026-09-30 @ ec77575 (lots C à H, 2a73e94 + test)",
+    "backend": "qa-corrige-2026-09-28 @ 5fa5f3b85 (+ assets recompilés)"
+  },
+  "states_reviewed": 35,
+  "method": "35 PNG ouverts un par un (Read). 35 .dom.html : texte extrait, recherche de fuites de traduction, de « undefined », « NaN », « [object » et des zones dynamiques (aria-live / role=status). 35 .console.json et 35 .network.json agrégés. Lus aussi : resultats.json, sortie-banc.txt, réponses de création O-04/F-04, O-10, base O-15, temps réel O-16, natif O-04/F-04/O-14/F-10. Chaque constat P2 est recoupé dans le code (fichier:ligne ouvert). Le diff backend 4480af88f..5fa5f3b85 a été lu, ainsi que les lignes du banc qui produisent chaque capture.",
+  "findings": [
+    {
+      "id": "B4-R4-01",
+      "state_artifact": "B-r4/O-06b-caisse-fiche-commande-web.png ; O-06c ; F-06b ; F-06c (.png + .dom.html)",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "Le commit 5fa5f3b85 s'intitule « un seul numero partout ». C'est faux sur la fiche caisse « Commandes en ligne / Voir ». Le seul identifiant y est la SÉRIE : capture « N° Commande: #0210267571 ». Le numéro appelé N°A0032 est ABSENT de toute la page : 0 occurrence de « A0032 » dans le DOM d'O-06b et d'O-06c, 0 occurrence de « A0033 » dans celui de F-06b et de F-06c. Même chose sur la facture imprimable de la même page (DOM O-06c : « Commande #0210267571 »). Parcours réel du caissier : la notification dit « Nouvelle commande N°A0032 » (O-06a), il clique « Détails », et la fiche ne montre plus ce numéro. Sources : OnlineOrderShowComponent.vue:7-11 `{{ $t('label.order_id') }}: #{{ order.order_serial_no }}` (aucun `queue_number` dans le fichier, grep), OnlineOrderReceiptComponent.vue:20-21 `#{{ order.order_serial_no }}`. Le banc relève ce numéro sans réagir : resultats.json numeros.caisse_commande_web = \"0210267571\", et le contrôle « O-B6 NUMÉRO » n'exige le numéro appelé que dans l'application. Classé P2 et non P0 : la série est un identifiant valide, que l'application affiche aussi sous « Réf. ». Même famille que B2-R2-08 et B2-R2-09.",
+      "fix_hint": "Titre de la fiche : « N°{{ order.queue_number }} », avec la série sur une ligne « Réf. » (repli sur la série si queue_number est vide). Même chose dans l'en-tête de OnlineOrderReceiptComponent. Banc : vérifier que numeros.caisse_commande_web === queue.",
+      "status": "nouveau (relevé au round 2 dans cross_surface_integrity, jamais classé)"
+    },
+    {
+      "id": "B4-R4-02",
+      "state_artifact": "B-r4/O-06c-caisse-commande-web-acceptee.dom.html ; B-r4/F-06c-caisse-commande-web-acceptee.dom.html",
+      "category": "wording_fr",
+      "severity": "P2",
+      "evidence": "La correction de B2-R2-06 n'a porté que sur l'écran. La facture que le bouton « Imprimer la facture » envoie à l'imprimante, pour une commande À EMPORTER payée au comptoir, dit encore : « Type de commande: À emporter Type de paiement: Paiement à la livraison Heure de livraison: » (O-06c, heure vide) et « … Paiement à la livraison Heure de livraison: 02-10-2026 18:20 » (F-06c). Sources : OnlineOrderReceiptComponent.vue:141 `enums.paymentTypeEnumArray[order.payment_method]`, avec CASH_ON_DELIVERY → label.cash_on_delivery (:228-229, fr.json:1159 « Paiement à la livraison ») ; :144 `$t('label.delivery_time')`. La fiche a reçu `libellePaiement()` dans 5fa5f3b85 (OnlineOrderShowComponent.vue, libellePaiement) ; la facture, non. Ce libellé s'affiche tant qu'aucune transaction n'existe (`v-if=\"order.transaction\"`, :140), c'est-à-dire exactement entre l'acceptation et l'encaissement. Accessoire : les lignes de TVA portent « VAT (10.00 %) ». Ce texte vient de `item.tax_name` (:76), une donnée locale ; la valeur en production n'est pas vérifiée.",
+      "fix_hint": "Réutiliser libellePaiement() et la règle pickup_time / delivery_time (selon order_type) dans OnlineOrderReceiptComponent.vue:139-146 ; en retrait immédiat, afficher « Dès que prête » plutôt qu'une heure vide.",
+      "status": "nouveau (reliquat de B2-R2-06 sur le document imprimé)"
+    },
+    {
+      "id": "B4-R4-03",
+      "state_artifact": "B-r4/O-05-app-suivi-ouvert.dom.html ; O-08c ; O-12a ; F-05 ; F-08 ; F-10 ; O-14",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Le suivi de l'application annonce « Le statut se met à jour automatiquement », mais rien n'est annoncé aux lecteurs d'écran. Les DOM O-05, O-08c, O-12a, F-05, F-08 et F-10 ne contiennent AUCUN aria-live, role=\"status\" ni role=\"alert\" (0 occurrence). Les passages Reçu → En préparation et → ANNULÉE se font donc en silence. Seul le bandeau « prête » a une zone vivante : `<div class=\"lcf-track-ready\" role=\"status\" aria-live=\"assertive\">` (O-14). Or ce bandeau est MONTÉ en même temps que son contenu (funnel.jsx:2778-2779 `{isReady && (<div … role=\"status\" aria-live=\"assertive\">`). Une zone vivante insérée déjà remplie n'est souvent pas annoncée par VoiceOver ou TalkBack. La pastille de statut, funnel.jsx:2795 `<div className=\"lcf-track-status\">`, n'a aucun rôle. Classé P2 et non P1 : la notification native « Ta commande N°A0032 est prête ! » (O-14-natif-apres-prete.json) annonce l'état principal par le système.",
+      "fix_hint": "Une zone `role=\"status\" aria-live=\"polite\"` TOUJOURS présente autour de la pastille et de l'attente (funnel.jsx:2795) ; le bandeau « prête » rendu dans une zone déjà montée.",
+      "status": "nouveau"
+    },
+    {
+      "id": "B4-R4-04",
+      "state_artifact": "B-r4/O-01-app-panier.dom.html ; B-r4/O-07-kds-carte.txt ; B-r4/O-06b-caisse-fiche-commande-web.dom.html ; B-r4/O-09-encaissement-ticket.txt ; B-r4/O-15-base-commande.json ; B-r4/00-catalogue-local-tacos-m.json",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "Le client reçoit un article qu'il n'a pas choisi, sans aucun message. Panier de l'application (sortie-banc) : « Tacos M + Tenders, Algérienne, Cheddar ». Cuisine : « 1× Tacos | Tender Cordon | ALG ⭐ Cheddar ». Fiche caisse, encaissement et base (composition_snapshot) : « Viande 3: Cordon Bleu » (variation 1185, envoyée dans le POST : O-04-creation-reponse.json requete.items). Mécanisme : site api.js:1104-1113 « complète » EN SILENCE tout attribut requis (min_select) avec sa PREMIÈRE option. Déclencheur : le catalogue local sert Tacos M avec « Viande 3 min 1 » (00-catalogue-local-tacos-m.json), ce que ne montre pas l'assistant du site (« CHOISIS 1 VIANDE »). LATENT en production : le banc dit que la production sert Tacos M sans « Viande 3 », ce que je n'ai pas vérifié (aucun appel à la production). Le risque reste réel : il suffit que le catalogue de l'administration s'écarte de data/menu.js. Le round 2 l'avait laissé en « environnement ». Je le classe parce que le repli est dans le CODE et ne prévient personne, ni le client ni le banc : « O-B6 ARTICLES » passe.",
+      "fix_hint": "api.js:1104-1113 : au lieu de compléter en silence, refuser la ligne (« Ce produit a changé, rouvre-le ») ou au minimum journaliser l'écart. Banc : comparer la composition envoyée à celle affichée au panier. Côté données : aligner Tacos M de foodking_e2e sur la production.",
+      "status": "nouveau (constaté depuis le round 1, jamais classé)"
+    },
+    {
+      "id": "B4-R4-05",
+      "state_artifact": "B-r4/F-05-app-suivi-ouvert.png ; B-r4/F-08-app-suivi-prevue-18h20.png ; B-r4/O-05-app-suivi-ouvert.png",
+      "category": "wording_fr",
+      "severity": "P3",
+      "evidence": "B2-R2-10 est corrigé sur la confirmation, mais la même inexactitude subsiste au suivi. Une commande programmée à 07:12 pour 18:20 affiche « Prévue pour 18 h 20 / Ta commande est en caisse / cuisine. Le statut se met à jour automatiquement. » (F-05, F-08), alors que la cuisine ne la voit pas avant 18:00 (F-07a/F-07b : aucune carte, seulement le bandeau). La phrase est aussi affichée à « COMMANDE REÇUE », avant toute acceptation (O-05). Source : funnel.jsx:2895, une phrase unique pour tout état ni annulé, ni impayé, ni prêt.",
+      "fix_hint": "Phrase selon l'état : programmée → « Programmée : la cuisine la lancera vers 18 h. » ; reçue → « Le restaurant l'a reçue, la cuisine la lance dès acceptation. » ; en préparation → « En cuisine ».",
+      "status": "nouveau"
+    },
+    {
+      "id": "B4-R4-06",
+      "state_artifact": "B-r4/O-06b-caisse-fiche-commande-web.png ; B-r4/O-06c (png + dom)",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "Commande immédiate : la fiche affiche « Heure de retrait: » SANS valeur. Capture O-06b, et DOM « Heure de retrait: Refuser … » où le libellé est suivi directement du bouton suivant. Source : OnlineOrderShowComponent.vue:49-52 `{{ order.delivery_date }} {{ order.delivery_time }}` ; la réponse serveur porte delivery_date null et delivery_time \"\" (O-04-creation-reponse.json). La facture a la même ligne vide (B4-R4-02).",
+      "fix_hint": "Afficher « Dès que prête » quand is_advance_order ≠ YES, ou masquer la ligne.",
+      "status": "nouveau"
+    },
+    {
+      "id": "B4-R4-07",
+      "state_artifact": "B-r4/O-06b-caisse-fiche-commande-web.png ; B-r4/O-04-creation-reponse.json",
+      "category": "wording_fr",
+      "severity": "P3",
+      "evidence": "La fiche caisse française affiche l'heure en 12 heures : « 07:09 AM, 02-10-2026 » (capture O-06b). La facture affiche « 02-10-2026 07:09 AM ». Valeur serveur : \"order_datetime\": \"07:09 AM, 02-10-2026\" (O-04-creation-reponse.json). En plein service, une commande de 19:30 se lira « 07:30 PM ». Défaut antérieur à ce chantier, d'origine serveur (format de l'OrderDetailsResource).",
+      "fix_hint": "Format 24 h (H:i) pour la locale fr dans la ressource, ou formater côté vue.",
+      "status": "nouveau (préexistant)"
+    },
+    {
+      "id": "B4-R4-08",
+      "state_artifact": "B-r4/F-10-app-suivi-annulee.png ; .dom.html",
+      "category": "wording_fr",
+      "severity": "P3",
+      "evidence": "Suivi d'une commande ANNULÉE : le stepper garde « Reçu » comme étape en cours (pastille jaune surlignée ✓ ; DOM `<div class=\"lcf-track-step is-current\">…Reçu`). La pastille « ANNULÉE » porte le même point orange que « COMMANDE REÇUE ». Rien de visuel ne dit que le parcours s'est arrêté, alors que le texte est juste (« Cette commande a été annulée. Contacte-nous si besoin. »). Source : funnel.jsx:2920, `is-current` calculé sans tenir compte de `canceled`.",
+      "fix_hint": "Si canceled : stepper grisé ou masqué, pastille rouge.",
+      "status": "nouveau"
+    },
+    {
+      "id": "B4-R4-09",
+      "state_artifact": "B-r4/sortie-banc.txt ; site tests-e2e/e2e-stores-vague-B-2026-10-01.spec.js",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "Trous du banc, hors B2-R2-15/16/17. (a) Aucune capture de la carte cuisine entre l'encaissement (O-11, 07:10:29) et « Prêt » n°2. O-08 (07:09:32) est antérieure au paiement, et dans O-12 la carte a disparu. La disparition de la mention « EN ATTENTE ENCAISSEMENT » après paiement n'est donc jamais prouvée. (b) Le texte de défaut du banc, ligne 739, cite encore « funnel.jsx l.1177 stocke orderQueue et ne le rend nulle part ». C'est périmé, mais le message reste armé. (c) Le contrôle « O-B6 NUMÉRO » (lignes 735-738) est positif seulement. Il passe si le numéro appelé figure dans la confirmation OU dans le suivi, sans aucune assertion négative sur « #<série> », ce que demandait B2-R2-01. Il ne vérifie pas non plus la fiche caisse : B4-R4-01 passe donc au vert.",
+      "fix_hint": "Capturer la cuisine juste après O-11 et vérifier que la mention de paiement en attente est levée ; supprimer le message périmé ; ajouter des assertions négatives sur « #<série> » (confirmation, suivi, fiche caisse).",
+      "status": "instrument"
+    },
+    {
+      "id": "B2-R2-06",
+      "state_artifact": "B-r4/O-06b-caisse-fiche-commande-web.png ; B-r4/O-10-caisse-modale-especes.png ; B-r4/F-06a-caisse-panneau-commandes-web.png",
+      "category": "wording_fr",
+      "severity": "P2",
+      "evidence": "Partiellement corrigé : la fiche dit maintenant « Type de paiement: Paiement au comptoir » et « Heure de retrait: ». Restent : le titre de bloc « Informations De Livraison » (OnlineOrderShowComponent.vue:294 label.delivery_information) ; le bouton « Encaisser & Valider (Kiosk) », toujours en dur (:65) ; le titre de la modale « Encaisser La Commande Borne » au-dessus du badge EN LIGNE (O-10, PosCounterCollectModal.vue:48 → fr.json:803 encaisser_mode_title) ; la facture (B4-R4-02). Sur le panneau caisse, une commande à emporter prête est aussi rangée sous « PRÊT À LIVRER », avec un bouton « ✓ Livré » (F-06a).",
+      "fix_hint": "Libellés selon order_type et source_surface : « Client », « Encaisser », « Encaisser la commande » ; « Prêt à remettre » / « Remis » pour un retrait.",
+      "status": "reconduit, PARTIAL_PASS"
+    },
+    {
+      "id": "B2-R2-11",
+      "state_artifact": "B-r4/F-09-caisse-file-a-encaisser.png ; B-r4/F-09-encaissement-ticket.txt",
+      "category": "wording_fr",
+      "severity": "P2",
+      "evidence": "Toujours ouvert. La carte d'encaissement de la commande programmée pour 18:20, vue à 07:13, n'a ni heure ni mention « programmée » : « En ligne N°A0033 ✕ E2EFaustine 1× Tacos M … 9,70 € Encaisser ». Le banc le note lui-même en observation (« F-B2 caisse (encaissement) : le ticket N'affiche PAS l'heure programmée »). EncaissementComponent.vue ne lit ni scheduled_at, ni delivery_time, ni is_advance_order (grep : 0 résultat).",
+      "fix_hint": "Badge « ⏰ 18:20 » sur la carte (règle CreneauRetrait).",
+      "status": "reconduit, FAIL"
+    },
+    {
+      "id": "B2-R2-14",
+      "state_artifact": "B-r4/O-06b-caisse-fiche-commande-web.png ; F-06b ; F-06c",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "Inchangé : l'avatar est cassé et son texte de remplacement s'affiche tronqué en « avat » ; la ligne de courriel a son icône mais pas d'adresse, alors que le compte en a une (e2e-stores-b-o-1790917707511@lecayenne-test.fr). Le DOM d'O-06b contient l'adresse du CAISSIER (menu profil), pas celle du client. OnlineOrderShowComponent.vue:298 `:src=\"orderUser.image\" alt=\"avatar\"`, :307 `{{ orderUser.email }}` : lignes inchangées.",
+      "fix_hint": "Avatar de repli (initiale) ; renvoyer le courriel du client ou masquer la ligne vide.",
+      "status": "reconduit, FAIL"
+    },
+    {
+      "id": "B2-R2-15",
+      "state_artifact": "B-r4/O-03-app-paiement-sur-place.* ; B-r4/F-03-app-paiement-sur-place.*",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "Inchangé : le banc déclare lui-même « [COUVERTURE] O-03 a EXACTEMENT le meme DOM que O-02 » (et F-03 ≡ F-02, O-12a ≡ O-08c). L'état n'a été ni supprimé ni rendu probant : aucun clic sur « Payer sur place », aucune assertion aria-checked (spec l.427-429 : défilement puis capture). L'avertissement est honnête, mais le défaut de couverture demeure. Pas d'impact produit : un seul moyen de paiement, payment_method=1 envoyé.",
+      "fix_hint": "Cliquer, vérifier aria-checked=\"true\", puis capturer ; ou supprimer l'état.",
+      "status": "reconduit, FAIL (instrument)"
+    },
+    {
+      "id": "B2-R2-16",
+      "state_artifact": "B-r4/O-01-app-panier.png ; F-01 ; O-08b-ecran-client-en-preparation.png ; O-13-ecran-client-prete.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "Inchangé, quatre captures prises en pleine animation. O-01 : le tiroir commence vers 67 % de la largeur ; on ne voit que les libellés « Sous-total » et « Total », leurs montants sont hors champ. F-01 : il commence vers 42 % ; prix et total sont coupés. O-08b : « N°A0032 » presque transparent. O-13 : N°A0032 apparaît à la fois dans « En préparation » (fantôme) et dans « Prêt », sous « Aucune commande en préparation ». Le banc capture dès la détection (spec l.355, l.617, l.692 : aucune attente de transitionend). La preuve VISUELLE du total du panier n'existe toujours pas ; seul le texte la porte.",
+      "fix_hint": "Attendre transitionend, ou 600 ms, avant ces quatre captures.",
+      "status": "reconduit, FAIL (instrument)"
+    },
+    {
+      "id": "B2-R2-17",
+      "state_artifact": "B-r4/*.network.json ; B-r4/resultats.json ; B-r4/sortie-banc.txt",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "Inchangé sur ses trois points. (a) Les 28 entrées réseau de la vague sont toutes des POST, avec duration_ms = null partout : la catégorie 7 du protocole reste invérifiable, et aucun sondage GET n'est journalisé. (b) resultats.json numeros.app_suivi = \"\" dans les DEUX passages. Le banc cherche encore `#(\\S+)` (spec l.505), alors que le suivi affiche « N°A0032 ». La sortie imprime « app suivi « # » » et « O-B6 NUMÉRO » passe quand même. (c) Aucun état « Mes commandes » : le queue_number de d1f33574c n'est toujours pas prouvé visuellement dans cette vague.",
+      "fix_hint": "Journaliser toutes les réponses avec timing ; lire app_suivi dans `.lcf-track h2` et le rendre obligatoire ; ajouter un état « Mes commandes ».",
+      "status": "reconduit, FAIL (instrument)"
+    },
+    {
+      "id": "B2-R2-19",
+      "state_artifact": "B-r4/O-10-caisse-modale-especes.png",
+      "category": "element_overlap",
+      "severity": "P3",
+      "evidence": "Inchangé : en 1440×900, le pavé numérique de « Montant reçu » est sous la ligne de flottaison. Des touches dépassent sous « Annuler » / « Confirmer & Imprimer ticket ». PosCounterCollectModal.vue:1046 `.cc-modal-footer {` … :1051 `position: sticky;`, sans changement. Les boutons rapides 5/10/20/50 € restent visibles.",
+      "fix_hint": "Deux colonnes au-dessus de 1280 px, ou pavé replié quand le montant est pré-rempli.",
+      "status": "reconduit, FAIL"
+    }
+  ],
+  "not_filed": [
+    "TVA à 10 % sur le Fanta Orange 33cl à emporter (facture O-06c : « Fanta Orange 33cl 1,73 € VAT (10.00 %) 0,17 € ») : sujet fiscal déjà ouvert devant le propriétaire (docs/gates/GATE_POS_V4_VAT_HT_TTC_2026-05-02.md), hors vague B. L'arithmétique est juste (8,82 + 0,88 = 9,70).",
+    "« 1Cordon 2Tender » en tête de carte cuisine : conséquence de B4-R4-04 (catalogue local). « Tacos » sans taille en cuisine : décision du propriétaire.",
+    "Cuisine avant encaissement (« EN ATTENTE ENCAISSEMENT »), attente en fourchette « ~10–15 min » maintenue jusqu'à « prête », jamais de file affichée : décisions du propriétaire, respectées partout.",
+    "Erreurs console ERR_CONNECTION_REFUSED vers 127.0.0.1:9100/9101/health (caisse, cuisine) : pont d'impression absent en local.",
+    "Événements outbox non diffusés et sondage caisse à 60 s (O-16, latence F-B2a 52,7 s) : environnement local (socket ouverte sans diffuseur). La production fonctionne par sondage ; les délais locaux ne sont pas ceux de la production.",
+    "Panneau « Commandes web » trié du plus ancien au plus récent, la commande du test hors des 4 lignes visibles : 89 commandes locales en attente depuis août. Connu (F-B2a), dominé par l'environnement.",
+    "Icône 💵 rendue en carré « [$] » (O-02/O-03/F-02/F-03) : police emoji absente du Chromium sans affichage.",
+    "En-tête du site légèrement translucide : du texte sous-jacent se devine derrière les onglets (O-03, F-03 : « Gr… 62110 »). Choix de style, cosmétique.",
+    "O-02/F-02 : la ligne « Coordonnées confirmées » est en partie sous l'en-tête fixe. Le banc venait de centrer le bouton par scrollIntoView avant le repli du bloc ; on ne peut pas l'imputer au produit.",
+    "Latent, sans effet observé : OrderTrackingService.php:176 teste encore la branche « temps confirmé par la caisse » AVANT la branche « programmée » (:189). C'est inatteignable sans un temps choisi par la caisse pour une commande programmée. Le site affiche prevue_pour en priorité, et le rappel natif n'est programmé qu'à la création (funnel.jsx:1225).",
+    "Aucune fuite de clé de traduction, aucun « undefined », « NaN », « [object » ni « Invalid Date » dans les 35 DOM. Aucune réponse 4xx/5xx dans les 35 network.json. Aucune pageerror dans les 35 console.json."
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 6,
+    "P3": 10,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 6,
+    "open_P3": 10,
+    "new_this_round": { "P0": 0, "P1": 0, "P2": 4, "P3": 5 },
+    "carried_over_from_round_2": { "P2": 2, "P3": 5 }
+  },
+  "round_to_round_closures": {
+    "B2-R2-01": "PASS",
+    "B2-R2-02": "PASS",
+    "B2-R2-03": "PASS",
+    "B2-R2-04": "PASS",
+    "B2-R2-05": "PASS",
+    "B2-R2-06": "PARTIAL_PASS",
+    "B2-R2-07": "PASS",
+    "B2-R2-08": "PASS",
+    "B2-R2-09": "PASS",
+    "B2-R2-10": "PASS",
+    "B2-R2-11": "FAIL",
+    "B2-R2-12": "PASS",
+    "B2-R2-13": "PASS",
+    "B2-R2-14": "FAIL",
+    "B2-R2-15": "FAIL",
+    "B2-R2-16": "FAIL",
+    "B2-R2-17": "FAIL",
+    "B2-R2-18": "PASS",
+    "B2-R2-19": "FAIL"
+  },
+  "round_to_round_notes": {
+    "B2-R2-01": "DOM O-04 : « Ta commande N°A0032 est envoyée. » ; DOM F-04 : « Ta commande N°A0033 est envoyée. » ; 0 occurrence de « #0 » dans les deux. Captures conformes (funnel.jsx:2455 numeroAffiche).",
+    "B2-R2-02": "Après acceptation sans temps choisi, l'attente reste « Prête dans ~10–15 min » : O-08c (EN PRÉPARATION, 07:10:27) et O-12a (07:11:13, après encaissement), au lieu de « ~30 min » au round 2. Pas de « · confirmé par le restaurant ». Code : OrderTrackingService.php:171-176 exige preparation_time_confirmed_at, posé seulement si preparation_time est envoyé (OnlineOrderController.php:178-183). Réserve latente en not_filed (ordre des branches).",
+    "B2-R2-03": "Fiche O-06b/F-06b : « Viande 1: Tenders, Sauce (1ère Gratuite): Algérienne, Viande 3: Cordon Bleu 7,80 € / Suppléments: Cheddar ». Plus de « Tenders: » ni de ligne « Instruction: » vide. Normaliseur posReceiptBuilder appliqué (diff 5fa5f3b85). La facture affiche la même composition.",
+    "B2-R2-04": "Après acceptation, pastille « À encaisser » et menu « À encaisser » (O-06c, F-06c), au lieu de bulles vides.",
+    "B2-R2-05": "Aucun 403 ni pageerror : O-06b et F-06b .console.json vides, .network.json = 1 POST authcheck 200. Le même enregistreur avait capté le 403 au round 2. Code : deliveryBoy/lists seulement pour une LIVRAISON, avec .catch.",
+    "B2-R2-06": "PARTIAL_PASS. « Paiement au comptoir » et « Heure de retrait » sont corrects sur la fiche. Restent « Informations De Livraison », « Encaisser & Valider (Kiosk) », la modale « Encaisser La Commande Borne », « PRÊT À LIVRER / ✓ Livré », et la facture imprimée (B4-R4-02). Voir le constat reconduit.",
+    "B2-R2-07": "O-11 : une seule notification, « Tiroir ouvert (simulation) — Commande N°A0032 encaissée ». Plus de « Commande N° encaissée » vide.",
+    "B2-R2-08": "F-07b : « ⏰ Programmées (1) : 18:20 — N°A0033 » (capture et banc).",
+    "B2-R2-09": "Notifications caisse « Nouvelle commande N°A0032 » (O-06a) et « … N°A0033 » (F-06a) : plus d'identifiant de base « #7567 ». Le tri « plus ancien d'abord, 4 lignes » reste une observation connue (F-B2a, base locale à 89 commandes en attente), non reconduite comme défaut.",
+    "B2-R2-10": "O-04 et F-04 : « ✓ Envoyée au restaurant ». Plus de « en cuisine » sur la confirmation. Le reliquat de même nature au suivi est B4-R4-05.",
+    "B2-R2-11": "FAIL : F-09 sans heure (voir le constat reconduit).",
+    "B2-R2-12": "F-10 : aucun « Voir le QR de retrait » sur la commande ANNULÉE (DOM) ; le texte des points dit « Aucun point sur une commande annulée ».",
+    "B2-R2-13": "O-14 : « TA COMMANDE EST / PRÊTE ! », le « ! » reste sur la ligne de « PRÊTE ».",
+    "B2-R2-14": "FAIL : « avat » et courriel vide, toujours visibles (O-06b, F-06b).",
+    "B2-R2-15": "FAIL (instrument) : état doublon conservé, simplement signalé par le banc.",
+    "B2-R2-16": "FAIL (instrument) : quatre captures toujours prises pendant l'animation.",
+    "B2-R2-17": "FAIL (instrument) : réseau POST seul et durées nulles ; app_suivi vide ; pas d'état « Mes commandes ».",
+    "B2-R2-18": "Non reproduit : O-00 .console.json vide, aucune ERR_EMPTY_RESPONSE dans les 35 consoles. Le « +97 pts » (9,70 € × 10) est cohérent. Clos comme incident d'environnement.",
+    "B2-R2-19": "FAIL : le pavé reste sous le pied collant (O-10)."
+  },
+  "cross_surface_integrity": {
+    "total": "9,70 € identique sur 11 surfaces en O et 9 en F (resultats.json montants). Je l'ai vu sur les captures du bouton « Confirmer ma commande », du ticket, du suivi (reçue, en préparation, prête, annulée), de la fiche caisse, de la carte d'encaissement et de la modale. Facture : 8,82 € HT + 0,88 € = 9,70 €. Le PANIER n'en apporte aucune preuve visuelle, montants hors champ (B2-R2-16).",
+    "articles": "Tacos M + Fanta Orange 33cl partout. Cheddar désormais présent sur la fiche caisse (corrigé) ; présent aussi en cuisine, à l'encaissement, sur la facture et en base. Un « Viande 3: Cordon Bleu » non choisi apparaît en aval du panier, en cuisine, sur la fiche, à l'encaissement, sur la facture et en base (B4-R4-04).",
+    "numero_appele": "A0032 / A0033 sur la confirmation, le suivi (reçue → prête → annulée), la carte et le bandeau cuisine, l'écran client, la carte et la modale d'encaissement, les notifications caisse et les notifications natives. La SÉRIE est le seul numéro de la fiche caisse et de sa facture (B4-R4-01) ; dans l'application, elle n'apparaît qu'en « Réf. ».",
+    "heure_programmee": "18:20 cohérente partout : application (« À l'ouverture 18:20 », « Prêt à 18:20 », « Prévue pour 18 h 20 » avant et après acceptation), requête, base, prevue_pour serveur, fiche (« Heure de retrait: 02-10-2026 18:20 », en orange), bandeau cuisine, rappel natif 16:20:36Z (= 18:20:36 à Paris), retiré à l'annulation. L'heure manque sur la carte d'encaissement (B2-R2-11) ; la facture dit « Heure de livraison » (B4-R4-02)."
+  },
+  "verdict": "GREEN",
+  "verdict_note": "Vert AU SENS DU PROTOCOLE seulement : 0 P0, 0 P1, et aucune erreur 4xx/5xx ni pageerror sur les 35 états. Ce n'est pas un « tout est parfait ». (1) Le titre du commit 5fa5f3b85, « un seul numero partout », est FAUX sur la fiche caisse et sa facture (B4-R4-01). (2) Deux P2 et trois P3 produit du round 2 restent ouverts (B2-R2-06 en partie, -11, -14, -19). (3) Le banc ne prouve toujours pas visuellement le total du panier, ne lit pas le numéro du suivi et ne mesure aucune durée réseau (B2-R2-15/16/17, B4-R4-09). (4) Un repli silencieux du site (api.js:1104-1113) envoie en cuisine un article non choisi dès que le catalogue s'écarte du site (B4-R4-04, latent en production)."
+}

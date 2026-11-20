@@ -59,13 +59,13 @@ async function captureAndScan(page, screenName) {
 test.describe('RED-D mobile fictional purge visual gate', () => {
   test('1 — Order history (Commandes tab) shows healed canonical SKUs', async ({ page }) => {
     await bootMobile(page);
-    // Click the COMMANDES tab in the bottom tabbar
-    await page.locator('text=COMMANDES').first().click();
+    // Click the Commandes tab in the bottom tabbar.
+    await page.getByRole('tab', { name: 'Commandes' }).click();
     await page.waitForTimeout(600);
     const r = await captureAndScan(page, '01-orders-active');
     expect(r.leaks, `Fictional tokens in orders active: ${r.leaks.join(', ')}`).toEqual([]);
-    // Switch to HISTORIQUE tab
-    const histTab = page.locator('text=HISTORIQUE').first();
+    // Switch to the Historique tab
+    const histTab = page.getByRole('button', { name: /Historique/ });
     if (await histTab.count() > 0) {
       await histTab.click();
       await page.waitForTimeout(500);

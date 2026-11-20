@@ -22,7 +22,7 @@ import { createI18n } from 'vue-i18n';
 import KioskCategoriesComponent from '../../resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue';
 import frMessages from '../../resources/js/languages/fr.json';
 
-function makeStore() {
+function makeStore({ panierVide = true } = {}) {
     return createStore({
         modules: {
             kioskMenu: {
@@ -46,7 +46,7 @@ function makeStore() {
             kioskCart: {
                 namespaced: true,
                 state: () => ({ branchId: 1, kioskToken: 'test-token' }),
-                getters: { count: () => 0, total: () => 0, isEmpty: () => true },
+                getters: { count: () => (panierVide ? 0 : 1), total: () => 0, isEmpty: () => panierVide },
                 actions: { addItem: vi.fn(), reset: vi.fn() },
             },
             frontendItem: {
@@ -66,10 +66,11 @@ function mkI18n() {
     });
 }
 
-function mountWith($router) {
+function mountWith($router, { panierVide = true, showToast = vi.fn() } = {}) {
     return mount(KioskCategoriesComponent, {
         global: {
-            plugins: [makeStore(), mkI18n()],
+            plugins: [makeStore({ panierVide }), mkI18n()],
+            provide: { showToast },
             mocks: {
                 $router,
                 $route: { query: {}, params: {} },
@@ -91,12 +92,24 @@ describe('Kiosk Phase 9.1.13 — chips header catalogue', () => {
         expect(account.attributes('disabled')).toBeFalsy();
     });
 
-    it('un clic sur "Mon compte" route vers kiosk.loyalty', async () => {
+    it('un clic sur "Mon compte" route vers kiosk.loyalty (panier non vide)', async () => {
         const push = vi.fn();
-        const wrapper = mountWith({ push, replace: vi.fn() });
+        const wrapper = mountWith({ push, replace: vi.fn() }, { panierVide: false });
         await wrapper.find('[data-testid="kiosk-categories-top-account"]').trigger('click');
         expect(push).toHaveBeenCalledTimes(1);
         expect(push).toHaveBeenCalledWith({ name: 'kiosk.loyalty' });
+    });
+
+    // [FINITION 2026-11-04] Panier vide : la route fidélité est gardée par `requireCart` et renvoyait le
+    // client sur « Votre panier est vide » sans explication. Il reste au catalogue et on lui dit pourquoi.
+    it('panier vide : "Mon compte" ne navigue pas et explique où se fera l’identification', async () => {
+        const push = vi.fn();
+        const showToast = vi.fn();
+        const wrapper = mountWith({ push, replace: vi.fn() }, { panierVide: true, showToast });
+        await wrapper.find('[data-testid="kiosk-categories-top-account"]').trigger('click');
+        expect(push).not.toHaveBeenCalled();
+        expect(showToast).toHaveBeenCalledTimes(1);
+        expect(showToast.mock.calls[0][0]).toMatch(/compte fidélité vous sera proposé au panier/);
     });
 
     it('le chip "Allergènes" a été retiré (pas de destination valide en P9.1)', () => {
@@ -106,7 +119,7 @@ describe('Kiosk Phase 9.1.13 — chips header catalogue', () => {
 
     it('ne plante pas si $router.push jette (environnement tests sans guard)', async () => {
         const push = vi.fn(() => { throw new Error('no guard'); });
-        const wrapper = mountWith({ push, replace: vi.fn() });
+        const wrapper = mountWith({ push, replace: vi.fn() }, { panierVide: false });
         await expect(
             wrapper.find('[data-testid="kiosk-categories-top-account"]').trigger('click')
         ).resolves.not.toThrow();

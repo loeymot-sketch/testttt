@@ -1,0 +1,279 @@
+{
+  "wave": "C2",
+  "round": 1,
+  "reviewer": "superviseur adverse (lecture seule)",
+  "states_reviewed": 13,
+  "inputs_reviewed": [
+    "captures-C2/01..13 (.png vus en entier, .dom.html, .console.json, .network.json)",
+    "captures-C2/C2-mesures.json",
+    "tests/Playwright/caisse-site-complet-2026-10-23/C2-caisse-livraison.spec.js (458 lignes)",
+    "tests/e2e/helpers/mega-audit-snap.js",
+    "docs/LIVRAISON.md §1-§3, §7",
+    "resources/js/components/admin/pos/PosDeliveryBoard.vue, PosComponent.vue, resources/views/livreur.blade.php",
+    "app/Http/Controllers/Frontend/DeliveryRunController.php, app/Services/Delivery/DeliveryWaveService.php",
+    "base locale foodking_e2e (tinker, lecture seule) : orders, delivery_stops, audit_logs, order_payments, delivery_boy_cash_*"
+  ],
+  "findings": [
+    {
+      "id": "C2-001",
+      "state_artifact": "captures-C2/05-toast-commande-livraison.console.json",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "TypeError: Cannot read properties of undefined (reading 'id') (location app.js, ts 1792777467286). Horodatage pris entre la réponse POST /api/admin/pos-delivery/customer (…467277) et POST /pos-delivery/address (…467346) de 05-toast-commande-livraison.network.json : l'erreur part quand ensureDeliveryCustomerAndAddress pose customer_id (PosComponent.vue:7974). Pile décodée dans public/js/vendor.js : vue-next-select src/components/dropdown.vue, valueBy(...).split('.').reduce sur une option undefined, appelé depuis un Array.some réactif d'app.js. C'est EXACTEMENT le défaut VG-2026-10-21 M4-104, déclaré corrigé : la garde du computed customers (PosComponent.vue:3680-3695) est contournée (elle renvoie la liste telle quelle si `clients.length === 0`, ligne 3693) et tests/js/posClientLivraisonHorsListe.spec.js ne teste que le computed isolé, jamais la vraie séquence. C'est donc une RÉGRESSION, et elle touche CHAQUE « Commande livraison », sur le parcours principal de la caisse. Le libellé « vendor.js » de la liste blanche du protocole ne s'applique pas : la cause est le modèle posé par l'application.",
+      "fix_hint": "Reproduire en test monté la séquence réelle (liste user/lists chargée ou vide, puis customer_id = id inconnu) ; poser l'option avant le modèle dans ensureDeliveryCustomerAndAddress (PosComponent.vue:7970-7975), ou hydrater la liste comme orderSubmit le fait (PosComponent.vue:7152) ; supprimer l'exception de liste vide (PosComponent.vue:3693).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-002",
+      "state_artifact": "captures-C2/13-planche-arret-remis.png (+08)",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "Un arrêt espèces DÉJÀ remis et encaissé (#2310268859 « Remise 19:44 · 📷 », payment_status 5, fiscal 3186) reste affiché « Espèces 6,80 € » dans le même orange #9A3412 qu'un arrêt encore à encaisser (idem 8856, 8855 en 08/13). La tournée entièrement remise reste « parti », jamais « terminée ». Sur la seule surface où le caissier peut rapprocher l'argent rapporté par le livreur (la caisse livreur par tournée n'est pas faite, LIVRAISON.md:241), « encaissé » et « dû » ont le même rendu. L'équipe le classe P3 : c'est une information d'encaissement trompeuse, je le relève en P2.",
+      "fix_hint": "PosDeliveryBoard.vue:77-78 : si s.delivered_at, afficher « Encaissé 6,80 € (espèces) » en vert (montant collecté). PosDeliveryBoard.vue:26 : état « terminée » quand tous les arrêts sont remis.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-003",
+      "state_artifact": "captures-C2/01-caisse-mode-livraison.png, 02-refus-sans-telephone.png, 03-hors-zone-lille.png, 04-devis-henin.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "En 1280×720, mode Livraison choisi : les champs nom, téléphone et adresse ne sont PAS à l'écran (01 et 02). On voit la bascule, « Programmer », puis deux boutons coupés (+30 min / +1 h) vers y≈215-235. Tout le formulaire tient dans une bande défilante d'environ 160 px. En 02, le toast exige le téléphone alors que ce champ n'est ni visible ni ciblé : deliveryOrderSubmit fait seulement alertService.error (PosComponent.vue:7040), sans focus ni scrollIntoView. En 03, l'encadré de refus « Uber Eats » est coupé en bas. En 04, nom et téléphone sont coupés en haut et « Étage, interphone, code… » à moitié visible. Le panier n'affiche plus qu'environ 1,5 ligne. Le spec ne le voit pas : les toBeVisible des lignes 129 et 159 ignorent le rognage par overflow.",
+      "fix_hint": "Au refus, faire focus() + scrollIntoView sur #pos-delivery-phone ou #pos-delivery-address (PosComponent.vue:7036-7041). Revoir la hauteur de l'en-tête défilant du ticket en mode livraison à 720/768 px de haut. Dans le spec, prouver la présence à l'écran par elementFromPoint, pas par toBeVisible.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-004",
+      "state_artifact": "captures-C2/04-devis-henin.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Deux boutons : « Commande · 6,80 € » (orange, encaisse maintenant) et « Commande livraison » (n'encaisse PAS). Seul le sous-titre « Envoyée en cuisine · le livreur encaisse à la porte » (PosComponent.vue:2022) explique la différence, et il est masqué dès que l'écran fait 820 px de haut ou moins (@media max-height:820px → .pos-phone-order-cta__hint{display:none}, PosComponent.vue:8494-8496). Il est donc invisible en 1280×720 (captures 01-04) comme en 1366×768. Le bouton est en plus indigo (#eef2ff / #3730a3 / #c7d2fe, PosComponent.vue:8478-8481), hors de la charte orange / jaune / sombre.",
+      "fix_hint": "Garder un indice court même sur les écrans bas, par exemple un libellé « Commande livraison · paiement à la porte ». Passer .pos-phone-order-cta aux couleurs de la charte (PosComponent.vue:8471-8490).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-005",
+      "state_artifact": "captures-C2/09-livreur-tournee-390.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "À 19:44, pour une tournée « heure dépassée, pas encore partie », l'écran livreur affiche « Prête · ETA 16:20 », une heure passée de 3 h 24, juste au-dessus de « retour au restaurant vers 19:56 ». Cause produit, indépendante du recul de test : etaAt() = (left_at ?? wave_at) + eta_minutes (DeliveryWaveService.php:419-422). Le §7 a borné back_at à « au plus tôt maintenant », mais pas l'ETA par arrêt. Seul consommateur : DeliveryRunController.php:222.",
+      "fix_hint": "DeliveryWaveService::etaAt : partir de max(now, wave_at) quand left_at est nul (même règle que back_at).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-006",
+      "state_artifact": "captures-C2/09..12 (livreur), 10-livreur-en-route.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Le spec recule wave_at en base (spec:311-316) sans resequence(). L'écran livreur montre donc un état que le produit ne produit pas : pastille « 3 » dans une tournée « 1 livraison », et en 10 « En route · ETA 20:04 » APRÈS « retour au restaurant vers 19:56 » (eta_minutes 20 hérité du rang 3 de la tournée de 22:00, base : stop 309 sequence 3, eta 20). Le spec le reconnaît lui-même (lignes 336-337) mais capture et présente ces écrans comme preuve. La relecture visuelle de 4 des 13 états repose donc sur des données incohérentes.",
+      "fix_hint": "spec:315 : après l'update, appeler app(\\App\\Services\\Delivery\\DeliveryWaveService::class)->resequence(1, Carbon::parse(slot)), puis relire sequence et eta. Ou provoquer l'état « en retard » par une vraie tournée.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-007",
+      "state_artifact": "C2-mesures.json → 5-file-comptoir",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "La preuve « absente de la file À encaisser au comptoir (écran) » (spec:250-253) cherche cmd.serial ('2310268859') dans le texte de la file. Or la file affiche des jetons « N°A0032 », « N°A0101 », « N°A0106 », jamais le numéro de série (extrait_file des mesures). Cette assertion ne peut donc jamais échouer. Seule la vérification par l'API (spec:247-249) prouve quelque chose.",
+      "fix_hint": "Viser un attribut stable de la carte (data-order-id) ou le jeton réellement affiché, et prouver que l'assertion échoue sur une commande effectivement présente dans la file.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-008",
+      "state_artifact": "captures-C2/04, 06, 07, 13 + base delivery_stops du 2026-10-23",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Le banc est pollué. Les tournées 20:00, 20:30, 21:00 et 21:30 sont pleines : 6 commandes web espèces jamais acceptées depuis 00:03 (status 1, payment 10) et 18 commandes pos d'audits précédents, dont des PENDING_COUNTER de l'ancien chemin téléphone (le point (d) de l'équipe). Le cas nominal (premier départ = maintenant + 20 min → 20:30) n'a donc jamais été observé : le devis donne 22:00. La tournée de 22:00 mesurée « 27 min » contient 8837 et 8851, deux arrêts à l'adresse même du restaurant (437 rue Elie Gruyelle, 0 km). La géométrie mesurée est fictive. Enfin, la vague a été exécutée 5 fois (8851, 8853, 8855, 8856, 8859) et non « verte 2 fois ». Deux passages interrompus ont laissé des orphelins : 8851 (PENDING_COUNTER, tournée 22:00) et 8853 (PREPARING, attribuée à Livreur E2E dans une tournée 17:30 en retard, sous le pli de 12).",
+      "fix_hint": "Avant le spec : purger ou annuler les arrêts de test du jour, ou isoler la branche. Déclarer chaque exécution, rouges comprises. Ne pas lire « Départ 22:00 » ni « 27 min » comme des mesures produit.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-009",
+      "state_artifact": "captures-C2/05-toast-commande-livraison.png, 06-planche-tournees-caisse.png",
+      "category": "ux_flow",
+      "severity": "P2",
+      "evidence": "Avec plusieurs livreurs actifs, la commande est créée sans livreur (stop.boy null ; « Aucun livreur » en rouge dans 06). Pourtant le toast dit « à encaisser à la porte par le livreur » sans signaler qu'aucun livreur n'est désigné, et le bouton « Tournées » n'a ni badge ni compteur (PosComponent.vue:1290-1297). Si personne n'ouvre la planche, la livraison ne part avec personne et rien ne le dit.",
+      "fix_hint": "Badge « N sans livreur » sur le bouton Tournées et mention dans le toast (deliveryOrderSubmit, PosComponent.vue:7115) quand la tournée n'a pas de livreur.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-010",
+      "state_artifact": "captures-C2/12-livreur-remise.png",
+      "category": "ux_flow",
+      "severity": "P2",
+      "evidence": "L'écran livreur trie les tournées par wave_at croissant et garde les arrêts remis du jour (DeliveryRunController.php:36-44). Juste après la remise, 390×844 montre trois tournées TERMINÉES (16:00, 16:30, 17:00). La tournée encore à faire du même livreur (17:30, commande 8853) est sous le pli. Un vrai soir à 6-8 tournées, le livreur fait défiler toutes les tournées finies pour retrouver la sienne.",
+      "fix_hint": "livreur.blade.php render() (161-173) : afficher d'abord les tournées non terminées, et replier les terminées dans un bloc « Terminées aujourd'hui ».",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-011",
+      "state_artifact": "captures-C2/12-livreur-remise.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "Les cartes remises sont en .stop.delivered{opacity:.6} (livreur.blade.php:40) par-dessus .collect.paid / .chip.done (#126B33 sur #EAF7EE / #DDF5E5, lignes 38 et 46). Couleur effective calculée ≈ #6DA280 sur #EEF6F0, soit un contraste ≈ 2,7:1 pour « ✓ Remise terminée » (18 px) et « Remise 19:44 » (13 px). Le texte .muted (#6B7280) estompé tombe vers ≈ 2,4:1. Tout est sous 4,5:1, en plein extérieur, sur un téléphone.",
+      "fix_hint": "Ne pas estomper le texte : retirer l'opacité et passer par un fond ou une bordure atténués (livreur.blade.php:40).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-012",
+      "state_artifact": "captures-C2/09-livreur-tournee-390.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Le bouton « Quitter » (.ghost min-height:40px, livreur.blade.php:20) mesure environ 39 px de haut dans la capture (78 px à DPR 2), sous le minimum de 44 px. Il déconnecte immédiatement, sans confirmation (livreur.blade.php:119). Un appui raté en tournée oblige à retaper le mot de passe devant la porte du client.",
+      "fix_hint": "livreur.blade.php:20 min-height:44px, et confirmation avant logout() quand une tournée est partie et non remise.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-013",
+      "state_artifact": "captures-C2/10-livreur-en-route.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "« 📷 Arrivé + photo » est un <label class=\"btn sec\"> qui enveloppe un <input type=file class=\"hidden\"> (livreur.blade.php:147-148). .hidden vaut display:none !important (ligne 17) : l'input n'est pas focalisable et le label n'a pas de rôle bouton. L'action principale n'est donc pas atteignable au clavier ni annoncée comme bouton par un lecteur d'écran. Le spec contourne l'interface par setInputFiles (spec:402).",
+      "fix_hint": "Un vrai <button> qui déclenche input.click(), ou un input visuellement masqué (sr-only) mais focalisable.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-014",
+      "state_artifact": "captures-C2/13-planche-arret-remis.png",
+      "category": "ux_flow",
+      "severity": "P2",
+      "evidence": "Le contrat dit « Photo = disque privé, visible du livreur concerné et de la caisse » (docs/LIVRAISON.md:57). Or la caisse n'en montre qu'un emoji « 📷 » non cliquable (PosDeliveryBoard.vue:207-208). Aucun écran ne consomme la route GET /api/frontend/delivery-run/stops/{id}/photo (routes/api.php:2475) : photo_url n'est utilisé nulle part dans resources/js. L'écran livreur n'affiche pas la photo non plus. La preuve de livraison existe en base (photo:true) mais personne ne peut la voir. Le spec ne vérifie que la présence du fichier sur le disque.",
+      "fix_hint": "Exposer photo_url dans /api/admin/pos-delivery/board et faire du « 📷 » un lien ou une vignette qui ouvre la photo (permission pos, DeliveryRunController::photo).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-015",
+      "state_artifact": "captures-C2/07-page-admin-livraisons.png, 08-…, 13-…",
+      "category": "element_overlap",
+      "severity": "P2",
+      "evidence": "Sur la page /admin/livraisons, l'en-tête collant « 🛵 Tournées de livraison » (sticky, top:0 en mode page, PosDeliveryBoard.vue:8) laisse voir le contenu défilé au-dessus de lui, coupé à mi-hauteur : « Espèces 4,90 € » vers y≈60-88 en 07, et « Nos livreurs / Confier à Uber » en 13.",
+      "fix_hint": "PosDeliveryBoard.vue:8 : en mode page, coller sous l'en-tête de l'application (top = hauteur réelle du conteneur défilant, ou fond qui couvre le padding), et le vérifier par une capture défilée.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-016",
+      "state_artifact": "captures-C2/07-page-admin-livraisons.png",
+      "category": "text_truncation",
+      "severity": "P3",
+      "evidence": "« retour au restaurant vers 22:27(itinéraire routier réel · dont 3 min de retour) » : il manque l'espace avant la parenthèse (point (b) de l'équipe, confirmé). Cause : la compaction des blancs du compilateur Vue entre </strong> et <span> (PosDeliveryBoard.vue:45-46).",
+      "fix_hint": "PosDeliveryBoard.vue:46 : espace explicite ({{ ' ' }} ou &nbsp;) avant la parenthèse.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-017",
+      "state_artifact": "captures-C2/04-devis-henin.png, 05-toast-commande-livraison.png",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "Le caissier lit « 1,04 km · ~6 min · Départ prévu aujourd'hui à 22:00 », donc une arrivée vers 22:06. L'arrivée planifiée de l'arrêt est 22:20 (3ᵉ arrêt, eta_minutes 20). Une fois validé, le toast ne rappelle ni l'heure de départ ni le numéro, et le formulaire est réinitialisé. Le caissier au téléphone n'a plus aucune heure fiable à annoncer. C'est conforme au §7 (devis = aller simple), mais trompeur en usage.",
+      "fix_hint": "Toast (PosComponent.vue:7115) : « Départ 22:00 · arrivée prévue ≈ 22:20 · N° … ».",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-018",
+      "state_artifact": "C2-mesures.json → 7b-base-apres-remise",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "« encaissé = montant de la caisse » (spec:439) ne prouve que l'écho : l'écran envoie toujours collected_cents = dû (livreur.blade.php:201). Le serveur accepte n'importe quelle valeur ≥ 0 sans la comparer au dû (DeliveryRunController.php:133 et 147), et amount_collected_cents n'est lu nulle part (grep app/ resources/js). Le rejeu avec collected_cents:1 est arrêté par le 409 « déjà remise » avant tout contrôle : le cas « montant déclaré ≠ dû » n'a jamais été exercé. Point vérifié en ma faveur : la trace d'encaissement existe, audit_logs 14013 « delivery.cash_collected_escrow » pour 8859. order_payments vide et aucun delivery_boy_cash_movements : c'est le comportement attendu, le livreur 10 n'a pas de session de caisse ouverte.",
+      "fix_hint": "Refuser (422) ou journaliser un collected_cents ≠ dû (DeliveryRunController.php:147), et l'exercer dans le spec sur un arrêt non remis.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-019",
+      "state_artifact": "captures-C2/*.network.json",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "duration_ms vaut null dans 100 % des entrées réseau des 13 états. Les GET ne sont journalisés que si leur statut est ≥ 400 ou leur durée > 2000 ms, condition jamais vraie puisque la durée est nulle (mega-audit-snap.js, onResponse). Or GET /api/admin/pos-delivery/board et /api/frontend/delivery-run appellent OSRM de façon synchrone à la lecture, avec un délai max de 3 s (LIVRAISON.md:225-234). Un chargement lent de la planche ou de l'écran livreur est donc invisible : la catégorie 7 (état de chargement) n'a pas pu être vérifiée.",
+      "fix_hint": "mega-audit-snap.js : mesurer la durée au requestfinished (timing complet), ou chronométrer request→response, et journaliser les GET applicatifs.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-020",
+      "state_artifact": "captures-C2/06, 07, 02, 03",
+      "category": "element_overlap",
+      "severity": "P3",
+      "evidence": "Le montant d'un arrêt n'a pas la même place selon l'état : arrêt « à partir », « Espèces 6,80 € / À partir » est rejeté à gauche sous la rangée Uber (avec « À partir » décalé, « Payé » indenté autrement) ; arrêt parti, il est aligné à droite (08, 13). Les toasts d'erreur (02, 03) recouvrent justement la section livraison et le nom du caissier.",
+      "fix_hint": "PosDeliveryBoard.vue:75 : ancrer le bloc montant à droite (order / ml-auto) quelle que soit la rangée Uber.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-021",
+      "state_artifact": "captures-C2/10-livreur-en-route.png",
+      "category": "text_truncation",
+      "severity": "P3",
+      "evidence": "Le titre de la carte contient déjà « … 62110 Hénin-Beaumont » (libellé BAN), et la ligne grise répète « 62110 Hénin-Beaumont » (livreur.blade.php:154-155). Avec la pastille « En route · ETA 20:04 », l'adresse s'étale sur 5 lignes, plus 2 pour la ville répétée.",
+      "fix_hint": "livreur.blade.php:155 : ne pas répéter code postal et ville quand s.address les contient déjà.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-022",
+      "state_artifact": "captures-C2/07, 08, 13",
+      "category": "element_overlap",
+      "severity": "P3",
+      "evidence": "La pastille fixe « ● Connecté » (en bas à gauche) recouvre l'intitulé de section « CAISSE ET COMMANDES » de la barre latérale.",
+      "fix_hint": "Décaler la pastille ou réserver un padding-bottom à la barre latérale.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 1, "P2": 15, "P3": 6,
+    "open_P0": 0, "open_P1": 1, "open_P2": 15, "open_P3": 6
+  },
+  "team_self_reported_rejudged": {
+    "a_arret_remis_especes_orange": "C2-002 → relevé de P3 à P2 (état d'encaissement trompeur sur la surface de rapprochement)",
+    "b_espace_22_27": "C2-016 → P3 confirmé, cause Vue (blancs compactés)",
+    "c_typeerror_id": "C2-001 → P1 : régression du défaut M4-104 déclaré corrigé, à chaque « Commande livraison »",
+    "d_15_livraisons_pending_counter": "intégré à C2-008 (données de test héritées ; elles faussent les mesures de tournée et de départ)"
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "notes": [
+    "Vérifié CONFORME, par recoupement indépendant (base + captures) : 6,80 € identique partout (devis 2,90 + 3,90, toast, orders.total, stop.due 680, planche, livreur, confirmation, collected 680) ; numéro fiscal 3186 attribué une seule fois, à la remise ; pas de numéro fiscal à la création ; trace d'encaissement audit_logs 14013 ; refus Lille à 25,22 km sans aucun € ; refus sans téléphone, aucune commande créée ; 409 au rejeu ; arithmétique des tournées (22:00 + 27 = 22:27 ; en retard : back_at = maintenant + 12) ; livreur et caisse cohérents à 2 s près ; aucune clé i18n brute ; aucun 4xx/5xx applicatif pendant les états capturés (le 409 vient du rejeu volontaire du spec, après 12).",
+    "Pont d'impression :9100/:9101 (01, 13) : ERR_CONNECTION_REFUSED, propre à l'environnement local. Aucun indicateur visible d'imprimante hors ligne dans ces captures, mais C2 n'exerce aucune impression côté client (ticket cuisine : écouteur serveur AutoPrintKitchenTicketOnKitchenEntry). Non retenu comme constat C2, à surveiller en C1.",
+    "Préparation cuisine faite par l'API (spec:345-350) : déclaré dans le spec, hors périmètre, accepté.",
+    "Pas d'assertion critique sous .catch dans le spec (seuls le texte du départ, spec:199, et settle sont tolérants). Les raccourcis réels sont ceux relevés en C2-006, C2-007, C2-013 et C2-018.",
+    "Décisions propriétaire en attente (D3 seuil 7 km, D5 vouvoiement, D6, D7, D8 suivi GPS / TPE) : non comptées."
+  ]
+}

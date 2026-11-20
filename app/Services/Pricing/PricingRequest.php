@@ -24,6 +24,10 @@ final class PricingRequest
         public readonly bool $roundOrderTotalTax,
         public readonly bool $roundFinalOrderTotal,
         public readonly bool $roundSubtotal,
+        // [LOCK_COUPON_SURFACE_BRANCHE_AU_PAIEMENT_2026-11-05] Surface du code promo (« web » | « kiosk » | « pos ») :
+        // null = déduite de `context`. Les commandes web passent par forKiosk() (contexte « kiosk ») : sans ce champ, un
+        // code limité au web serait vérifié comme s'il venait de la borne.
+        public readonly ?string $couponSurface = null,
     ) {
     }
 
@@ -87,7 +91,7 @@ final class PricingRequest
         );
     }
 
-    public static function forKiosk(int $orderId, int $branchId, array $requestItems, int $couponId, int $customerUserId, float $deliveryCharge): self
+    public static function forKiosk(int $orderId, int $branchId, array $requestItems, int $couponId, int $customerUserId, float $deliveryCharge, ?string $couponSurface = null): self
     {
         return new self(
             $orderId,
@@ -104,6 +108,7 @@ final class PricingRequest
             roundOrderTotalTax: true,
             roundFinalOrderTotal: true,
             roundSubtotal: true,
+            couponSurface: $couponSurface,
         );
     }
 }

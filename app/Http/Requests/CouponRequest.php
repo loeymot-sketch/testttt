@@ -81,27 +81,33 @@ class CouponRequest extends FormRequest
         $validator->after(function ($validator) {
 
             if (!$this->isNotNull(request('start_date'))) {
-                $validator->errors()->add('start_date', 'The start date field is required');
+                // [ONB-09 2026-08-28] Ces huit messages etaient en ANGLAIS BRUT et
+                // s'affichaient tels quels sur l'ecran des codes promo
+                // (`CouponCreateComponent` rend `errors.<champ>[0]` sans traduction).
+                // Le produit est FR-locked en administration (ADR-007) : ces chaines
+                // ne passent par aucun mecanisme i18n, elles doivent donc etre ecrites
+                // en francais ici.
+                $validator->errors()->add('start_date', "La date de début est obligatoire.");
             }
 
             if (!$this->isNotNull(request('end_date'))) {
-                $validator->errors()->add('end_date', 'The end date field is required');
+                $validator->errors()->add('end_date', "La date de fin est obligatoire.");
             }
 
             if ($this->isPercentage() && request('discount') > 100) {
-                $validator->errors()->add('discount', 'Percentage amount can\'t be greater than 100.');
+                $validator->errors()->add('discount', "Un pourcentage de remise ne peut pas dépasser 100 %.");
             }
 
             if (!$this->isPercentage() && request('minimum_order') < request('discount')) {
-                $validator->errors()->add('minimum_order', 'Minimum order amount can\'t be less than discount amount.');
+                $validator->errors()->add('minimum_order', "Le montant minimum de commande doit être supérieur à la remise, sinon la commande serait gratuite.");
             }
 
             if ($this->isNotNull(request('start_date')) && strtotime(request('end_date')) < strtotime(request('start_date'))) {
-                $validator->errors()->add('end_date', 'End date can\'t be older than Start date.');
+                $validator->errors()->add('end_date', "La date de fin ne peut pas précéder la date de début.");
             }
 
             if ($this->isNotNull(request('start_date')) && $this->checkToDate()) {
-                $validator->errors()->add('end_date', 'End date can\'t be older than now.');
+                $validator->errors()->add('end_date', "La date de fin est déjà passée : le code ne serait jamais utilisable.");
             }
 
             // [PROMO-DASH-2026-05-06] valid_hours cohérence : si l'un est défini,
@@ -110,10 +116,10 @@ class CouponRequest extends FormRequest
             $hStart = request('valid_hours_start');
             $hEnd = request('valid_hours_end');
             if ($this->isNotNull($hStart) && !$this->isNotNull($hEnd)) {
-                $validator->errors()->add('valid_hours_end', 'Valid hours end is required when valid hours start is set.');
+                $validator->errors()->add('valid_hours_end', "Vous avez indiqué une heure de début : précisez aussi l'heure de fin.");
             }
             if ($this->isNotNull($hEnd) && !$this->isNotNull($hStart)) {
-                $validator->errors()->add('valid_hours_start', 'Valid hours start is required when valid hours end is set.');
+                $validator->errors()->add('valid_hours_start', "Vous avez indiqué une heure de fin : précisez aussi l'heure de début.");
             }
         });
     }

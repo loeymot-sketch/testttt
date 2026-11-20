@@ -144,7 +144,7 @@ class PurchaseServiceTest extends TestCase
 
         // 1er achat : 10 unités @ 2,00 → premier achat fixe avg_cost = prix unitaire.
         $doc1 = $this->document('hash-avg-1');
-        $this->line($doc1, PurchaseLine::TARGET_RAW_MATERIAL, $mat->id, ['qty' => 10, 'unit_price' => 2.00]);
+        $this->line($doc1, PurchaseLine::TARGET_RAW_MATERIAL, $mat->id, ['qty' => 10, 'unit' => 'g', 'unit_price' => 2.00]);
         $this->service()->validateDocument($doc1);
 
         $this->assertEqualsWithDelta(2.0, (float) $mat->fresh()->avg_cost, 0.0001);
@@ -153,7 +153,7 @@ class PurchaseServiceTest extends TestCase
 
         // 2e achat : 10 unités @ 3,00 → (10×2 + 10×3) / 20 = 2,50 pile.
         $doc2 = $this->document('hash-avg-2');
-        $this->line($doc2, PurchaseLine::TARGET_RAW_MATERIAL, $mat->id, ['qty' => 10, 'unit_price' => 3.00]);
+        $this->line($doc2, PurchaseLine::TARGET_RAW_MATERIAL, $mat->id, ['qty' => 10, 'unit' => 'g', 'unit_price' => 3.00]);
         $this->service()->validateDocument($doc2);
 
         $this->assertEqualsWithDelta(2.5, (float) $mat->fresh()->avg_cost, 0.0001);
@@ -318,7 +318,7 @@ class PurchaseServiceTest extends TestCase
     {
         $mat = $this->material('Pain');
         $doc = $this->document('hash-idem');
-        $this->line($doc, PurchaseLine::TARGET_RAW_MATERIAL, $mat->id, ['qty' => 8, 'unit_price' => 0.25]);
+        $this->line($doc, PurchaseLine::TARGET_RAW_MATERIAL, $mat->id, ['qty' => 8, 'unit' => 'g', 'unit_price' => 0.25]);
 
         $this->service()->validateDocument($doc);
         $afterFirst = (float) $mat->fresh()->avg_cost;

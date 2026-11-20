@@ -24,6 +24,6 @@ Route::prefix('payment')->name('payment.')->middleware(['installed'])->group(fun
     // (invalid-signature spam burning CPU + filling `fiscal` log channel).
     // Stripe in production sends ~5/s burst max → 60/min is generous + safe.
     Route::post('/stripe-webhook/', [Stripe::class, 'handleWebhook'])
-        ->middleware(['throttle:60,1'])
+        ->middleware(['throttle:60,1,webhook-stripe']) // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('stripe.webhook');
 });

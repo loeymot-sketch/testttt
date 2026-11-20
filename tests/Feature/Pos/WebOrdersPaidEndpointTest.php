@@ -112,13 +112,28 @@ class WebOrdersPaidEndpointTest extends TestCase
         $this->assertNotContains($enVol->id, $this->paidIds());
     }
 
-    /** @test */
-    public function une_commande_deja_preparee_sort_du_panneau(): void
+    /**
+     * [GOAL REMARQUES 2026-10-03 · T-3.5 R-016] DÉCISION PROPRIÉTAIRE PLUS RÉCENTE (03/09) : « lors de retrait
+     * de commande par site Web […] mettre vraiment séparés et je pourrais les valider comme ça […] il y aura
+     * ces points ». Une commande du site À EMPORTER, prête, RESTE dans ce panneau séparé : c'est là que le
+     * caissier valide le retrait (→ livrée → points de fidélité). Avant : elle partait dans « Prêt », toutes
+     * origines confondues.
+     *
+     * @test
+     */
+    public function une_commande_web_a_emporter_prete_reste_pour_valider_le_retrait(): void
     {
-        // PREPARED = la cuisine a fini ; elle remonte dans « Prêt à livrer », pas ici.
-        $finie = $this->commande440(['status' => OrderStatus::PREPARED]);
+        $prete = $this->commande440(['status' => OrderStatus::PREPARED]);
 
-        $this->assertNotContains($finie->id, $this->paidIds());
+        $this->assertContains($prete->id, $this->paidIds());
+    }
+
+    /** @test Une LIVRAISON prête suit le circuit livreur : jamais de « retrait » au comptoir. */
+    public function une_livraison_prete_sort_du_panneau(): void
+    {
+        $livraison = $this->commande440(['status' => OrderStatus::PREPARED, 'order_type' => OrderType::DELIVERY, 'source_surface' => 'delivery']);
+
+        $this->assertNotContains($livraison->id, $this->paidIds());
     }
 
     /** @test */

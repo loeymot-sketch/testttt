@@ -12,6 +12,7 @@
                 <div v-if="lastCode" class="pfq-done">
                     <div class="pfq-done-label">{{ $t("label.flyer_sent_to_pos") }}</div>
                     <div class="pfq-code">{{ lastCode }}</div>
+                    <div class="pfq-done-offer">{{ offerLabel(lastOffer) }}</div>
                     <button type="button" class="pfq-again" @click="reset">
                         {{ $t("button.print_another") }}
                     </button>
@@ -30,6 +31,23 @@
                 </div>
 
                 <form v-else @submit.prevent="submit(false)">
+                    <!-- [TICKET PROMO 2026-11-03 · propriétaire] Deux offres au choix : la remise
+                         historique ou la livraison offerte. Le dernier choix est retenu sur cet
+                         appareil : une campagne dure un service, pas un ticket. -->
+                    <div class="pfq-label">{{ $t("label.flyer_offer") }}</div>
+                    <div class="pfq-offer" role="radiogroup" :aria-label="$t('label.flyer_offer')">
+                        <button
+                            v-for="o in offers"
+                            :key="o.value"
+                            type="button"
+                            role="radio"
+                            :aria-checked="offer === o.value"
+                            class="pfq-offer-btn"
+                            :class="{ 'pfq-offer-btn--on': offer === o.value }"
+                            @click="chooseOffer(o.value)"
+                        >{{ o.label }}</button>
+                    </div>
+
                     <label class="pfq-label" for="pfq-name">{{ $t("label.customer_first_name") }}</label>
                     <input
                         id="pfq-name"
@@ -101,7 +119,10 @@ export default {
             busy: false,
             error: null,
             lastCode: null,
+            lastOffer: null,
             duplicate: null,
+            offer: "percent",
+            discountPercent: null,
             civilities: [
                 { value: "", label: "—" },
                 { value: "Mme", label: "Mme" },
@@ -109,10 +130,20 @@ export default {
             ],
         };
     },
+    computed: {
+        offers() {
+            return [
+                { value: "percent", label: this.offerLabel("percent") },
+                { value: "free_delivery", label: this.offerLabel("free_delivery") },
+            ];
+        },
+    },
     watch: {
         open(isOpen) {
             if (!isOpen) return;
             this.reset();
+            this.offer = this.rememberedOffer();
+            this.loadDiscountPercent();
             this.name = (this.prefillName || "").trim();
             // Focus différé : le champ n'existe qu'une fois la fenêtre rendue.
             this.$nextTick(() => {
@@ -121,8 +152,38 @@ export default {
         },
     },
     methods: {
+        offerLabel(value) {
+            if (value === "free_delivery") return this.$t("label.flyer_offer_free_delivery");
+            return this.discountPercent
+                ? "−" + this.discountPercent + " %"
+                : this.$t("label.flyer_offer_percent");
+        },
+        chooseOffer(value) {
+            this.offer = value;
+            try { window.localStorage.setItem("pfq.offer", value); } catch (_) { /* navigation privée */ }
+        },
+        rememberedOffer() {
+            try {
+                const v = window.localStorage.getItem("pfq.offer");
+                return v === "free_delivery" ? "free_delivery" : "percent";
+            } catch (_) {
+                return "percent";
+            }
+        },
+        loadDiscountPercent() {
+            // Le libellé du bouton suit le réglage réel (−10 % aujourd'hui). Si le réglage n'est
+            // pas lisible pour ce rôle, le bouton dit simplement « Remise » : jamais un faux chiffre.
+            if (this.discountPercent !== null) return;
+            this.$store.dispatch("promoFlyerSettings")
+                .then((res) => {
+                    const p = Number(res && res.settings && res.settings.discount_percent);
+                    if (p > 0) this.discountPercent = Number.isInteger(p) ? p : String(p).replace(".", ",");
+                })
+                .catch(() => { /* libellé générique */ });
+        },
         reset() {
             this.lastCode = null;
+            this.lastOffer = null;
             this.duplicate = null;
             this.error = null;
             this.busy = false;
@@ -142,6 +203,7 @@ export default {
             this.$store.dispatch("promoFlyerCreate", {
                 customer_name: name,
                 civility: this.civility,
+                offer: this.offer,
                 force: force === true,
             })
                 .then((res) => {
@@ -154,6 +216,7 @@ export default {
                         return;
                     }
                     this.lastCode = (res.flyer && res.flyer.code) || null;
+                    this.lastOffer = (res.flyer && res.flyer.offer) || this.offer;
                     this.$emit("created", res.flyer);
                 })
                 .catch((err) => {
@@ -221,6 +284,13 @@ export default {
     color: #0f172a;
 }
 .pfq-input:focus { outline: none; border-color: #f4501e; }
+.pfq-offer { display: flex; gap: 8px; margin-bottom: 14px; }
+.pfq-offer-btn {
+    flex: 1; min-height: 52px; border-radius: 10px; border: 2px solid #cbd5e1;
+    background: #fff; color: #334155; font-size: 16px; font-weight: 700; cursor: pointer; padding: 6px 8px;
+}
+.pfq-offer-btn--on { border-color: #f4501e; background: #fff1ec; color: #b3350f; }
+.pfq-done-offer { margin: -8px 0 14px; font-size: 14px; font-weight: 700; color: #b3350f; }
 .pfq-civ { display: flex; gap: 8px; margin-top: 12px; }
 .pfq-civ-btn {
     flex: 1; height: 44px; border-radius: 10px; border: 2px solid #cbd5e1;

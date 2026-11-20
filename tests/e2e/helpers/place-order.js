@@ -89,6 +89,9 @@ async function placeOrder(options = {}) {
     skipPaymentConfirm = false,
     tokenPrefix = 'SUPERVISOR-WAVE-C-Z4',
     baseURL,
+    // [2026-10-04] La V1 refuse « sur place » (25) à la borne : un spec qui doit passer la validation
+    // actuelle fournit `orderType: 10` (à emporter). Défaut inchangé pour les specs existantes.
+    orderType = ORDER_TYPE_KIOSK,
   } = options;
 
   if (!Array.isArray(items) || items.length === 0) {
@@ -125,7 +128,7 @@ async function placeOrder(options = {}) {
     branch_id: branchId,
     token: orderToken,
     discount: 0,
-    order_type: ORDER_TYPE_KIOSK,
+    order_type: Number(orderType),
     is_advance_order: ASK_NO,
     source: SOURCE_KIOSK,
     payment_method: Number(paymentMethod),
@@ -191,6 +194,10 @@ async function placeOrder(options = {}) {
             transaction_id: `${orderToken}-TPE-${Date.now()}`,
             card_type: 'simulated-card',
             payment_method: Number(paymentMethod),
+            // [2026-10-04] AUDIT-F-002 : le TPE renvoie le montant en centimes, qui DOIT égaler le
+            // total de la commande (PaymentConfirmRequest). On le tire du devis signé, jamais d'un
+            // calcul client.
+            amount_cents: Math.round(Number(order.total ?? quote.total_ttc) * 100),
           },
           headers: { 'X-Idempotency-Key': `${idempotencyKey}-confirm` },
         },

@@ -29,9 +29,15 @@ class SalesReportExport implements FromCollection, WithHeadings
         // ItemsReportExport:28 / CreditBalanceReportExport).
         $this->request->merge(['paginate' => 0]);
         $salesReportArray = [];
-        // [GOAL-OPS-SWAP W2 2026-08-12] Le troisième jumeau : écran, PDF et tableur
-        // doivent compter à l'identique. `true` écarte les contre-écritures de
+        // [GOAL-OPS-SWAP W2 2026-08-12] `true` écarte les contre-écritures de
         // remboursement, comme `salesReportOverview()` le fait déjà.
+        //
+        // [ONB-07 2026-08-28] Ce commentaire disait « écran, PDF et tableur doivent
+        // compter à l'identique ». Ce n'est PLUS vrai : le chemin PDF est repassé à
+        // `false` pour que son Total imprimé défalque les remboursements, comme le
+        // gabarit l'annonce depuis juin. L'écran et le tableur gardent l'exclusion —
+        // ils LISTENT, ils ne totalisent pas. Laisser une affirmation de parité que le
+        // lot venait de supprimer, c'est ce que je reproche au reste du dépôt.
         $salesReportsArray = $this->orderService->list($this->request, true);
 
         foreach ($salesReportsArray as $order) {
@@ -41,8 +47,14 @@ class SalesReportExport implements FromCollection, WithHeadings
                 AppLibrary::flatAmountFormat($order->total),
                 AppLibrary::flatAmountFormat($order->discount),
                 AppLibrary::flatAmountFormat($order->delivery_charge),
-                $order->transaction ? strtoupper($order->transaction->payment_method)
-                : $this->getPaymentMethod($order),
+                // [ONB-07 2026-08-28] QUATRIEME site de fuite d'enum brut, oublie par
+                // mon propre commit qui n'en enumerait que trois. `strtoupper` rendait
+                // « COUNTER_CASH » EN MAJUSCULES dans le tableur du rapport de ventes —
+                // le document meme que ma prose designait comme « le seul que le
+                // commercant transmet a son comptable ». Trouve par un agent adverse.
+                $order->transaction
+                    ? \App\Support\LibellePaiement::pour($order->transaction->payment_method)
+                    : $this->getPaymentMethod($order),
                 trans('payment_status.'.$order->payment_status),
             ];
         }

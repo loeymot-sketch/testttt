@@ -20,7 +20,7 @@ const shot = (n) => path.join(SHOT_DIR, n);
 const MANIFEST = path.join(SHOT_DIR, 'orders-manifest.json');
 
 const N_ORDERS = Math.max(1, parseInt(process.env.ORDERS || '50', 10));
-const LOCAL_BASE = 'http://127.0.0.1:8000';
+const LOCAL_BASE = (process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
 const LOCAL_KEY = 'b6d68vy2-m7g5-20r0-5275-h103w73453q120';
 const PHONE = '0699000333';
 const euro = (s) => { const m = String(s || '').match(/(\d+[.,]\d{2})/); return m ? parseFloat(m[1].replace(',', '.')) : NaN; };

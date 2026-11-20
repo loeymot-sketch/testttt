@@ -482,6 +482,48 @@ class CashDrawerService
     }
 
     /**
+     * [VG-2026-10-21 M3-103] Session de tiroir où poser la SORTIE d'espèces d'une annulation / d'un remboursement.
+     * Avant : la session de CELUI QUI ANNULE (un responsable, presque jamais l'encaissant) → l'entrée restait sur la
+     * session du caissier, la sortie partait sur celle du responsable, et sans session pour lui la sortie était perdue.
+     *
+     * Ordre (les sessions sont par caissier — il n'existe pas de notion de poste) :
+     *   1. la session qui porte l'ENTRÉE de cette vente (cash_movements IN order_payment), si elle est encore ouverte ;
+     *   2. sinon la session ouverte du caissier qui a encaissé (nouveau service sur le même tiroir) ;
+     *   3. sinon la session ouverte de celui qui rend l'argent ($actorUserId) ;
+     *   null sinon — l'appelant REFUSE alors la sortie plutôt que de la perdre.
+     */
+    public function findSessionForCashOut(int $branchId, int $orderId, ?int $actorUserId): ?CashDrawerSession
+    {
+        $entree = CashMovement::query()
+            ->where('branch_id', $branchId)
+            ->where('order_id', $orderId)
+            ->where('type', CashMovement::TYPE_ORDER_PAYMENT)
+            ->where('direction', CashMovement::DIRECTION_IN)
+            ->orderByDesc('id')
+            ->first();
+
+        if ($entree) {
+            $sessionVente = CashDrawerSession::query()
+                ->where('branch_id', $branchId)
+                ->whereKey((int) $entree->cash_drawer_session_id)
+                ->first();
+            if ($sessionVente && $sessionVente->status === CashDrawerSession::STATUS_OPEN) {
+                return $sessionVente;
+            }
+            if ($sessionVente) {
+                $relais = $this->findOpenSessionForUser($branchId, (int) $sessionVente->opened_by_user_id);
+                if ($relais) {
+                    return $relais;
+                }
+            }
+        }
+
+        return ($actorUserId !== null && $actorUserId > 0)
+            ? $this->findOpenSessionForUser($branchId, $actorUserId)
+            : null;
+    }
+
+    /**
      * [Sprint 1D / F-4] Check whether the actor holds the variance-override
      * permission. Uses Spatie's standard ->can() bridge so the same predicate
      * works whether the user inherits the permission through a role or has it

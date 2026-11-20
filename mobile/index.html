@@ -12,8 +12,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="redesigns-styles.css">
+<link rel="stylesheet" href="styles.css?v=20261018-r1">
+<link rel="stylesheet" href="redesigns-styles.css?v=20261016-r2">
 
 <style>
   /* Production mobile entry — single full-viewport device frame, no prototype UI. */
@@ -76,18 +76,26 @@
 
 <!-- Data layer (vanilla JS, attaches to window.LC.*) -->
 <!-- storage.js first: loyalty.js hydrates from LC.storage.getLoyalty(). -->
-<script src="api/storage.js"></script>
+<script src="api/storage.js?v=20261016"></script>
 <!-- [GOAL-SYNC 2026-07-08] Couche réseau RÉELLE (window.LC.mobileApi) — auth OTP, résolution
      par NOM canonique, commandes, fidélité. Chargée juste après storage.js (setAuth). -->
-<script src="api/client.js"></script>
-<script src="data/menu.js"></script>
-<script src="data/loyalty.js"></script>
-<script src="data/loyaltyRewardState.js"></script>
-<script src="data/orders.js"></script>
-<script src="data/user.js"></script>
-<script src="data/wallet-spec.js"></script>
+<script src="api/client.js?v=20261016-r1"></script>
+<script src="data/menu.js?v=20261018-r1"></script>
+<script src="data/loyalty.js?v=20261016"></script>
+<script src="data/loyaltyRewardState.js?v=20261016"></script>
+<script src="data/orders.js?v=20261016"></script>
+<script src="data/user.js?v=20261016"></script>
+<script src="data/wallet-spec.js?v=20261016"></script>
 <!-- Dev helpers last: wire onto LC.loyalty + LC.storage + LC.user. -->
-<script src="data/dev-helpers.js"></script>
+<!-- Dev-only helpers: excluded from the normal app boot to avoid shipping test
+     seeders, mock loyalty mutations and render instrumentation to customers. -->
+<script>
+  if (new URLSearchParams(window.location.search).has('dev')) {
+    const devScript = document.createElement('script');
+    devScript.src = 'data/dev-helpers.js?v=20261018-opt1';
+    document.currentScript.after(devScript);
+  }
+</script>
 
 <!-- React + Babel runtime (prototype-grade ; en prod = build Vite/esbuild) -->
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
@@ -95,25 +103,25 @@
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 
 <!-- Shared atoms + icons -->
-<script src="image-slot.js"></script>
-<script type="text/babel" src="icons.jsx"></script>
-<script type="text/babel" src="shared.jsx"></script>
+<script src="image-slot.js?v=20261016"></script>
+<script type="text/babel" src="icons.jsx?v=20261016"></script>
+<script type="text/babel" src="shared.jsx?v=20261016"></script>
 
 <!-- [GOAL-SYNC 2026-07-08] Lib QR vendorisée LOCALE (globale `qrcode`, contrat §3) — AVANT les composants. -->
-<script src="vendor/qrcode.js"></script>
+<script src="vendor/qrcode.js?v=20261016"></script>
 
 <!-- Hooks & components (must load BEFORE screens that consume them) -->
-<script src="hooks/useCountdown.js"></script>
-<script type="text/babel" src="hooks/useLoyaltyQR.js"></script>
-<script type="text/babel" src="components/BarcodeMock.jsx"></script>
-<script type="text/babel" src="components/LoyaltyQR.jsx"></script>
-<script type="text/babel" src="components/WizardRedeem.jsx"></script>
+<script src="hooks/useCountdown.js?v=20261016"></script>
+<script type="text/babel" src="hooks/useLoyaltyQR.js?v=20261016"></script>
+<script type="text/babel" src="components/BarcodeMock.jsx?v=20261016"></script>
+<script type="text/babel" src="components/LoyaltyQR.jsx?v=20261016"></script>
+<script type="text/babel" src="components/WizardRedeem.jsx?v=20261016"></script>
 
 <!-- Screens -->
-<script type="text/babel" src="screens-onboarding.jsx"></script>
-<script type="text/babel" src="screens-item-steps.jsx"></script>
-<script type="text/babel" src="screens-main.jsx"></script>
-<script type="text/babel" src="screens-modals.jsx"></script>
+<script type="text/babel" src="screens-onboarding.jsx?v=20261016"></script>
+<script type="text/babel" src="screens-item-steps.jsx?v=20261018-r1"></script>
+<script type="text/babel" src="screens-main.jsx?v=20261018-r1"></script>
+<script type="text/babel" src="screens-modals.jsx?v=20261016-r1"></script>
 
 <!-- App root -->
 <script type="text/babel">
@@ -135,6 +143,7 @@ function App() {
 
   const [screen, setScreen] = useState(initialScreen);
   const [history, setHistory] = useState([initialScreen]);
+  const [menuFilter, setMenuFilter] = useState('all');
   const [itemId, setItemId] = useState(null);
   const [cart, setCart] = useState(storage.getCart() || []);
   const [modal, setModal] = useState(null);
@@ -145,6 +154,7 @@ function App() {
   // [GOAL-SYNC 2026-07-08] AUTH RÉELLE — téléphone hoisté dans App : saisi sur ScreenLogin,
   // affiché sur ScreenOTP, envoyé à guest-signup /otp puis /verify (plus de mock).
   const [authPhone, setAuthPhone] = useState('');
+  const [devOtp, setDevOtp] = useState('');
 
   // Persist cart on change
   useEffect(() => { storage.setCart(cart); }, [cart]);
@@ -173,7 +183,9 @@ function App() {
     if (s === 'walletApple')  { setModal('walletApple');  return; }
     if (s === 'walletGoogle') { setModal('walletGoogle'); return; }
     if (s === 'optOut') { setModal('optOut'); return; }
+    if (s === 'deleteAccount') { setModal('deleteAccount'); return; }
     if (s === 'toast')  { setToast({ m: ext?.msg || 'OK', k: ext?.kind || 'info' }); return; }
+    if (s === 'menu') setMenuFilter(ext || 'all');
     // [GOAL-SYNC 2026-07-08] Flag Stripe OFF ⇒ 'stripe' inaccessible : redirection vers le choix de paiement.
     if (s === 'stripe' && !window.LC.config.onlineCardEnabled) { setModal('pay'); return; }
     if (s === 'logout') {
@@ -181,6 +193,7 @@ function App() {
       try { if (window.LC.mobileApi && window.LC.mobileApi.logout) window.LC.mobileApi.logout(); } catch (e) { /* purge locale quand même */ }
       storage.clearAuth();
       setAuthPhone('');
+      setDevOtp('');
       setCart([]);
       setHistory(['login']);
       setScreen('login');
@@ -240,6 +253,14 @@ function App() {
         queue_number: placed.queue_number || null,
         total: realTotal, eta, items: cart,
       });
+      // Relire le solde et l'historique serveur après succès, sans crédit local.
+      // La synchronisation ne doit ni retarder ni invalider la confirmation.
+      const loyalty = window.LC.loyalty;
+      if (loyalty && typeof loyalty.refreshFromServer === 'function') {
+        Promise.resolve().then(() => loyalty.refreshFromServer()).catch(() => {
+          // La commande reste confirmée ; le prochain écran pourra resynchroniser.
+        });
+      }
       return true;
     } catch (e) {
       if (e && e.kind === 'network') {
@@ -275,16 +296,22 @@ function App() {
                       p = p.replace(/\s/g, '');
                       if (!p) { setToast({ m: 'Saisis ton numéro pour recevoir le code.', k: 'error' }); return; }
                       setAuthPhone(p);
+                      setDevOtp('');
                       const api = window.LC.mobileApi;
                       if (!(api && api.guestOtp)) { setToast({ m: 'Service momentanément indisponible. Réessaie dans un instant.', k: 'error' }); return; }
                       try {
-                        await api.guestOtp(p);
+                        const otpResponse = await api.guestOtp(p);
+                        // A local dev code is consumed only when the API explicitly returns it.
+                        // Production/staging never receive or display this field.
+                        if (window.LC && window.LC.isDev && otpResponse && otpResponse.dev_code != null) {
+                          setDevOtp(String(otpResponse.dev_code));
+                        }
                         go('otp');
                       } catch (e) {
-                        setToast({ m: (e && e.kind === 'network') ? 'Réseau indisponible — impossible d’envoyer le code. Réessaie.' : ((e && e.message) || 'Envoi du code impossible. Réessaie.'), k: 'error' });
+                        setToast({ m: (e && e.kind === 'network') ? 'Réseau indisponible — impossible d’envoyer le code. Réessaie.' : (e && e.status === 429) ? 'Trop de demandes — attends un instant puis réessaie.' : 'Envoi du code impossible. Réessaie.', k: 'error' });
                       }
-                    }} onBack={() => go('back')}/>; break;
-    case 'otp':     body = <ScreenOTP phone={authPhone} onNext={async (otp) => {
+                    }} onBack={() => { setDevOtp(''); go('back'); }}/>; break;
+    case 'otp':     body = <ScreenOTP phone={authPhone} devCode={devOtp} onNext={async (otp) => {
                       const api = window.LC.mobileApi;
                       if (!(api && api.guestVerify)) { setToast({ m: 'Service momentanément indisponible. Réessaie dans un instant.', k: 'error' }); return; }
                       try {
@@ -293,11 +320,23 @@ function App() {
                         storage.markOnboardingSeen();
                         setHistory(['home']); setScreen('home');
                       } catch (e) {
-                        setToast({ m: (e && e.kind === 'network') ? 'Réseau indisponible — vérification impossible. Réessaie.' : ((e && e.message) || 'Code invalide. Réessaie.'), k: 'error' });
+                        setToast({ m: (e && e.kind === 'network') ? 'Réseau indisponible — vérification impossible. Réessaie.' : (e && e.status === 429) ? 'Trop de tentatives — attends un instant puis réessaie.' : 'Code invalide. Réessaie.', k: 'error' });
                       }
-                    }} onBack={() => go('back')}/>; break;
+                    }} onResend={async () => {
+                      const api = window.LC.mobileApi;
+                      if (!(api && api.guestOtp)) throw { kind: 'network' };
+                      // Invalidate the previous local-only code before every resend.
+                      // If the response has no dev_code, this cleared state stays empty.
+                      setDevOtp('');
+                      const otpResponse = await api.guestOtp(authPhone);
+                      // Do not synthesize, persist or display a code absent from this response.
+                      if (window.LC && window.LC.isDev && otpResponse && otpResponse.dev_code != null) {
+                        setDevOtp(String(otpResponse.dev_code));
+                      }
+                      return otpResponse;
+                    }} onBack={() => { setDevOtp(''); go('back'); }}/>; break;
     case 'home':    body = <ScreenHome go={go} name={(window.LC.user.current.first_name)}/>; break;
-    case 'menu':    body = <ScreenMenu go={go} cart={cart} addToCart={addToCart}/>; break;
+    case 'menu':    body = <ScreenMenu go={go} cart={cart} addToCart={addToCart} initialFilter={menuFilter}/>; break;
     case 'item':    body = <ScreenItem go={go} itemId={itemId} addToCart={addToCart}/>; break;
     case 'cart':    body = <ScreenCart go={(s)=> s==='confirm' ? go('pay') : go(s)} cart={cart} setCart={setCart}/>; break;
     // [GOAL-SYNC 2026-07-08] Flag OFF ⇒ ScreenStripe JAMAIS rendu (défense en profondeur : go() redirige déjà vers 'pay').
@@ -322,10 +361,13 @@ function App() {
           onPickCounter = COMMANDE RÉELLE (placeCounterOrder) ; onPickCard gardé derrière le flag (défense en profondeur). */}
       {modal === 'pay' && <ModalPayChoice total={total} flag={window.LC.config.onlineCardEnabled} onClose={()=>setModal(null)} onPickCounter={async ()=>{ setModal(null); const ok = await placeCounterOrder(); if (!ok) return; setHistory(h=>[...h,'confirm']); setScreen('confirm'); setCart([]); /* [GOAL-SYNC-HEAL 2026-07-08] Honnêteté : PAS de « +points gagnés » quand la commande n'a PAS été transmise (mode hors-ligne) */ if (ok !== 'offline') setTimeout(()=>setModal('gain'), 900); }} onPickCard={()=>{ if (!window.LC.config.onlineCardEnabled) return; setModal(null); setHistory(h=>[...h,'stripe']); setScreen('stripe'); }}/>}
       {/* [test-e2e fix C-003 round-2 2026-05-11] derive pointsEarned from the snapshotted order total.
-          [GOAL-SYNC 2026-07-08] Estimation earn alignée backend (contrat §2) : 1 pt/€ FLOOR du total TTC
-          (Math.floor(total × points_per_euro=1)) — l'EARN réel est crédité par le backend au statut
-          PREPARED/DELIVERED, le client n'ajoute jamais de points. Fallback 25 conservé (story standalone). */}
-      {modal === 'gain' && <ModalPointsGain gain={lastOrder ? Math.floor(lastOrder.total) : 25} onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
+          [GOAL-SYNC 2026-07-08] Estimation earn alignée backend (contrat §2) : points_per_euro FLOOR
+          du total TTC (Math.floor(total × points_per_euro)) — l'EARN réel est crédité par le backend
+          au statut PREPARED/DELIVERED, le client n'ajoute jamais de points. Fallback 25 conservé
+          (story standalone). [2026-09-25] Bug réel corrigé : ce calcul multipliait par 1 en dur
+          (Math.floor(total)), jamais par le vrai taux — un client voyait "12 points" pour une
+          commande à 12 € au lieu des 120 réellement crédités (barème 10 pts/€). */}
+      {modal === 'gain' && <ModalPointsGain gain={lastOrder ? Math.floor(lastOrder.total * (Number(window.LC.loyalty && window.LC.loyalty.config && window.LC.loyalty.config.points_per_euro) || 10)) : 25} onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
       {modal === 'redeem' && <WizardRedeem ctx={modalCtx} onClose={()=>{ setModal(null); setModalCtx(null); }} onSuccess={(r)=>{ /* WizardRedeem handles toast internally via step3 success state */ }}/>}
       {modal === 'optOut' && <ModalOptOutConfirm onClose={()=>setModal(null)} onConfirm={()=>{
         setModal(null);
@@ -337,8 +379,38 @@ function App() {
         if (window.LC && window.LC.loyalty && window.LC.loyalty._replaceHistory) {
           window.LC.loyalty._replaceHistory([]);
         }
-        if (window.LC && window.LC.dev) window.LC.dev.setConsent('opted_out');
+        // Customer-facing opt-out must use the public state APIs. The dev
+        // namespace is not part of the shipped mobile contract.
+        if (window.LC && window.LC.storage && typeof window.LC.storage.setConsent === 'function') {
+          window.LC.storage.setConsent('opted_out');
+        }
+        if (window.LC && window.LC.loyalty && window.LC.loyalty._replaceAccount) {
+          window.LC.loyalty._replaceAccount({ consent_status: 'opted_out', balance: 0, lifetime_earned: 0, lifetime_redeemed: 0 });
+        }
+        if (typeof window.dispatchEvent === 'function') {
+          const detail = { type: 'consent', status: 'opted_out', source: 'customer' };
+          if (typeof window.CustomEvent === 'function') {
+            window.dispatchEvent(new window.CustomEvent('lc:loyalty-changed', { detail }));
+          } else if (typeof window.Event === 'function') {
+            window.dispatchEvent(new window.Event('lc:loyalty-changed'));
+          }
+        }
         setToast({m:'Programme désactivé et points effacés. Tu peux te réinscrire à tout moment.', k:'info'});
+      }}/>}
+      {modal === 'deleteAccount' && <ModalDeleteAccountConfirm onClose={()=>setModal(null)} onConfirm={async()=>{
+        const api = window.LC && window.LC.mobileApi;
+        if (!(api && api.deleteAccount)) throw { message: 'Service de suppression indisponible. Réessaie dans un instant.' };
+        const result = await api.deleteAccount();
+        if (result && result.status === false) throw { message: result.message || 'Suppression impossible pour le moment. Réessaie.' };
+        // Only purge local identity after the server has confirmed deletion.
+        storage.clearAuth();
+        setAuthPhone('');
+        setDevOtp('');
+        setCart([]);
+        setModal(null);
+        setHistory(['login']);
+        setScreen('login');
+        setToast({ m: 'Compte supprimé. Tu peux recréer un compte quand tu le souhaites.', k: 'success' });
       }}/>}
       {modal === 'link' && <ModalCardLink onClose={()=>setModal(null)} onScan={()=>{ setModal(null); storage.setPlasticCardLinked && storage.setPlasticCardLinked(true); setToast({m:'Carte plastique liée à ton compte', k:'success'}); }}/>}
       {modal === 'walletApple' && <ModalWalletV0Notice kind="apple" onClose={()=>setModal(null)} onSeeQR={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}

@@ -1,0 +1,81 @@
+{
+  "role": "adverse-site",
+  "base": "site worktree bb5eacc, banc :8052 (cwd verifie par lsof). Lecture seule : scripts jetables dans le scratchpad.",
+  "constats": [
+    {
+      "id": "W-01",
+      "severite": "P2",
+      "fichier": "notifications.js:113-121 (activer), :190-193 (synchroniser), :108 (cache.cle)",
+      "titre": "Cle VAPID changee cote serveur : l'abonnement existant est reutilise, l'appareil reste « actif » mais ne recevra plus rien",
+      "reproduction": "Permission « granted », abonnement dont options.applicationServerKey est l'ancienne cle, serveur annoncant une autre cle. Appeler LC.notifs.activer() puis synchroniser().",
+      "preuve": "adverse-site.js (faux PushManager) : activer => {etat:'actif', abonnementsCrees:0, desabonnements:0, POST de l'ancien endpoint} ; synchroniser => 0 abonnement, 0 envoi, etat 'actif'. Le commentaire ligne 117 (« clés changées : on repart de zéro ») decrit un catch inatteignable avec un abonnement existant (il n'est tente que si getSubscription() est null, ligne 114). options.applicationServerKey n'est lu nulle part ; cache.cle vit toute la vie de la page. Cote serveur, 401/403 sont « passagers » : lignes jamais supprimees, ecran « Vous serez prevenu(e) ».",
+      "recommandation": "Comparer sub.options.applicationServerKey a cleEnOctets(cle.key) dans activer et synchroniser ; si different : unsubscribe, subscribe, POST. Relire pushKey a chaque activer. Ajouter ce cas au banc."
+    },
+    {
+      "id": "W-02",
+      "severite": "P2",
+      "fichier": "notifications.js:119-122 et :76 ; api.js:2170 ; installation-ui.jsx:111,125,162",
+      "titre": "Reseau coupe pendant « Oui, me prevenir » : permission consommee, la carte (ou l'interrupteur du profil) disparait sans message",
+      "reproduction": "Carte affichee, permission « default ». Couper l'acces a push/key et faire echouer subscribe(). Toucher « Oui », accepter.",
+      "preuve": "adverse-site4.js : avant {carte:1} ; apres {carte:0, erreurs visibles:0, permission:'granted'} ; toujours absente au retour du reseau sans recharger. Chaine : subscribe echoue -> return etat() (119) -> pushKey rappele (76) ; api.pushKey avale toute erreur en {enabled:false} (2170) -> 'indisponible' ; le message de installation-ui.jsx:111 est pose mais le rendu retourne null (125) ; dans le profil l'interrupteur devient un paragraphe (162). Serveur 500 : meme resultat ; cle disponible : message visible (E2bis).",
+      "recommandation": "Distinguer « serveur coupe » de « injoignable » dans pushKey ; en cas d'erreur garder le dernier etat/cle et afficher « Reessayer ». Ne pas rappeler le reseau dans le chemin d'echec de activer."
+    },
+    {
+      "id": "W-03",
+      "severite": "P2",
+      "fichier": "notifications.js:212 ; racine.jsx:425-429 (onPop -> closeTopModal)",
+      "titre": "Clic de notification avec un tiroir ou une fiche ouverts : le premier appui ferme la modale et ne mene PAS a « Mes commandes »",
+      "reproduction": "Site sur #menu, un article au panier, tiroir du panier ouvert (idem fiche, assistant, compte, upsell). Livrer le message du service worker {type:'lc:ouvrir', url:'/#orders'}. Observer, puis repeter.",
+      "preuve": "adverse-site3.js (iPhone 13) : avant {#menu, tiroir is-open} ; apres 1er message {url #menu retablie, tiroir ferme, titre « TOUT CE QU'ON CUISINE. »} ; apres 2e message {#orders, « MES COMMANDES. »}. Cause : le hash declenche popstate ; closeTopModal() consomme l'evenement et retablit l'URL (racine.jsx:427-429). Le banc ne verifie que p.url() sur une page sans modale.",
+      "recommandation": "Dans le gestionnaire lc:ouvrir, fermer les modales puis router (drapeau navRef) ; ajouter le cas « tiroir ouvert » au banc avec controle du titre."
+    },
+    {
+      "id": "W-04",
+      "severite": "P3",
+      "fichier": "installation.js:30-33,88,97",
+      "titre": "localStorage indisponible : l'origine ?src=nfc est lue puis perdue, aucun bandeau pour l'arrivee par carte",
+      "reproduction": "window.localStorage qui leve SecurityError, ouvrir /?src=nfc, emettre beforeinstallprompt.",
+      "preuve": "adverse-site5.js : {erreursJS:[], origine:null, etat:'possible', peutProposer:false, bandeau:0}. Sans localStorage le jeton de compte ne tient pas non plus.",
+      "recommandation": "Variable de module en repli quand ecrire() echoue."
+    },
+    {
+      "id": "W-05",
+      "severite": "P3",
+      "fichier": "installation-ui.jsx:128,149,170,174",
+      "titre": "Promesse « a chaque etape » / « validee, prete » plus large que la table serveur",
+      "reproduction": "Table OrderPushMessage : rien en preparation ; en livraison pas de « prete », seulement « en route ».",
+      "preuve": "Textes de la carte et du reglage. Aucun montant en euros ni libelle brut dans le code ajoute (grep du diff).",
+      "recommandation": "« Vous serez prevenu(e) quand votre commande est validee, prete ou en route »."
+    },
+    {
+      "id": "W-06",
+      "severite": "P3",
+      "fichier": "sw.js:117-136",
+      "titre": "notificationclick n'est execute par aucun banc (navigate() d'une page SEO, openWindow a froid)",
+      "reproduction": "Le banc livre des push via CDP, jamais un clic ; un evenement synthetique n'obtient pas focus()/openWindow().",
+      "preuve": "Lecture : urlSure borne a la meme origine ; focus() avant postMessage et openWindow('/#orders') a froid sur iPhone restent a prouver (porte G4).",
+      "recommandation": "Epreuve appareil : app ouverte, suspendue, tuee, page SEO ouverte."
+    },
+    {
+      "id": "W-07",
+      "severite": "P3",
+      "fichier": "sw.js:166-173",
+      "titre": "Navigation mise en cache sans test de statut : une 5xx passagere remplace la bonne coquille hors ligne",
+      "reproduction": "Navigation vers / recevant 502 : cache.put l'enregistre ; hors ligne, cache.match rend l'erreur.",
+      "preuve": "Lecture : aucun controle reponse.ok (ligne 171). Non reproduit.",
+      "recommandation": "N'ecrire que si reponse.ok && type 'basic'."
+    }
+  ],
+  "verifie_sans_defaut": [
+    "compile-jsx --check : 19 fichiers a jour ; check-asset-versions --check : 40 ressources, aucun bump oublie.",
+    "Bancs rejoues sur :8052 : installation-nfc 41, notifications-abonnement 38, sw-push 14, suivi-sans-rafraichir 16, tous verts.",
+    "Application Capacitor simulee : etat 'installe', peutProposer faux, notifs 'indisponible', zero bandeau, zero erreur JS.",
+    "beforeinstallprompt emis deux fois : un bandeau, un prompt(), ferme apres acceptation.",
+    "Deconnexion et 401 : accord, endpoint et « Non merci » effaces, DELETE keepalive, desabonnement navigateur ; le serveur rattache un endpoint au dernier compte (updateOrCreate sur endpoint_hash).",
+    "Permission demandee avant tout await reseau ; double appui borne (interrupteur desactive, reference dans le bandeau).",
+    "sw.js : urlSure refuse toute autre origine ; showNotification toujours appele ; tag+renotify ; v2->v3 skipWaiting+claim, ancien cache purge ; sw.js max-age=0, statiques ?v= immuables, HTML reseau d'abord : un correctif est visible.",
+    "reveil.js : pageshow persisted seulement, anti-rebond 1,5 s, rien page cachee ; gardes inflight (suivi) et enCours (commandes) : pas de tempete.",
+    "Bandeau masque sur paiement, tiroir, fiche, assistant, upsell, compte ; z-index 55 sous les modales ; place reservee ; safe-area.",
+    "Non prouvable sans appareil : abonnement reel apres mise a jour du SW, navigator.share iPhone proposant « Sur l'ecran d'accueil », subscribe() hors geste sur iOS."
+  ]
+}

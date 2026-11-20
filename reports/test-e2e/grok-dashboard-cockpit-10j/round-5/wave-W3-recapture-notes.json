@@ -1,0 +1,208 @@
+{
+  "wave": "W3-recapture-D-sandwichs-galette-frites",
+  "base_url": "http://127.0.0.1:8766",
+  "chromium": "/Users/1millnonstop/Library/Caches/ms-playwright/chromium_headless_shell-1237/chrome-headless-shell-mac-arm64/chrome-headless-shell",
+  "login": {
+    "status": 201
+  },
+  "pos_clicked": false,
+  "published": false,
+  "products_created": false,
+  "sandwichs": {
+    "chosen": {
+      "testid": "catalog-studio-category-row-1",
+      "id": "1",
+      "name": "Sandwichs",
+      "count_text": "5 articles",
+      "product_count": 5,
+      "empty": false
+    },
+    "wizard_clicked": true,
+    "overlay_title": "Wizard de la catégorie : Sandwichs",
+    "step_keys": [
+      "pain",
+      "viande",
+      "viande_2",
+      "sauce",
+      "garnitures",
+      "supplements"
+    ],
+    "step_labels": [
+      "Choisis ton pain",
+      "Choisis ta viande",
+      "Viande 2",
+      "Choisis ta sauce",
+      "Choisis tes garnitures",
+      "Suppléments"
+    ],
+    "page_count": 6,
+    "has_viande_2": true,
+    "has_viande_3": false,
+    "publish_state": "Brouillon",
+    "template": "sandwich",
+    "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-D-sandwichs/02-wizard.png"
+  },
+  "galette": {
+    "chosen": {
+      "testid": "catalog-studio-category-row-2",
+      "id": "2",
+      "name": "Galette",
+      "count_text": "3 articles",
+      "product_count": 3,
+      "empty": false
+    },
+    "wizard_clicked": true,
+    "overlay_title": "Wizard de la catégorie : Galette",
+    "step_keys": [
+      "pain",
+      "viande",
+      "sauce",
+      "garnitures",
+      "supplements"
+    ],
+    "step_labels": [
+      "Choisis ton pain",
+      "Choisis ta viande",
+      "Choisis ta sauce",
+      "Choisis tes garnitures",
+      "Suppléments"
+    ],
+    "page_count": 5,
+    "has_viande_2": false,
+    "has_viande_3": false,
+    "publish_state": "Brouillon",
+    "template": "sandwich",
+    "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-D-galette/02-wizard.png"
+  },
+  "frites": {
+    "chosen": {
+      "testid": "catalog-studio-category-row-7",
+      "id": "7",
+      "name": "Frites",
+      "count_text": "6 articles",
+      "product_count": 6,
+      "empty": false
+    },
+    "wizard_clicked": true,
+    "overlay_title": "Wizard de la catégorie : Frites",
+    "step_keys": [],
+    "step_labels": [],
+    "page_count": 0,
+    "has_viande_2": false,
+    "has_viande_3": false,
+    "publish_state": "Brouillon",
+    "template": null,
+    "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-D-frites/03-frites-wizard.png",
+    "profile_http_404": true,
+    "inner_title": "Wizard de la catégorie : Petite Frites",
+    "note": "Visual+DOM: PAGES 0. Profile GET 404. Console-summary step_keys were a Galette profile leak; corrected."
+  },
+  "states": [
+    {
+      "name": "D-sandwichs-wizard",
+      "url": "http://127.0.0.1:8766/admin/items/studio",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-D-sandwichs/02-wizard.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-D-sandwichs/02-wizard.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-D-sandwichs/02-wizard.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-D-sandwichs/02-wizard.network.json",
+      "notes": "From Dashboard Accès rapides Catalogue, clicked « Sandwichs » then « Wizard de la catégorie ». Overlay=true iframe_src=/admin/categories/1/composer. step_keys=[\"pain\",\"viande\",\"viande_2\",\"sauce\",\"garnitures\",\"supplements\"] page_count=6 has_viande_2=true. Did not publish / create / flip flags / POS."
+    },
+    {
+      "name": "D-galette-wizard",
+      "url": "http://127.0.0.1:8766/admin/items/studio",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-D-galette/02-wizard.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-D-galette/02-wizard.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-D-galette/02-wizard.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-D-galette/02-wizard.network.json",
+      "notes": "From Dashboard Accès rapides Catalogue, clicked « Galette » then « Wizard de la catégorie ». Overlay=true iframe_src=/admin/categories/2/composer. step_keys=[\"pain\",\"viande\",\"sauce\",\"garnitures\",\"supplements\"] page_count=5 has_viande_2=false. Did not publish / create / flip flags / POS."
+    },
+    {
+      "name": "D-frites-wizard",
+      "url": "http://127.0.0.1:8766/admin/items/studio",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-D-frites/03-frites-wizard.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-D-frites/03-frites-wizard.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-D-frites/03-frites-wizard.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-D-frites/03-frites-wizard.network.json",
+      "notes": "From Dashboard Accès rapides Catalogue, clicked « Frites » then « Wizard de la catégorie ». Overlay=true iframe_src=/admin/categories/7/composer. Inner title=Petite Frites. step_keys=[] page_count=0 has_viande_2=false. Profile 404. Did not publish / create / flip flags / POS."
+    }
+  ],
+  "clicks": [
+    {
+      "step": "goto_login",
+      "label": "/login"
+    },
+    {
+      "step": "login_submit",
+      "label": "Connexion",
+      "email": "admin@lecayenne.fr",
+      "http": 201
+    },
+    {
+      "step": "dashboard_ready",
+      "label": "Ventes du jour / Accès rapides",
+      "url": "http://127.0.0.1:8766/admin/dashboard"
+    },
+    {
+      "step": "click_acces_catalogue",
+      "label": "Catalogue"
+    },
+    {
+      "step": "click_category_D-sandwichs",
+      "label": "Sandwichs",
+      "testid": "catalog-studio-category-row-1",
+      "count_text": "5 articles"
+    },
+    {
+      "step": "click_wizard_D-sandwichs",
+      "label": "Wizard De La Catégorie",
+      "category": "Sandwichs"
+    },
+    {
+      "step": "close_wizard_D-sandwichs",
+      "closed": true,
+      "already_hidden": false
+    },
+    {
+      "step": "click_category_D-galette",
+      "label": "Galette",
+      "testid": "catalog-studio-category-row-2",
+      "count_text": "3 articles"
+    },
+    {
+      "step": "click_wizard_D-galette",
+      "label": "Wizard De La Catégorie",
+      "category": "Galette"
+    },
+    {
+      "step": "close_wizard_D-galette",
+      "closed": true,
+      "already_hidden": false
+    },
+    {
+      "step": "click_category_D-frites",
+      "label": "Frites",
+      "testid": "catalog-studio-category-row-7",
+      "count_text": "6 articles"
+    },
+    {
+      "step": "click_wizard_D-frites",
+      "label": "Wizard De La Catégorie",
+      "category": "Frites"
+    },
+    {
+      "step": "close_wizard_D-frites",
+      "closed": true,
+      "already_hidden": false
+    }
+  ],
+  "relevant4xx_count": 5,
+  "mutating_after_login": [
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+      "ts": 1788286661878
+    }
+  ],
+  "blockers": [],
+  "relevant4xx_note": "Sandwichs: :9100/:9101 health ERR_CONNECTION_REFUSED (dashboard health probes). Frites: GET /api/admin/composer/categories/7/profile 404. Galette: no 4xx in wizard buffer. CSP report-only frame-ancestors on overlay iframe."
+}

@@ -46,6 +46,12 @@ export function applyCaisseZoom(doc, zoom) {
     }
     const z = (typeof zoom === 'number' && zoom > 0) ? zoom : CAISSE_ZOOM;
     doc.body.style.zoom = String(z);
+    // [R-005 2026-10-04] Le zoom rétrécit aussi les boîtes dimensionnées en unités d'écran (`h-screen`,
+    // `100dvh`) : à 0.9, 10 % de la fenêtre restait blanc en bas de la caisse (72 px à 720, 108 px à 1080).
+    // On publie le facteur pour que le CSS (`.db-main`, panneau ticket) divise ces hauteurs par lui.
+    if (typeof doc.body.style.setProperty === 'function') {
+        doc.body.style.setProperty('--caisse-zoom', String(z));
+    }
     if (typeof doc.body.setAttribute === 'function') {
         doc.body.setAttribute('data-caisse-zoom', String(z));
     }
@@ -57,6 +63,9 @@ export function clearCaisseZoom(doc) {
         return;
     }
     doc.body.style.zoom = '';
+    if (typeof doc.body.style.removeProperty === 'function') {
+        doc.body.style.removeProperty('--caisse-zoom');
+    }
     if (typeof doc.body.removeAttribute === 'function') {
         doc.body.removeAttribute('data-caisse-zoom');
     }

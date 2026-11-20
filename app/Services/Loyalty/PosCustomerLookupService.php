@@ -163,6 +163,7 @@ final class PosCustomerLookupService
     public function presenter(User $user): array
     {
         $solde = max(0, (int) $user->loyalty_points);
+        $depensable = \App\Services\LoyaltyService::pointsDepensables((int) $user->id, $solde);
 
         return [
             'id'              => (int) $user->id,
@@ -172,12 +173,14 @@ final class PosCustomerLookupService
             'loyalty_code'    => (string) $user->loyalty_code,
             'balance'         => $solde,
             'balance_eur'     => $this->regles->euroValue($solde),
-            // Ce qui est RÉELLEMENT utilisable maintenant : plancher effectif + multiple du taux.
-            'usable_points'   => $this->regles->usablePoints($solde),
-            'usable_eur'      => $this->regles->euroValue($this->regles->usablePoints($solde)),
-            'can_use'         => $this->regles->usablePoints($solde) > 0,
+            // Ce qui est RÉELLEMENT utilisable maintenant : plancher effectif + multiple du taux, SUR LES POINTS
+            // DÉPENSABLES (décision propriétaire 2026-11-06 : ceux d'une commande à distance pas encore remise attendent).
+            'usable_points'   => $this->regles->usablePoints($depensable),
+            'usable_eur'      => $this->regles->euroValue($this->regles->usablePoints($depensable)),
+            'can_use'         => $this->regles->usablePoints($depensable) > 0,
+            'pending_points'  => $solde - $depensable,
             // Pour pouvoir DIRE ce qui manque au lieu d'opposer un refus sec.
-            'missing_points'  => $this->regles->pointsMissingBeforeUse($solde),
+            'missing_points'  => $this->regles->pointsMissingBeforeUse($depensable),
             'effective_floor' => $this->regles->effectiveFloor(),
         ];
     }

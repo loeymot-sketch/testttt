@@ -388,7 +388,29 @@ class PromoFlyerTest extends TestCase
         $bytes = $this->service->renderBytes($flyer);
 
         $this->assertStringContainsString('POURQUOI COMMANDER EN DIRECT', $bytes);
-        $this->assertStringContainsString('points fidelite', $bytes);
+
+        /*
+         * [AUDIT-SUPERVISEUR 2026-08-25 · D-005] Cette assertion cherchait « points fidelite »,
+         * SANS ACCENTS — elle épinglait donc la faute au lieu de la détecter. Le ticket part
+         * chez le client ; « fidelite » y était imprimé tel quel.
+         *
+         * On compare maintenant au texte ACCENTUÉ, converti dans le même jeu de caractères que
+         * celui du flux ESC/POS (CP858, qui porte tous les accents français). Écrire ici la
+         * conversion plutôt que des octets en dur documente le pourquoi et survit à un
+         * changement de jeu de caractères.
+         */
+        $attendu = iconv('UTF-8', 'CP858//TRANSLIT//IGNORE', 'points fidélité');
+        $this->assertStringContainsString(
+            $attendu,
+            $bytes,
+            'Le ticket doit porter « points fidélité » ACCENTUÉ. Un ticket papier ne se '
+            . 'corrige pas après impression.'
+        );
+        $this->assertStringNotContainsString(
+            'points fidelite',
+            $bytes,
+            'RÉGRESSION D-005 : la version sans accents est de retour sur le ticket client.'
+        );
     }
 
     /**

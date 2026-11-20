@@ -1,0 +1,132 @@
+{
+  "wave": "ECRANS",
+  "round": 3,
+  "date": "2026-11-06",
+  "environment": "serveur artisan :8785 (arbre testttt, base foodking_e2e), pages servies sous l'origine :8766 compilée et relayées vers :8785 ; soketi :6001 + queue:work redis lancés par cette vague puis arrêtés ; Chromium Playwright, Node v22.23.2",
+  "artefacts": "/private/tmp/claude-501/-Users-1millnonstop-Downloads-projet-foodking-web-web-testttt/ba5c0c5a-173e-4e70-9b44-6580aa4c3e65/scratchpad/r3ecrans/ (scripts *.mjs, sorties out-*.json, PNG + .dom.txt/.net.txt dans png/)",
+  "states_reviewed": 31,
+  "points": {
+    "1_caisse": {
+      "triple_clic_encaisser": {"verdict": "FERMÉ", "preuve": "3 clics + 1 clic forcé → 1 seul POST /api/admin/pos (201, commande 9785, n° fiscal 3596). out-pos-triple-1920.json"},
+      "reponse_perdue_puis_nouvel_essai": {"verdict": "FERMÉ", "preuve": "1er POST 201 (9786, fiscal 3597) coupé ; toast FR « Connexion perdue pendant l'envoi : la vente a peut-être été enregistrée… » ; 2e POST même clé → 409 IDEMPOTENCY_KEY_CONFLICT, toast « Commande déjà enregistrée — vérifier le ticker avant de relancer. » ; 1 seule commande en base. Note : le serveur refuse (409) au lieu de rejouer car la charge utile change entre deux essais — accepté par le contrat du code (PosComponent.vue:6592-6596)."},
+      "F5_puis_nouvel_essai": {"verdict": "DÉFAUT", "finding": "ECR-R3-001"},
+      "panier_vide_cle_effacee_vente_suivante": {"verdict": "FERMÉ", "preuve": "après vente 1, localStorage pos.cle-encaissement = null ; vente 2 même panier → clé neuve, commande 9789 distincte (9788/9789, fiscal 3599/3600). out-pos-suivante-1280.json"},
+      "voie_telephone": {"verdict": "FERMÉ", "preuve": "réponse perdue + 2e clic → 409, une seule commande 9792 ; triple clic → 1 POST (9793). Toast FR."},
+      "voie_livraison": {"verdict": "NON TESTÉ", "raison": "parcours adresse inline non piloté au navigateur ; même fonction cleStablePourPanier('livraison') que l'encaissement, donc exposée à ECR-R3-001 (non rejoué)."},
+      "message_reseau_francais": {"verdict": "FERMÉ", "preuve": "toasts encaissement et téléphone en français (cf. ci-dessus)."}
+    },
+    "2_borne_planB": {
+      "parcours_complet_multi_produits_formule": {"verdict": "FERMÉ", "preuve": "Cayenne (wizard 6 étapes) + Perrier + Menu Enfant Nuggets (formule) → commande 9818, status 4, payment_status 15 (PENDING_COUNTER), fiscal NULL ; écran « Rendez-vous en caisse … Montant à régler 14,20 € » ; visible dans « À ENCAISSER — COMPTOIR » de la caisse (PNG sync-err-pos.png, N°A0307 14,20 €)."},
+      "double_appui_valider": {"verdict": "FERMÉ", "preuve": "2 clics + 1 clic forcé → 1 POST /api/frontend/order (201)."},
+      "retour_arriere_wizard": {"verdict": "FERMÉ", "preuve": "étape sauce → PRÉCÉDENT → « QUELLE VIANDE ? », composition conservée (Pain, Poulet mariné), reprise jusqu'au récap (PNG k3-2-recap-cayenne lu)."}
+    },
+    "3_kds_oss": {
+      "arrivee_sans_rechargement": {"verdict": "FERMÉ", "preuve": "commande borne 9839 : carte KDS en 385 ms, caisse « à encaisser » ≈ immédiat ; commande web acceptée : KDS 402-733 ms ; commande caisse : KDS et OSS avant la fin du parcours de vente (< 2 s). OSS n'affiche pas la commande borne non encaissée (statut 4) : conforme au filtre PREPARING/PREPARED (OrderStatusScreenOrderService.php:62)."},
+      "statut_KDS_vers_OSS_et_KDS_jumeau": {"verdict": "FERMÉ", "preuve": "« Prêt » sur 9837 → OSS colonne « Prêt » en 604 ms ; carte retirée du KDS jumeau en < 0,2 s."},
+      "deux_KDS_valident_en_meme_temps": {"verdict": "FERMÉ", "preuve": "commande 9838 : K2 POST change-status 202, K1 409 « Order status was updated elsewhere » ; une seule transition ; K1 affiche la commande dans « Récemment servies » (PNG sync-4-kds-apres-1920 lu). Le 409 n'affiche pas de toast mais l'état final est cohérent."},
+      "texte_cuisine_web_sans_formule": {"verdict": "FERMÉ", "preuve": "instructions forgées (« + Menu (Frites + Boisson) », « Boisson menu: », « Frites: », zéro-width, « + Drink », « MENU : MAY ») → ligne stockée « [Note commande : Sauce frites - Mayonnaise] ⏎ [Note : ABUSR3E sans oignon] », carte KDS « Tacos | P | ALG » sans badge MENU, ni Boisson, ni Frites (DOM + base order_items 9842/9843). Reste une note libre du client entre crochets."}
+    },
+    "4_admin": {
+      "horaires_saisie_invalide": {"verdict": "FERMÉ", "preuve": "fermeture = ouverture → 422, message FR au champ ET à 12 px au-dessus d'« Enregistrer », visible à l'écran ; fermeture « au » < « du » → 422 idem ; enregistrement à l'identique → 200 + toast « Horaires : modification enregistrée. » ; configuration identique avant/après (GET comparé)."},
+      "coupons_cases_cochees": {"verdict": "FERMÉ", "preuve": "Lun + Web cochés à la souris → 201 ; réédition : cases visiblement cochées (PNG c-1280-3-edition lu) ; décoche Web / coche POS → base valid_days_of_week [\"mon\"], surfaces [\"pos\"]."},
+      "coupons_champs_vides": {"verdict": "DÉFAUT", "finding": "ECR-R3-002"},
+      "livraisons_especes_a_recuperer": {"verdict": "DÉFAUT", "finding": "ECR-R3-003, ECR-R3-004", "preuve_coherence": "en-têtes « Espèces encaissées » = somme des parts espèces (19:30 : 9,60 + 4,60 + 9,60 = 23,80 €), cohérent avec la base."},
+      "ecran_livreur_/livreur": {"verdict": "NON TESTÉ", "raison": "nécessite un compte livreur actif ; les livreurs de test des tours précédents sont supprimés ou inactifs."}
+    },
+    "5_hygiene": {
+      "releve_double_clic": {"verdict": "FERMÉ", "preuve": "2 clics sur « Valider les relevés » → 1 POST 201, 1 seule ligne hygiene_temperature_readings pour l'équipement 3522 ; toast « 1 relevé enregistré ✓ »."},
+      "fiche_deux_navigateurs_en_parallele": {"verdict": "FERMÉ", "preuve": "A 201, B 422 « déjà validée aujourd'hui » affiché « Déjà validée. » dans la carte ; 1 seule completion (9126). Mineur : les compteurs de B restent « 0/2 faites » jusqu'au rafraîchissement."}
+    }
+  },
+  "findings": [
+    {
+      "id": "ECR-R3-001",
+      "state_artifact": "png/pos-f5-apres-rechargement-1440.png + out-pos-f5-1440.json + f5probe.mjs",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "evidence": "Réponse d'encaissement perdue (POST 201, commande 9787 scellée fiscal 3598, toast « …le même panier ne sera pas encaissé deux fois »), F5, panier restauré, nouvel encaissement → clé NEUVE et 2ᵉ vente scellée 9790 (fiscal 3601, même panier Perrier 1,90 €). Second moyen : base (orders 9787 et 9790, deux fiscal_sequence_no) + sonde navigateur qui trace removeItem('pos.cle-encaissement') à t=239 ms après le chargement, pile = handler du watcher carts (pos-shell.05044bf3.js:2:829082). Cause : le watcher carts est immediate:true (PosComponent.vue:8254) et efface la clé dès que le panier est vide (PosComponent.vue:8228-8231) ; au démarrage le panier est vide AVANT que posCart/setScope ne le réhydrate (PosComponent.vue:4656, posCart.js:377-381). Le correctif « clé gardée après rechargement » (ee137eacf) est donc inopérant au navigateur. Même fonction pour téléphone et livraison.",
+      "fix_hint": "Ne pas effacer la clé pendant l'hydratation : ignorer le premier passage du watcher (immediate) ou ne retirer la clé qu'après posCart/setScope (ex. drapeau restoredFromStorage / scope posé), puis rejouer ce scénario au navigateur.",
+      "status": "open", "first_seen_round": 3, "rounds_open": 1
+    },
+    {
+      "id": "ECR-R3-002",
+      "state_artifact": "png/c-1280-0-vide.png",
+      "category": "silent_error",
+      "severity": "P2",
+      "evidence": "Coupon : « Enregistrer » sur formulaire vide → POST /api/admin/coupon 422 (9 erreurs). Les messages sont aux champs en haut du tiroir, hors écran ; rien près du bouton, aucun toast (DOM : aucun [role=alert] dans #sidebar ; PNG lu : bas du tiroir sans message). Code : CouponCreateComponent.vue:450-453 ne fait que this.errors = …, pas de message près du bouton (l. 209-215). Le même schéma a été corrigé pour Horaires (HorairesComponent.vue:103-104), pas ici.",
+      "fix_hint": "Reprendre le patron Horaires : <p role=alert> au-dessus du bouton avec err.response.data.message, ou faire défiler jusqu'au premier champ en erreur.",
+      "status": "open", "first_seen_round": 3, "rounds_open": 1
+    },
+    {
+      "id": "ECR-R3-003",
+      "state_artifact": "png/v-livr-1920.png + livr-1280.dom.txt",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "Tableau des tournées : un arrêt payé en deux moyens affiche « Encaissé 9,60 € (à encaisser) » (#0611269504, #0611269747). API pos-delivery/board : collect_method \"split\", delivered_at renseigné ; base : delivery_stops.collect_method = split, amount_collected_cents 960. Cause : PosDeliveryBoard.vue:200 collectLabel ne connaît pas 'split' et rend « À encaisser », injecté dans « Encaissé … (…) » à la l. 86.",
+      "fix_hint": "PosDeliveryBoard.vue:200 : ajouter split → « Espèces + carte » (ou détailler les parts).",
+      "status": "open", "first_seen_round": 3, "rounds_open": 1
+    },
+    {
+      "id": "ECR-R3-004",
+      "state_artifact": "png/v-livr-1920.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "Les commandes ANNULÉES pendant la tournée (#0611269502, #0611269748 : orders.status = 16) restent affichées comme des arrêts actifs « Espèces 9,60 € » en orange (montant dû), « Arrivé 03:22 » / « En route ». L'API board les renvoie sans indicateur d'annulation (amount_due 9.6, delivered_at null). L'en-tête « Espèces encaissées » ne les compte pas : le même écran se contredit. Code : PosDeliveryBoard.vue:86-89 et stateOf l. 222-227 ; source : PosDeliveryController.php:176 (board).",
+      "fix_hint": "Exposer l'annulation dans le board et afficher « Annulée — rien à encaisser » à la place du montant dû.",
+      "status": "open", "first_seen_round": 3, "rounds_open": 1
+    },
+    {
+      "id": "ECR-R3-005",
+      "state_artifact": "png/kds-vis-1280.png + png/webkds-carte-9843.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "KDS 1280×800 : la note client d'une carte est coupée (« [Note : ABUSR3E sans » puis rien) ; .kds-card__body scrollHeight 345 > clientHeight 319, overflow auto, sans indicateur visible ; mot coupé « Mayonnais / e]». Le « sans oignon » n'est pas lisible sans faire défiler la carte. À 1920×1080, aucun débordement.",
+      "fix_hint": "KdsOrderCard.vue .kds-card__body (l. 888) : réduire la taille de la police des notes ou signaler clairement la suite ; éviter la coupure en milieu de mot.",
+      "status": "open", "first_seen_round": 3, "rounds_open": 1
+    },
+    {
+      "id": "ECR-R3-006",
+      "state_artifact": "png/kds-vis-1280.png",
+      "category": "element_overlap",
+      "severity": "P3",
+      "evidence": "KDS 1280 : la pastille « EN LIGNE » passe sur deux lignes (rect 65×48 alors que la puce fait 28 px) et la barre CUISSON la recouvre (badge y 111-159, barre à y 145). À 1920 : 70×24, aucun chevauchement. Code : KdsOrderCard.vue:710-720 (.kds-card__source-chip sans white-space:nowrap).",
+      "fix_hint": "white-space: nowrap sur .kds-card__source-label.",
+      "status": "open", "first_seen_round": 3, "rounds_open": 1
+    },
+    {
+      "id": "ECR-R3-007",
+      "state_artifact": "png/v-pos-1280.png, png/v-pos-1920.png, png/pos-f5-apres-rechargement-1440.png",
+      "category": "text_truncation",
+      "severity": "P3",
+      "evidence": "Caisse avec un article : le haut du ticket, compacté et défilant, coupe une rangée de boutons à mi-hauteur (« Annuler la dernière ligne » à 1280, « Mettre en attente » à 1440, rangée livraison à 1920). Le type de commande et le nom du client ne sont visibles qu'après défilement. Pas de bande blanche en bas (le ticket va jusqu'au bord à 1280, 1440 et 1920).",
+      "fix_hint": "Caler la hauteur compacte sur une rangée entière, ou ajouter un dégradé ou une flèche de défilement.",
+      "status": "open", "first_seen_round": 3, "rounds_open": 1
+    },
+    {
+      "id": "ECR-R3-008",
+      "state_artifact": "png/v-items-1280.png",
+      "category": "text_truncation",
+      "severity": "P3",
+      "evidence": "/admin/items à 1280 : l'en-tête de colonne « ACTIONS » est coupé en « ACTIO » sur le bord droit de la carte.",
+      "fix_hint": "Table en overflow-x:auto visible, ou colonne actions plus compacte.",
+      "status": "open", "first_seen_round": 3, "rounds_open": 1
+    }
+  ],
+  "non_defauts_instrument": [
+    "Champs heure en « 06:00 PM » et dates en mm/jj/aaaa, « Choose File » : contrôles natifs de Chromium sans interface en français (la locale Playwright ne change pas leur rendu) — pas un défaut produit.",
+    "Mesure « bande blanche » de vis.mjs (720/800) : j'ai multiplié par le zoom une valeur déjà zoomée. Les PNG lus montrent qu'il n'y a pas de bande blanche.",
+    "401 sur /api/frontend/menu et refresh-token à la borne : la session borne est injectée par vuex dans mes scripts, pas par l'écran de connexion de la borne ; le catalogue se charge quand même. Non imputé au produit.",
+    "ERR_CONNECTION_REFUSED vers 127.0.0.1:9100/9101 (agent d'impression absent) et CORS loopback de la 1ʳᵉ capture (images) : bruit d'environnement, corrigé dans le relais ensuite.",
+    "« Aucun livreur » sur les tournées : les comptes livreurs 1124 (inactif) et 1144 (supprimé) viennent des tours précédents."
+  ],
+  "summary": {"P0": 0, "P1": 1, "P2": 4, "P3": 3, "open_P0": 0, "open_P1": 1, "open_P2": 4, "open_P3": 3},
+  "verdict": "AMBER",
+  "cleanup": {
+    "annulees": [9793, 9818, 9839, 9842, 9843],
+    "refusees_web": [9840, 9841],
+    "scellees_NF525_non_annulables": {"9785": 3596, "9786": 3597, "9787": 3598, "9788": 3599, "9789": 3600, "9790": 3601, "9837": 3603, "9838": 3605, "9792": "3607 (commande téléphone ENCAISSÉE à 06:41:44 par une autre session, pas par mes scripts)"},
+    "fixtures_supprimees": "coupon 2429, équipement 3522 (relevé 7999 annulé), fiche 2674 (validation 9126 annulée), jeton de test du client 272",
+    "processus": "serveur :8785, queue:work et soketi :6001 lancés par cette vague : arrêtés",
+    "fiscal_verify_chain_all": "SWEEP COMPLETE — CHAIN OK on every active branch (7 total)"
+  }
+}

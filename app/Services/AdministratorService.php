@@ -87,6 +87,9 @@ class AdministratorService
     public function update(AdministratorRequest $request, User $administrator)
     {
         try {
+            // [AUDIT ABUSIF 2026-11-06 · tour 3 · R3-ADV-002] Même règle que EmployeeService::update : mot de passe ou e-mail
+            // changé par un tiers → les sessions ouvertes du compte sont fermées (sinon il reste connecté jusqu'à 8 h).
+            $identifiantsChanges = $request->password || mb_strtolower((string) $request->email) !== mb_strtolower((string) $administrator->email);
             DB::transaction(function () use ($administrator, $request) {
                 $this->user               = $administrator;
                 $this->user->name         = $request->name;
@@ -101,6 +104,9 @@ class AdministratorService
                 }
                 $this->user->save();
             });
+            if ($identifiantsChanges && (int) $administrator->id !== (int) optional(auth()->user())->id) {
+                $administrator->tokens()->delete();
+            }
             return $this->user;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

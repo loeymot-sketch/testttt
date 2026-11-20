@@ -11,6 +11,18 @@ class ReleaseStockOnRefundCreated
 {
     public function handle(RefundCreated $event): void
     {
+        // [Audit abusif stock P2 · 2026-11-06] Jumeau de ReleaseStockOnOrderCanceled::materialAlreadyCommitted() :
+        // une commande déjà PRÉPARÉE (prepared_at posé dès « prête », « en livraison » ou « livrée », effacé si la
+        // cuisine la rouvre) a transformé sa marchandise. La rendre au stock surestimait on_hand (canette vendable qui
+        // n'existe plus) alors que le chemin d'annulation inscrivait déjà une perte (reproduit : commande 9928,
+        // refund +1 ET stock_outflows « perte »). On ne restitue RIEN dans ce cas.
+        $prepareeLe = \Illuminate\Support\Facades\DB::table('orders')->where('id', (int) ($event->order->id ?? 0))->value('prepared_at');
+        if ($prepareeLe !== null) {
+            Log::info('ReleaseStockOnRefundCreated: commande déjà préparée — aucune restitution de stock', ['order_id' => $event->order->id ?? null]);
+
+            return;
+        }
+
         try {
             app(StockService::class)->releaseForOrder($event->order, 'refund', $event->refundedItems);
         } catch (Throwable $e) {

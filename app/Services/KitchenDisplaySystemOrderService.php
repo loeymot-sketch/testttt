@@ -6,6 +6,7 @@ use Exception;
 use App\Enums\Ask;
 use Carbon\Carbon;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\OrderStatusTransition;
 use App\Enums\OrderType;
 use App\Enums\OrderStatus;
@@ -29,6 +30,10 @@ class KitchenDisplaySystemOrderService
 {
     public object $order;
     private bool $lastListOverflow = false;
+    // [VG-2026-10-21 M7-labels-50] Requête de la dernière liste (avant le plafond de 50), pour qu'un appelant
+    // qui le DEMANDE (écran étiquettes) puisse dire combien de commandes il ne montre pas. Le KDS ne l'appelle pas.
+    private ?\Illuminate\Database\Eloquent\Builder $lastListQuery = null;
+    private int $lastListCount = 0;
     private DispatchKdsTicket $kdsTicketDispatcher;
 
     public function __construct(?DispatchKdsTicket $kdsTicketDispatcher = null)
@@ -192,6 +197,9 @@ class KitchenDisplaySystemOrderService
                 // ; statut/release/branch gates inchangés. NULL = ASAP → strictement
                 // identique. Sentinel : KdsScheduledOrderGateTest (10h→20h + J-1).
                 ->orWhereNotNull('scheduled_at');
+                // [VG-2026-10-21 M2-101] Livraison créée bien avant son départ (delivery_slot_at) :
+                // même échappement que les programmées, borné à grace h après le départ.
+                \App\Domain\Kds\KitchenReleaseRule::orWhereDeliverySlotActive($query, now(config('app.timezone')));
             })->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->orderFilter)) {
@@ -242,9 +250,12 @@ class KitchenDisplaySystemOrderService
             // Garde de régression : tests/Feature/KDS/KdsBoardQueryPlanTest.php
             // (test_board_runs_under_branchscope_and_returns_expected_set).
 
+            // [VG-2026-10-21 M7-labels-50] Copie AVANT le plafond, comptée seulement si un appelant le demande.
+            $this->lastListQuery = (clone $query);
             $orders = $query->limit(51)->get();
 
             $this->lastListOverflow = $orders->count() > 50;
+            $this->lastListCount = min($orders->count(), 50);
 
             return $orders->take(50)->values();
         } catch (Exception $exception) {
@@ -256,6 +267,20 @@ class KitchenDisplaySystemOrderService
     public function lastListOverflow(): bool
     {
         return $this->lastListOverflow;
+    }
+
+    /**
+     * [VG-2026-10-21 M7-labels-50] Nombre TOTAL de commandes que la dernière liste aurait renvoyées sans le
+     * plafond de 50. Une requête COUNT de plus, seulement en cas de dépassement et seulement si on l'appelle
+     * (l'écran étiquettes) — le KDS ne l'appelle pas, son coût et son comportement sont inchangés.
+     */
+    public function lastListTotal(): int
+    {
+        if (! $this->lastListOverflow || $this->lastListQuery === null) {
+            return $this->lastListCount;
+        }
+
+        return (clone $this->lastListQuery)->reorder()->count();
     }
 
     /**
@@ -290,7 +315,8 @@ class KitchenDisplaySystemOrderService
             $appTz = config('app.timezone');
 
             $query = Order::query()
-                ->select(['id', 'order_serial_no', 'scheduled_at', 'order_type', 'pos_customer_name', 'user_id', 'branch_id'])
+                // [VG-2026-10-21 M2-101] + delivery_slot_at : une livraison retenue est annoncée au bandeau.
+                ->select(['id', 'order_serial_no', 'queue_number', 'scheduled_at', 'delivery_slot_at', 'order_type', 'pos_customer_name', 'user_id', 'branch_id'])
                 ->with('user')
                 ->whereIn('status', KitchenReleaseRule::visibleStatuses());
 
@@ -303,19 +329,27 @@ class KitchenDisplaySystemOrderService
                 $query->where('branch_id', $userBranchId);
             }
 
-            return $query->orderBy('scheduled_at', 'asc')
+            // [VG-2026-10-21 M2-101] Tri sur l'heure cible cuisine (programmée, sinon départ de tournée).
+            return $query->orderByRaw('COALESCE(scheduled_at, delivery_slot_at) asc')
                 ->limit(20)
                 ->get()
                 ->map(static function (Order $order): array {
                     return [
                         'id'              => (int) $order->id,
                         'order_serial_no' => $order->order_serial_no,
-                        'scheduled_at'    => $order->scheduled_at?->toIso8601String(),
+                        // [E2E stores · B2-R2-08 · 2026-10-01] Le numéro APPELÉ (« N°A0055 »), celui
+                        // que la caisse, l'écran client et l'application affichent.
+                        'queue_number'    => $order->queue_number,
+                        // [VG-2026-10-21 M2-101] Livraison sans heure programmée : son heure cible est le
+                        // départ de la tournée (delivery_slot_at) — jamais une ligne sans heure au bandeau.
+                        'scheduled_at'    => ($order->scheduled_at ?? $order->delivery_slot_at)?->toIso8601String(),
                         // [FIX SCHEDULED-STALE P3] Y-m-d Paris-local (cast datetime,
                         // app TZ) — désambiguïsation multi-jours côté bandeau.
-                        'scheduled_date'  => $order->scheduled_at?->format('Y-m-d'),
+                        'scheduled_date'  => ($order->scheduled_at ?? $order->delivery_slot_at)?->format('Y-m-d'),
                         'order_type'      => $order->order_type === null ? null : (int) $order->order_type,
-                        'customer_name'   => $order->pos_customer_name ?: $order->user?->name,
+                        // [NOM-COMMANDE-BORNE 2026-10-19] La borne n'emprunte jamais le compte porteur.
+                        'customer_name'   => $order->pos_customer_name
+                            ?: (strtolower((string) $order->source_surface) === 'kiosk' ? null : $order->user?->name),
                     ];
                 })
                 ->values()
@@ -655,6 +689,78 @@ class KitchenDisplaySystemOrderService
     }
 
     /**
+     * [KDS-ITEM-READY-SYNC 2026-09-23] Marque UN article prêt — SSOT serveur,
+     * indépendant du statut de la commande (kds.js décide séparément, une fois
+     * TOUS les articles bumpés, d'appeler `changeStatus`). Idempotent : rebump
+     * un article déjà marqué est un no-op silencieux (pas d'erreur, pas de
+     * double horodatage).
+     *
+     * Isolation de branche sous verrou, même schéma que `recall()`/`reopen()` :
+     * `OrderItem` porte déjà `BranchScope` (liaison implicite → 404 cross-branche
+     * avant d'atteindre ce code), ce re-check couvre la fenêtre étroite entre
+     * liaison et relecture sous verrou.
+     *
+     * @throws HttpException 403 (autre branche)
+     */
+    public function bumpItem(OrderItem $orderItem): array
+    {
+        $user = auth()->user();
+        $userBranchId = (int) ($user->branch_id ?? 0);
+
+        return DB::transaction(function () use ($orderItem, $userBranchId) {
+            /** @var OrderItem $locked */
+            $locked = OrderItem::query()->whereKey($orderItem->id)->lockForUpdate()->firstOrFail();
+
+            if ($userBranchId > 0 && (int) $locked->branch_id !== $userBranchId) {
+                abort(403, 'Accès refusé : cet article appartient à une autre succursale.');
+            }
+
+            if ($locked->kitchen_bumped_at === null) {
+                $locked->kitchen_bumped_at = now();
+                $locked->save();
+            }
+
+            return ['kitchen_bumped_at' => $locked->kitchen_bumped_at->toIso8601String()];
+        });
+    }
+
+    /**
+     * [KDS-ITEM-READY-SYNC 2026-09-23] Annule le bump d'un article — miroir
+     * serveur du délai de grâce 60s déjà appliqué côté client (kds.js), pour
+     * qu'un appel API direct ne puisse pas contourner la fenêtre.
+     *
+     * @throws HttpException 422 (pas bumpé / fenêtre expirée), 403 (autre branche)
+     */
+    public function recallItem(OrderItem $orderItem): array
+    {
+        $user = auth()->user();
+        $userBranchId = (int) ($user->branch_id ?? 0);
+        $windowSeconds = 60;
+
+        return DB::transaction(function () use ($orderItem, $userBranchId, $windowSeconds) {
+            /** @var OrderItem $locked */
+            $locked = OrderItem::query()->whereKey($orderItem->id)->lockForUpdate()->firstOrFail();
+
+            if ($userBranchId > 0 && (int) $locked->branch_id !== $userBranchId) {
+                abort(403, 'Accès refusé : cet article appartient à une autre succursale.');
+            }
+
+            if ($locked->kitchen_bumped_at === null) {
+                abort(422, "Cet article n'a pas été marqué prêt.");
+            }
+
+            if ($locked->kitchen_bumped_at->lt(Carbon::now()->subSeconds($windowSeconds))) {
+                abort(422, 'Fenêtre de rappel expirée (60 s).');
+            }
+
+            $locked->kitchen_bumped_at = null;
+            $locked->save();
+
+            return ['recalled' => true];
+        });
+    }
+
+    /**
      * [REMETTRE-EN-PRÉPARATION 2026-08-13 · owner] La commande validée trop tôt REDEVIENT en
      * préparation.
      *
@@ -943,6 +1049,9 @@ class KitchenDisplaySystemOrderService
                 // (admission temporelle = applyScheduledBoardFilter ci-dessus).
                 // NULL = ASAP strictement inchangé. Sentinel : KdsScheduledOrderGateTest.
                 ->orWhereNotNull('scheduled_at');
+                // [VG-2026-10-21 M2-101] Livraison créée bien avant son départ (delivery_slot_at) :
+                // même échappement que les programmées, borné à grace h après le départ.
+                \App\Domain\Kds\KitchenReleaseRule::orWhereDeliverySlotActive($query, now(config('app.timezone')));
             })->get();
 
             $allItems = $orders->pluck('orderItems')->flatten();
@@ -971,6 +1080,13 @@ class KitchenDisplaySystemOrderService
                     'item_addons' => $addons,
                     'instruction' => $instruction,
                     'allergens_hash' => $allergensHash,
+                    // [AUDIT AVAL 2026-09-29 · P0] Sans ces deux clés, TOUS les suppléments
+                    // libres partageaient la même empreinte (item_id NULL, variations/extras
+                    // vides, instruction NULL) : « Sauce blanche » ×1 et « Emballage » ×1
+                    // fusionnaient en UNE ligne « Sauce blanche ×2 » sur l'onglet par défaut,
+                    // et le second disparaissait de la cuisine.
+                    'line_type' => $item['line_type'] ?? 'catalog',
+                    'manual_label' => $item['manual_label'] ?? null,
                 ]);
             })->map(function ($groupedItems) {
                 $firstItem = $groupedItems->first();

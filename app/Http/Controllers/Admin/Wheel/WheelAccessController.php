@@ -28,9 +28,29 @@ use Illuminate\Support\Facades\URL;
  */
 class WheelAccessController extends Controller
 {
+    /**
+     * Les écrans qu'une passe peut ouvrir — liste FERMÉE (route, ancre). L'ancre ouvre directement
+     * une rubrique de l'espace commerçant (« Avis & réseaux » depuis la caisse).
+     */
+    public const ECRANS = [
+        'accueil' => ['admin.wheel.home', ''],
+        'espace' => ['admin.wheel.espace', ''],
+        'avis' => ['admin.wheel.espace', '#avis'],
+        'vitrine' => ['admin.wheel.kiosk', ''],
+        'validation' => ['admin.wheel.counter', ''],
+        'lot' => ['admin.wheel.prize', ''],
+        'reglages' => ['admin.wheel.settings', ''],
+    ];
+
     public function show(Request $request)
     {
         $ouvert = $this->ouvert($request);
+
+        // [2026-11-19 · propriétaire] Porte ouverte → l'espace commerçant, qui réunit tout. L'ancien
+        // accueil reste joignable par `?ecrans=1` (liens directs vers les écrans de comptoir).
+        if ($ouvert && ! $request->boolean('ecrans')) {
+            return redirect()->route('admin.wheel.espace');
+        }
 
         return view('admin.wheel.acces', [
             'ouvert' => $ouvert,
@@ -72,8 +92,10 @@ class WheelAccessController extends Controller
         // Anti-fixation de session au moment du déverrouillage.
         $request->session()->regenerate();
         $request->session()->put(EnsureWheelAccess::SESSION_KEY, now()->getTimestamp());
+        // Ouvert par le code : personne n'est identifié, on n'hérite pas d'un caissier précédent.
+        $request->session()->forget(EnsureWheelAccess::PASS_USER_KEY);
 
-        return redirect()->route('admin.wheel.home');
+        return redirect()->route('admin.wheel.espace');
     }
 
     /**
@@ -114,13 +136,7 @@ class WheelAccessController extends Controller
         // L'écran demandé est choisi dans une liste FERMÉE : accepter un chemin libre ferait de
         // cette route une redirection ouverte signée par nos soins — exactement l'outil rêvé pour
         // faire cliquer quelqu'un ailleurs avec notre signature dessus.
-        $ecrans = [
-            'accueil' => 'admin.wheel.home',
-            'vitrine' => 'admin.wheel.kiosk',
-            'validation' => 'admin.wheel.counter',
-            'lot' => 'admin.wheel.prize',
-            'reglages' => 'admin.wheel.settings',
-        ];
+        $ecrans = self::ECRANS;
         /*
          * ON NORMALISE AVANT DE SIGNER, et c'est un test qui me l'a appris.
          *
@@ -166,17 +182,15 @@ class WheelAccessController extends Controller
         $request->session()->regenerate();
         $request->session()->put(EnsureWheelAccess::SESSION_KEY, now()->getTimestamp());
 
+        // [2026-11-19] Qui a ouvert par la caisse : la remise d'un lot depuis l'espace commerçant
+        // est ainsi attribuée au caissier, au lieu de rester anonyme comme une ouverture par code.
+        $request->session()->put(EnsureWheelAccess::PASS_USER_KEY, (int) $auteur);
+
         Log::channel('daily')->info('wheel.pass_used', ['user_id' => $auteur, 'ecran' => $ecran]);
 
-        $ecrans = [
-            'accueil' => 'admin.wheel.home',
-            'vitrine' => 'admin.wheel.kiosk',
-            'validation' => 'admin.wheel.counter',
-            'lot' => 'admin.wheel.prize',
-            'reglages' => 'admin.wheel.settings',
-        ];
+        [$route, $ancre] = self::ECRANS[$ecran] ?? self::ECRANS['accueil'];
 
-        return redirect()->route($ecrans[$ecran] ?? $ecrans['accueil']);
+        return redirect()->to(route($route).$ancre);
     }
 
     /**
@@ -204,7 +218,7 @@ class WheelAccessController extends Controller
 
     public function lock(Request $request): RedirectResponse
     {
-        $request->session()->forget(EnsureWheelAccess::SESSION_KEY);
+        $request->session()->forget([EnsureWheelAccess::SESSION_KEY, EnsureWheelAccess::PASS_USER_KEY]);
 
         return redirect()->route('admin.wheel.home')
             ->with('wheel_locked', 'Écrans refermés.');

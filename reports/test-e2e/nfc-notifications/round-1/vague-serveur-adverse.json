@@ -1,0 +1,97 @@
+{
+ "role": "adverse-serveur",
+ "constats": [
+  {
+   "id": "S-01",
+   "severite": "P2",
+   "fichier": "app/Services/Push/WebPushSender.php:107-113",
+   "titre": "Une panne du SERVEUR au chiffrement efface tous les abonnements valides",
+   "reproduction": "Le catch(\\Throwable) autour de queueNotification()/flush() supprime la ligne pour N'IMPORTE quelle exception. La bibliothèque lève RuntimeException('Unable to create the local key.') (vendor/minishlink/web-push/src/Encryption.php:256, openssl_pkey_new en échec) ou Random\\RandomException : faute d'ENVIRONNEMENT, pas de l'appareil. Test jetable (hors dépôt) : /private/tmp/claude-501/-Users-1millnonstop-Downloads-projet-foodking-web-web-testttt/cdfef171-2a1a-4719-bbc4-b44eb09cab14/scratchpad/t/AdverseScratchTest.php::test_S_panne_serveur_au_chiffrement_efface_tous_les_abonnements (vert = les 2 lignes disparaissent, retour 0).",
+   "preuve": "php artisan test <ce fichier> : 3 passed ; assertSame(0, WebPushSubscription::count()) tient.",
+   "recommandation": "Ne supprimer que sur exceptions propres à l'appareil (InvalidArgumentException clé/point invalide, ErrorException 'Invalid client public key length'), pas sur RuntimeException/RandomException ; ou pré-vérifier la création d'une clé locale comme le fait déjà la signature VAPID. Récupération partielle : le site se réabonne à l'ouverture, d'où P2 et non P1."
+  },
+  {
+   "id": "S-02",
+   "severite": "P2",
+   "fichier": "app/Services/Push/WebPushSender.php:122-135",
+   "titre": "Un 400/413 SYSTÉMIQUE (en-tête mal réglé) compte contre chaque appareil et vide le parc en 5 envois",
+   "reproduction": "Seuls 5xx/401/403/408/429/réseau sont « passagers » ; tout autre code (400, 413, 3xx…) incrémente failure_count et supprime à max_failures=5 (config/webpush.php:34). WEBPUSH_URGENCY (config:19) et WEBPUSH_TTL ne sont pas validés : une valeur d'urgence invalide est un 400 (RFC 8030 §5.3 : à confirmer par service) sur CHAQUE envoi. Test jetable : test_S_400_systemique_efface_tous_les_appareils_apres_5_envois (2 appareils, 5 sendToUser, 0 ligne restante) — même chemin que le test existant SendWebPushJobTest:128.",
+   "preuve": "php artisan test <fichier jetable> : vert.",
+   "recommandation": "Valider urgency ∈ {very-low,low,normal,high} au chargement de config ; ne compter un 400 contre l'appareil que si le même 400 n'est pas observé sur les autres appareils du même envoi (ou plafonner les suppressions par envoi)."
+  },
+  {
+   "id": "S-03",
+   "severite": "P2",
+   "fichier": "app/Services/Push/OrderPushMessage.php:76-81",
+   "titre": "« +N points · solde M » annoncé à un client qui n'a rien reçu (points crédités à un autre compte)",
+   "reproduction": "AwardLoyaltyPointsOnDelivery.php:132-133 crédite d'abord le propriétaire du CODE (orders.loyalty_customer_code) ; le web accepte un code libre (OrderRequest.php:196, FrontendOrderService.php:814). build() lit orders.loyalty_points_awarded et le solde de $order->user_id sans vérifier le bénéficiaire. Test jetable test_S_points_annonces_a_un_autre_compte_que_celui_qui_les_a_recus : commande user A, code de B, awarded=120 → corps « Commande n° 7 validée, on la prépare. +120 points · solde 5. » alors que A garde 5.",
+   "preuve": "Sortie réelle du test : BODY=Commande n° 7 validée, on la prépare. +120 points · solde 5.",
+   "recommandation": "Ne dire les points que si la ligne loyalty_transactions(type=earn, order_id) a user_id = destinataire (même technique que PosLoyaltyAttachService:88)."
+  },
+  {
+   "id": "S-04",
+   "severite": "P3",
+   "fichier": "app/Jobs/SendWebPushJob.php:49-57",
+   "titre": "Péremption vérifiée AVANT l'envoi, jamais après : « prête » peut arriver après « Bon appétit »",
+   "reproduction": "deploy/ansible/templates/supervisor-foodking.conf.j2:13 = numprocs=2. Deux changements de statut à < 4 s (remise immédiate au comptoir) : le job « prête » lit PREPARED (non périmé), part dans sendToUser (jusqu'à 4 s/appareil) ; le job « remise » passe devant ; même tag order-ID : « prête, venez la chercher » remplace « Bon appétit ». Non reproduit (concurrence).",
+   "preuve": "Lecture : aucune relecture de statut entre :49 et :57.",
+   "recommandation": "Relire le statut juste avant sendToUser ou poser un verrou Cache par commande."
+  },
+  {
+   "id": "S-05",
+   "severite": "P3",
+   "fichier": "app/Jobs/SendWebPushJob.php:19",
+   "titre": "Job d'envoi sur la file default, contre la doctrine NEW-03 (file « notifications »)",
+   "reproduction": "SendFcmNotificationJob.php:67 isole les envois lents sur « notifications » pour ne pas affamer les autres ; ici aucun onQueue. Pire cas 5×4 s = 20 s par job, 2 workers partagés avec ProcessWebhookEventJob (paiements). Prérequis : vérifier que le worker de prod écoute « notifications » (garde tools/deploy-lecayenne.sh:140-170).",
+   "preuve": "rg 'onQueue' app : seuls DispatchDomainEventsJob et SendFcmNotificationJob.",
+   "recommandation": "onQueue('notifications') après contrôle du --queue= du superviseur de prod."
+  },
+  {
+   "id": "S-06",
+   "severite": "P3",
+   "fichier": "app/Http/Controllers/Frontend/WebPushController.php:24-29",
+   "titre": "« enabled:true » sans vérifier que la clé privée correspond à la clé publique",
+   "reproduction": "actif() (WebPushSender.php:38-43) teste seulement la non-vacuité. Paire incohérente : les navigateurs s'abonnent, chaque envoi reçoit 403 (traité « passager », :122), aucun appareil jamais supprimé ni notifié, seul un Log::error.",
+   "preuve": "Lecture ; test existant SendWebPushJobTest:141 consacre le 403 comme non fatal.",
+   "recommandation": "Dériver la publique depuis la privée à la 1re utilisation (ou dans webpush:test) et couper enabled en cas d'écart."
+  },
+  {
+   "id": "S-07",
+   "severite": "P3",
+   "fichier": "app/Jobs/CleanupStalePendingKioskOrders.php:262-300",
+   "titre": "Notification « annulée » urgency=high envoyée de nuit par l'annulation automatique à 6 h",
+   "reproduction": "Commande web « payer sur place » de 21:00, non retirée → annulée vers 03:00 (config/kiosk.php:345 = 360 min) → OrderStatusChanged → push high (config/webpush.php:19).",
+   "preuve": "Lecture ; pas de plage de silence dans SendWebPushOnOrderStatusChange.",
+   "recommandation": "urgency=normal (ou aucun envoi) pour les annulations émises par un acteur système."
+  },
+  {
+   "id": "S-08",
+   "severite": "P3",
+   "fichier": "app/Models/WebPushSubscription.php:14",
+   "titre": "L'abonnement n'est lié à aucune session : la déconnexion serveur ne le détache pas",
+   "reproduction": "rg WebPushSubscription app : seule AnonymisationCompte:109 supprime ; aucun hook de déconnexion / DeviceSessionController. Téléphone partagé : le compte A déconnecté sans DELETE préalable reçoit encore « Commande n° X prête » sur l'écran verrouillé de B. Dépend du site (client non présent dans ce dépôt).",
+   "preuve": "Lecture.",
+   "recommandation": "Stocker personal_access_tokens.device_id et supprimer à la révocation de la session."
+  },
+  {
+   "id": "S-09",
+   "severite": "P3",
+   "fichier": "vendor/minishlink/web-push/src/Utils.php:85-86",
+   "titre": "Sans bcmath ni gmp, trigger_error(E_USER_NOTICE) devient ErrorException et fait taire la chaîne sous un faux diagnostic « VAPID invalide »",
+   "reproduction": "new WebPush() appelle checkRequirement() à chaque envoi ; Laravel convertit les notices en exceptions ; WebPushSender.php:75-78 les attrape et journalise « configuration VAPID invalide ». Ansible installe bcmath (group_vars/all.yml:18) ; hôte de prod non vérifié (lecture seule) : contrôler « php -m | grep -E \"bcmath|gmp\" » sur le worker.",
+   "preuve": "Lecture ; non reproduit localement (bcmath et gmp présents).",
+   "recommandation": "Journaliser get_class + message pour cette branche, et exiger ext-bcmath|gmp dans composer.json."
+  }
+ ],
+ "verifie_sans_defaut": [
+  "SSRF : 4 972 variantes (backslash, @, #, ?, %2f, %00, tab/CR/LF, unicode, port, trailing dot) : hôte de parse_url identique à celui de la requête Guzzle ; allow_redirects=false, IP littérales, userinfo et ports refusés ; wildcards à frontière de point.",
+  "IDOR : unsubscribe borné par user_id, aucune route de lecture ; route : Authenticate:sanctum + BlockKioskMachineToken + throttle 30/min par compte (route:list).",
+  "Fuite : journaux = get_class ou code HTTP seulement ; $hidden couvre endpoint/p256dh/auth ; .env.example sans clé (longueur 0), aucune clé versionnée ; payload sans secret.",
+  "Règle produit : aucun « € », « eur », total ou prix dans app/Services/Push, job, listener, commandes ni config.",
+  "Dédoublonnage : FileStore::add est atomique (verrou exclusif) ; événement après commit, donc pas de clé empoisonnée par un rollback ; clé retirée si la mise en file échoue.",
+  "Exclusions caisse/borne/équipe, annulées (estPerimee, PREPARING=ACCEPT), plafond exact de 5 appareils, ménage planifié (Kernel.php:30), cascade d'anonymisation (AnonymisationCompte:109, suppression admin comprise), exemption BranchScope documentée (sentinelle :53).",
+  "VAPID invalide / hôtes vides : retour 0 sans suppression ; 401/403/5xx/429/réseau jamais comptés.",
+  "PHP 8.1/8.2 : aucune syntaxe 8.2 dans les fichiers push ; web-push 9.0.4 exige >=8.1 ; Ansible fixe php 8.2 pour FPM et worker (hors push : composer.json dit ^8.1 mais le lock exige 8.2 via platform override).",
+  "php artisan test tests/Feature/Push : 71 passed (sqlite mémoire)."
+ ]
+}

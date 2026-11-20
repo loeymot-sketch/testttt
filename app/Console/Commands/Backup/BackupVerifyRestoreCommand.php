@@ -86,6 +86,13 @@ class BackupVerifyRestoreCommand extends Command
 
     private ?float $drillStartedAt = null;
 
+    /**
+     * [GOAL G4 2026-09-03 · T4.2 · défaut V-09] Un verdict a-t-il été enregistré pendant
+     * CETTE exécution ? Sert de filet : aucune sortie en échec ne doit laisser en place le
+     * verdict vert de la veille — pas même une sortie ajoutée après coup.
+     */
+    private bool $verdictPersiste = false;
+
     protected $signature = 'backup:verify-restore'
         . ' {--file= : Explicit backup .sql.gz to restore (default: newest daily-*.sql.gz)}'
         . ' {--scratch-db= : Scratch DB name (default: <live>_restore_scratch). MUST differ from live.}'
@@ -98,22 +105,83 @@ class BackupVerifyRestoreCommand extends Command
     /** Tables whose row counts gate the verdict. */
     private const ASSERTED_TABLES = ['orders', 'audit_logs', 'z_reports'];
 
+    /**
+     * [GOAL G4 2026-09-03 · T4.2 · défaut V-09] L'enveloppe qui garantit qu'un échec
+     * s'inscrit TOUJOURS.
+     *
+     * Le corps du drill vit dans `executer()`. Ici on ne fait qu'une chose, mais elle est
+     * la condition de sortie du GOAL : il ne doit exister AUCUN chemin par lequel un vert
+     * survive à un échec. Six sorties `FAILURE` sur neuf ne persistaient rien — le succès
+     * de la veille restait alors le « dernier résultat connu », et le cockpit comme
+     * `/health/ready` continuaient d'attester une restauration qui n'avait pas eu lieu.
+     */
     public function handle(): int
+    {
+        $this->verdictPersiste = false;
+
+        try {
+            $code = $this->executer();
+        } catch (\Throwable $e) {
+            // Une exception non rattrapée est un échec du drill, pas une absence de drill.
+            $this->persisterVerdict(false, ['exception non rattrapée : '.$e->getMessage()]);
+
+            throw $e;
+        }
+
+        if ($code !== self::SUCCESS && ! $this->verdictPersiste) {
+            // Filet de dernier recours : couvre toute sortie en échec ajoutée plus tard
+            // sans passer par `echec()`. Une raison vague vaut mieux qu'un faux vert.
+            $this->persisterVerdict(false, ['drill interrompu sans verdict (code '.$code.')']);
+        }
+
+        return $code;
+    }
+
+    /**
+     * L'enregistreur unique de verdict. Toute sortie en échec passe par ici — directement
+     * (`echec()`), par le verdict final (`renderVerdict()`), ou par le filet de `handle()`.
+     *
+     * @param  list<string>  $reasons
+     */
+    private function persisterVerdict(bool $green, array $reasons): void
+    {
+        // Écriture au mieux-effort : elle ne doit jamais faire échouer le drill lui-même
+        // (RestoreDrillResult avale ses propres erreurs).
+        RestoreDrillResult::store([
+            'status' => $green ? 'green' : 'failed',
+            'verified_at' => now()->toIso8601String(),
+            'file' => $this->drillFile,
+            'sha256' => $this->drillSha256,
+            'duration_s' => $this->drillStartedAt !== null ? microtime(true) - $this->drillStartedAt : 0.0,
+            'reasons' => $reasons,
+        ]);
+
+        $this->verdictPersiste = true;
+    }
+
+    /** Sortir en échec, en le DISANT à l'écran et en l'INSCRIVANT au verdict. */
+    private function echec(string $raison): int
+    {
+        $this->error($raison);
+        $this->persisterVerdict(false, [$raison]);
+
+        return self::FAILURE;
+    }
+
+    private function executer(): int
     {
         $driver = (string) config('database.default');
         if ($driver !== 'mysql') {
-            $this->error("backup:verify-restore currently supports the mysql driver only (default={$driver}).");
+            $code = $this->echec("backup:verify-restore currently supports the mysql driver only (default={$driver}).");
             $this->line('On a sqlite install the dump is a plain gzip of the .sqlite file — restore it manually.');
 
-            return self::FAILURE;
+            return $code;
         }
 
         $conn = (array) config('database.connections.mysql');
         $liveDb = (string) ($conn['database'] ?? '');
         if ($liveDb === '') {
-            $this->error('Live database name missing from config(database.connections.mysql.database).');
-
-            return self::FAILURE;
+            return $this->echec('Live database name missing from config(database.connections.mysql.database).');
         }
 
         // ---- SAFETY: scratch must never be the live DB ----
@@ -121,38 +189,28 @@ class BackupVerifyRestoreCommand extends Command
         $override = (string) $this->option('scratch-db');
         $scratchDb = self::deriveScratchName($liveDb, $override !== '' ? $override : null);
         if ($scratchDb === null) {
-            $this->error("REFUSING: scratch DB name equals the live DB ({$liveDb}). The drill would destroy live data.");
-
-            return self::FAILURE;
+            return $this->echec("REFUSING: scratch DB name equals the live DB ({$liveDb}). The drill would destroy live data.");
         }
 
         // ---- Locate the backup file ----
         $file = $this->resolveBackupFile();
         if ($file === null) {
-            $this->error('No backup file found. Run `php artisan foodking:backup-daily` first, or pass --file=.');
             // [Codex P1-A] Un drill qui ne trouve rien à restaurer est un ÉCHEC à afficher,
             // pas un silence : sans cette ligne le cockpit garderait le dernier verdict vert.
-            RestoreDrillResult::store([
-                'status' => 'failed',
-                'verified_at' => now()->toIso8601String(),
-                'file' => null,
-                'sha256' => null,
-                'duration_s' => 0.0,
-                'reasons' => ['no backup file found to restore'],
-            ]);
-
-            return self::FAILURE;
-        }
-        if (!is_readable($file)) {
-            $this->error("Backup file not readable: {$file}");
-
-            return self::FAILURE;
+            return $this->echec('No backup file found. Run `php artisan foodking:backup-daily` first, or pass --file=.');
         }
 
         // [GOAL DASHBOARD-CONTRÔLE 2026-09-02 · Codex P1-A] Contexte pour le verdict persisté.
+        // [G4 2026-09-03 · T4.2] Renseigné AVANT le contrôle de lisibilité : un verdict
+        // rouge qui ne nomme pas le fichier fautif oblige à rouvrir les journaux.
         $this->drillFile = basename($file);
-        $this->drillSha256 = @hash_file('sha256', $file) ?: null;
         $this->drillStartedAt = microtime(true);
+
+        if (!is_readable($file)) {
+            return $this->echec("Backup file not readable: {$file}");
+        }
+
+        $this->drillSha256 = @hash_file('sha256', $file) ?: null;
 
         $ageHours = (time() - (int) @filemtime($file)) / 3600;
         $this->info(sprintf(
@@ -176,9 +234,7 @@ class BackupVerifyRestoreCommand extends Command
                 $liveCounts[$t] = (int) DB::table($t)->count();
             }
         } catch (\Throwable $e) {
-            $this->error('Could not read live row counts (DB unreachable?): ' . $e->getMessage());
-
-            return self::FAILURE;
+            return $this->echec('Could not read live row counts (DB unreachable?): ' . $e->getMessage());
         }
         $this->line('  live counts: ' . $this->fmtCounts($liveCounts));
 
@@ -202,9 +258,7 @@ class BackupVerifyRestoreCommand extends Command
                 $collation
             );
             if (!$this->runMysql($host, $port, $user, $pass, null, $createSql, 120)) {
-                $this->error('Failed to (re)create scratch database.');
-
-                return self::FAILURE;
+                return $this->echec('Failed to (re)create scratch database.');
             }
 
             // ---- 2. Restore the gzip dump into scratch ----
@@ -301,10 +355,10 @@ class BackupVerifyRestoreCommand extends Command
             return $explicit;
         }
 
-        $dir = storage_path('backups' . DIRECTORY_SEPARATOR . 'db-daily');
-        $matches = glob($dir . DIRECTORY_SEPARATOR . 'daily-*.sql.gz') ?: [];
-
-        return self::pickNewest($matches);
+        // [GOAL G4 2026-09-03 · suite de T4.1] Même désignation que le cockpit et
+        // `/health/ready`, depuis le seul endroit qui la porte. Deux motifs différents pour
+        // un même dossier rendaient le rapprochement fichier ↔ drill impossible à satisfaire.
+        return RestoreDrillResult::cheminSauvegardeCourante();
     }
 
     // ----------------------------------------------------------------------
@@ -321,19 +375,9 @@ class BackupVerifyRestoreCommand extends Command
      */
     public static function pickNewest(array $candidates, ?array $mtimes = null): ?string
     {
-        if ($candidates === []) {
-            return null;
-        }
-        $mtimeOf = static function (string $p) use ($mtimes): int {
-            if ($mtimes !== null) {
-                return (int) ($mtimes[$p] ?? 0);
-            }
-
-            return (int) (@filemtime($p) ?: 0);
-        };
-        usort($candidates, static fn ($a, $b) => $mtimeOf($b) <=> $mtimeOf($a));
-
-        return $candidates[0];
+        // [GOAL G4 2026-09-03] Une seule implémentation du tri, partagée avec la surface de
+        // santé : deux tris qui divergent, c'est deux fichiers désignés pour un seul fait.
+        return RestoreDrillResult::plusRecent($candidates, $mtimes);
     }
 
     /**
@@ -604,16 +648,10 @@ class BackupVerifyRestoreCommand extends Command
         // [GOAL DASHBOARD-CONTRÔLE 2026-09-02 · Codex P1-A] LE point de bascule : le verdict
         // est désormais PERSISTÉ, pas seulement journalisé. Le cockpit et /health/ready le
         // lisent — une sauvegarde fraîche mais non restaurable ne peut plus afficher
-        // « Tout va bien ». Écriture au mieux-effort : elle ne doit jamais faire échouer
-        // le drill lui-même (RestoreDrillResult avale ses propres erreurs).
-        RestoreDrillResult::store([
-            'status' => $green ? 'green' : 'failed',
-            'verified_at' => now()->toIso8601String(),
-            'file' => $this->drillFile,
-            'sha256' => $this->drillSha256,
-            'duration_s' => $this->drillStartedAt !== null ? microtime(true) - $this->drillStartedAt : null,
-            'reasons' => $reasons,
-        ]);
+        // « Tout va bien ».
+        // [G4 2026-09-03 · T4.2] Passe par l'enregistreur unique, comme toutes les autres
+        // sorties : un seul endroit écrit le verdict, donc un seul endroit peut l'oublier.
+        $this->persisterVerdict($green, $reasons);
 
         $this->newLine();
         if ($green) {

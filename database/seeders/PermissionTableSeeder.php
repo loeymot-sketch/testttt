@@ -712,30 +712,52 @@ class PermissionTableSeeder extends Seeder
 
         $permissions = AppLibrary::associativeToNumericArrayBuilder($permissions);
 
-        // [FIX 2026-08-25] `insert()` → `upsert()` : ce seeder n'était pas rejouable.
+        // [ONB-06 F-05 2026-08-27] Ce seeder n'etait pas rejouable, et sa hierarchie
+        // reposait sur une coincidence.
         //
-        // Le défaut, reproduit : la migration `2026_08_13_190000_grant_pos_flyer_print_to_cashier`
-        // crée la permission `pos-flyer-print` (guard `sanctum` ET `web`) via `updateOrCreate`.
-        // Cette même permission figure ligne 132 de la liste ci-dessus. Sur toute base DÉJÀ
-        // MIGRÉE, l'insert en masse violait donc l'index unique `(name, guard_name)` posé par
-        // `2022_05_01_142407_create_permission_tables` — et faisait échouer l'insertion des
-        // QUATRE-VINGTS permissions d'un coup, pas seulement de la ligne fautive.
+        // Avant : `Permission::insert($permissions)` — une insertion en masse qui
+        // echoue sur la contrainte UNIQUE (name, guard_name) des qu'une seule
+        // permission existe deja. Trois tests en dependaient et etaient ROUGES dans le
+        // depot : RolePermissionSeederTest, sur les trois roles metier.
         //
-        // Portée réelle, au-delà des tests : `php artisan db:seed` et `migrate --seed` plantaient
-        // sur toute installation dont les migrations étaient passées. Trois tests le signalaient
-        // (`RolePermissionSeederTest`) sans que la cause soit remontée.
+        // Le defaut de fond est plus subtil que l'echec : `parent` n'est pas un
+        // identifiant, c'est l'INDEX SEQUENTIEL calcule par le constructeur de tableau
+        // (AppLibrary::associativeToNumericArrayBuilder, l.77-102). Ca ne fonctionnait
+        // que sur une table VIDE, ou l'auto-incrementation produit justement 1..N. Sur
+        // une base deja peuplee, les indices et les identifiants divergent et la
+        // hierarchie parent/enfant se retrouve fausse — silencieusement.
         //
-        // `upsert` sur la clé unique rend le seeder idempotent : rejouable autant de fois qu'on
-        // veut, et il RATTRAPE au passage les libellés/URL d'une permission créée par une
-        // migration avec des valeurs minimales.
-        Permission::upsert(
-            $permissions,
-            ['name', 'guard_name'],
-            ['title', 'url', 'parent', 'updated_at']
-        );
+        // On corrige les deux : chaque ligne est creee ou mise a jour sur sa cle
+        // naturelle (name + guard_name), et `parent` est traduit de l'index vers
+        // l'identifiant REEL de la ligne parente. Les identifiants existants ne bougent
+        // pas, ce qui compte : `model_has_permissions` les reference.
+        $identifiantParIndex = [];
 
-        // Spatie met les permissions en cache : sans invalidation, les rôles seedés juste après
-        // pourraient se voir refuser une permission qui vient pourtant d'être écrite.
+        foreach ($permissions as $index => $attributs) {
+            $indexParent = (int) ($attributs['parent'] ?? 0);
+            unset($attributs['parent']);
+
+            $ligne = Permission::updateOrCreate(
+                [
+                    'name'       => $attributs['name'],
+                    'guard_name' => $attributs['guard_name'],
+                ],
+                $attributs + [
+                    'parent' => $indexParent === 0
+                        ? 0
+                        : ($identifiantParIndex[$indexParent] ?? 0),
+                ]
+            );
+
+            $identifiantParIndex[$index] = $ligne->id;
+        }
+
+        // [FIX 2026-08-25 · retenu à la fusion du 2026-08-28] Spatie met les permissions
+        // en cache. Sans invalidation ici, `RolePermissionTableSeeder`, qui s'exécute
+        // juste après, peut se voir refuser une permission qui VIENT d'être écrite —
+        // un rôle seedé se retrouve alors amputé, en silence, jusqu'au prochain vidage
+        // de cache. Les deux voies avaient rendu ce seeder rejouable ; une seule avait
+        // vu que rejouable ne suffit pas si le lecteur suivant lit un cache périmé.
         app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

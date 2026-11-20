@@ -18,7 +18,7 @@
                     <tbody>
                         <tr>
                             <td class="text-xs text-left py-0.5 text-heading">{{ $t('button.order') }}
-                                #{{ order.order_serial_no }}
+                                <template v-if="order.queue_number">N°{{ order.queue_number }} · </template>#{{ order.order_serial_no }}
                             </td>
                         </tr>
                         <tr>
@@ -53,19 +53,19 @@
                                     <p class="text-xs leading-5 text-heading">{{ item.total_without_tax_currency_price }}
                                     </p>
                                 </div>
-                                <p v-if="Object.keys(item.item_variations).length !== 0"
+                                <p v-if="normalizedVariations(item).length !== 0"
                                     class="text-xs leading-5 font-normal text-heading max-w-[200px]">
-                                    <span v-for="(variation, index) in item.item_variations">
-                                        {{ variation.variation_name }}: {{ variation.name }}
-                                        <span v-if="index + 1 < Object.keys(item.item_variations).length">, </span>
+                                    <span v-for="(variation, index) in normalizedVariations(item)" :key="index">
+                                        {{ variation.label }}: {{ variation.name }}
+                                        <span v-if="index + 1 < normalizedVariations(item).length">, </span>
                                     </span>
                                 </p>
-                                <p v-if="item.item_extras.length > 0"
+                                <p v-if="normalizedExtras(item).length > 0"
                                     class="text-xs leading-5 font-normal text-heading max-w-[200px]">
                                     {{ $t('label.extras') }}:
-                                    <span v-for="(extra, index) in item.item_extras">
-                                        {{ extra.name }}
-                                        <span v-if="index + 1 < item.item_extras.length">, </span>
+                                    <span v-for="(extra, index) in normalizedExtras(item)" :key="index">
+                                        {{ extra.name }}<span v-if="extra.quantity > 1"> ×{{ extra.quantity }}</span>
+                                        <span v-if="index + 1 < normalizedExtras(item).length">, </span>
                                     </span>
                                 </p>
                                 <p v-if="item.instruction" class="text-xs leading-5 font-normal text-heading max-w-[200px]">
@@ -138,10 +138,10 @@
                             <tr>
                                 <td class="pt-1 pb-1 pr-1">{{ $t('label.payment_type') }}:</td>
                                 <td v-if="order.transaction" class="pt-1 pb-1">{{ paymentMethodLabel(order.transaction.payment_method) }}</td>
-                                <td v-else class="pt-1 pb-1">{{ enums.paymentTypeEnumArray[order.payment_method] }}</td>
+                                <td v-else class="pt-1 pb-1">{{ libellePaiement(order) }}</td>
                             </tr>
                             <tr>
-                                <td class="pt-1 pb-1 pr-1">{{ $t('label.delivery_time') }}:</td>
+                                <td class="pt-1 pb-1 pr-1">{{ order.order_type === enums.orderTypeEnum.DELIVERY ? $t('label.delivery_time') : $t('label.pickup_time') }}:</td>
                                 <td class="pt-1 pb-1">{{ order.delivery_date }} {{ order.delivery_time }}</td>
                             </tr>
                         </tbody>
@@ -196,6 +196,7 @@ import displayModeEnum from "../../../enums/modules/displayModeEnum";
 // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
 import { safePhone } from "../../../helpers/phoneDisplay";
 import { paymentMethodLabelMixin } from "../../../helpers/paymentMethodLabel";
+import { normalizeReceiptVariations, normalizeReceiptExtras } from "../../../helpers/posReceiptBuilder";
 
 export default {
     name: "OnlineOrderReceiptComponent",
@@ -245,6 +246,20 @@ export default {
         },
     },
     methods: {
+        // [B4-R4-02 · 2026-10-02] Même règle que la fiche : « Paiement au comptoir » pour une commande
+        // à emporter réglée sur place, jamais « à la livraison ».
+        libellePaiement(order) {
+            if (order?.payment_method === paymentTypeEnum.CASH_ON_DELIVERY && order?.order_type !== orderTypeEnum.DELIVERY) {
+                return this.$t("label.pay_at_counter");
+            }
+            return this.enums.paymentTypeEnumArray[order?.payment_method];
+        },
+        normalizedVariations(item) {
+            return normalizeReceiptVariations(item?.item_variations);
+        },
+        normalizedExtras(item) {
+            return normalizeReceiptExtras(item?.item_extras);
+        },
         // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT proxy for template access.
         safePhone(phone) {
             return safePhone(phone);

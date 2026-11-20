@@ -165,6 +165,12 @@ const ROW_DEFS = {
     },
 };
 
+// [REVUE ADVERSE 2026-10-19] Rangée d'accents du clavier FR (champ prénom de la borne).
+const ACCENTS_ROW = {
+    normal: ['é', 'è', 'ê', 'à', 'â', 'ç', 'ù', 'ô', 'ï', "'"],
+    shift: ['É', 'È', 'Ê', 'À', 'Â', 'Ç', 'Ù', 'Ô', 'Ï', "'"],
+};
+
 export default {
     name: 'KsVirtualKeyboard',
     props: {
@@ -174,6 +180,11 @@ export default {
         maxLength: { type: Number, default: 200 },
         allowSpace: { type: Boolean, default: true },
         showPreview: { type: Boolean, default: true },
+        // [REVUE ADVERSE 2026-10-19] Rangée d'ACCENTS (é è ê à â ç ù ô ï ') : « Zoé », « Hélène »,
+        // « N'Diaye » ne se tapaient pas à la borne. Désactivée par défaut (champs e-mail/téléphone).
+        accents: { type: Boolean, default: false },
+        // Majuscule automatique en début de mot (nom propre) : « karim » devient « Karim ».
+        autoCapitalize: { type: Boolean, default: false },
     },
     emits: ['update:modelValue', 'submit', 'close'],
     data() {
@@ -185,9 +196,18 @@ export default {
         isRtl() {
             return this.layout === 'ar';
         },
+        majusculeActive() {
+            if (this.shift) return true;
+            if (!this.autoCapitalize || this.layout === 'ar') return false;
+            const v = this.modelValue || '';
+            return v === '' || /[\s\-']$/.test(v);
+        },
         rows() {
             const map = ROW_DEFS[this.layout] || ROW_DEFS.fr;
-            const src = this.shift && map.shift ? map.shift : map.normal;
+            let src = this.majusculeActive && map.shift ? map.shift : map.normal;
+            if (this.accents && this.layout === 'fr') {
+                src = [...src, this.majusculeActive ? ACCENTS_ROW.shift : ACCENTS_ROW.normal];
+            }
             // Ajoute la row shift-toggle en dessous des 3 rangées principales,
             // représentée comme une rangée séparée (la rangée shift-toggle est
             // ajoutée dans le template via .ks-vkeyb__row--actions).

@@ -135,7 +135,9 @@ async function createPosOrderViaApi(page, fixture, label) {
         item_extras: [],
         instruction: `${prefix} ${label}`,
       }];
-      const token = `${prefix}-${label}-${Date.now()}`;
+      // La consigne peut contenir des espaces ; le jeton et la clé d'idempotence (8-64 caractères ASCII) non.
+      const slug = String(label).replace(/[^A-Za-z0-9]+/g, '-');
+      const token = `${prefix}-${slug}-${Date.now()}`;
       const basePayload = {
         branch_id: fixture.branch_id,
         customer_id: fixture.customer_id,
@@ -171,7 +173,7 @@ async function createPosOrderViaApi(page, fixture, label) {
         delivery_charge: quote.delivery_charge,
         total: quote.total_ttc,
       }, {
-        headers: { 'X-Idempotency-Key': `${prefix}-POS-${label}-${Date.now()}` },
+        headers: { 'X-Idempotency-Key': `${prefix}-POS-${slug}-${Date.now()}` },
       });
       const orderPayload = response.data?.data;
       if (!orderPayload?.id) {
@@ -230,13 +232,19 @@ test.describe('POS instruction ↔ KDS ↔ API (kitchen ticket data path)', () =
       await expectNoCriticalBrowserErrors(posPage, async () => {
         clearFoodKingRateLimits();
         await posPage.waitForTimeout(600);
-        orderResult = await createPosOrderViaApi(posPage, fixture, 'INST');
+        orderResult = await createPosOrderViaApi(posPage, fixture, 'Inst bien cuit');
       });
 
       expect(orderResult?.ok, JSON.stringify(orderResult)).toBe(true);
       const order = orderResult.data;
       expect(order?.id).toBeTruthy();
-      const marker = `${PREFIX} INST`;
+      // [2026-11-04] Consigne réaliste. « PW-RKS INST », tout en MAJUSCULES et sans mot de consigne, est retirée
+      // À BON DROIT par la règle anti-écho de KitchenTicketSymbolicFormatter (une ligne en capitales sans
+      // « sans/pas/cuit/… » = nom de produit répété par le pos-wizard) : le banc testait un texte qu'aucun
+      // caissier ne tape. Constat séparé, signalé au propriétaire : « PEU DE SAUCE » tapé en capitales serait
+      // retiré de la même façon (mots de consigne incomplets) — non modifié ici (pas de changement de règle cuisine
+      // sans décision du propriétaire).
+      const marker = `${PREFIX} Inst bien cuit`;
 
       const apiInstruction = await posPage.evaluate(async (orderId) => {
         const r = await window.axios.get(`admin/pos-order/show/${orderId}`);
@@ -249,7 +257,9 @@ test.describe('POS instruction ↔ KDS ↔ API (kitchen ticket data path)', () =
       await kdsPage.bringToFront();
       await waitForBodyText(kdsPage, marker, 15_000);
 
-      const instructionCells = kdsPage.locator('.kds-instruction').filter({ hasText: marker });
+      // [2026-11-04] L'écran cuisine actuel (KdsOrderLine) rend la consigne dans `.kds-line__instruction` ; l'ancienne
+      // classe `.kds-instruction` n'existe plus que pour ses variantes de couleur. Les deux sont acceptées.
+      const instructionCells = kdsPage.locator('.kds-line__instruction, .kds-instruction').filter({ hasText: marker });
       await expect(instructionCells.first()).toBeVisible({ timeout: 10_000 });
       expect(await instructionCells.count()).toBeGreaterThanOrEqual(1);
     } finally {

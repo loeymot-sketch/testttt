@@ -7,12 +7,14 @@ use App\Http\Resources\NormalItemResource;
 use App\Http\Resources\SimpleItemResource;
 use App\Models\Item;
 use Exception;
+use App\Http\Controllers\Concerns\RepondAvecEtag;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PaginateRequest;
 use App\Services\ItemService;
 
 class ItemController extends Controller
 {
+    use RepondAvecEtag; // [W7-D D-006 2026-11-04] ETag + 304 sur le catalogue (lecture publique, 47 Ko par ouverture)
 
     public ItemService $itemService;
 
@@ -23,27 +25,27 @@ class ItemController extends Controller
 
     public function index(
         PaginateRequest $request
-    ): \Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
+    ): \Illuminate\Http\JsonResponse|\Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
         try {
-            return SimpleItemResource::collection($this->itemService->simpleList($request));
+            return $this->avecEtag($request, SimpleItemResource::collection($this->itemService->simpleList($request)), 'items');
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }
 
     public function featuredItems(
-    ): \Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
+    ): \Illuminate\Http\JsonResponse|\Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
         try {
-            return SimpleItemResource::collection($this->itemService->featuredItems());
+            return $this->avecEtag(request(), SimpleItemResource::collection($this->itemService->featuredItems()), 'featured');
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }
 
     public function mostPopularItems(
-    ): \Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
+    ): \Illuminate\Http\JsonResponse|\Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
         try {
-            return SimpleItemResource::collection($this->itemService->mostPopularItems());
+            return $this->avecEtag(request(), SimpleItemResource::collection($this->itemService->mostPopularItems()), 'popular');
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -55,7 +57,7 @@ class ItemController extends Controller
             // [F-DETAILS-BRANCH-AVAIL 2026-07-15] Passe le branch_id borne pour que les détails
             // reflètent la rupture PAR BRANCHE (cécité mid-wizard fermée).
             $branchId = request()->filled('branch_id') ? (int) request('branch_id') : null;
-            return new NormalItemResource($this->itemService->itemDetails($item, $branchId));
+            return $this->avecEtag(request(), new NormalItemResource($this->itemService->itemDetails($item, $branchId)), 'item-'.$item->id);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

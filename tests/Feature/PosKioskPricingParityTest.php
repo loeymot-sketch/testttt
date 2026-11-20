@@ -186,7 +186,7 @@ class PosKioskPricingParityTest extends TestCase
             'total' => 0,
             'order_type' => OrderType::TAKEAWAY,
             'is_advance_order' => Ask::NO,
-            'source' => 1,
+            'source' => 5,
             'pos_payment_method' => PosPaymentMethod::CASH,
             'pos_received_amount' => 9999.00,
             'items' => json_encode([$line]),

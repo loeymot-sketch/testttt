@@ -16,7 +16,13 @@ describe('POS parked-order restore — null addressText guard', () => {
         expect(unguarded).toEqual([]);
     });
 
-    it('guards the manual-distance template condition', () => {
-        expect(source).toContain("(deliveryInline.addressText || '').trim().length >= 3");
+    // [LIVRAISON 2026-10-20] Le bloc « saisie manuelle des km » est supprimé (le serveur ignore toute distance
+    // venue de l'écran). La garde null subsiste là où l'adresse est lue : la frappe d'adresse.
+    it('guards the address-input handler against a null addressText', () => {
+        expect(source).toContain("const q = (this.deliveryInline.addressText || '').trim();");
+    });
+
+    it('no longer offers a manual kilometre field (distance is server-side only)', () => {
+        expect(source).not.toContain('pos-delivery-manual-km');
     });
 });

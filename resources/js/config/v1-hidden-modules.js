@@ -34,12 +34,15 @@ export const V1_HIDDEN_MENU_MODULES = Object.freeze([
     'settings.theme',
     'settings.item-categories',
     'settings.item-attributes',
-    'settings.permission',
+    // [ONB-05 2026-08-28] QUATRE cles retirees ici : 'settings.permission',
+    // 'settings.charge', 'settings.translation' et 'settings.activity-log'. Elles
+    // masquaient du VIDE — verifie des deux cotes : aucune route dans
+    // settingRoutes.js, et aucun `isSettingHidden()` ne les consomme dans
+    // MenuComponent.vue. Ce sont des restes du nettoyage du 2 mai, qui donnaient
+    // l'illusion d'une decision de produit la ou il n'y a plus rien a decider.
+    // La sentinelle ChaqueCleDeMasquageMasqueQuelqueChoseTest empeche leur retour.
     'settings.role',
     'settings.tax',
-    'settings.charge',
-    'settings.translation',
-    'settings.activity-log',
     'settings.languages',
     'settings.otp',
     'settings.notification-alert',

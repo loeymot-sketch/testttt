@@ -254,7 +254,9 @@ class WheelReportService
 
         return $tours->map(function ($t) use ($validite, $auteurs) {
             $estRemise = str_starts_with((string) $t->prize_type, 'coupon_');
-            $limite = $t->created_at?->copy()->addDays($validite);
+            // Fin du dernier jour, comme la remise elle-même (`WheelDeliveryService`) : sans
+            // `endOfDay()`, la liste disait « Expiré » des heures avant que la remise le refuse.
+            $limite = $t->created_at?->copy()->addDays($validite)->endOfDay();
 
             if ($t->delivered_at !== null) {
                 $etat = 'remis';
@@ -269,6 +271,8 @@ class WheelReportService
             $tel = (string) $t->phone;
 
             return [
+                // [2026-11-19] L'identifiant, pour remettre le lot depuis l'espace commerçant.
+                'id' => (int) $t->id,
                 'quand' => $t->created_at,
                 'lot' => (string) $t->prize_label,
                 'type' => (string) $t->prize_type,
@@ -381,6 +385,14 @@ class WheelReportService
             'cadeaux_remis' => $remis->count(),
             'cadeaux_dus' => $tours->whereIn('prize_type', ['free_item', 'points'])
                 ->whereNull('delivered_at')->count(),
+            // [2026-11-19] Les seuls lots qu'on peut ENCORE remettre : non remis ET dans la validité —
+            // même borne que la remise (`WheelDeliveryService`, fin du dernier jour). `cadeaux_dus`
+            // compte aussi les expirés : affiché à côté de « Lots à remettre », il se contredisait.
+            'cadeaux_a_remettre' => $tours->whereIn('prize_type', ['free_item', 'points'])
+                ->whereNull('delivered_at')
+                ->filter(fn ($t) => $t->created_at !== null
+                    && $t->created_at->gte(Carbon::today()->subDays(max(1, (int) config('wheel.prize_validity_days', 30)))))
+                ->count(),
             'valeur_offerte' => round($valeur, 2),
             'cadeaux_sans_stock' => $sansStock,
             'points_remis' => $points,
@@ -428,7 +440,7 @@ class WheelReportService
             // correction. Il ne peut PAS : `stock_outflows` porte un déclencheur qui interdit toute
             // modification, la colonne est immuable. C'est un JOURNAL, pas une tâche à cocher — et le
             // dire ainsi évite qu'on le prenne pour un signal cassé, donc qu'on cesse de le lire.
-            $out[] = 'Sur 30 jours, ' . $sans . ' cadeau' . ($sans > 1 ? 'x a' : ' a')
+            $out[] = 'Sur 30 jours, ' . $sans . ' cadeau' . ($sans > 1 ? 'x ont' : ' a')
                 . ' été remis sans sortir du stock (produit composite, produit sans niveau de stock, '
                 . 'ou rayon déjà à zéro). Ce relevé est un historique : il ne s\'effacera pas. '
                 . 'Ce qu\'il faut faire, c\'est reprendre l\'écart au prochain inventaire.';
@@ -441,7 +453,7 @@ class WheelReportService
             $out[] = $sansPlafond . ' code' . ($sansPlafond > 1 ? 's' : '') . ' de remise en pourcentage '
                 . 'SANS PLAFOND en euros : sur une grosse commande, la remise n\'a aucune limite. '
                 . 'Son exposition n\'est pas comptée dans le chiffre ci-dessus — elle est inconnue. '
-                . 'Pose un plafond dans config/wheel.php (max_discount).';
+                . 'Posez un plafond en euros sur ce cadeau (espace roue, rubrique « Mes cadeaux »).';
         }
 
         /*
@@ -469,11 +481,12 @@ class WheelReportService
 
         // Un segment sans produit de référence ne sera JAMAIS chiffré.
         $orphelins = [];
-        foreach (app(\App\Services\Wheel\WheelService::class)->segments() as $s) {
-            if ((string) ($s['type'] ?? '') !== 'free_item') {
+        $catalogue = app(\App\Services\Wheel\WheelService::class)->catalogueComplet();
+        foreach ($catalogue as $s) {
+            if ((string) ($s['type'] ?? '') !== 'free_item' || (bool) ($s['archived'] ?? false)) {
                 continue;
             }
-            if (app(WheelDeliveryService::class)->costItemId((string) ($s['key'] ?? '')) === null) {
+            if (app(WheelDeliveryService::class)->costItemId((string) ($s['key'] ?? ''), $catalogue) === null) {
                 $orphelins[] = (string) ($s['label'] ?? $s['key'] ?? '?');
             }
         }

@@ -11,10 +11,10 @@ use Illuminate\Support\Facades\Log;
 use Smartisan\Settings\Facades\Settings;
 
 /**
- * Auto-award loyalty points when an order is completed.
- * For normal orders: trigger on DELIVERED.
- * For kiosk/takeaway orders: trigger on PREPARED or DELIVERED
- *   (kiosk flow ends at PREPARED; POS cashier can skip directly to DELIVERED).
+ * Auto-award loyalty points when the restaurant VALIDATES an order (2026-11-06, owner decision):
+ * first status among ACCEPT / PREPARING / PREPARED / OUT_FOR_DELIVERY / DELIVERED, for every
+ * order type. Never on PENDING (order not yet received). POS counter sales are also credited at
+ * payment (OrderService → award()). Cancellation/rejection/return claws the points back.
  *
  * Idempotent: uses an atomic sentinel (-1) on orders.loyalty_points_awarded
  * to guarantee exactly-once execution even under concurrent events.
@@ -37,20 +37,44 @@ class AwardLoyaltyPointsOnDelivery
             return;
         }
 
-        $isKiosk = in_array((int) ($order->order_type ?? 0), [OrderType::KIOSK, OrderType::TAKEAWAY], true);
-
-        if ($isKiosk) {
-            $shouldTrigger = in_array($event->newStatus, [OrderStatus::PREPARED, OrderStatus::DELIVERED], true);
-        } else {
-            $shouldTrigger = ($event->newStatus === OrderStatus::DELIVERED);
+        // [POINTS À LA VALIDATION 2026-11-06 · décision propriétaire] « C'est validé lorsque la commande
+        // est en cours » : les points sont crédités dès que le restaurant VALIDE la commande (premier
+        // statut au-delà de « en attente »), et non plus seulement à la remise. Tant que la commande est
+        // EN ATTENTE (pas encore reçue par le restaurant), rien n'est crédité. Le premier statut validé
+        // l'emporte ; la sentinelle atomique `orders.loyalty_points_awarded` empêche tout double crédit
+        // quand la commande avance ensuite (en préparation → prête → livrée).
+        // Réversible : toute annulation/rejet/retour reprend les points gagnés (OrderService, chemin
+        // d'annulation, quel que soit le paiement) ; la purge des impayés des jours précédents aussi.
+        if (! in_array((int) $event->newStatus, self::STATUTS_VALIDES, true)) {
+            return;
         }
 
-        if (!$shouldTrigger) {
+        // [Relecture adverse P0-2 + audit abusif W3-P1-4 · 2026-11-06] Une commande PAS ENCORE PAYÉE (« payer sur
+        // place » du site, borne Plan B passée en ACCEPT par le système) ne crédite RIEN sur un simple changement de
+        // statut : sinon le client dépensait les points d'une commande qu'il n'a jamais réglée, puis l'annulait (la
+        // reprise est plafonnée au solde → points gratuits). Ses points tombent à l'ENCAISSEMENT
+        // (PaymentService::confirmCounterPayment → award) ou, au plus tard, à la REMISE (livrée, comme avant).
+        // Une commande payée en ligne / en caisse crédite, elle, dès la validation.
+        if ((int) ($order->payment_status ?? 0) !== \App\Enums\PaymentStatus::PAID
+            && (int) $event->newStatus !== OrderStatus::DELIVERED) {
             return;
         }
 
         $this->award($order);
     }
+
+    /**
+     * Statuts où la commande est VALIDÉE par le restaurant : acceptée, en préparation, prête, partie
+     * en livraison, remise. PENDING (en attente) n'y est jamais : une commande pas encore reçue ne
+     * rapporte rien.
+     */
+    public const STATUTS_VALIDES = [
+        OrderStatus::ACCEPT,
+        OrderStatus::PREPARING,
+        OrderStatus::PREPARED,
+        OrderStatus::OUT_FOR_DELIVERY,
+        OrderStatus::DELIVERED,
+    ];
 
     /**
      * [FIDÉLITÉ 2026-08-19] LE CRÉDIT LUI-MÊME, APPELABLE SANS ÉVÉNEMENT.
@@ -107,10 +131,18 @@ class AwardLoyaltyPointsOnDelivery
         $user = null;
         if (!empty($order->loyalty_customer_code)) {
             $user = User::where('loyalty_code', $order->loyalty_customer_code)->first();
+            // [Audit abusif tour 2 · P2 · 2026-11-06] Le code d'un compte de l'ÉQUIPE ou d'une BORNE (saisi à la borne
+            // par son téléphone, rattaché en caisse) ne reçoit pas les points des ventes des autres.
+            if ($user && self::estExcluDuCredit($user)) {
+                $user = null;
+            }
         }
         if (!$user && $order->user_id) {
             $candidate = User::find($order->user_id);
-            if ($candidate && $candidate->loyalty_code) {
+            // [Audit abusif W2-P1-4 · 2026-11-06] Une commande borne ANONYME porte le compte propriétaire de la borne
+            // (l'administrateur) : ses points ne vont à PERSONNE. Seul un CLIENT est crédité par repli — jamais un
+            // compte de borne ni un compte du personnel (rôle autre que Client).
+            if ($candidate && $candidate->loyalty_code && self::estUnClient($candidate)) {
                 $user = $candidate;
             }
         }
@@ -203,5 +235,38 @@ class AwardLoyaltyPointsOnDelivery
             }
             Log::error('[Loyalty] AwardLoyaltyPointsOnDelivery: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Vrai pour un compte CLIENT au sens du projet (`CustomerAccount::isCustomer` : rôle « Customer » par NOM, ou
+     * invité fidélité), qui n'est pas propriétaire d'une borne. Critère POSITIF : un compte technique
+     * sans rôle (« uber-eats-system ») n'est pas un client [relecture adverse tour 2 · P2].
+     */
+    public static function estUnClient(User $u): bool
+    {
+        // `isCustomer` seul : un compte de l'équipe ou technique ne porte pas le rôle client. On n'ajoute PAS « et pas
+        // de l'équipe » : l'inscription attribue le rôle par IDENTIFIANT (2 = « Customer » en production, « Chef » dans
+        // le harnais) — la double condition écartait un vrai client inscrit.
+        if (! app(\App\Services\Identity\CustomerAccount::class)->isCustomer($u)) {
+            return false;
+        }
+
+        return ! \App\Models\KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('user_id', $u->id)->exists();
+    }
+
+    /**
+     * Compte qui ne reçoit JAMAIS de points par le code fidélité : propriétaire d'une borne, ou membre de l'équipe qui
+     * n'est pas AUSSI client. Règle d'EXCLUSION (et non critère positif) : un ancien client sans rôle ni statut
+     * invité reste crédité. « Équipe mais aussi client » reste crédité : l'inscription donne le rôle client par
+     * identifiant (2), qui se nomme « Chef » dans le harnais de test.
+     */
+    public static function estExcluDuCredit(User $u): bool
+    {
+        if (\App\Models\KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('user_id', $u->id)->exists()) {
+            return true;
+        }
+        $comptes = app(\App\Services\Identity\CustomerAccount::class);
+
+        return $comptes->isStaff($u) && ! $comptes->isCustomer($u);
     }
 }

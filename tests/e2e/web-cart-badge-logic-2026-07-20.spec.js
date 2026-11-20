@@ -14,7 +14,7 @@ const fs = require('fs');
 const SHOT_DIR = path.join(__dirname, '__screenshots__', 'web-cart-badge-logic-2026-07-20');
 fs.mkdirSync(SHOT_DIR, { recursive: true });
 const shot = (n) => path.join(SHOT_DIR, n);
-const LOCAL_BASE = 'http://127.0.0.1:8000';
+const LOCAL_BASE = (process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
 const LOCAL_KEY = 'b6d68vy2-m7g5-20r0-5275-h103w73453q120';
 const PHONE = '0699000555';
 

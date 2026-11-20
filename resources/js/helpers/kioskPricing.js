@@ -48,6 +48,24 @@ export function getKioskExtraSauceUnitPrice(item) {
   return 0;
 }
 
+// [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] Sauces OFFERTES dans le prix du
+// produit : publiées par le serveur en `sauce_included` (App\Support\Menu\IncludedSauceCount,
+// config/pos_sauces.php 'included' : Sandwichs = 2, défaut 1) dans le menu borne
+// (KioskMenuService) ET la fiche produit (NormalItemResource) que lit le wizard. Absent ou
+// invalide → 1 (comportement historique). Ne concerne QUE la sauce du produit : la sauce des
+// frites garde 1 incluse (fritesSauceOrder, inchangée).
+export function getKioskIncludedSauceCount(item) {
+  const n = parseInt(item?.sauce_included, 10);
+  return Number.isFinite(n) && n >= 1 ? n : 1;
+}
+
+// Nombre de sauces du produit FACTURÉES (= unités de l'extra « Sauce supplémentaire » à
+// sceller) : max(0, N − incluses). Même règle au total affiché, aux étiquettes et au payload.
+export function getKioskBilledSauceCount(item, sauceOrder) {
+  const n = Array.isArray(sauceOrder) ? sauceOrder.length : 0;
+  return Math.max(0, n - getKioskIncludedSauceCount(item));
+}
+
 export function getKioskMenuAddonPrice(item, menuChoice) {
   if (!item?.addons || !menuChoice || menuChoice === 'none') {
     return 0;
@@ -130,9 +148,11 @@ export function calculateKioskRunningTotal(item, selections = {}) {
   // [COMPOSITION-SAUCE BORNE 2026-07-15] Sauce en plus : (N-1) × prix de l'ItemExtra 'Sauce
   // supplémentaire' (0,50 € famille sandwich/tacos/galette/burger ; 0 € si l'item n'a pas cet
   // extra). extraSauceUnitPrice vaut déjà 0 dans ce dernier cas → affichage == prix scellé.
-  const sauceOrder = selections.sauceOrder || [];
-  if (sauceOrder.length > 1) {
-    total += (sauceOrder.length - 1) * extraSauceUnitPrice;
+  // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] (N − sauce_included) au lieu
+  // de (N − 1) : « deux sauces offertes » pour les sandwichs (sauce_included = 2).
+  const billedSauceN = getKioskBilledSauceCount(item, selections.sauceOrder || []);
+  if (billedSauceN > 0) {
+    total += billedSauceN * extraSauceUnitPrice;
   }
 
   // [PLAINTE OWNER 2026-07-29] Sauce FRITES en plus : (N-1) × prix de l'ItemExtra « Sauce

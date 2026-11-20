@@ -9,6 +9,28 @@
     hidden in dev via foodkingConfig.appEnv.
   -->
 
+  <!-- [VG-2026-10-21 M6-003] Un sondage en échec (401 jeton expiré/évincé, 5xx, réseau) laissait
+       des numéros PÉRIMÉS sans un mot, sous une pastille « Connecté ». Bandeau visible jusqu'au
+       prochain `sync` réussi. Position fixe en BAS : hors de la grille à 2 colonnes (un élément
+       fixe n'occupe pas de cellule) et sans chevaucher ConnectionStatusBanner (fixé en haut).
+       Texte 36 px gras blanc sur rouge foncé : lisible à 3 m sur la TV. -->
+  <div
+    v-if="ossStale.visible"
+    role="alert"
+    aria-live="assertive"
+    data-testid="oss-stale-banner"
+    class="fixed bottom-0 left-0 right-0 z-[9998] flex flex-wrap items-center justify-center gap-6 px-6 py-5 bg-[#991B1B] text-white text-[36px] font-bold leading-tight text-center shadow-lg"
+  >
+    <span>{{ ossStale.session ? $t('label.oss_stale_session') : $t('label.oss_stale_data') }}</span>
+    <button
+      v-if="ossStale.session && canRelogin"
+      type="button"
+      data-testid="oss-stale-relogin"
+      class="rounded-lg bg-white text-[#991B1B] px-6 py-3 text-[28px] font-extrabold"
+      @click="relogin"
+    >{{ $t('label.oss_stale_relogin') }}</button>
+  </div>
+
   <!-- Colonne EN PRÉPARATION -->
   <!--
     [Wave S-3 TV-optim P-OWNER 2026-05-20] Customer wall must be readable from ≥3m.
@@ -20,7 +42,7 @@
       to avoid fighting transition-group on enter/leave).
   -->
   <div
-    class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden"
+    class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[100dvh] overflow-hidden"
     role="region"
     :aria-label="$t('label.preparing')"
   >
@@ -47,7 +69,7 @@
   </div>
 
   <!-- Colonne PRÊT -->
-  <div class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden"
+  <div class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[100dvh] overflow-hidden"
     :class="newReadyFlash ? 'oss-ready-flash' : ''"
     role="region"
     :aria-label="$t('label.ready')">
@@ -121,9 +143,18 @@ export default {
       // [RED-team R4 V1.0.2 2026-05-17] wakeLock sentinel + visibility handler refs
       _wakeLockSentinel: null,
       _onVisibilityChange: null,
+      // [VG-2026-10-21 M6-003] État « données périmées » : levé par l'événement `error`
+      // d'OssSyncService, effacé au prochain `sync` (ou list()) réussi.
+      ossStale: { visible: false, session: false },
     };
   },
-  computed: {},
+  computed: {
+    // [VG-2026-10-21 M6-003] Le bouton de reconnexion n'a de sens que pour une session
+    // personnel (le mur public non authentifié n'a pas de compte à reconnecter).
+    canRelogin() {
+      return !!(this.$store?.getters?.authStatus) && !!this.$router;
+    },
+  },
   mounted() {
     this.list();
     window.addEventListener('realtime-order-update', this.list);
@@ -259,6 +290,15 @@ export default {
       this.ossSyncUnsubscribers.push(
         ossSyncService.on('sync', ({ rows = [] }) => {
           this._hydrateFromRows(rows);
+          // [VG-2026-10-21 M6-003] Données fraîches : le bandeau d'échec s'efface.
+          this._clearOssStale();
+        })
+      );
+      // [VG-2026-10-21 M6-003] Le service émet `error` à chaque sondage en échec (401 compris) ;
+      // sans cet abonnement l'écran gardait des numéros périmés en silence.
+      this.ossSyncUnsubscribers.push(
+        ossSyncService.on('error', (info = {}) => {
+          this._raiseOssStale(info && info.status);
         })
       );
       this.ossSyncUnsubscribers.push(
@@ -283,6 +323,28 @@ export default {
         webSocketService: window._wsService,
         ...(isPublicWall ? { options: { intervalMsWhenConnected: 5_000 } } : {}),
       });
+    },
+    // [VG-2026-10-21 M6-003] 401/403 = session expirée ou évincée (ne se répare pas seule) ;
+    // tout autre échec (5xx, réseau = 0) = « données non à jour », le service retente.
+    _raiseOssStale(status) {
+      const st = Number(status) || 0;
+      this.ossStale = { visible: true, session: st === 401 || st === 403 };
+    },
+    _clearOssStale() {
+      if (this.ossStale.visible) this.ossStale = { visible: false, session: false };
+    },
+    // [VG-2026-10-21 M6-003] Même geste que le gestionnaire 401 global (app.js), qui est
+    // volontairement inactif sur cet écran (chemin « public-friendly ») : déconnexion locale
+    // puis écran de connexion.
+    relogin() {
+      const aller = () => { try { this.$router?.push({ name: 'auth.login' })?.catch?.(() => {}); } catch (_) { /* noop */ } };
+      let p;
+      try { p = this.$store?.dispatch?.('logout'); } catch (_) { p = null; }
+      if (p && typeof p.finally === 'function') {
+        p.catch(() => {}).finally(aller);
+      } else {
+        aller();
+      }
     },
     stopOssSync() {
       try { ossSyncService.stop(); } catch (_) {}
@@ -317,6 +379,14 @@ export default {
           },
           {
             broadcastAs: 'OrderCreated',
+            handler: () => { this.list(); },
+          },
+          // [AUDIT AVAL 2026-09-29 · P1] Le mur filtre sur le paiement (applyBoardRelease-
+          // Filter) : c'est l'ENCAISSEMENT comptoir qui rend une commande visible — et il
+          // n'était pas écouté ici (le KDS, lui, lie OrderPaidAtCounter). Sans cette liaison,
+          // une commande encaissée n'apparaissait qu'au sondage suivant.
+          {
+            broadcastAs: 'OrderPaidAtCounter',
             handler: () => { this.list(); },
           },
         ]);
@@ -466,6 +536,8 @@ export default {
         .then((res) => {
           this._hydrateFromRows(res.data.data || []);
           this.loading.isActive = false;
+          // [VG-2026-10-21 M6-003] Une relecture réussie (Echo, realtime-order-update) vaut `sync`.
+          this._clearOssStale();
         })
         .catch((err) => {
           this.loading.isActive = false;

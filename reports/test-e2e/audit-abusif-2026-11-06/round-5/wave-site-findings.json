@@ -1,0 +1,81 @@
+{
+  "wave": "SITE",
+  "round": 5,
+  "states_reviewed": 31,
+  "code_mesure": "site 6208324 (miroirs :8100→:8790, :8101→:8791, coque app/www :8102→:8790 ; seules api-base-url/api-key changées) ; backend testttt d7cd618ab ; :8790 HORAIRES_REFUSER_HORS_SERVICE=false, :8791 sans (garde actif) ; cwd des 14 processus php prouvé par lsof = testttt/public",
+  "findings": [
+    {
+      "id": "R5-S-001",
+      "state_artifact": "site-captures/m08-page-perimee-fermeture-trop-proche-390.png",
+      "category": "silent_error",
+      "severity": "P3",
+      "status": "new",
+      "evidence": ":8791, 14:15 (restaurant fermé). Tunnel ouvert, créneau 20:30 choisi, puis fermeture exceptionnelle du jour posée par l'admin, puis « Confirmer » : 422 « Ce créneau est trop proche : choisissez un horaire plus tardif. » pour un créneau 6 h plus tard. API forgée pendant la fermeture : aujourd'hui 18:30 et demain 01:00 → même message ; hors fermeture, 15:00 → aussi « trop proche » au lieu de « hors heures ». Refus correct, aucune commande créée, mais le motif est faux (ni « fermé », ni le message de la fermeture). Après « Calculer », la liste ne propose plus que samedi et aucun bouton n'est coché (m09).",
+      "file_line": "app/Services/Delivery/DeliveryWaveService.php:359-361 (earliestWave saute déjà la fermeture, contrôlé AVANT inServiceWindow :365-367) ; site funnel.jsx:791 (le recalcul garde ctx.deliverySlotAt absent de la nouvelle liste, renvoyé tel quel au clic suivant — lu dans le code, 2e envoi non rejoué)",
+      "fix_hint": "Tester inServiceWindow/fermetureDu avant earliestWave et reprendre le message de la fermeture ; côté site, remettre deliverySlotAt à null quand il n'est plus dans dq.waves.",
+      "first_seen_round": 5
+    },
+    {
+      "id": "R5-S-002",
+      "state_artifact": "scratchpad r5site/out/C-creneau/normal.json",
+      "category": "i18n_leak",
+      "severity": "P3",
+      "status": "new",
+      "evidence": "delivery_slot_at forgé au format ISO ou en tableau → 422 « delivery slot at ne correspond pas au format Y-m-d H:i:s. » (nom de champ brut). Le site envoie toujours le bon format : seul un client forgé le voit.",
+      "file_line": "app/Http/Requests/OrderRequest.php:161 (règle) et :238-244 (messages() sans delivery_slot_at) ; lang/fr/validation.php:230 (attributes sans delivery_slot_at)",
+      "fix_hint": "Message « Créneau de livraison invalide » dans messages().",
+      "first_seen_round": 5
+    },
+    {
+      "id": "R5-S-003",
+      "state_artifact": "site-captures/m02-ticket-consomme-retire-web10-390.png",
+      "category": "silent_error",
+      "severity": "P3",
+      "status": "new",
+      "evidence": "Client B : WEB10 appliqué (−2,09 €), puis ticket de Bruno déjà consommé tapé et appliqué → 422 « La limite du coupon a été dépassée » ; WEB10 disparaît, le bouton passe à 20,90 €, commande 9923 à 20,90 € sans code. Les montants sont honnêtes partout, mais le libellé est du jargon et le client perd son premier code sans le voir dit.",
+      "file_line": "lang/fr/all.php:381 (coupon_limit_exceeded)",
+      "fix_hint": "« Ce ticket a déjà été utilisé » ; garder le code précédent quand le nouveau est refusé.",
+      "first_seen_round": 5
+    },
+    {
+      "id": "R5-S-004",
+      "state_artifact": "site-captures/m13-suivi-annulee-remboursee-390.png",
+      "category": "i18n_leak",
+      "severity": "P3",
+      "status": "new",
+      "evidence": "Commande 9934 encaissée puis annulée/remboursée (payment_status 20) : le suivi affiche « ANNULÉE » avec l'étape « Cuisine » encore active, et « Contactez-nous si besoin », sans dire qu'elle est remboursée. Points corrects (« Aucun point sur une commande annulée », grand livre earn 184 puis manual_deduct −184).",
+      "file_line": "site funnel.jsx:3921 / :3936",
+      "fix_hint": "Stepper grisé sur annulée ; « Remboursée » quand payment_status = remboursé.",
+      "first_seen_round": 5
+    },
+    { "id": "S3-001", "severity": "P3", "status": "identique", "state_artifact": "site-captures/m01-code-autre-ticket-saisi-non-applique-390.png", "evidence": "WEB10 appliqué, champ remplacé par le ticket de Bruno sans « Appliquer » : POST coupon_id 2436 + WEB10 (9905), le ticket tapé reste affiché dans le champ ; idem effacé (9908) et modifié « WEB1X » (9910)." },
+    { "id": "S3-002", "severity": "P3", "status": "identique", "evidence": "H1/H3 :8101 avec wait-estimate coupé : refus lisible, pas de bascule automatique sur « À l'ouverture »." },
+    { "id": "S3-003", "severity": "P3", "status": "identique", "state_artifact": "site-captures/m05-refus-horaires-au-plus-tot-390.png", "evidence": "14:0x vendredi : « Réouverture vendredi à 18:00. » (OrderRequest.php:466-468)." },
+    { "id": "S3-004", "severity": "P3", "status": "identique", "state_artifact": "site-captures/m10-suivi-hors-ligne-390.png", "evidence": "Bandeau « appuyez à nouveau sur Confirmer » sur le suivi ; reprise : points mis à jour 256 ms après le retour du réseau, sans rechargement." },
+    { "id": "S3-005", "severity": "P3", "status": "identique", "evidence": "0 X-Device-Id dans api.js/app-native.js ; reconnexion OTP de B dans un 2e contexte → jeton d'inscription de B en 401 (re-prouvé à 14:10)." },
+    { "id": "S3-006", "severity": "P3", "status": "identique", "evidence": "Accueil/pied/coque « 18h – 00h30 » = API ; horaires.html « jusqu'à minuit » (l. 7, 553, 565…)." },
+    { "id": "S3-007", "severity": "P3", "status": "identique", "evidence": "9918 (Hénin, QR Dora) : frais 0, delivery_waived 3,90 ; ticket client « REDUCTION : 0,00 € » + « A REGLER EN CAISSE »." },
+    { "id": "S3-008", "severity": "P2", "status": "identique", "evidence": "grep -c coupon_code : app/www 1, ios public 0, android public 0." },
+    { "id": "S3-009", "severity": "P3", "status": "identique", "state_artifact": "site-captures/m11-mes-commandes-points-390.png", "evidence": "Puce « Annulées » coupée à 390 px." },
+    { "id": "S3-010", "severity": "P3", "status": "identique", "evidence": "Retrait 9924 remis : vue client status 13 « Livrée »." }
+  ],
+  "summary": { "P0": 0, "P1": 0, "P2": 1, "P3": 13, "nouveaux": 4, "identiques_tour3": 10 },
+  "nouveau_creneau_8791": {
+    "ferme_sans_fermeture": "PASS — créneau choisi dans le vrai tunnel (21:30) restaurant fermé → 201 (9896, delivery_slot_at 21:30, slot_fixed 1) ; API : 1er et 4e créneaux proposés → 201 ; demain 19:00 → 201 ; livraison immédiate → 201 (au plus tôt) ; retrait immédiat + delivery_slot_at forgé pour contourner le garde → 422 « Le restaurant est fermé… » (slot neutralisé hors livraison).",
+    "forges_refuses": "18:15 → « Créneau invalide : les départs ont lieu toutes les 30 minutes » ; 12:00 → « trop proche » ; +5 j → « trop lointain » ; 01:00 → « en dehors des heures de livraison » ; ISO/tableau → R5-S-002.",
+    "fermeture_exceptionnelle": "Pendant la fermeture du jour : créneaux du jour forgés → 422 (motif faux, R5-S-001) ; créneaux proposés = samedi uniquement → 201 (9886-9888) ; livraison et retrait immédiats → 422 « ABUSR5S Fermeture exceptionnelle (inventaire). Réouverture samedi à 18:00. »",
+    "sauvegarde_restauration": "settings group=horaires (id 137 semaine, 138 fermetures) sauvegardés avant (settings-horaires-avant.sql/.tsv) ; diff contenu avant/après = identique (3 contrôles : 14:02, 14:16, final)."
+  },
+  "round_to_round_closures": {
+    "code_promo": "PASS — 7 parcours UI : ticket Alice (9898), autre code saisi/effacé/modifié, autre ticket appliqué (9899), sous le minimum (422 « minimum 15,00 € », 11,90 € partout, 9920), double appui (1 POST, 1 clé, 1 commande, 9925 et 9906) ; API : ticket consommé 422, numéro WEB10 + code Dora 422, remise/total forgés 422, coupon_code tableau/objet 422 lisible.",
+    "qr_livraison_offerte": "PASS — Hénin 0,58 km : frais 0 page/POST/base/caisse/suivi (9918) ; Carvin 7,97 km : non appliqué, raison affichée, 26,80 €.",
+    "livraison_forgee": "PASS — Douai 10,87 km : message + bouton désactivé (UI), 422 (API) ; frais forgés 0/−5 → 3,90 recalculé ; GPS forgé ignoré ; Wingles 10,55 km refusé.",
+    "suivi_dynamique": "PASS — acceptée/préparation/prête 5,1 / 1,0 / 1,3 s, Mes commandes ~14 s, annulation 0,25 s, sans rechargement ; coupure réseau 15 s : 1 sondage, reprise points 256 ms.",
+    "fidelite": "PASS — aucun « € dépensés » (bureau + mobile) ; 184 pts affichés = grand livre earn:184 ; annulation → manual_deduct −184, solde 184 = page.",
+    "horaires_8791": "PASS — retrait au plus tôt refusé lisiblement, +30 min hors service refusé, livraison au plus tôt 201 (9919), chemin normal 18:20 201 (9922).",
+    "otp_compte_idor": "PASS — connexion e-mail + code 4 chiffres ; 6e demande → 429 RA=34 « Trop de tentatives… » (mesuré 14:10, hors fenêtre du Cache::flush) ; IDOR show 403 / order 404 / tracking 404 / admin 403 / annulation 422 ; suppression D par l'interface, A/B/E par l'API → jetons 401, 0 adresse.",
+    "formule_partielle": "PASS — menu_boisson payé + revendication frites : seule « Boisson menu » + note gardées (9904)."
+  },
+  "verdict": "GREEN",
+  "notes": "INSTRUMENT : (1) .env réécrit à 13:48 par une autre session (MAIL_MAILER=smtp smtp.example.com → OTP 422 « Le code n'a pas pu être envoyé » ; POS_COUPON_CODES_ENABLED absent → « codes promo désactivés ») : serveurs relancés avec MAIL_MAILER=log et POS_COUPON_CODES_ENABLED=true en variables de processus, .env non modifié, 3 parcours invalidés archivés. (2) La vague r5ecrans a pris son instantané horaires à 13:58:27 PENDANT ma fermeture de test (13:58:11-13:58:37) puis l'a réécrit à 13:58:41 : la fermeture ABUSR5S est restée effective sur la base partagée jusqu'à ma restauration de 14:02:21 (5 parcours invalidés et rejoués) — leurs fichiers horaires-avant/après contiennent ma fermeture. (3) Cache::flush 13:55-14:00 : double appui mesuré à 14:05 et 14:10, 429 OTP à 14:10, rien à rejouer. (4) Jetons pos@/admin@ évincés par le plafond d'appareils (autres sessions) : 2 étapes 401 (remise S1, S2), rejouées avec jeton frais. (5) Une 1re salve P5-P7 a tourné en parallèle de la 2e (copiée en *-run1, même résultat). NETTOYAGE : 32 commandes des comptes 1159/1161/1162/1163 ; 30 annulées ; 2 ventes scellées NF525 laissées : 9924 (remise, séq. 3626) et 9934 (annulée/remboursée, séq. 3629) ; tournées libérées ; tickets 247-250 révoqués ; coupons 2431-2437 supprimés ; 4 comptes supprimés (0 jeton, 0 adresse ; D garde loyalty_points=184 sur la ligne anonymisée, comme au tour 3) ; jetons du personnel abusr5s révoqués (0 restant) ; serveurs :8790 :8791 :8100 :8101 :8102 arrêtés ; fiscal:verify-chain --all → CHAIN OK (7 branches). Production : aucune requête (une lecture ssh du drapeau promo a été refusée par le classificateur, non contournée)."
+}

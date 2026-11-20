@@ -10,6 +10,11 @@ test('S11 — RGPD opt-out hides QR + shows reactivation panel', async ({ page }
   // QR is initially visible
   await expect(page.locator('[data-testid="loyalty-qr"]')).toBeVisible();
 
+  // Exercise the shipped customer path: no prototype-only dev helper is
+  // available when the consent control is used.
+  await page.evaluate(() => { delete window.LC.dev; });
+  expect(await page.evaluate(() => typeof window.LC.dev)).toBe('undefined');
+
   // Scroll to opt-out button + click
   await page.locator('[data-testid="loyalty-opt-out-btn"]').scrollIntoViewIfNeeded();
   await page.click('[data-testid="loyalty-opt-out-btn"]');
@@ -37,4 +42,15 @@ test('S11 — RGPD opt-out hides QR + shows reactivation panel', async ({ page }
   await expect(page.getByText(/Réactiver mon compte/i)).toBeVisible();
 
   await page.screenshot({ path: 'tests/e2e/__screenshots__/mobile-loyalty/11-opt-out-state.png' });
+
+  // Customer reactivation must work without the prototype-only LC.dev helper.
+  await page.click('[data-testid="loyalty-reactivate-btn"]');
+  await page.waitForFunction(() => localStorage.getItem('lecayenne.loyalty_consent') === '"opted_in"');
+  const reactivatedAccount = await page.evaluate(() => window.LC.loyalty.account);
+  expect(reactivatedAccount.consent_status).toBe('opted_in');
+  expect(reactivatedAccount.balance).toBe(0);
+  await expect(page.locator('[data-testid="loyalty-qr"]')).toBeVisible();
+  await expect(page.getByText(/Programme désactivé/i)).toHaveCount(0);
+
+  await page.screenshot({ path: 'tests/e2e/__screenshots__/mobile-loyalty/11-reactivated-state.png' });
 });

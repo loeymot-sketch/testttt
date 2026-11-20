@@ -101,6 +101,9 @@ class DeliveryBoyService
 
         try {
             if (!in_array(EnumRole::DELIVERY_BOY, $this->blockRoles)) {
+                // [AUDIT ABUSIF 2026-11-06 · tour 3 · R3-ADV-002] Même règle que EmployeeService::update : mot de passe ou e-mail
+                // changé par un tiers → les sessions ouvertes du compte sont fermées (sinon il reste connecté jusqu'à 8 h).
+                $identifiantsChanges = $request->password || mb_strtolower((string) $request->email) !== mb_strtolower((string) $deliveryBoy->email);
                 DB::transaction(function () use ($deliveryBoy, $request) {
                     $this->user               = $deliveryBoy;
                     $this->user->name         = $request->name;
@@ -114,6 +117,9 @@ class DeliveryBoyService
                     }
                     $this->user->save();
                 });
+                if ($identifiantsChanges && (int) $deliveryBoy->id !== (int) optional(auth()->user())->id) {
+                    $deliveryBoy->tokens()->delete();
+                }
                 return $this->user;
             } else {
                 throw new Exception(trans('all.message.permission_denied'), 422);

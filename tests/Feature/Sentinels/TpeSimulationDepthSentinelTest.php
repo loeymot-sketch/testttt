@@ -49,6 +49,13 @@ class TpeSimulationDepthSentinelTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // [AUDIT ABUSIF 2026-11-06] PLAN A (borne avec terminal) : en Plan B, reconcile-pending et payment-confirm sont refusés.
+        config(['kiosk.payment_route_all_to_counter' => false]);
+    }
+
     public function test_amount_echo_mismatch_still_fires_under_pos_simulation_hardware_under(): void
     {
         Config::set('pos.simulation_hardware', true);

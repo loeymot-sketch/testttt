@@ -51,6 +51,27 @@ async function ouvrirLaCaisse(page) {
     await page.addStyleTag({ content: '.phpdebugbar{display:none !important}' });
 }
 
+/** Un article réel au ticket (recherche → assistant caisse → « Ajouter au panier » visible). Les clics passent
+ *  par le DOM : deux boutons portent ce libellé, seul celui du wizard est visible (piège documenté). */
+async function ajouterUnArticle(page) {
+    const recherche = page.locator('input[placeholder="Rechercher un article du menu"]');
+    await recherche.fill('Tacos M');
+    await page.waitForTimeout(1000);
+    await page.evaluate(() => { const b = [...document.querySelectorAll('[data-pos-item-id]')].find((x) => !x.disabled); if (b) b.click(); });
+    await page.waitForTimeout(1500);
+    await page.evaluate(() => {
+        const vis = (s) => [...document.querySelectorAll(s)].find((e) => e.offsetParent !== null);
+        const v = vis('[data-viande]'); if (v) v.click();
+    });
+    await page.waitForTimeout(300);
+    await page.evaluate(() => { const c = [...document.querySelectorAll('button.sauce-chip')].find((e) => e.offsetParent); if (c) c.click(); });
+    await page.waitForTimeout(300);
+    await page.evaluate(() => { const b = [...document.querySelectorAll('button.wizard-btn-cart')].find((e) => e.offsetParent !== null); if (b) b.click(); });
+    await page.waitForTimeout(1500);
+    await recherche.fill('');
+    await page.waitForTimeout(600);
+}
+
 /** Toutes les mesures en un seul aller-retour : moins de flottement entre deux lectures. */
 async function mesurer(page) {
     return page.evaluate(() => {
@@ -77,7 +98,14 @@ async function mesurer(page) {
         const rect = (el) => (el ? el.getBoundingClientRect() : null);
         const rGrille = rect(grille);
         // Hauteur d'une tuile : la grille se réagence selon la largeur, on mesure le vrai enfant.
-        const tuile = grille ? grille.querySelector('[role="listitem"], li, button, a, div') : null;
+        // [FINITION 2026-11-04] Instrument corrigé : `querySelector('[role="listitem"], li, button, a, div')`
+        // rend le PREMIER élément du document qui correspond à l'un des sélecteurs — ici le conteneur
+        // `div.pos-v5-cat-grid` des 10 tuiles (313 px à 1366×768, 2 rangées), pas une tuile (151 px). La
+        // porte exigeait donc « toute la grille à l'écran » en croyant exiger « une rangée ». Mesuré :
+        // grille y=483, première rangée 483→634, entièrement visible, porte rouge. On vise la tuile.
+        const tuile = grille
+            ? (grille.querySelector('.pos-v5-cat-tile') || grille.querySelector('[role="listitem"], li, button, a'))
+            : null;
         const hTuile = tuile ? Math.round(tuile.getBoundingClientRect().height) : null;
 
         return {
@@ -85,6 +113,7 @@ async function mesurer(page) {
             grilleY: rGrille ? Math.round(rGrille.y) : null,
             hauteurTuile: hTuile,
             corpsPanier: body ? Math.round(body.getBoundingClientRect().height) : null,
+            lignesVente: document.querySelectorAll('.pos-v5-cart-item').length,
             piedBas: foot ? Math.round(foot.getBoundingClientRect().bottom) : null,
             controlesCoupes: coupes,
             mainScroll: main ? main.scrollHeight : null,
@@ -124,7 +153,14 @@ for (const gabarit of GABARITS) {
 
         test('C3 — le gain du 19/08 n\'est pas repris (corps ≥ 20vh, pied entier)', async ({ page }) => {
             await ouvrirLaCaisse(page);
+            // [FINITION 2026-11-04] C3 se mesurait sur un ticket VIDE. Or depuis le 25/08 (pos-v5.css, règle
+            // `:has(.pos-v5-cart__empty)`), un corps vide n'a VOLONTAIREMENT aucun plancher : il ne protège
+            // aucune ligne de vente et sa place revient au champ « Nom du client ». C3 échouait donc pour une
+            // raison voulue, et ne mesurait plus ce qu'il protège : la place des LIGNES DE VENTE. On met un
+            // article au ticket avant de mesurer. Le plancher reste 20 % de l'écran RÉEL (corrigé du zoom 0.9).
+            await ajouterUnArticle(page);
             const m = await mesurer(page);
+            expect(m.lignesVente, 'un article doit être au ticket pour mesurer C3').toBeGreaterThan(0);
 
             const plancher = Math.round(m.fenetre * 0.20);
             expect(

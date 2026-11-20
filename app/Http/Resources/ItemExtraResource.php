@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 
 use App\Libraries\AppLibrary;
+use App\Support\Menu\RecommendedSupplements;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ItemExtraResource extends JsonResource
@@ -31,6 +32,9 @@ class ItemExtraResource extends JsonResource
             'is_available'  => $this->is_available === null ? true : (bool) $this->is_available,
             'unavailable_reason' => $this->unavailable_reason,
             'is_new'        => (bool) ($this->is_new ?? false),
+            // [OWNER 2026-10-21] Mise en avant « Recommandé » (affichage seul : le prix reste celui de PricingService).
+            'is_recommended' => strtolower((string) $this->group_label) === 'supplement'
+                && RecommendedSupplements::isRecommended($this->item?->name, $this->item?->category?->name, $this->name),
             'item'          => optional($this->item)->name,
         ];
     }

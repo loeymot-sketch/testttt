@@ -162,4 +162,37 @@ class WebOrderCounterCollectableTest extends TestCase
         $this->assertNotNull($order->fiscal_sequence_no,
             'Le doorstep COD doit allouer un fiscal_sequence_no (NF525).');
     }
+
+    /**
+     * [LIVRAISON 2026-10-20 · trouvé par le test réel navigateur] Le test ci-dessus fixe `source_surface = 'web'` À LA MAIN.
+     * Or une commande de livraison créée par l'API du site reçoit `source_surface = 'delivery'` (FrontendOrder::creating) :
+     * le sceau ne reconnaissait que 'web' → la commande livrée et encaissée à la porte restait PENDING_COUNTER, SANS numéro
+     * fiscal (vente hors chaîne NF525). On prouve ici avec la valeur réelle.
+     */
+    public function test_web_delivery_doorstep_cod_seals_with_the_real_delivery_surface(): void
+    {
+        $order = Order::factory()->create([
+            'branch_id'          => $this->branch->id,
+            'order_type'         => OrderType::DELIVERY,
+            'source'             => Source::WEB,
+            'source_surface'     => 'delivery', // valeur posée par FrontendOrder::creating pour toute commande de livraison
+            'payment_method'     => PaymentGateway::CASH_ON_DELIVERY,
+            'payment_status'     => PaymentStatus::PENDING_COUNTER,
+            'pos_payment_method' => null,
+            'status'             => OrderStatus::OUT_FOR_DELIVERY,
+            'total'              => 4.90,
+            'subtotal'           => 1.00,
+        ]);
+        $boy = User::factory()->create(['branch_id' => $this->branch->id, 'status' => Status::ACTIVE]);
+        $order->delivery_boy_id = $boy->id;
+        $order->save();
+        $this->actingAs($boy, 'sanctum');
+
+        app(OrderService::class)->deliveryBoyOrderChangeStatus($order->fresh(), new Request(['status' => OrderStatus::DELIVERED]));
+
+        $order->refresh();
+        $this->assertSame(OrderStatus::DELIVERED, (int) $order->status);
+        $this->assertSame(PaymentStatus::PAID, (int) $order->payment_status, 'Encaissée à la porte : la commande doit être PAYÉE.');
+        $this->assertNotNull($order->fiscal_sequence_no, 'Encaissée à la porte : la vente doit entrer dans la chaîne fiscale (NF525).');
+    }
 }

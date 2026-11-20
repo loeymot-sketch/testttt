@@ -33,7 +33,7 @@
         <span
           class="kds-scheduled-banner__entry"
           :data-testid="`kds-scheduled-entry-${idx}`"
-        >{{ entry.time }} — #{{ entry.serial }}</span>
+        >{{ entry.time }} — {{ entry.numero }}</span>
       </template>
     </span>
   </div>
@@ -111,10 +111,13 @@ export default {
                             ? e.scheduled_date
                             : e.scheduled_at
                     );
+                    // [E2E stores · B2-R2-08 · 2026-10-01] Numéro APPELÉ d'abord, série en repli.
+                    const queue = (e.queue_number !== null && e.queue_number !== undefined && e.queue_number !== '') ? e.queue_number : null;
                     return {
                         key: hasId ? `sched-${e.id}` : `sched-idx-${idx}`,
                         time: dayPrefix ? `${dayPrefix} ${time}` : time,
                         serial,
+                        numero: queue ? `N°${queue}` : `#${serial}`,
                     };
                 });
         },

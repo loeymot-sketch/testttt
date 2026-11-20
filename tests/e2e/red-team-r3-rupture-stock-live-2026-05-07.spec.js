@@ -103,7 +103,7 @@ function tinker(code) {
 }
 
 const API_KEY = 'b6d68vy2-m7g5-20r0-5275-h103w73453q120'; // from .env MIX_API_KEY
-const BASE = 'http://localhost:8000';
+const BASE = (process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 // Login via API and return Bearer token (admin@lecayenne.fr → has items_edit + pos perms)
 async function apiLogin(page, email = 'admin@lecayenne.fr', password = '123456') {

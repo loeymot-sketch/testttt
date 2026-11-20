@@ -7,6 +7,7 @@ use Exception;
 use App\Models\SmsGateway;
 use Illuminate\Http\Request;
 use App\Models\GatewayOption;
+use App\Http\Resources\GatewayOptionsResource;
 use Illuminate\Support\Facades\Log;
 use App\Http\Requests\PaginateRequest;
 use App\Libraries\QueryExceptionLibrary;
@@ -74,8 +75,21 @@ class SmsGatewayService
                 foreach ($validationRequests as $key => $value) {
                     $option = GatewayOption::where('option', $key)->first();
                     if (!blank($option)) {
-                        $option->value = $value;
-                        $option->save();
+                        // [ONB-13 F-12 2026-08-27] Le second geste du masquage — sans lui,
+                        // le premier casse les paiements.
+                        //
+                        // GatewayOptionsResource ne renvoie plus les secrets mais un masque.
+                        // Le formulaire le renvoie donc tel quel quand l'utilisateur n'a pas
+                        // touche au champ. Sans ce test, on ecrirait « ******** » dans la cle
+                        // secrete de Stripe ou le jeton Twilio : les paiements et les SMS
+                        // tomberaient, et l'ecran afficherait exactement la meme chose qu'avant.
+                        $inchange = GatewayOptionsResource::estSecret($key)
+                            && (string) $value === GatewayOptionsResource::MASQUE;
+
+                        if (! $inchange) {
+                            $option->value = $value;
+                            $option->save();
+                        }
                     }
 
                     if (str_contains($key, 'status')) {

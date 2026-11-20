@@ -141,6 +141,10 @@ class GuestOtpVerifyHardeningTest extends TestCase
         $res = $this->verify($phone, '445566');
 
         $res->assertStatus(201)->assertJsonStructure(['token']);
+        // [W7-D D-012 · cycle C 2026-11-04] Un client ne reçoit pas le catalogue des permissions d'administration.
+        $permissions = collect($res->json('permission'));
+        $this->assertTrue($permissions->every(fn ($p) => $p['access'] === true), 'Seules les permissions ACCORDÉES partent vers un client.');
+        $this->assertSame(0, $permissions->filter(fn ($p) => str_starts_with((string) $p['name'], 'pos'))->count(), 'Aucune permission caisse ne doit partir vers un client.');
 
         $user = User::withoutGlobalScopes()->where('phone', $phone)->first();
         $this->assertNotNull($user, 'Le bon code doit créer le compte invité.');

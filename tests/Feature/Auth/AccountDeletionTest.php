@@ -149,6 +149,291 @@ class AccountDeletionTest extends TestCase
     }
 
     /** @test */
+    public function le_complement_d_adresse_des_commandes_passees_est_efface(): void
+    {
+        // [test-e2e stores F9-004] « 2e étage, code 1234 » restait attaché à la commande après la suppression du compte.
+        $user = $this->client();
+        $commande = Order::factory()->create(['user_id' => $user->id, 'branch_id' => $this->branch->id, 'status' => OrderStatus::DELIVERED]);
+        $id = DB::table('order_addresses')->insertGetId([
+            'order_id' => $commande->id, 'user_id' => $user->id, 'label' => 'Maison',
+            'address' => '10 Place Jean Jaurès 62110 Hénin-Beaumont', 'apartment' => '2e étage, code 1234',
+            'latitude' => '50.42', 'longitude' => '2.95', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->withHeader('Authorization', 'Bearer ' . $this->jeton($user))
+            ->postJson('/api/auth/delete-account')->assertStatus(200);
+
+        $ligne = DB::table('order_addresses')->find($id);
+        $this->assertNull($ligne->apartment, 'Le code d\'entrée doit avoir disparu.');
+        $this->assertSame('Livraison', $ligne->label, 'Le libellé personnel doit avoir disparu.');
+        $this->assertSame('10 Place Jean Jaurès 62110 Hénin-Beaumont', $ligne->address, 'L\'adresse de livraison de la commande reste (tournée, conservation).');
+    }
+
+    /** @test */
+    public function les_courses_uber_direct_perdent_telephone_nom_et_consignes(): void
+    {
+        // [test-e2e stores P-012] La course gardait téléphone, nom et code d'entrée du destinataire après la suppression.
+        $user = $this->client();
+        $commande = Order::factory()->create(['user_id' => $user->id, 'branch_id' => $this->branch->id, 'status' => OrderStatus::DELIVERED]);
+        $id = DB::table('uber_direct_deliveries')->insertGetId([
+            'branch_id' => $this->branch->id, 'order_id' => $commande->id, 'status' => 'delivered', 'quote_fee_cents' => 742,
+            'dropoff_phone' => '+33612345678', 'dropoff_instructions' => '2e étage, code 1234',
+            'delivery_payload' => json_encode(['id' => 'del_1', 'dropoff' => ['name' => 'Kossay B.', 'phone_number' => '+33612345678', 'notes' => '2e étage, code 1234', 'address' => '10 Place Jean Jaurès']]),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->withHeader('Authorization', 'Bearer ' . $this->jeton($user))
+            ->postJson('/api/auth/delete-account')->assertStatus(200);
+
+        $ligne = DB::table('uber_direct_deliveries')->find($id);
+        $brut = json_decode($ligne->delivery_payload, true);
+        $this->assertNull($ligne->dropoff_phone);
+        $this->assertNull($ligne->dropoff_instructions);
+        $this->assertArrayNotHasKey('phone_number', $brut['dropoff']);
+        $this->assertArrayNotHasKey('name', $brut['dropoff']);
+        $this->assertArrayNotHasKey('notes', $brut['dropoff']);
+        $this->assertSame(742, (int) $ligne->quote_fee_cents, 'Le prix de la course reste.');
+        $this->assertSame('del_1', $brut['id'], 'Le suivi de la course reste.');
+    }
+
+    /**
+     * @test
+     * [test-e2e stores S17-003 · 2026-11-13] Un compte client supprimé AVANT les correctifs (simple suppression douce : nom,
+     * e-mail, téléphone intacts ; complément d'adresse et téléphone de course encore là) est rattrapé par la commande — en
+     * simulation rien ne bouge ; avec --appliquer tout est effacé ; un compte d'exploitation supprimé n'est jamais touché.
+     */
+    public function la_commande_de_rattrapage_efface_les_anciens_comptes_supprimes_et_seulement_eux(): void
+    {
+        $ancien = $this->client(['email' => 'ancien@example.test', 'phone' => '0611111111', 'name' => 'Ancien Client']);
+        $commande = Order::factory()->create(['user_id' => $ancien->id, 'branch_id' => $this->branch->id, 'status' => OrderStatus::DELIVERED]);
+        $adresse = DB::table('order_addresses')->insertGetId([
+            'order_id' => $commande->id, 'user_id' => $ancien->id, 'label' => 'Maison',
+            'address' => '10 Place Jean Jaurès 62110 Hénin-Beaumont', 'apartment' => 'code 1234',
+            'latitude' => '50.42', 'longitude' => '2.95', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $course = DB::table('uber_direct_deliveries')->insertGetId([
+            'branch_id' => $this->branch->id, 'order_id' => $commande->id, 'status' => 'delivered', 'quote_fee_cents' => 742,
+            'dropoff_phone' => '+33611111111', 'dropoff_instructions' => 'code 1234',
+            'delivery_payload' => json_encode(['id' => 'del_9', 'dropoff' => ['name' => 'Ancien', 'phone_number' => '+33611111111']]),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $ancien->delete();   // l'ancienne suppression : douce, sans effacement
+
+        $employe = User::factory()->create(['branch_id' => $this->branch->id, 'name' => 'Employé Gardé', 'email' => 'staff@example.test', 'phone' => '0622222222']);
+        $employe->assignRole('POS Operator');
+        $employe->delete();
+
+        $this->artisan('comptes:rattraper-suppressions')->assertSuccessful();
+        $this->assertSame('ancien@example.test', User::withTrashed()->find($ancien->id)->email, 'Simulation : rien n\'est écrit.');
+        $this->assertSame('code 1234', DB::table('order_addresses')->find($adresse)->apartment);
+
+        $this->artisan('comptes:rattraper-suppressions --appliquer')->assertSuccessful();
+        $apres = User::withTrashed()->find($ancien->id);
+        $this->assertNull($apres->email);
+        $this->assertSame('Compte supprimé', $apres->name);
+        $this->assertStringStartsWith('PENDING_DELETED_', (string) $apres->phone);
+        $this->assertNull(DB::table('order_addresses')->find($adresse)->apartment);
+        $this->assertSame('10 Place Jean Jaurès 62110 Hénin-Beaumont', DB::table('order_addresses')->find($adresse)->address, 'L\'adresse de la commande reste.');
+        $ligne = DB::table('uber_direct_deliveries')->find($course);
+        $this->assertNull($ligne->dropoff_phone);
+        $this->assertArrayNotHasKey('phone_number', json_decode($ligne->delivery_payload, true)['dropoff']);
+        $this->assertSame('staff@example.test', User::withTrashed()->find($employe->id)->email, 'Un compte d\'exploitation n\'est jamais touché.');
+
+        // Rejouable sans effet.
+        $telephone = $apres->phone;
+        $this->artisan('comptes:rattraper-suppressions --appliquer')->assertSuccessful();
+        $this->assertSame($telephone, User::withTrashed()->find($ancien->id)->phone);
+    }
+
+    /**
+     * @test
+     * [test-e2e stores S18-001 · 2026-11-13] Supprimer un client depuis l'administration efface réellement son identité et ses
+     * traces (même service que la suppression par le client), au lieu d'une simple suppression douce.
+     */
+    public function supprimer_un_client_depuis_l_administration_efface_ses_donnees(): void
+    {
+        $client = $this->client(['email' => 'admin-supprime@example.test', 'phone' => '0633333333', 'name' => 'Client Admin']);
+        \App\Models\Subscriber::create(['email' => 'admin-supprime@example.test']);
+        $commande = Order::factory()->create(['user_id' => $client->id, 'branch_id' => $this->branch->id, 'status' => OrderStatus::DELIVERED]);
+        $adresse = DB::table('order_addresses')->insertGetId([
+            'order_id' => $commande->id, 'user_id' => $client->id, 'label' => 'Maison',
+            'address' => '1 Rue Test 62110 Hénin-Beaumont', 'apartment' => 'code 9999',
+            'latitude' => '50.42', 'longitude' => '2.95', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        app(\App\Services\CustomerService::class)->destroy($client);
+
+        $apres = User::withTrashed()->find($client->id);
+        $this->assertNotNull($apres->deleted_at);
+        $this->assertNull($apres->email);
+        $this->assertSame('Compte supprimé', $apres->name);
+        $this->assertStringStartsWith('PENDING_DELETED_', (string) $apres->phone);
+        $this->assertNull($apres->apple_sub);
+        $this->assertSame(0, \App\Models\Subscriber::whereRaw('LOWER(email) = ?', ['admin-supprime@example.test'])->count(), 'Plus d\'offres par e-mail.');
+        $this->assertNull(DB::table('order_addresses')->find($adresse)->apartment);
+    }
+
+    /** @test [P19-001/002/003] Suppression depuis l'admin : refusée pour un compte qui a aussi un rôle d'exploitation ou une
+     *  commande en cours ; le jeton Apple est révoqué chez Apple après l'effacement. */
+    public function la_suppression_admin_refuse_les_cas_dangereux_et_revoque_le_jeton_apple(): void
+    {
+        $espion = new class {
+            public array $appels = [];
+            public function revoquer(string $jeton): bool { $this->appels[] = $jeton; return true; }
+        };
+        $this->app->instance(\App\Services\Auth\AppleTokenRevoker::class, $espion);
+
+        // Admin + Customer : refusé, rien n'est effacé.
+        $mixte = $this->client(['email' => 'mixte@example.test', 'phone' => '0666666666']);
+        $mixte->assignRole('Admin');
+        $mixte->forceFill(['apple_sub' => null, 'google_sub' => null, 'loyalty_code' => null])->save();   // identifiants uniques du gabarit
+        try { app(\App\Services\CustomerService::class)->destroy($mixte); $this->fail('Admin + Customer ne doit pas être anonymisé.'); }
+        catch (\Exception $e) { $this->assertSame(422, $e->getCode()); }
+        $this->assertSame('mixte@example.test', User::withTrashed()->find($mixte->id)->email);
+
+        // Commande en cours : refusé.
+        $enLivraison = $this->client(['email' => 'route@example.test', 'phone' => '0677777777']);
+        $enLivraison->forceFill(['apple_sub' => null, 'google_sub' => null, 'loyalty_code' => null])->save();
+        Order::factory()->create(['user_id' => $enLivraison->id, 'branch_id' => $this->branch->id, 'status' => OrderStatus::ACCEPT]);
+        try { app(\App\Services\CustomerService::class)->destroy($enLivraison); $this->fail('Commande en cours : refus attendu.'); }
+        catch (\Exception $e) { $this->assertSame(422, $e->getCode()); }
+        $this->assertSame('route@example.test', User::withTrashed()->find($enLivraison->id)->email);
+
+        // Client simple avec jeton Apple : effacé et révoqué.
+        $apple = $this->client(['email' => 'apple@example.test', 'phone' => '0688888888']);
+        $apple->apple_refresh_token = 'jeton-apple-test';
+        $apple->save();
+        app(\App\Services\CustomerService::class)->destroy($apple);
+        $this->assertNull(User::withTrashed()->find($apple->id)->email);
+        $this->assertSame(['jeton-apple-test'], $espion->appels, 'Le jeton Apple est révoqué chez Apple.');
+    }
+
+    /** @test [P20-001/002] Les trois chemins suivent la même règle : un compte qui porte aussi un rôle d'exploitation ne s'efface
+     *  pas par la suppression client ; côté admin, une commande jamais commencée ni payée est annulée au lieu de bloquer. */
+    public function les_chemins_client_et_admin_suivent_la_meme_regle(): void
+    {
+        $mixte = $this->client(['email' => 'mixte2@example.test', 'phone' => '0612000001']);
+        $mixte->assignRole('POS Operator');
+        $mixte->forceFill(['apple_sub' => null, 'google_sub' => null, 'loyalty_code' => null])->save();
+        $this->withHeader('Authorization', 'Bearer ' . $this->jeton($mixte))->postJson('/api/auth/delete-account')->assertStatus(422);
+        $this->assertSame('mixte2@example.test', User::withTrashed()->find($mixte->id)->email, 'Rôle d\'exploitation : rien n\'est effacé.');
+
+        User::factory()->create();   // l'id 2 est le client par défaut, jamais supprimable (CustomerService) : on ne tombe pas dessus
+        $client = $this->client(['email' => 'attente@example.test', 'phone' => '0612000002']);
+        $commande = Order::factory()->create(['user_id' => $client->id, 'branch_id' => $this->branch->id,
+            'status' => OrderStatus::PENDING, 'payment_status' => \App\Enums\PaymentStatus::UNPAID,
+            'order_type' => \App\Enums\OrderType::TAKEAWAY]);
+        app(\App\Services\CustomerService::class)->destroy($client);
+        $this->assertNull(User::withTrashed()->find($client->id)->email, 'L\'admin efface : la commande en attente ne bloque plus.');
+        $this->assertSame(OrderStatus::CANCELED, (int) DB::table('orders')->find($commande->id)->status, 'Elle est annulée, comme côté client.');
+    }
+
+    /** @test [supervision D3/D4] La photo de profil et le texte des messages au restaurant disparaissent à la suppression. */
+    public function la_photo_et_les_messages_disparaissent(): void
+    {
+        $u = $this->client(['email' => 'photo@example.test', 'phone' => '0612000101']);
+        $mediaId = DB::table('media')->insertGetId([
+            'model_type' => User::class, 'model_id' => $u->id, 'uuid' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'collection_name' => 'profile', 'name' => 'selfie', 'file_name' => 'selfie.jpg', 'mime_type' => 'image/jpeg',
+            'disk' => 'public', 'conversions_disk' => 'public', 'size' => 1234, 'manipulations' => '[]', 'custom_properties' => '[]',
+            'generated_conversions' => '[]', 'responsive_images' => '[]', 'order_column' => 1, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $messageId = null;
+        if (Schema::hasTable('messages') && Schema::hasTable('message_histories')) {
+            $fil = DB::table('messages')->insertGetId(array_filter(['user_id' => $u->id, 'branch_id' => $this->branch->id, 'created_at' => now(), 'updated_at' => now()],
+                fn ($v, $k) => Schema::hasColumn('messages', $k), ARRAY_FILTER_USE_BOTH));
+            $messageId = DB::table('message_histories')->insertGetId(['message_id' => $fil, 'user_id' => $u->id, 'text' => 'Mon code porte 1234', 'is_read' => 0, 'created_at' => now(), 'updated_at' => now()]);
+        }
+        $this->withHeader('Authorization', 'Bearer ' . $this->jeton($u))->postJson('/api/auth/delete-account')->assertStatus(200);
+        $this->assertNull(DB::table('media')->find($mediaId), 'La photo de profil est effacée.');
+        if ($messageId) {
+            $this->assertNull(DB::table('message_histories')->find($messageId)->text, 'Le texte du message est effacé.');
+        }
+    }
+
+    /** @test [supervision D1] Un refus (commande en préparation) n'envoie plus « commande annulée » pour une annulation aussitôt défaite. */
+    public function un_refus_n_envoie_aucune_annulation(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+        \App\Models\NotificationAlert::create(['name' => 'c', 'language' => 'order_canceled_message', 'mail_message' => 'Votre commande est annulée',
+            'sms_message' => 'x', 'push_notification_message' => 'x', 'mail' => \App\Enums\SwitchBox::ON, 'sms' => \App\Enums\SwitchBox::OFF, 'push_notification' => \App\Enums\SwitchBox::OFF]);
+        User::factory()->count(2)->create();
+        $u = $this->client(['email' => 'refus@example.test', 'phone' => '0612000102']);
+        $a = Order::factory()->create(['user_id' => $u->id, 'branch_id' => $this->branch->id, 'status' => OrderStatus::PENDING,
+            'payment_status' => \App\Enums\PaymentStatus::UNPAID, 'order_type' => \App\Enums\OrderType::TAKEAWAY, 'source' => 5, 'order_serial_no' => '131126' . random_int(1000, 9999)]);
+        Order::factory()->create(['user_id' => $u->id, 'branch_id' => $this->branch->id, 'status' => OrderStatus::PREPARING, 'source' => 5]);
+        try { app(\App\Services\CustomerService::class)->destroy($u); $this->fail('refus attendu'); }
+        catch (\Exception $e) { $this->assertSame(422, $e->getCode()); }
+        $this->withHeader('Authorization', 'Bearer ' . $this->jeton($u))->postJson('/api/auth/delete-account')->assertStatus(422);
+        $this->assertSame(OrderStatus::PENDING, (int) DB::table('orders')->find($a->id)->status, 'La commande A reste en attente.');
+        $this->assertCount(0, \Illuminate\Support\Facades\Mail::sent(\App\Mail\OrderMail::class), 'Aucun e-mail « commande annulée ».');
+    }
+
+        /** @test [S20-001] Une commande prise par téléphone en caisse perd le nom et le numéro recopiés, à la suppression et au rattrapage. */
+    public function les_commandes_caisse_perdent_nom_et_numero_du_client(): void
+    {
+        $client = $this->client(['email' => 'caisse@example.test', 'phone' => '0699111111']);
+        $commande = Order::factory()->create(['user_id' => $client->id, 'branch_id' => $this->branch->id, 'status' => OrderStatus::DELIVERED]);
+        DB::table('orders')->where('id', $commande->id)->update(['pos_customer_name' => 'Client Téléphone', 'pos_customer_phone' => '0699111111']);
+
+        $this->withHeader('Authorization', 'Bearer ' . $this->jeton($client))->postJson('/api/auth/delete-account')->assertStatus(200);
+
+        $ligne = DB::table('orders')->find($commande->id);
+        $this->assertNull($ligne->pos_customer_name);
+        $this->assertNull($ligne->pos_customer_phone);
+        $this->assertNotNull($ligne->total, 'Le reste de la commande est conservé.');
+        $this->artisan('comptes:rattraper-suppressions')->expectsOutputToContain('commandes caisse avec nom/numéro : 0')->assertSuccessful();
+    }
+
+    /** @test [P18-002] Les tours de roue crédités au compte perdent nom, e-mail et téléphone à la suppression (et au rattrapage). */
+    public function les_tours_de_roue_du_compte_perdent_leur_identite(): void
+    {
+        $client = $this->client(['email' => 'roue@example.test', 'phone' => '0655555555']);
+        $ligne = [
+            'branch_id' => $this->branch->id, 'campaign_key' => 'test', 'phone' => '0655555555', 'customer_name' => 'Roue Client',
+            'prize_key' => 'pts', 'prize_label' => '50 points', 'prize_type' => 'points', 'unlock_method' => 'order',
+            'points_credited_user_id' => $client->id, 'created_at' => now(), 'updated_at' => now(),
+        ];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('wheel_spins', 'email')) {
+            $ligne['email'] = 'roue@example.test';
+        }
+        $id = DB::table('wheel_spins')->insertGetId($ligne);
+
+        $this->withHeader('Authorization', 'Bearer ' . $this->jeton($client))->postJson('/api/auth/delete-account')->assertStatus(200);
+
+        $tour = DB::table('wheel_spins')->find($id);
+        $this->assertNull($tour->customer_name);
+        $this->assertSame('SUPPRIME-' . $id, $tour->phone);
+        if (property_exists($tour, 'email')) {
+            $this->assertNull($tour->email);
+        }
+        $this->assertSame('50 points', $tour->prize_label, 'Le lot reste (comptabilité de la roue).');
+        $this->artisan('comptes:rattraper-suppressions')->expectsOutputToContain('tours de roue identifiants : 0')->assertSuccessful();
+    }
+
+    /** @test [S18-002] Le rattrapage voit (et efface) un nom/téléphone restés seulement dans la réponse brute d'Uber. */
+    public function le_rattrapage_voit_les_traces_uber_restees_dans_la_reponse_brute(): void
+    {
+        $client = $this->client(['email' => 'brut@example.test', 'phone' => '0644444444']);
+        $commande = Order::factory()->create(['user_id' => $client->id, 'branch_id' => $this->branch->id, 'status' => OrderStatus::DELIVERED]);
+        $this->withHeader('Authorization', 'Bearer ' . $this->jeton($client))->postJson('/api/auth/delete-account')->assertStatus(200);
+        // Un webhook arrivé APRÈS la suppression remet nom et téléphone dans la réponse brute (colonnes vides).
+        $course = DB::table('uber_direct_deliveries')->insertGetId([
+            'branch_id' => $this->branch->id, 'order_id' => $commande->id, 'status' => 'delivered', 'quote_fee_cents' => 500,
+            'dropoff_phone' => null, 'dropoff_instructions' => null,
+            'delivery_payload' => json_encode(['id' => 'del_w', 'dropoff' => ['name' => 'Brut', 'phone_number' => '+33644444444']]),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->artisan('comptes:rattraper-suppressions')->expectsOutputToContain('courses Uber avec téléphone/consignes : 1')->assertSuccessful();
+        $this->artisan('comptes:rattraper-suppressions --appliquer')->assertSuccessful();
+        $brut = json_decode(DB::table('uber_direct_deliveries')->find($course)->delivery_payload, true);
+        $this->assertArrayNotHasKey('phone_number', $brut['dropoff']);
+        $this->assertArrayNotHasKey('name', $brut['dropoff']);
+        $this->artisan('comptes:rattraper-suppressions')->expectsOutputToContain('courses Uber avec téléphone/consignes : 0')->assertSuccessful();
+    }
+
+    /** @test */
     public function un_compte_supprime_ne_peut_plus_etre_ressuscite_par_son_telephone(): void
     {
         // Le parcours d'inscription cherche un compte invité par TÉLÉPHONE, y compris

@@ -186,14 +186,28 @@ class PosLoyaltyAttachTest extends TestCase
     // ── QUAND LE GUETTEUR N'EST PAS ENCORE PASSÉ ─────────────────────────────────────────────
 
     /**
-     * Sur une commande encore en cuisine, on ne devance PAS le crédit : créditer maintenant, ce
-     * serait donner des points pour une vente qui peut encore être annulée. Le guetteur créditera
-     * par la voie normale, et la réponse dit 0 — l'écran doit annoncer « c'est rattaché », pas
-     * « voici vos points ».
+     * [POINTS À LA VALIDATION 2026-11-06 · décision propriétaire] Une commande EN CUISINE est déjà
+     * validée : rattacher le client crédite ses points tout de suite (une annulation les reprendra).
      */
-    public function test_sur_une_commande_encore_en_cuisine_on_ne_devance_pas_le_credit(): void
+    public function test_sur_une_commande_en_cuisine_le_rattachement_credite_tout_de_suite(): void
     {
         $commande = $this->vente(OrderStatus::PREPARING, 24.00);
+
+        $r = $this->rattacher($commande)->assertOk();
+
+        $this->assertSame(240, $r->json('data.points_awarded'));
+        $this->assertSame(240, (int) $this->client->fresh()->loyalty_points);
+        $this->assertSame('RATTACH1', $commande->fresh()->loyalty_customer_code);
+    }
+
+    /**
+     * Une commande EN ATTENTE (pas encore validée par le restaurant) ne rapporte rien au
+     * rattachement : le crédit viendra à sa validation, par la voie normale. L'écran annonce
+     * « c'est rattaché », pas « voici vos points ».
+     */
+    public function test_sur_une_commande_en_attente_on_ne_devance_pas_le_credit(): void
+    {
+        $commande = $this->vente(OrderStatus::PENDING, 24.00);
 
         $r = $this->rattacher($commande)->assertOk();
 

@@ -277,6 +277,22 @@ class CleanupStalePendingKioskOrders
             // force à 'delivery' dès que `order_type === DELIVERY` — les deux valeurs
             // désignent la même chose, une commande passée depuis le site.
             ->whereIn('source_surface', ['web', 'delivery'])
+            // [CAISSE 2026-10-23 · relecture adverse P1-1] LIVRAISON : le signal d'abandon est le DÉPART prévu de la tournée (ou
+            // le créneau programmé), PAS l'heure de saisie. Une livraison saisie à 11:00 dont la tournée part à 18:00 (fenêtre de
+            // service 18:00 → 00:30) était annulée à 17:00, avant que le livreur parte. Abandon réel (départ prévu dépassé du TTL,
+            // jamais parti) : la purge reste active. Hors livraison : inchangé.
+            ->where(function ($query) use ($webStaleThreshold): void {
+                $query->where('order_type', '!=', \App\Enums\OrderType::DELIVERY)
+                    ->orWhere(function ($delivery) use ($webStaleThreshold): void {
+                        $delivery->where(fn ($slot) => $slot->whereNull('scheduled_at')->orWhere('scheduled_at', '<', $webStaleThreshold))
+                            ->whereNotExists(function ($stop) use ($webStaleThreshold): void {
+                                $stop->select(\Illuminate\Support\Facades\DB::raw(1))->from('delivery_stops')
+                                    ->whereColumn('delivery_stops.order_id', 'orders.id')
+                                    ->whereNull('delivery_stops.delivered_at')
+                                    ->where('delivery_stops.wave_at', '>=', $webStaleThreshold);
+                            });
+                    });
+            })
             ->where(function ($query) use ($webStaleThreshold): void {
                 $query->where('order_datetime', '<', $webStaleThreshold)
                     ->orWhere(function ($q) use ($webStaleThreshold): void {
@@ -370,6 +386,10 @@ class CleanupStalePendingKioskOrders
             // crédit sur un re-run du cron. Aucun audit log dédié : le chemin changeStatus
             // n'en émet pas non plus (refundPoints logue via Log::info).
             app(\App\Services\LoyaltyService::class)->refundPoints($locked, $refundSurface);
+            // [POINTS À LA VALIDATION 2026-11-06 · relecture adverse P0-1] refundPoints ne rend que les points
+            // DÉPENSÉS. Depuis que les points sont gagnés à la VALIDATION (ACCEPT/PREPARING), une commande impayée
+            // purgée ici en porte : on les reprend aussi, sinon le client garde des points pour une vente jamais payée.
+            app(\App\Services\LoyaltyService::class)->clawbackEarnedForOrder($locked, 'Clawback fidélité — commande impayée purgée');
 
             // From-status-aware terminal state, both legal per OrderStateMachine.allows()
             // with no frozen-zone edit :

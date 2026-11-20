@@ -14,7 +14,16 @@ class DeliveryBoyAddressRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        // [GOAL LIVRAISON-TICKETS 2026-11-10 · T-2.4.2] Second verrou : miroir EXACT de la permission portée par la route
+        // (le middleware reste la garde principale ; celle-ci tient si la route est un jour recâblée sans lui).
+        $user = $this->user();
+        if ($user === null) {
+            return false;
+        }
+
+        // Une adresse dans l'URL = modification (`delivery-boys_edit`), sinon création (`delivery-boys_create`) : la coupe
+        // exacte du contrôleur (store / update). Hors route (test unitaire), c'est la création qui est jugée.
+        return $this->route('address') !== null ? $user->can('delivery-boys_edit') : $user->can('delivery-boys_create');
     }
 
     /**

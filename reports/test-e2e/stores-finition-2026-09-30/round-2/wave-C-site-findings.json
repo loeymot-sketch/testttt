@@ -1,0 +1,194 @@
+{
+  "wave": "C",
+  "round": 2,
+  "scope": "WEBSITE modes only: M (site, iPhone 13 390x664 @3x) and D (site, desktop 1280x800), plus the S- probes. App modes (A, SE1, SE3, AND) are covered by wave-C-app-findings.json.",
+  "artifacts_dir": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/C-r2",
+  "code_reviewed": "site worktree site-wt-stores-2026-09-30 at HEAD affe0ab plus its UNCOMMITTED working tree (C-001..C-004 fixes in progress). Line numbers below are from that working tree.",
+  "states_reviewed": 184,
+  "states_reviewed_detail": "Opened as images: D 85/85 (all desktop states, plus 2x zoom crops of D-05, D-35, D-45, D-79). M 30/90: 01, 04, 05, 06, 13, 23, 24, 30, 32, 33, 34, 37, 40, 41, 42, 43, 46, 48, 51, 62, 73, 82, 83, 84, 85, 86, 87, 88, 89, 90. This covers account, cart, payment, confirmation, tracking, legal, error and a sample of menu states. S 9/9: S-M-onglets, S-A-onglets via probe data, S-boissons 1s/4s, S-cgv, S-en-tete, S-ferme-aide, S-suivi 7 normale/503. Parsed for all 184 M/D/S entries: resume.json checks (contrast, targets, truncation, raw labels, overflow, console, 4xx/5xx), sondes.json, the four *-commande-emise.json files and sortie-banc.txt.",
+  "technical_sweep": {
+    "console_errors": "Only the 2 expected 404 (M-73, D-68) and the expected 503 (S-suivi-7-estimation-en-panne-503). No pageerror.",
+    "http_4xx_5xx": "Only the 2 expected 404 (404.html probe) and the expected 503 (wait-estimate probe). No silent error, but see CW-012: unmocked paths are answered 200 by the bench, so this proves little.",
+    "raw_i18n_keys": "0 in all M/D/S states (libelles_bruts empty).",
+    "horizontal_overflow": "0 (debordement_horizontal null everywhere).",
+    "production_calls": "None. network.json lists https://vps-418872ac.vps.ovh.net/... URLs, but they are fulfilled by page.route in tests-e2e/helpers-mock-backend.js:16-39 and never leave the machine."
+  },
+  "coverage_warning_verdict": {
+    "D-34-paiement-creneaux-ouvert == D-33-paiement-connecte": "BENIGN. D-33 already shows the whole pickup-slot block at 1280x800: 'HEURE DE RETRAIT — AUJOURD'HUI' with 'Dès que prêt ~15-20 min | Dans 30 min +30 min | Dans 40 min +40 min | Choisir une heure —'. scrollIntoViewIfNeeded was a no-op, so the PNG is identical. The open-mode slot section WAS captured on desktop.",
+    "D-78-ferme-creneaux == D-77-ferme-paiement": "BENIGN. D-77 shows the closed-mode sentence 'Le restaurant est fermé pour l'instant — service à partir de 18 h. Ta commande sera préparée pour l'heure que tu choisis.' and the tiles 'À l'ouverture 18:20 | Choisir une heure —'. D-79 adds the time field 'entre 18:20 et 23:45' and the greyed CTA. The closed-mode slot section WAS captured on desktop.",
+    "real gap found instead": "Desktop states D-31, D-36, D-40, D-44, D-47, D-54 and D-80 show ONLY the shared site footer. Their guards pass on DOM presence, not on what is visible. D-36 'paiement-bouton' (guard 'bouton de commande présent') has no button in the image. D-80 'ferme-paiement-bas' (guard lists the payment methods) has no payment method in the image. As a result the desktop payment-method block in CLOSED mode was never imaged. See CW-016."
+  },
+  "findings": [
+    {
+      "id": "CW-001",
+      "state_artifact": "C-r2/D-64-legal-allergens.png, D-65-legal-allergens-milieu.png (legal claim) vs D-27-assistant-recap.dom.html, M-32-assistant-recap.dom.html, D-28-panier-tiroir.dom.html, D-36-paiement-bouton.dom.html, D-38-confirmation-milieu.dom.html (no allergen shown)",
+      "category": "other:false_text_legal (allergen information, safety-relevant)",
+      "severity": "P1",
+      "evidence": "The live allergen page promises information that the ordering flow no longer shows. legal/allergens.html:73-75: 'Les allergènes spécifiques à chaque produit sont également affichés en temps réel dans les pages produit du menu en ligne (modale détail + récapitulatif du wizard de personnalisation + ticket de commande)'. legal/allergens.html:170: 'Dans le wizard de personnalisation : à chaque étape (viandes, sauces, suppléments), les allergènes des options sélectionnées sont agrégés.' legal/allergens.html:171: 'Sur le récapitulatif de commande : les allergènes totaux apparaissent avant validation finale.' Product reality: the wizard still computes the list (wizard-v2.jsx:563 'const allergensList = Array.from(allergens);') but never renders it. grep finds 1 occurrence, the declaration only. The banner and the preview box were removed on purpose (wizard-v2.jsx:839 '[OWNER 2026-07-28] Bandeau « Allergènes détectés » retiré du flux (copy anxiogène)' and :1029 'Encadré allergènes retiré de l'aperçu'). Second, independent means: the bench's Tacos L includes 'Cheddar', and Cheddar carries allergens ['lactose'] (data/menu.js:205). Yet 'lactose' appears 0 times in the DOM of the recap (D-27, M-32), the cart (D-28), payment (D-36) and confirmation (D-38). The Tacos L sheet shows only 'Gluten' (D-20 DOM: 'Gluten | Voir les infos allergènes'). A lactose-intolerant customer who trusts the legal page gets no warning anywhere in the purchase path. INCO requires allergen information before a distance purchase is concluded.",
+      "fix_hint": "OWNER DECISION. Either (a) render allergensList as one discreet line in the recap ('Contient : lait, gluten'), which is the cheapest way to make the legal text true, or (b) rewrite allergens.html:72-76 and :170-171 to describe what really exists: product sheet base allergens, the full table, and staff on request. Do not leave the current text."
+    },
+    {
+      "id": "CW-002",
+      "state_artifact": "C-r2/M-30-assistant-etape-05-choix-de-la-boisson.png, D-25-assistant-etape-05-choix-de-la-boisson.png, D-14-menu-cat-boissons-15.png, D-commande-emise.json, M-commande-emise.json",
+      "category": "other:business_rule (sold-out product sold)",
+      "severity": "P1",
+      "duplicate_of": "C-001 (app). Same code; website instance with a stronger proof: the order was actually sent.",
+      "evidence": "The menu shows 'Coca-Cola 33cl' as 'ÉPUISÉ / Épuisé pour le moment' with no + button (D-14 image; D-14 DOM 'lc-card-item--coca is-soldout'). The upsell correctly hides it (D-75 DOM lists 'Coca-Cola Zero 33cl' first). In the formula step, 'Coca-Cola 33cl' is the first option, fully enabled, on both website modes (M-30, D-25; sondes S2-formule-boissons-M/D: disabled=false, signaleEpuise=false). The website order the bench sent contains it: D-commande-emise.json and M-commande-emise.json 'instruction': 'Boisson menu: Coca-Cola 33cl'. On the live site the kitchen would receive a drink it does not have.",
+      "fix_hint": "Fix already in the UNCOMMITTED working tree (wizard-v2.jsx formuleBoissonDispo + soldOut option). It still needs a commit, a deploy and a re-capture of M-30/D-25 showing the option disabled, plus a commande-emise without the sold-out drink."
+    },
+    {
+      "id": "CW-003",
+      "state_artifact": "C-r2/S-M-onglets-categorie-apres-defilement.png (website mobile) + resume.json sondes S1-onglets-sous-navx-M",
+      "category": "element_overlap",
+      "severity": "P1",
+      "duplicate_of": "C-003 (app). The website mobile has the same defect.",
+      "evidence": "On the mobile website, after scrolling the menu, the sticky category chips sit under the two-row header and cannot be tapped. Probe S1-onglets-sous-navx-M: catSticky top 60 / bottom 116, header 0 / 129, 'elementVisibleAuPoint': '<button class=\"lc-navx-item\"> « Avis »', 'ongletAccessible': false. In the PNG, no chip is visible between the header and the 'Eau Plate 50cl / Capri-Sun' cards; only faint outlines show through the translucent nav. Cause at HEAD: styles-mobile.css '.lc-cat-sticky { position: sticky; top: var(--nav-h-sm) }' (60px) under a 129px header.",
+      "fix_hint": "Fix in the UNCOMMITTED working tree (components.jsx publishes --entete-h; styles-mobile.css:346 uses it). It covers .lc-cat-sticky only: see CW-004 for the desktop analogues. Re-run probe S1 in mode M and check ongletAccessible=true."
+    },
+    {
+      "id": "CW-004",
+      "state_artifact": "C-r2/D-05-menu-cat-tout-39.png (zoom crop), D-09-menu-cat-burgers-6.png, D-30-paiement-deconnecte-milieu.png, D-32-paiement-deconnecte-clic-confirmer.png, D-35-paiement-moyens.png (zoom crop)",
+      "category": "element_overlap (non-clickable header over sticky content)",
+      "severity": "P2",
+      "evidence": "Desktop analogue of CW-003, NOT covered by the pending fix. On the desktop menu, the sticky category sidebar sticks at 92px under a 132px header. D-05 zoom: the active '✦ Tout 39' pill is cut in half by the header's bottom edge (y≈132), and the 'CATÉGORIES' heading is fully hidden. D-09: the 'Tout 39' row is cut the same way. On the payment page the sticky recap card has the same offset. In D-30, D-32 and D-35 the 'RÉCAP' title and the '2 ARTICLES' chip are sliced by the header (D-35 zoom crop). Code: styles-v2.css:204-205 '.lc-menu-side { position: sticky; top: calc(var(--nav-h) + 20px); }' and styles-v4.css:90 '.lcf-summary { position: sticky; top: calc(var(--nav-h) + 20px); }', with styles.css:67 '--nav-h: 72px'. The header is 72px plus the discovery row 'styles-v8-vitrine.css:33 --navx-h: 60px' (≥768px), so 132px, and 92 < 132. The pending fix only touches styles-mobile.css:346 (grep '--entete-h' finds no other use).",
+      "fix_hint": "Use the measured --entete-h (or calc(var(--nav-h) + var(--navx-h))) + 20px for .lc-menu-side and .lcf-summary as well."
+    },
+    {
+      "id": "CW-005",
+      "state_artifact": "C-r2/D-45-mes-commandes.png, D-46-mes-commandes-detail.png, M-51-mes-commandes-detail.png",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "duplicate_of": "C-004 (app). The website shows the same figure.",
+      "evidence": "Header '3 commandes au total · 41,50 € dépensés.' (D-45 image and DOM). The list is 15,80 € 'PRÊTE' (not yet paid, pay at the counter), 16,80 € 'LIVRÉE' and 8,90 € 'ANNULÉE'. 15,80 + 16,80 + 8,90 = 41,50, so the cancelled order and the unpaid one count as money spent. The rows are mocked, but the defect is in the sum at orders.jsx:100 (HEAD), which has no status filter.",
+      "fix_hint": "Fix in the UNCOMMITTED working tree (orders.jsx: filter status === 'delivered'). Re-capture D-45/M-51 and expect '16,80 € dépensés'."
+    },
+    {
+      "id": "CW-006",
+      "state_artifact": "C-r2/S-suivi-7-estimation-en-panne-503.png (probe, app mode, same code as the website) + sondes S3-suivi-statut-7-estimation-en-panne",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "duplicate_of": "C-002 (app). The shared tracking page also runs on the website.",
+      "evidence": "The image shows two yellow pills at once: 'Prête dans ~8 min' and 'Prête dans ~15 min · confirmé par le restaurant'. Probe: ['Prête dans ~8 min','Prête dans ~15 min · confirmé par le restaurant'] when wait-estimate returns 503, versus ['Prête dans ~8 min'] when it works. The 503 itself is the intended probe.",
+      "fix_hint": "Fix in the UNCOMMITTED working tree (funnel.jsx fallback block: 'if (trk) return null;'). Needs a re-run of the S3 probe in mode M (website), not only A."
+    },
+    {
+      "id": "CW-007",
+      "state_artifact": "C-r2/M-41-paiement-bouton.png, M-85-ferme-paiement-bas.png (also M-36-paiement-deconnecte-bas)",
+      "category": "element_overlap (fixed bar hides the end of the page)",
+      "severity": "P2",
+      "evidence": "On the mobile website payment page at maximum scroll (M-41 scrollY 2845 + 664 = document height 3509), the fixed 'Retour / Confirmer ma commande' bar covers the end of the site footer. The health notice 'Pour votre santé, pratiquez une activité physique régulière. www.mangerbouger.fr' is cut in half at the bar's top edge (its second line and link are barely legible). '© 2026 LE CAYENNE' is entirely hidden. The page cannot scroll further. Cause: styles-mobile.css:149-155 makes '.lcf-cta-bar' position:fixed and pads only '.lcf-page' (padding-bottom:120px). index.html:169-171 pads only '.lcf-card'. The footer comes after .lcf-page in the DOM (M-36 DOM: lcf-page at offset 23803, footer at 36595), so nothing reserves the bar's height under the footer. The mangerbouger line is the mandatory health notice on food promotion and its link is unreachable on this page.",
+      "fix_hint": "While the funnel bar is shown, pad the body (or the footer) by the bar's height, as body.lc-cartbar-on already does for the menu bar (styles-mobile.css:605), or hide the footer on the payment route."
+    },
+    {
+      "id": "CW-008",
+      "state_artifact": "C-r2/D-79-ferme-choisir-une-heure.dom.html, M-84-ferme-choisir-une-heure.dom.html (+ probe S-ferme-aide-choisir-une-heure.png)",
+      "category": "other:false_text (guidance points to an option that does not exist)",
+      "severity": "P2",
+      "duplicate_of": "C-008 (app). Proven here on both website modes.",
+      "evidence": "In closed mode, with 'Choisir une heure' selected and no time entered, the website DOM contains 'Indique l'heure à laquelle tu passeras la chercher (plus haut, sous « Quand ? »), ou choisis « Dès que prêt ».' (D-79 and M-84). The only tiles offered are 'À l'ouverture 18:20' and 'Choisir une heure —' (D-79/M-84 images; funnel.jsx:355-358). The section title is 'HEURE DE RETRAIT — AUJOURD'HUI', not 'Quand ?'. This is NOT fixed in the working tree: funnel.jsx:2223-2227 is unchanged.",
+      "fix_hint": "When ferme, say « ou choisis « À l'ouverture » » and use the real section label."
+    },
+    {
+      "id": "CW-009",
+      "state_artifact": "C-r2/D-10-menu-cat-tacos-3.png (also D-04/D-05 sidebar filters)",
+      "category": "other:false_text (catalogue filter contradicts the product it should match)",
+      "severity": "P2",
+      "evidence": "In the Tacos category, the sidebar filter '💪 Grande faim — Les formats XL' is struck through as a dead end, right next to the 'Tacos XL 10,90 €' card. In 'Tout', the same filter would leave out Tacos XL. Cause: screens.jsx:1265 'xl: i => i.badge === 'XL'', while Tacos XL carries badge 'NOUVEAU' (data/menu.js:545-548 '… badge: 'NOUVEAU' }'). The comment screens.jsx:1259 ('xl → badge XL, les formats réellement XL 3 produits') predates Tacos XL (added 2026-08-24, data/menu.js:527). A customer looking for the big formats is told there are none among the tacos.",
+      "fix_hint": "Base the facet on a format attribute (e.g. tags includes 'XL' or a dedicated is_xl flag set on Tacos XL), not on the display badge."
+    },
+    {
+      "id": "CW-010",
+      "state_artifact": "C-r2/D-60-legal-cgv.png (also probe S-cgv-lien-evitement)",
+      "category": "other:visual (raw skip link visible)",
+      "severity": "P2",
+      "duplicate_of": "C-010 (app). Also visible on the desktop website.",
+      "evidence": "The desktop CGV page shows the unstyled text 'Aller au contenu' in the top-left corner above the header (D-60 image). legal/cgv.html:37 has '<a href=\"#contenu\" class=\"lc-skip-link\">', but .lc-skip-link is styled only inline in index.html:159-166. No stylesheet linked by cgv.html defines it. The other 4 legal pages and 404.html have no skip link at all. Not fixed in the working tree (the only cgv.html change is a cache-buster).",
+      "fix_hint": "Move the .lc-skip-link rules into legal/legal.css and add the link to every legal page."
+    },
+    {
+      "id": "CW-011",
+      "state_artifact": "C-r2/M-42-confirmation.png, D-37/D-38/D-81 (PARTI !), M-32/D-27 (Ajouter au panier 12,30 €), M-24 (Ajouté ✓), M-34/M-38/D-29..D-35 (2 articles chip), M-82/D-77..D-79 (1 article chip), D-49/D-50/M-54 (+168 / +89), D-41..D-43/M-46/M-47 (Réf., total)",
+      "category": "color_contrast",
+      "severity": "P2",
+      "duplicate_of": "C-011 (app) for 'PARTI !', the orange CTA, the toast, 'Réf.' and the tracking total. Website-only additions: the recap chip and the loyalty history.",
+      "evidence": "checks.json contraste_faible, confirmed on the images. 'parti !' #FF5A1F on #FFD93D 2.26:1 at 72px desktop / 38px mobile (threshold 3:1). White on #FF5A1F 3.12:1: 'Ajouter au panier' 13-14px, 'Ajouté ✓' 13px, and the recap chips '2 articles' / '1 article' at 11px. '12,30 €' white on #FF713E 2.73:1. Loyalty history '+168' and '+89' #1FA653 on white 3.16:1 at 16px (D-49). Tracking 'Réf. 0110269401' #5C584F on #191919 2.49:1. Tracking total #C2410C on #191919 3.41:1 at 22px.",
+      "fix_hint": "Dark ink on #FF5A1F, --orange-text or ink on yellow for 'PARTI !', a darker green for the history gains, and lighter grey/orange on the dark tracking card."
+    },
+    {
+      "id": "CW-012",
+      "state_artifact": "C-r2/M-23-fiche-simple-tiramisu.png; M-33-panier-tiroir.png; M-37-paiement-deconnecte-clic-confirmer.png",
+      "category": "aria_keyboard / text_truncation (small-phone ergonomics)",
+      "severity": "P2",
+      "duplicate_of": "C-009 + C-012 (P2) and C-016 (P3), app. The same three defects occur on the mobile website.",
+      "evidence": "M-23: the Tiramisu sheet's 'Ajouter au panier' button and price '3,50 €' are cut by the bottom edge, and there is no sticky action bar. M-33: the cart quantity steppers are 28×28 CSS px (checks.json cibles_moins_44: 'button « Augmenter la quantité de Tacos L » 28×28', same for Diminuer and Tiramisu). M-37: with the cart badge '2', the header button wraps to 'Se / connecter' on two lines.",
+      "fix_hint": "See C-009, C-012 and C-016. One fix covers both app and site."
+    },
+    {
+      "id": "CW-013",
+      "state_artifact": "C-r2/D-45-mes-commandes.png vs D-38-confirmation-milieu.png / D-41-suivi-statut-1-recue.png",
+      "category": "numeric_integrity (same order, two identifiers)",
+      "severity": "P3",
+      "duplicate_of": "C-015 (app).",
+      "evidence": "The 'Mes commandes' card shows '#0110269401' (orders.jsx:176 '#{o.id}'). The ticket and tracking for the same order show 'N°A0042' (D-38, D-41..D-43). orders.jsx:24 maps queue_number but never renders it.",
+      "fix_hint": "Show 'N°' + o.queue on the card and keep the serial as a secondary 'Réf.'."
+    },
+    {
+      "id": "CW-014",
+      "state_artifact": "C-r2/D-24-assistant-etape-04-faire-un-menu.png, D-25-assistant-etape-05-choix-de-la-boisson.png, D-26-assistant-etape-06-sauce-pour-les-frites.png (also M-30)",
+      "category": "other:consistency (step counter vs progress bar)",
+      "severity": "P3",
+      "evidence": "The eyebrow counts 'ÉTAPE 4', 'ÉTAPE 5', 'ÉTAPE 6', but the 5-segment bar highlights the SAME 4th segment on all three screens, and the next screen is 'DERNIÈRE ÉTAPE' on segment 5. wizard-v2.jsx:675 '… : 'Étape ' + (safeIdx + 1)' counts active steps, while :699 indexes the segments on baseSteps through baseIdx (:524). The comment above :699 says the segments were fixed to stop exactly this '6 → 8' lie, but the number was left as it was.",
+      "fix_hint": "Use baseIdx + 1 for the label too, or drop the number for cascade sub-steps."
+    },
+    {
+      "id": "CW-015",
+      "state_artifact": "C-r2/D-83-ferme-suivi-prevue-pour.png, D-84-ferme-suivi-immediate.png, M-88-ferme-suivi-prevue-pour.png, M-89-ferme-suivi-immediate.png",
+      "category": "other:copy (status sentence contradicts the closed state)",
+      "severity": "P3",
+      "evidence": "At 02:35 (restaurant closed), below 'Prévue pour 18 h 20' (D-83) or 'Préparée à l'ouverture, à partir de 18 h' (D-84), the page still says 'Ta commande est en caisse / cuisine. Le statut se met à jour automatiquement.' (funnel.jsx:2893, an unconditional fallback branch). Nobody is at the till or in the kitchen at that hour.",
+      "fix_hint": "When trk.prevue_pour or est.service_ouvert === false, say e.g. 'Le restaurant l'a bien reçue. Elle sera préparée pour l'heure prévue.'"
+    },
+    {
+      "id": "CW-016",
+      "state_artifact": "C-r2/D-36-paiement-bouton.png, D-80-ferme-paiement-bas.png, D-31, D-40, D-44, D-47, D-54; M-42-confirmation.png, M-86-ferme-confirmation.png; D-25; D-84 / S-suivi-7-*; DOM script tags of D-37 / M-42",
+      "category": "other:audit_integrity",
+      "severity": "P3",
+      "evidence": "(a) Seven desktop '-bas' and '-bouton' states are footer-only images whose guards cannot fail (see coverage_warning_verdict). The desktop closed-mode payment-method block was never imaged. (b) M-42 and M-86 were taken mid smooth-scroll (scrollY 13 / 11): the sticky header is shifted up about 27 / 19 CSS px and a blank band shows at the bottom. This is an instrument artifact, not a product defect. D-25 is mid reveal animation (the 'Sprite'/'Oasis' rows are faded). (c) The captures load 'compiled/funnel.js?v=20261001lot1' (D-37/M-42 DOM), while index.html now serves 'lot5'. The confirmation sentence 'Ta commande #0110269401 est envoyée' (D-37, M-42), the 'ENVOYÉE EN CUISINE' badge on a scheduled order (D-82, M-87) and the orphan '!' of 'TA COMMANDE EST PRÊTE / !' (M-48) were fixed AFTER capture (d0acc91, affe0ab). They are therefore NOT reported as open, but they need a website re-capture. (d) The mocked history rows have no queue_number, so the 'Mes commandes → Suivre' path shows the serial ('#0110269556' in D-84, '#0110269555' in S-suivi-7-*). That path's O-B6 behaviour is unproven on the site (cf. C-014). (e) Unmocked API paths are answered '200 {data:[]}' (helpers-mock-backend.js:39), so the '0 silent errors' result says little about the real backend. (f) texte_coupe on 'h1 « Suivi de ta commande » (344>1)' is a false positive (visually hidden h1). So are contraste_faible 'Novice' 1.72 (D-55) and the FAQ text in D-03, which is collapsed and not visible in the image. (g) D-79's time field renders '--:-- --' (AM/PM pattern) despite locale fr-FR. This is probably headless Chromium localisation; check it on a real French Safari/Chrome before calling it a defect.",
+      "fix_hint": "Scroll the '-bas'/'-bouton' states to their own element (CTA, last order card, last payment method) and guard on its bounding box being inside the viewport. Wait for scroll and animations to finish (scroll-behavior is smooth, seo.css:39). Add queue_number to the mocked history. Re-run wave C in M and D on lot5 plus the pending working-tree fixes."
+    },
+    {
+      "id": "CW-017",
+      "state_artifact": "C-r2/D-58-legal-privacy-milieu.png (and D-35-paiement-moyens.png for the contradiction)",
+      "category": "other:copy_legal (stale statement)",
+      "severity": "P3",
+      "evidence": "The privacy policy's security list says 'aucune donnée de carte bancaire n'est collectée ni conservée par le site : le paiement s'effectue au comptoir sur un terminal de paiement (TPE) en caisse' (legal/privacy.html:247, visible at the bottom of D-58). The same page describes Mollie online card payment (privacy.html:212), and the website offers 'Carte bancaire (en ligne) — Débit sécurisé (Mollie)' (D-35). The first half is still true. The reason given is false for online payers.",
+      "fix_hint": "Rewrite as: 'aucune donnée de carte n'est collectée ni conservée par le site : au comptoir sur le TPE, ou en ligne dans les champs chiffrés de Mollie (seul un jeton transite).'"
+    }
+  ],
+  "not_reported_as_open": [
+    "Owner rules respected on the website: palette black/orange/yellow/white; 'Carte bancaire (en ligne)' (Mollie) offered next to 'Payer sur place' (D-35, M-40); 'bientôt' notes only for Instagram/TikTok/Snapchat (footer, D-56); no Apple Pay on 127.0.0.1 (expected); no count of orders ahead anywhere; precise '~8 min' only at position_ahead=1 (D-42), '~15–20 min' otherwise (D-41, M-46).",
+    "Closed mode at 02:35 is correct: home 'SERVICE FERMÉ · OUVRE À 18H CE SOIR' (D-74), checkout offers 'À l'ouverture 18:20' / 'Choisir une heure' only (D-77, M-83), POST is_advance_order=5 scheduled_at 18:20 (D-/M-commande-programmee-emise.json), ticket 'PRÊT À 18:20' (D-82, M-87), tracking 'Prévue pour 18 h 20' (D-83, M-88).",
+    "Numbers checked and consistent: Tacos L 8,90 + Cheddar 0,90 = 9,80 (D-24) + menu 2,50 = 12,30 (D-27); cart 3,50 + 12,30 = 15,80 everywhere (D-28, D-35, D-38, D-41, M-33, M-40, M-43, M-46); expected_total 15.8 in the emitted order; loyalty +158 / +35 pts at 10 pts/€; 1250 pts → 12,00 € usable and '250 pts → Master' (D-48, D-55).",
+    "'Tout 39' tab with 29 cards is by design: drinks are pulled out of the default grid into a 'Boissons · 15 au frais' section with 5 previews (screens.jsx 'isDefaultView' / 'drinkItems.slice(0, 5)').",
+    "Called number N°A0042 (O-B6) on the ticket (D-38, M-43) and the tracking page (D-41..D-43, M-46..M-48).",
+    "Expected 404 (D-68, M-73) and expected 503 probe: no other console error and no other 4xx/5xx in any M/D/S state."
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 5,
+    "P2": 7,
+    "P3": 5,
+    "open_P0": 0,
+    "open_P1": 5,
+    "open_P2": 7,
+    "open_P3": 5,
+    "of_which_shared_with_app_findings": "CW-002=C-001, CW-003=C-003, CW-005=C-004, CW-006=C-002 (P1, fixes uncommitted in the working tree); CW-008=C-008, CW-010=C-010, CW-011~C-011, CW-012=C-009/C-012/C-016, CW-013=C-015 (still open). Website-only: CW-001 (P1), CW-004, CW-007, CW-009 (P2), CW-014, CW-015, CW-016, CW-017 (P3)."
+  },
+  "round_to_round_closures": {
+    "O-B6 (called number on ticket and tracking)": "PASS on the website (D-38, D-41..D-43, M-43, M-46..M-48)",
+    "closed-restaurant mode (site 79d7dde)": "PASS on the website (D-74, D-77, D-79, D-82, D-83, M-83, M-84, M-87, M-88)",
+    "account-deleted message (D-A-02)": "PASS on the website (D-85, M-90: 'Ton compte a été supprimé. Tes informations personnelles sont effacées.'; removed after 6 s, not shown again)",
+    "B2-R2-01 / B2-R2-10 / B2-R2-13 (confirmation sentence, 'Envoyée en cuisine', orphan '!')": "NOT VERIFIABLE: fixed after capture (lot1 captured, lot5 now served). Website re-capture required."
+  },
+  "verdict": "RED"
+}

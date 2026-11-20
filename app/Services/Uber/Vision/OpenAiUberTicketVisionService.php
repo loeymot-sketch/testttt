@@ -2,6 +2,7 @@
 
 namespace App\Services\Uber\Vision;
 
+use App\Services\Uber\UberTicketRubriques;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -56,9 +57,12 @@ Règles impératives :
   1 seulement si aucun nombre n'est écrit devant le produit.
 - options = la liste des choix/suppléments/sauces/boissons imprimés SOUS le produit, un par
   entrée, recopiés tels quels.
-- Les titres de RUBRIQUE en capitales (PAIN, SAUCE, CRUDITÉS, BOISSON, SUPPLÉMENTS, VIANDE) ne
-  sont PAS des produits : ils annoncent les options du produit écrit AU-DESSUS. Ne crée jamais
-  une ligne d'items pour eux ; range ce qui les suit dans les options de ce produit.
+- Les titres de RUBRIQUE en capitales (PAIN, SAUCE, CRUDITÉS, BOISSON, SUPPLÉMENTS, VIANDE,
+  SAUCE FRITES, DESSERT…) ne sont PAS des produits : ils annoncent les options du produit écrit
+  AU-DESSUS. Ne crée jamais une ligne d'items pour eux. Recopie CHAQUE titre de rubrique DANS
+  options, tel qu'il est imprimé et à sa place, juste avant les choix qu'il annonce (ex. "SAUCE",
+  "1x Algérienne", "1x Harissa", "SAUCE FRITES", "1x Ketchup") : c'est lui qui dit si une sauce
+  va dans le sandwich ou avec les frites.
 - note = l'instruction libre du client pour cette ligne ("sans oignons"...). Vide si absente.
 - total = le montant total du ticket en euros, ou omets le champ si tu ne le lis pas.
 - N'INVENTE RIEN. Un champ illisible se laisse VIDE. Une ligne illisible se laisse hors du
@@ -90,15 +94,15 @@ TXT;
         $sortie = [];
 
         foreach ($items as $item) {
-            $titre = self::sansAccents(mb_strtolower(trim((string) $item['title'])));
-            $estRubrique = (bool) preg_match(
-                '/^(pains?|sauces?|crudites?|boissons?|supplements?|garnitures?|viandes?|accompagnements?|choix|options?|extras?)$/u',
-                $titre
-            );
+            // [SAUCES FRITES UBER 2026-11-20] « SAUCE FRITES » lu comme un article est aussi une
+            // rubrique ; et ses choix gardent son nom en étiquette, sinon le Ketchup des frites
+            // rejoindrait les sauces du sandwich (voir UberTicketRubriques).
+            $estRubrique = UberTicketRubriques::estTitreDArticle((string) $item['title']);
 
             if ($estRubrique && $sortie !== []) {
                 $dernier = count($sortie) - 1;
-                foreach ($item['options'] as $o) {
+                $titreRubrique = mb_strtoupper(trim((string) $item['title']), 'UTF-8');
+                foreach (UberTicketRubriques::attacher(array_merge([$titreRubrique], $item['options'])) as $o) {
                     $sortie[$dernier]['options'][] = $o;
                 }
                 if (($item['note'] ?? '') !== '') {
@@ -112,38 +116,6 @@ TXT;
         }
 
         return $sortie;
-    }
-
-    /**
-     * Une étiquette de rubrique SANS valeur — « CRUDITÉS » seul, pas « CRUDITÉS : Salade ».
-     *
-     * ⚠️ LA CASSE EST LE SEUL DISCRIMINANT FIABLE, et l'oublier coûte cher : « Pain » est à la
-     * fois un titre de rubrique ET un vrai choix de la carte (Pain ou Galette). Une première
-     * version filtrait sans regarder la casse : elle a effacé le pain d'un menu réel, mesuré sur
-     * la commande E63F5 — la cuisine ne savait plus sur quoi servir le sandwich. Le ticket, lui,
-     * imprime la rubrique en CAPITALES et la valeur en casse normale. On s'aligne sur le papier.
-     */
-    private static function estEtiquetteNue(string $texte): bool
-    {
-        $brut = trim($texte);
-
-        // Une valeur (« Pain », « 1x Pain ») n'est jamais tout en capitales sur le ticket.
-        if ($brut !== mb_strtoupper($brut, 'UTF-8')) {
-            return false;
-        }
-
-        return (bool) preg_match(
-            '/^(pains?|sauces?|crudites?|boissons?|supplements?|garnitures?|viandes?|accompagnements?|choix|options?|extras?)$/u',
-            self::sansAccents(mb_strtolower($brut))
-        );
-    }
-
-    /** Minuscules ASCII : « CRUDITÉS » et « crudites » doivent se reconnaître. */
-    private static function sansAccents(string $s): string
-    {
-        $t = @iconv('UTF-8', 'ASCII//TRANSLIT', $s);
-
-        return is_string($t) ? preg_replace('/[^a-z0-9\s]/', '', mb_strtolower($t)) ?? $s : $s;
     }
 
     public function driverName(): string
@@ -246,17 +218,17 @@ TXT;
                 if ($opt === '') {
                     continue;
                 }
-                // [RUBRIQUES 2026-08-12] Un en-tête SEUL n'est pas un choix du client. Mesuré sur
-                // la commande réelle E63F5 : la lecture rendait « PAIN », « SAUCE », « CRUDITÉS »,
-                // « BOISSON » en plus de leurs valeurs, et la cuisine recevait « + SAUCE
-                // + CRUDITÉS » — deux suppléments fantômes par ligne, à côté des vrais.
-                // On ne jette QUE l'étiquette nue : « PAIN: Galette » porte une valeur, il reste.
-                // Aucune information ne se perd, la valeur suit toujours sur la ligne d'après.
-                if (self::estEtiquetteNue($opt)) {
-                    continue;
-                }
                 $options[] = $opt;
             }
+            // [RUBRIQUES 2026-08-12] Un en-tête SEUL n'est pas un choix du client. Mesuré sur la
+            // commande réelle E63F5 : la lecture rendait « PAIN », « SAUCE », « CRUDITÉS »,
+            // « BOISSON » en plus de leurs valeurs, et la cuisine recevait « + SAUCE + CRUDITÉS »
+            // — deux suppléments fantômes par ligne, à côté des vrais.
+            // [SAUCES FRITES UBER 2026-11-20 · owner] … mais il dit à QUI appartient le choix qui
+            // le suit. Le jeter rangeait la sauce des frites avec celles du sandwich : le titre
+            // devient donc l'ÉTIQUETTE des choix suivants (« 1x SAUCE FRITES : Ketchup »), puis
+            // disparaît. Aucune valeur ne se perd ; aucun titre ne devient un supplément.
+            $options = UberTicketRubriques::attacher($options);
             $quantity = max(1, (int) ($line['quantity'] ?? 1));
 
             // [QUANTITÉ EN TÊTE 2026-08-12] Filet de sécurité : le ticket Uber écrit la quantité

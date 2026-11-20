@@ -403,7 +403,8 @@ class WheelReportTest extends TestCase
             ->post('/admin/roue/ouvrir', ['pin' => '481526']);
         $this->assertNotNull(session(EnsureWheelAccess::SESSION_KEY));
 
-        $ouvert = $this->withHeaders(['Accept' => 'text/html'])->get('/admin/roue')->assertOk();
+        // [2026-11-19] Porte ouverte, `/admin/roue` mène à l'espace ; l'ancien bilan reste sous `?ecrans=1`.
+        $ouvert = $this->withHeaders(['Accept' => 'text/html'])->get('/admin/roue?ecrans=1')->assertOk();
         $ouvert->assertSee('Ce que la roue a donné', false);
         $ouvert->assertSee('valeur offerte', false);
     }

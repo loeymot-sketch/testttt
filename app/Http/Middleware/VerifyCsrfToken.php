@@ -12,6 +12,8 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
+        // [S14-04] Désinscription « un clic » (RFC 8058) : POST d'une messagerie, sans session ; protégée par la SIGNATURE.
+        '/desinscription-offres',
         '/payment/sslcommerz/*',
         '/payment/paytm/*',
         '/payment/cashfree/*',

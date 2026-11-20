@@ -317,6 +317,16 @@ async function clickPlus(row, times) {
 }
 
 async function selectViande(page, titleRe) {
+  // [2026-11-04] L'assistant de la caisse affiche les viandes en TUILES (`button.viande-btn.plus`, libellé
+  // « Ajouter <viande> ») ; l'ancien format en lignes (`.wizard-viande-row`, `.indec-plus`) n'existe plus et le
+  // repli forçait un clic sur un bouton absent pendant 5 minutes. Format actuel d'abord, anciens ensuite.
+  const tuileViande = page.locator('#item-variation-modal.active button.viande-btn.plus').and(
+    page.getByLabel(titleRe),
+  ).first();
+  if (await tuileViande.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await tuileViande.click({ timeout: 5000 });
+    return;
+  }
   const modernRow = wizardViandeRow(page, titleRe);
   if (await modernRow.isVisible({ timeout: 5000 }).catch(() => false)) {
     const plus = modernRow.locator('button.viande-btn.plus').first();
@@ -361,6 +371,17 @@ async function configureTacosModal(page, instruction) {
   await selectViande(page, /kefta/i);
   await selectExtra(page, /ketchup/i);
 
+  // [2026-11-04] Un tacos EXIGE une sauce : sans elle, la caisse refuse l'ajout et l'écrit en rouge en bas de
+  // l'assistant (« Sélectionnez au moins une sauce », vérifié à l'écran). « Sans sauce » ne change aucun montant.
+  // Le produit de test peut ne pas proposer « Sans sauce » : à défaut, la 1ʳᵉ sauce visible (mesuré : l'ajout du
+  // vrai Tacos L reste à 8,90 € avec n'importe quelle sauce incluse).
+  await page.evaluate(() => {
+    const puces = [...document.querySelectorAll('#item-variation-modal.active button.sauce-chip')].filter((e) => e.offsetParent);
+    const cible = puces.find((e) => /sans sauce/i.test(e.innerText || '')) || puces[0];
+    if (cible) cible.click();
+  });
+  await page.waitForTimeout(300);
+
   const note = page.locator('#item-variation-modal.active textarea:visible').first();
   await expect(note).toBeVisible({ timeout: 5000 });
   await note.fill(instruction);
@@ -373,9 +394,14 @@ async function configureSimpleModal(page, instruction) {
 }
 
 async function addModalToCart(page) {
-  const cta = page.getByRole('button', { name: /ajouter au panier|add to cart/i }).first();
+  // [2026-11-04] Deux boutons « Ajouter au panier » existent : celui, caché, de l'interface Vue (qui contourne
+  // l'assistant) et `button.wizard-btn-cart` de l'assistant de composition. `.first()` tombait sur le caché :
+  // le clic n'avait aucun effet et la fenêtre restait ouverte.
+  const cta = page.locator('#item-variation-modal.active button.wizard-btn-cart:visible').first();
   await expect(cta).toBeEnabled({ timeout: 10_000 });
-  await cta.click();
+  // Clic par le DOM, comme les bancs caisse verts (goal-caisse-portes-de-mesure) : le pied de l'assistant est
+  // collant et le clic souris de Playwright n'y déclenche pas le bouton.
+  await cta.evaluate((el) => el.click());
   await expect(page.locator('#item-variation-modal')).toBeHidden({ timeout: 10_000 });
 }
 

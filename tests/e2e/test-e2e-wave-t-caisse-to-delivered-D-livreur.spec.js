@@ -275,7 +275,7 @@ test.describe('Wave T Round 1 Wave D — LIVREUR delivery hand-off (7 states, Or
     // call — which is exactly what the first 2 spec runs hit.
     // ──────────────────────────────────────────────────────────────────────
     const API_KEY = 'b6d68vy2-m7g5-20r0-5275-h103w73453q120'; // config('app.api_key')
-    const BASE = 'http://127.0.0.1:8000';
+    const BASE = (process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
     let bearerToken = null;
 
     // [WAVE-T-D auth 2026-05-20] Use a STANDALONE request context (no browser

@@ -22,7 +22,7 @@ const TOKEN = process.env.SEED_TOKEN;
 const PAID_ID = process.env.PAID_ID;
 const UNPAID_ID = process.env.UNPAID_ID;
 const PAID_SERIAL = process.env.PAID_SERIAL || ('#' + PAID_ID);
-const LOCAL_BASE = 'http://127.0.0.1:8000';
+const LOCAL_BASE = (process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
 const LOCAL_KEY = 'b6d68vy2-m7g5-20r0-5275-h103w73453q120';
 
 test.describe.configure({ retries: 0 });

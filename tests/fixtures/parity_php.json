@@ -720,7 +720,7 @@
             "uber_title": "Tacos M",
             "schema_version": 1
         },
-        "php": "G | TAC | P | ST | ALG",
+        "php": "Tacos | P | ST | ALG",
         "supps": [
             "+ Supplément Cheddar"
         ],
@@ -1451,7 +1451,7 @@
             "captured_at": "2026-08-05T10:46:00+02:00",
             "schema_version": 1
         },
-        "php": "G | TAC | Tender Nug | MAY",
+        "php": "Tacos | Tender Nug | MAY",
         "supps": [
             "+ Viande supplémentaire"
         ],
@@ -1884,7 +1884,7 @@
             "captured_at": "2026-08-05T08:47:09+02:00",
             "schema_version": 1
         },
-        "php": "G | TAC | Tender Mex | SAM",
+        "php": "Tacos | Tender Mex | SAM",
         "supps": [],
         "menu": "",
         "instr": "",
@@ -1993,7 +1993,7 @@
             "captured_at": "2026-08-05T08:47:09+02:00",
             "schema_version": 1
         },
-        "php": "G | TAC | Tender Mex | SAM",
+        "php": "Tacos | Tender Mex | SAM",
         "supps": [
             "+ Viande supplémentaire"
         ],
@@ -2055,7 +2055,7 @@
             "captured_at": "2026-08-05T08:44:47+02:00",
             "schema_version": 1
         },
-        "php": "G | TAC | Tender Mex | SAM",
+        "php": "Tacos | Tender Mex | SAM",
         "supps": [
             "+ Sauce supplémentaire",
             "+ Viande supplémentaire"
@@ -2118,7 +2118,7 @@
             "captured_at": "2026-08-05T08:42:46+02:00",
             "schema_version": 1
         },
-        "php": "G | TAC | Tender Mex | SAM",
+        "php": "Tacos | Tender Mex | SAM",
         "supps": [
             "+ Sauce supplémentaire",
             "+ Viande supplémentaire"
@@ -2181,7 +2181,7 @@
             "captured_at": "2026-08-05T08:42:04+02:00",
             "schema_version": 1
         },
-        "php": "G | TAC | Tender Mex | SAM",
+        "php": "Tacos | Tender Mex | SAM",
         "supps": [
             "+ Sauce supplémentaire",
             "+ Viande supplémentaire"
@@ -2229,7 +2229,7 @@
             "captured_at": "2026-08-05T08:41:44+02:00",
             "schema_version": 1
         },
-        "php": "G | TAC | Tender Mex | SAM",
+        "php": "Tacos | Tender Mex | SAM",
         "supps": [],
         "menu": "",
         "instr": "",
@@ -2429,7 +2429,7 @@
             "captured_at": "2026-08-05T08:37:47+02:00",
             "schema_version": 1
         },
-        "php": "G | TAC | Tender Mex | SAM",
+        "php": "Tacos | Tender Mex | SAM",
         "supps": [
             "+ Sauce supplémentaire",
             "+ Viande supplémentaire"
@@ -2487,7 +2487,7 @@
             "captured_at": "2026-08-05T08:36:41+02:00",
             "schema_version": 1
         },
-        "php": "G | TAC | Nug | CURY",
+        "php": "Tacos | Nug | CURY",
         "supps": [
             "+ Viande supplémentaire"
         ],
@@ -2709,7 +2709,7 @@
             "captured_at": "2026-08-05T08:36:41+02:00",
             "schema_version": 1
         },
-        "php": "G | TAC | Tender Mex | SAM",
+        "php": "Tacos | Tender Mex | SAM",
         "supps": [
             "+ Sauce supplémentaire",
             "+ Viande supplémentaire"
@@ -3315,7 +3315,7 @@
             "captured_at": "2026-08-05T06:54:20+02:00",
             "schema_version": 1
         },
-        "php": "G | TAC | Tender | BL",
+        "php": "Tacos | Tender | BL",
         "supps": [
             "+ Cheddar"
         ],
@@ -6015,7 +6015,7 @@
             "captured_at": "2026-08-02T04:38:02+02:00",
             "schema_version": 1
         },
-        "php": "G | TAC | K | SAM",
+        "php": "Tacos | K | SAM",
         "supps": [],
         "menu": "",
         "instr": "ZZ-TEST-S2-BORNE",
@@ -6405,7 +6405,7 @@
             "captured_at": "2026-08-02T04:21:33+02:00",
             "schema_version": 1
         },
-        "php": "G | CAY | P | SAN",
+        "php": "G | CAY | P | X",
         "supps": [],
         "menu": "",
         "instr": "",
@@ -7104,7 +7104,7 @@
             "captured_at": "2026-07-29T05:32:48+02:00",
             "schema_version": 1
         },
-        "php": "G | TAC | K Nug | STO | SAM",
+        "php": "Tacos | K Nug | STO | SAM",
         "supps": [],
         "menu": "",
         "instr": "",
@@ -7372,7 +7372,7 @@
             "captured_at": "2026-07-29T05:32:44+02:00",
             "schema_version": 1
         },
-        "php": "G | TAC | P | ALG",
+        "php": "Tacos | P | ALG",
         "supps": [],
         "menu": "",
         "instr": "",
@@ -7658,7 +7658,7 @@
             "captured_at": "2026-07-29T05:32:15+02:00",
             "schema_version": 1
         },
-        "php": "G | TAC | Mex Cordon | ST | HAR",
+        "php": "Tacos | Mex Cordon | ST | HH",
         "supps": [
             "+ Cheddar",
             "+ Viande supplémentaire ×2",
@@ -7790,7 +7790,7 @@
             "captured_at": "2026-07-29T05:29:18+02:00",
             "schema_version": 1
         },
-        "php": "G | TAC | K Nug | STO | SAM",
+        "php": "Tacos | K Nug | STO | SAM",
         "supps": [],
         "menu": "",
         "instr": "",
@@ -8127,7 +8127,7 @@
             "captured_at": "2026-07-29T05:28:50+02:00",
             "schema_version": 1
         },
-        "php": "G | TAC | Mex Cordon | ST | HAR",
+        "php": "Tacos | Mex Cordon | ST | HH",
         "supps": [
             "+ Cheddar",
             "+ Viande supplémentaire ×2",

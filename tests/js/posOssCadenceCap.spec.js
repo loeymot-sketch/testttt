@@ -151,7 +151,27 @@ describe('OssSyncService cadence cap (Wave 3c KDS-ADV3C-08 P1)', () => {
         });
         const svc = new OssSyncService();
         const cfg = svc._runtimeConfig();
-        expect(cfg.intervalMsWhenConnected).toBe(60_000);
-        expect(cfg.intervalMsWhenDisconnected).toBe(2_000);
+        // [fusion 2026-10-04] Une autre session a corrigé ce même banc en parallèle
+        // (« [AUDIT AVAL 2026-09-29] », littéral 15_000). Les deux gardent le même
+        // invariant ; cette version le garde SANS figer la valeur, et ajoute le contrôle
+        // du plafond ci-dessous.
+        // [AUDIT-COMPTA 2026-10-04] On garde l'INVARIANT — « une valeur invalide retombe sur
+        // le défaut du service » — et non la valeur du défaut.
+        //
+        // Ce banc figeait `60_000`. Le 2026-09-29 (8c8d51eaf) le défaut « connecté » est passé
+        // à 15 s, volontairement : « connecté » ne veut pas dire « les événements arrivent »,
+        // et un mur ouvert sous un compte succursale pouvait être 60 s derrière la cuisine. Le
+        // service a été corrigé, pas son banc, qui est resté rouge depuis. Un banc rouge en
+        // permanence finit par être ignoré ; et figer un littéral le refait tomber à chaque
+        // réglage de cadence légitime.
+        expect(cfg.intervalMsWhenConnected).toBe(OssSyncService.DEFAULTS.intervalMsWhenConnected);
+        expect(cfg.intervalMsWhenDisconnected).toBe(OssSyncService.DEFAULTS.intervalMsWhenDisconnected);
+    });
+
+    it('le défaut « connecté » reste sous le plafond de cadence', () => {
+        // Le garde-fou qui compte vraiment : un défaut au-dessus du plafond de 60 s ferait
+        // attendre une minute le mur client, et crèverait le budget SYNC-2 (caisse -> mur).
+        expect(OssSyncService.DEFAULTS.intervalMsWhenConnected).toBeLessThanOrEqual(OSS_CEILING);
+        expect(OssSyncService.DEFAULTS.intervalMsWhenDisconnected).toBeLessThanOrEqual(OSS_CEILING);
     });
 });

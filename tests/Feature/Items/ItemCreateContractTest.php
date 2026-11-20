@@ -43,6 +43,16 @@ class ItemCreateContractTest extends TestCase
         return $admin;
     }
 
+    // [ONB-02 T-2.1.3 2026-08-27] tax_id est désormais obligatoire (article sans taxe = facturé 0 % en silence)
+    private function taxeDeTest(): Tax
+    {
+        return Tax::firstOrCreate(
+            ['code' => 'TEST-VAT-10'],
+            ['name' => 'TVA 10 % (test)', 'tax_rate' => 10,
+             'type' => \App\Enums\TaxType::PERCENTAGE, 'status' => Status::ACTIVE]
+        );
+    }
+
     public function test_quick_payload_from_catalog_studio_creates_valid_item(): void
     {
         $admin = $this->adminWithItemPerms();
@@ -64,6 +74,7 @@ class ItemCreateContractTest extends TestCase
             'is_upsell'        => Ask::NO,
             'item_type'        => ItemType::VEG,
             'item_category_id' => $category->id,
+            'tax_id'           => $this->taxeDeTest()->id,
             'status'           => Status::ACTIVE,
             'order'            => 42,
         ];

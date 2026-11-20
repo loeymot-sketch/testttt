@@ -214,4 +214,39 @@ class CashSessionReportControllerTest extends TestCase
         $this->assertContains($sNow->id, $ids);
         $this->assertNotContains($sOld->id, $ids, 'Sessions before `from` must be filtered out');
     }
+
+    /**
+     * [ULTRA-AUDIT 2026-09-26 · A20] Rapport externe : deux sessions concurrentes
+     * (CashDrawerService::openSession n'interdit que la double-ouverture du MÊME
+     * caissier — I1 scopée (branch_id, opened_by_user_id), jamais (branch_id) seul)
+     * sont restées OPEN 78+ jours sans aucun signal visible sur cet écran, qui
+     * n'exposait que `opened_at`/`status` — aucune ancienneté calculée.
+     */
+    public function test_open_session_exposes_its_age_in_hours(): void
+    {
+        $openedAt = Carbon::now()->subHours(30);
+        $stale = $this->makeSession($this->branchA, $this->cashierA, $openedAt);
+
+        $response = $this->actingAs($this->admin, 'sanctum')
+            ->getJson('/api/admin/cash-sessions-report');
+
+        $response->assertOk();
+        $row = collect($response->json('data'))->firstWhere('id', $stale->id);
+        $this->assertNotNull($row);
+        $this->assertSame(30, $row['open_since_hours'], 'a session open 30h ago must report ~30h of age');
+    }
+
+    public function test_closed_session_reports_no_age(): void
+    {
+        $openedAt = Carbon::now()->subHours(30);
+        $closed = $this->makeSession($this->branchA, $this->cashierA, $openedAt, (clone $openedAt)->addHours(8), 100.0, 580.5);
+
+        $response = $this->actingAs($this->admin, 'sanctum')
+            ->getJson('/api/admin/cash-sessions-report');
+
+        $response->assertOk();
+        $row = collect($response->json('data'))->firstWhere('id', $closed->id);
+        $this->assertNotNull($row);
+        $this->assertNull($row['open_since_hours'], 'a closed session must never report an age (it is not "still open")');
+    }
 }

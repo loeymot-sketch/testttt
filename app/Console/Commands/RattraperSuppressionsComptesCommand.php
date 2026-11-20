@@ -1,0 +1,125 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\Scopes\BranchScope;
+use App\Models\User;
+use App\Services\Account\AnonymisationCompte;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * [test-e2e stores S17-003 · 2026-11-13] Rattrapage des comptes CLIENTS supprimés AVANT les correctifs d'effacement
+ * (identité réellement effacée le 2026-08-19, complément d'adresse et courses Uber le 2026-11-12). La politique de
+ * confidentialité annonce ces données effacées : pour les anciens comptes, elles ne l'étaient pas.
+ *
+ * Par défaut : SIMULATION, rien n'est écrit — la commande dit ce qu'elle ferait. `--appliquer` écrit, compte par compte,
+ * chacun dans sa transaction. Seuls les comptes dont le rôle PRINCIPAL est « Customer » sont touchés (jamais un compte
+ * d'exploitation). Rejouable sans effet : un compte déjà propre est compté et passé.
+ *
+ * À lancer en production UNE fois, juste après le déploiement du backend : `php artisan comptes:rattraper-suppressions`
+ * (lecture), puis `php artisan comptes:rattraper-suppressions --appliquer`.
+ */
+class RattraperSuppressionsComptesCommand extends Command
+{
+    protected $signature = 'comptes:rattraper-suppressions {--appliquer : écrire (sans cette option : simulation)}';
+
+    protected $description = 'Efface les données personnelles restées sur les comptes clients supprimés avant les correctifs (simulation par défaut).';
+
+    public function handle(AnonymisationCompte $anonymisation): int
+    {
+        $appliquer = (bool) $this->option('appliquer');
+        $bilan = ['comptes' => 0, 'identites' => 0, 'complements' => 0, 'courses' => 0, 'roue' => 0, 'caisse' => 0, 'photos' => 0, 'messages' => 0, 'ignores_non_clients' => 0];
+
+        User::withoutGlobalScope(BranchScope::class)->onlyTrashed()->with('roles')->orderBy('id')
+            ->chunkById(200, function ($comptes) use ($anonymisation, $appliquer, &$bilan) {
+                foreach ($comptes as $compte) {
+                    $premier = $compte->roles->first();
+                    // [P20-001] TOUS les rôles « Customer » — même règle que la suppression client et admin.
+                    if (! $premier || $premier->name !== 'Customer' || ! $compte->roles->every(fn ($r) => $r->name === 'Customer')) {
+                        $bilan['ignores_non_clients']++;
+                        continue;
+                    }
+                    $bilan['comptes']++;
+                    $identite = ! $anonymisation->identiteDejaEffacee($compte);
+                    $complements = DB::table('order_addresses')->where('user_id', $compte->id)
+                        ->where(function ($q) { $q->whereNotNull('apartment')->orWhere('label', '!=', 'Livraison'); })->count();
+                    // [test-e2e stores S18-002] Aussi la réponse BRUTE d'Uber (delivery_payload) : un webhook reçu après la suppression
+                    //   y remettait nom et téléphone du destinataire, invisibles pour un contrôle limité aux colonnes.
+                    $courses = DB::table('uber_direct_deliveries')
+                        ->whereIn('order_id', DB::table('orders')->where('user_id', $compte->id)->select('id'))
+                        ->get(['dropoff_phone', 'dropoff_instructions', 'delivery_payload'])
+                        ->filter(function ($c) {
+                            if ($c->dropoff_phone !== null || $c->dropoff_instructions !== null) {
+                                return true;
+                            }
+                            $brut = json_decode((string) $c->delivery_payload, true);
+                            if (! is_array($brut)) {
+                                return false;
+                            }
+                            $d = is_array($brut['dropoff'] ?? null) ? $brut['dropoff'] : [];
+
+                            return isset($d['name']) || isset($d['phone_number']) || isset($d['notes'])
+                                || isset($brut['dropoff_name']) || isset($brut['dropoff_phone_number']) || isset($brut['dropoff_notes']);
+                        })->count();
+                    // [P18-002] Tours de roue crédités au compte qui gardent encore nom / e-mail / téléphone.
+                    $roue = \Illuminate\Support\Facades\Schema::hasColumn('wheel_spins', 'points_credited_user_id')
+                        ? DB::table('wheel_spins')->where('points_credited_user_id', $compte->id)
+                            ->where(function ($q) { $q->whereNotNull('customer_name')->orWhere('phone', 'not like', 'SUPPRIME-%'); })->count()
+                        : 0;
+                    $bilan['roue'] += $roue;
+                    // [S20-001] Commandes prises par téléphone en caisse qui gardent nom / numéro du client.
+                    $caisse = \Illuminate\Support\Facades\Schema::hasColumn('orders', 'pos_customer_phone')
+                        ? DB::table('orders')->where('user_id', $compte->id)
+                            ->where(function ($q) { $q->whereNotNull('pos_customer_phone')->orWhereNotNull('pos_customer_name'); })->count()
+                        : 0;
+                    $bilan['caisse'] += $caisse;
+                    // [supervision D3/D4] Photo de profil restée dans la médiathèque ; messages écrits au restaurant.
+                    $photo = \Illuminate\Support\Facades\Schema::hasTable('media')
+                        ? DB::table('media')->where('model_type', \App\Models\User::class)->where('model_id', $compte->id)->where('collection_name', 'profile')->count()
+                        : 0;
+                    $messages = \Illuminate\Support\Facades\Schema::hasTable('message_histories')
+                        ? DB::table('message_histories')->where('user_id', $compte->id)->whereNotNull('text')->count()
+                        : 0;
+                    $bilan['photos'] += $photo;
+                    $bilan['messages'] += $messages;
+                    $bilan['identites'] += $identite ? 1 : 0;
+                    $bilan['complements'] += $complements;
+                    $bilan['courses'] += $courses;
+
+                    if ($appliquer && ($identite || $complements || $courses || $roue || $caisse || $photo || $messages)) {
+                        // [S19-001] Jeton Apple encore présent sur un ancien compte : révoqué chez Apple après l'effacement.
+                        $jetonApple = null;
+                        try { $jetonApple = $identite ? $compte->apple_refresh_token : null; } catch (\Throwable) { $jetonApple = null; }
+                        DB::transaction(function () use ($anonymisation, $compte, $identite) {
+                            if ($identite) {
+                                $anonymisation->anonymiserIdentite($compte);
+                                $compte->tokens()->delete();
+                            }
+                            $anonymisation->effacerResidus((int) $compte->id);
+                        });
+                        if ($photo && ! $identite) {
+                            try { $compte->clearMediaCollection('profile'); } catch (\Throwable) { /* rien à effacer */ }
+                        }
+                        if (filled($jetonApple)) {
+                            app(\App\Services\Auth\AppleTokenRevoker::class)->revoquer((string) $jetonApple);
+                        }
+                    }
+                }
+            });
+
+        $this->info(($appliquer ? 'EFFACÉ' : 'SIMULATION (rien écrit)') . ' — comptes clients supprimés : ' . $bilan['comptes']
+            . ' ; identités encore lisibles : ' . $bilan['identites']
+            . ' ; compléments/libellés d\'adresse : ' . $bilan['complements']
+            . ' ; courses Uber avec téléphone/consignes : ' . $bilan['courses']
+            . ' ; tours de roue identifiants : ' . $bilan['roue']
+            . ' ; commandes caisse avec nom/numéro : ' . $bilan['caisse']
+            . ' ; photos de profil : ' . $bilan['photos'] . ' ; messages : ' . $bilan['messages']
+            . ' ; comptes non clients ignorés : ' . $bilan['ignores_non_clients'] . '.');
+        if (! $appliquer && ($bilan['identites'] || $bilan['complements'] || $bilan['courses'] || $bilan['roue'] || $bilan['caisse'] || $bilan['photos'] || $bilan['messages'])) {
+            $this->line('Relancer avec --appliquer pour effacer.');
+        }
+
+        return self::SUCCESS;
+    }
+}

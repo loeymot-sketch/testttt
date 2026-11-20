@@ -210,7 +210,27 @@
             </label>
         </div>
         <div class="text-xs text-neutral-600" data-testid="composer-step-min-max-summary">
-            {{ minMaxSummary }}
+            <span v-if="Number(draft.min_select) === 0 && Number(draft.max_select) === 1">
+                {{ t('label.composer.min_max_summary_optional_one', '= Optionnel, le client peut choisir 1 article maximum.') }}
+            </span>
+            <!-- [ONB-03 2026-08-28] `max = 0` ne veut PAS dire « exactement 0 ». Cote
+                 serveur `PricingService.php:625` fait `if ($max > 0 && ...)` et la
+                 borne `KioskWizardComponent.vue:921` fait pareil : **zero signifie
+                 SANS PLAFOND**. L'ecran affichait « = Obligatoire, le client doit
+                 choisir exactement 0 articles. » — le commercant croyait fermer une
+                 etape, il venait de l'ouvrir sans limite sur ses supplements payants.
+                 Meme piege que celui corrige sur l'ecran des attributs le meme jour. -->
+            <span v-else-if="Number(draft.max_select) === 0">
+                {{ Number(draft.min_select) === 0
+                    ? t('label.composer.min_max_summary_unlimited', '= Facultatif, le client peut en choisir autant qu\'il veut.')
+                    : t('label.composer.min_max_summary_at_least', '= Obligatoire, au moins {n}, sans maximum.').replace('{n}', draft.min_select) }}
+            </span>
+            <span v-else-if="Number(draft.min_select) === Number(draft.max_select)">
+                {{ t('label.composer.min_max_summary_required_n', '= Obligatoire, le client doit choisir exactement {n} articles.').replace('{n}', draft.min_select) }}
+            </span>
+            <span v-else>
+                {{ t('label.composer.min_max_summary_range', '= Le client peut choisir entre {min} et {max} articles.').replace('{min}', draft.min_select).replace('{max}', draft.max_select) }}
+            </span>
         </div>
 
         <fieldset class="rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4">
@@ -320,25 +340,6 @@ export default {
         };
     },
     computed: {
-        /**
-         * Avant : « le client doit choisir exactement 1 articles. » — le pluriel était figé et le
-         * `{n}` de la clé i18n avait déjà été interpolé à vide par `$t` avant le `.replace` appelant.
-         */
-        minMaxSummary() {
-            const min = Number(this.draft.min_select) || 0;
-            const max = Number(this.draft.max_select) || 0;
-            const noun = (n) => (n > 1 ? 'articles' : 'article');
-            if (min === 0 && max === 1) {
-                return '= Optionnel, le client peut choisir 1 article maximum.';
-            }
-            if (min === 0) {
-                return `= Optionnel, le client peut choisir jusqu'à ${max} ${noun(max)}.`;
-            }
-            if (min === max) {
-                return `= Obligatoire, le client doit choisir exactement ${min} ${noun(min)}.`;
-            }
-            return `= Le client peut choisir entre ${min} et ${max} ${noun(max)}.`;
-        },
         pageChoices() {
             const choices = Array.isArray(this.page?.choices) ? this.page.choices : [];
             return choices.filter((choice) => Number(choice.status) !== 10);

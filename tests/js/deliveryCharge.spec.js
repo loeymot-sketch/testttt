@@ -1,26 +1,41 @@
 import { describe, expect, it } from 'vitest';
-import { calculateDeliveryChargeFromDistance } from '../../resources/js/helpers/deliveryCharge.js';
+import {
+    calculateDeliveryChargeFromDistance,
+    quoteDelivery,
+    isHomeCity,
+} from '../../resources/js/helpers/deliveryCharge.js';
 
-// [DEL-FEE whole-km — owner rule, base lowered 5€→4€ on 2026-06-27] Le Cayenne:
-// 4€ covers the first 5km, then +1€ per STARTED km beyond (rounded up). Mirrors
-// backend DeliveryFeeService (base=4/per_km=1/min=4/free_km=5).
+// [LIVRAISON 2026-10-20] Barème propriétaire : Hénin-Beaumont 3,90 · ≤5 km 4,90 · ≤8 km 5,90 ·
+// ≤10 km 6,90 · au-delà refusé (Uber Eats). Miroir d'affichage de DeliveryTariff (serveur = autorité).
 describe('delivery charge preview helper', () => {
     it.each([
-        [0, 4],
-        [3, 4],
-        [5, 4],
-        [5.01, 5],   // 4 + ceil(0.01)=1
-        [6, 5],      // 4 + ceil(1)
-        [8, 7],      // 4 + ceil(3)
-        [8.3, 8],    // 4 + ceil(3.3)=4
-        [10, 9],     // 4 + ceil(5)
-        [12.5, 12],  // 4 + ceil(7.5)=8
-        [-1, 0],
-        ['x', 0],
-        [null, 0],
-        [Number.NaN, 0],
-        [Number.POSITIVE_INFINITY, 0],
-    ])('calculates %s km as %s EUR', (distance, expected) => {
-        expect(calculateDeliveryChargeFromDistance(distance)).toBe(expected);
+        [0.1, 4.9], [3, 4.9], [5, 4.9],
+        [5.01, 5.9], [8, 5.9],
+        [8.01, 6.9], [10, 6.9],
+    ])('autre commune à %s km = %s EUR', (distance, expected) => {
+        expect(calculateDeliveryChargeFromDistance(distance, 'Oignies', '62590')).toBe(expected);
+    });
+
+    it('Hénin-Beaumont est un forfait unique, quelle que soit la distance', () => {
+        for (const km of [0, 2, 7, 11]) {
+            expect(quoteDelivery(km, 'Hénin-Beaumont', '62110')).toMatchObject({ allowed: true, fee: 3.9, tier: 'home' });
+        }
+    });
+
+    it('reconnaît la commune par code postal ou par toute orthographe', () => {
+        expect(isHomeCity(null, '62110')).toBe(true);
+        expect(isHomeCity('HENIN BEAUMONT')).toBe(true);
+        expect(isHomeCity('henin-beaumont')).toBe(true);
+        expect(isHomeCity('Hénin–Beaumont')).toBe(true);
+        expect(isHomeCity('Oignies', '62590')).toBe(false);
+        expect(isHomeCity(null, null)).toBe(false);
+    });
+
+    it('refuse au-delà de 10 km et propose Uber Eats', () => {
+        expect(quoteDelivery(10.01, 'Lens', '62300')).toMatchObject({ allowed: false, fee: 0, suggestUberEats: true });
+    });
+
+    it.each([[-1], ['x'], [null], [Number.NaN], [Number.POSITIVE_INFINITY]])('distance illisible %s : refusée, jamais facturée', (d) => {
+        expect(quoteDelivery(d, 'Oignies', '62590')).toMatchObject({ allowed: false, fee: 0, tier: 'invalid' });
     });
 });

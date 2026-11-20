@@ -36,7 +36,7 @@ Le flash récurrent vient de la **façon de lancer** le pont :
 ```powershell
 # En ADMINISTRATEUR :
 powershell -ExecutionPolicy Bypass -File install-borne-service.ps1  -BridgePath "C:\borne-print\bridge.js"
-powershell -ExecutionPolicy Bypass -File install-caisse-service.ps1 -BridgePath "C:\caisse-bridge\caisse-bridge.js" -Printer "SAGA"
+powershell -ExecutionPolicy Bypass -File install-caisse-service.ps1 -BridgePath "C:\caisse-bridge\caisse-bridge.js" -Printer "SAGA POS-80"
 ```
 
 ### Option B — Lanceur VBS fenêtre 0  ✅ *repli si pas d'admin / pas de NSSM*

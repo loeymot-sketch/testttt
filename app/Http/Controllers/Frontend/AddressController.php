@@ -35,7 +35,7 @@ class AddressController extends Controller
     {
         // [SECURITY FIX] IDOR Prevention - Verify ownership
         if ($address->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized access to this address');
+            abort(403, __('all.message.unauthorized'));
         }
         
         try {
@@ -58,7 +58,7 @@ class AddressController extends Controller
     {
         // [SECURITY FIX] IDOR Prevention - Verify ownership
         if ($address->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized access to this address');
+            abort(403, __('all.message.unauthorized'));
         }
         
         try {
@@ -68,11 +68,31 @@ class AddressController extends Controller
         }
     }
 
+    /**
+     * [PROFIL APP 2026-11-12] `POST /api/frontend/address/{address}/default` — l'adresse proposée en premier au paiement
+     * en livraison. Un client ne peut désigner QUE l'une de ses adresses (403 sinon, même message que show/update).
+     */
+    public function setDefault(Address $address)
+    {
+        if ((int) $address->user_id !== (int) auth()->id()) {
+            abort(403, __('all.message.unauthorized'));
+        }
+
+        try {
+            return new AddressResource($this->addressService->setDefault($address));
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            // [test-e2e stores P15-001 · 2026-11-13] Supprimée depuis un autre appareil pendant la demande.
+            return response(['status' => false, 'code' => 'ADDRESS_GONE', 'message' => 'Cette adresse a été supprimée depuis un autre appareil.'], 404);
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
     public function destroy(Address $address)
     {
         // [SECURITY FIX] IDOR Prevention - Verify ownership
         if ($address->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized access to this address');
+            abort(403, __('all.message.unauthorized'));
         }
         
         try {

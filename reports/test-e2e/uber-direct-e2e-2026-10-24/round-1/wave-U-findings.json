@@ -1,0 +1,223 @@
+{
+  "wave": "U",
+  "round": 1,
+  "states_reviewed": 20,
+  "findings": [
+    {
+      "id": "U1-001",
+      "state_artifact": "captures-U/ledger.json (scenarios.U-3.steps.site_avant.texte) + captures-U/U3-site-en-route.png",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "evidence": "Course Uber créée à 14:22:07Z (del_99, quote dqt_98, duration 25 min, delivery_payload.dropoff_eta='2026-10-24T14:47:07Z' = 16:47 heure de Paris). Le suivi client relu APRÈS ce dispatch (U-3 site_avant, capturé entre le dispatch et le webhook pickup) affiche : « PRÊTE #2410268984 Départ de la livraison prévu à 18:00 Votre commande est en préparation ». 18:00 est l'heure de NOTRE tournée (delivery_stops.wave_at), plus celle qui livre : le client voit une heure fausse de 73 minutes alors qu'un coursier Uber est déjà demandé. Aucune surface client ne lit `dropoff_eta` (grep app/ : seul PosDeliveryController:265-267 lit delivery_payload, pour courier.name). En « En route » (U3-site-en-route.png) aucune heure n'est affichée.",
+      "fix_hint": "Dans la projection commande du site (ressource utilisée par le suivi, champ heure de départ), quand UberDirectDispatchService::activeCourse(order_id) existe : afficher l'ETA Uber (delivery_payload.dropoff_eta, relu avec ->setTimezone(config('app.timezone')) comme quote_expires_at) à la place de wave_at, et masquer « Départ … prévu à ». Ajouter le cas au spec U-3 (site_avant doit contenir l'ETA Uber, pas 18:00).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "U1-002",
+      "state_artifact": "app/Services/UberDirect/UberDirectDispatchService.php:196-214, 219-226, 556-559 (code HEAD 62273c49b)",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "HEAD change la clé d'idempotence en 'lecayenne-order-{id}-{quote_id}' (:559) pour qu'après une course ANNULÉE un nouveau devis crée une nouvelle course. Effet de bord non couvert : createDelivery sans réponse (timeout 8 s, Uber a POURTANT créé la course) → ligne failure_code='uber_unconfirmed', delivery_id NULL (:220-223). Réessai dans les ~13 min (expires 15 min − marge 120 s) : même devis, même clé → Uber renvoie la même course, OK. Réessai APRÈS : :197 quoteStillUsable() faux → $row=null (:202) → quote() écrase quote_id par dqt_B (:130-146) → 409 quote_changed → « Confirmer » → createDelivery avec clé '…-dqt_B' → Uber crée une 2ᵉ course alors que la 1ʳᵉ (clé '…-dqt_A') roule et est facturée, sans delivery_id chez nous (syncActive :425 ne la verra jamais : whereNotNull delivery_id). Le commentaire :556 « un réessai après délai dépassé ne fabrique pas une 2ᵉ course » est devenu faux dès que le devis expire. Non reproduit : le faux Uber en mode create=timeout (stub :99) ne crée PAS la course, il ne peut donc pas simuler la réponse perdue.",
+      "fix_hint": "Ne faire tourner la clé qu'à la fin CONNUE d'une course (canceled/returned), pas au rafraîchissement du devis : colonne `dispatch_generation` (ou `idempotency_key`) sur uber_direct_deliveries, incrémentée dans release()/onFailed/cancelCourseForClosedOrder uniquement ; clé = 'lecayenne-order-{id}-g{generation}'. Tant que failure_code='uber_unconfirmed', interdire un nouveau devis avant d'avoir relu Uber (GET deliveries filtré par external_id, ou exiger la vérification manuelle). Faire créer la course par le stub en mode timeout pour prouver le cas.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "U1-003",
+      "state_artifact": "captures-U/ledger.json (bench.uber_log_final) + app/Services/UberDirect/UberDirectDispatchService.php:415-436",
+      "category": "unexpected_4xx",
+      "severity": "P2",
+      "evidence": "Le code et le contrôleur (PosDeliveryController.php:178) annoncent « ≤ 1 fois / 15 s ». Journal du faux Uber : GET /deliveries/del_111 à 14:23:22.104, 23.940, 25.989, 27.246, 27.635, 28.285, 29.388, 30.384, 32.315, 34.143, 36.046 → 11 relevés en 14 s (plus del_115/del_124 en parallèle). Cause : Cache::lock('uber_direct_sync', 15) est libéré dans le finally (:434) dès la fin du relevé, donc le verrou ne tient jamais 15 s ; chaque board() (toutes les 20 s par écran + après chaque action) rappelle Uber. Avec le vrai Uber et 2-3 écrans de caisse : quota / 429.",
+      "fix_hint": "Remplacer par un jeton temporel : `if (! Cache::add('uber_direct_sync_at', 1, 15)) return;` (ne pas libérer), ou garder le lock sans release() et laisser expirer. Ajouter au spec U un contrôle : ≤ 2 GET par delivery_id sur 15 s.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "U1-004",
+      "state_artifact": "app/Services/UberDirect/UberDirectDispatchService.php:484-494 + app/Models/UberDirectDelivery.php:13-19 + app/Providers/EventServiceProvider.php:158-169",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "HEAD fait passer une commande EN PRÉPARATION (7) à PRÊTE (8) depuis un webhook Uber (pickup_complete) puis à EN ROUTE (10), avec OrderStatusChanged à chaque pas (:491, :501). Le modèle UberDirectDelivery porte la consigne propriétaire : « Le webhook Uber concerne la LIVRAISON. Le KDS continue de gérer la PRÉPARATION. Ne mélange pas les deux machines d'état » (:13-19). Effets de bord du 7→8 déclenché par Uber : SendFcmOnOrderStatusChange envoie au client « Votre commande est prête ! » (listener :17) puis « en route » dans la même seconde ; PersistOrderStatusChangedToOutbox fait disparaître la carte du KDS alors que c'est le coursier, pas la cuisine, qui a « bumpé » ; AwardLoyaltyPointsOnDelivery n'est pas affecté (commande livraison = DELIVERED seul). Preuve d'exécution : ledger U-8 b_commande_acceptee_sac_pris statut 7→10 avec transition_journal=1 ; commandes B/E/F/G/H/I en statut 7 au départ (ledger.orders). docs/LIVRAISON.md a été réécrit pour justifier le choix, le commentaire du modèle n'a pas été mis à jour : contradiction entre deux mémoires stables (CLAUDE.md §12).",
+      "fix_hint": "Décision propriétaire à obtenir (gate humaine) : soit (a) garder 7→8→10 et mettre à jour UberDirectDelivery.php:13-19 + taire la notification client « prête » quand la transition vient d'Uber (drapeau sur l'événement), soit (b) laisser 7 et ne poser que left_at + statut Uber, en affichant « sac pris par Uber » sans toucher la cuisine. Dans les deux cas : test PHPUnit qui compte les notifications client reçues pour un pickup_complete sur une commande en 7.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "U1-005",
+      "state_artifact": "captures-U/U8-alerte-rouge.png + U8-alerte-rouge.dom.html (data-testid=pos-delivery-uber-reason) + ledger.json U-8.d_board",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Ligne #2410268989 après `returned` post-sac : alerte rouge correcte, mais la raison du bouton grisé dit « Le livreur est déjà parti. » (DOM : title=\"Le livreur est déjà parti.\" + span pos-delivery-uber-reason) alors qu'aucun de NOS livreurs n'est parti (delivery_stops.406 delivery_boy_id NULL, left_at posé par le webhook) — blockedReason() :83-84 ne distingue pas. Pastille « Nos livreurs » affichée comme mode courant (dispatch='own') et aucun bouton d'action : la commande reste EN ROUTE (orders.8989 status=10 relu en base) avec le sac au restaurant, le client voit « Votre commande est en route ! » sans fin (même gabarit que U3-site-en-route.png), le livreur ne la voit pas (delivery_boy_id NULL). docs/LIVRAISON.md §6 assume « alerte rouge, jamais retour silencieux » mais ne prévoit aucune issue.",
+      "fix_hint": "blockedReason : si uberBagTakenOrderIds contient la commande → « Sac rendu par Uber : à relivrer ou rembourser ». Offrir une action sur la ligne (« Relivrer par nos livreurs » = nouvel arrêt / left_at NULL + delivery_boy_id, ou « Clôturer ») et faire redescendre le suivi client (« Un problème est survenu, nous vous rappelons »). Décision propriétaire sur le statut commande.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "U1-006",
+      "state_artifact": "captures-U/U9-annulation-non-confirmee.png + U9-annulation-non-confirmee.dom.html (button pos-delivery-use-own sans disabled) + app/Services/UberDirect/UberDirectDispatchService.php:266-297, 504-521",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "Commande #2410268987 ANNULÉE (orders.8987 status=16, payment_status=20 REFUNDED relu en base) reste sur la planche avec « Payé » (collect_method figé sur l'arrêt) et « À partir », et le bouton « 🛵 Nos livreurs » est ACTIF (DOM : title=\"\", pas d'attribut disabled). Un appui → release() : cancelAtUber (bien, c'est le réessai voulu) puis giveBackToOwnCouriers(:288) sans aucun contrôle du statut de la commande → delivery_boy_id=10 posé sur l'arrêt d'une commande annulée + 3 notifications livreur « nouvelle livraison » (:513-515). Le seul chemin propre est le cron (ledger U-9 c_rattrapage « 1 arrêt libéré »).",
+      "fix_hint": "release() : si la commande est CANCELED/REJECTED → après annulation Uber réussie, supprimer l'arrêt (même code que ReleaseDeliveryStopOnOrderClosed :38-44) au lieu de le rendre à un livreur. Planche : pour une commande annulée, remplacer « Payé » par « Annulée » et libeller le bouton « Réessayer l'annulation Uber ».",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "U1-007",
+      "state_artifact": "captures-U/U5-refus-reprise.dom.html + resources/js/components/admin/pos/PosDeliveryBoard.vue:61",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Refus U-5 : le DOM montre <button … disabled=\"\" title=\"Le coursier Uber a déjà la commande\" data-testid=\"pos-delivery-use-own\"> — la raison n'existe qu'en `title`, invisible sur un écran tactile de caisse et non lue par un lecteur d'écran sur un bouton désactivé. Le bouton voisin « Confier à Uber » affiche sa raison en texte visible (Vue :71, span pos-delivery-uber-reason) ; « Nos livreurs » n'a pas cet équivalent. Le spec a dû passer par l'API (ledger U-5 release_api 422, clics_bouton_grise=[]) : aucune capture ne montre le refus à l'écran.",
+      "fix_hint": "PosDeliveryBoard.vue:61 — ajouter un <span class=\"text-xs text-gray-500\"> visible « Le coursier Uber a déjà la commande » quand s.uber.bag_taken, comme :71.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "U1-008",
+      "state_artifact": "captures-U/ledger.json (bench.uber_log_final POST /deliveries) + app/Services/UberDirect/UberDirectDispatchService.php:525-562",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Corps envoyés conformes sur les champs requis (adresses JSON string, téléphones E.164 +33…, manifest_items[].size=medium, quote_id, external_id, idempotency_key, manifest_total_value en centimes, dropoff_notes). Champs utiles ABSENTS que le vrai Uber accepte et que notre flux suppose : `undeliverable_action` (le code traite `returned` :458-470 mais ne demande jamais `return` ; le comportement dépend alors du paramétrage du compte), `dropoff_verification` (aucune preuve de remise alors que nos livreurs photographient — has_photo), `pickup_business_name` (seul pickup_name='Le Cayenne (principal)' est envoyé ; Uber affiche business_name au coursier), `pickup_notes`. Le faux Uber ne valide que la présence de 5 champs (stub :106) : il ne peut pas prouver le reste.",
+      "fix_hint": "deliveryBody() : ajouter 'undeliverable_action' => 'return', 'pickup_business_name' => $branch->name, et une 'dropoff_verification' minimale (photo) si le compte l'autorise ; documenter dans docs/LIVRAISON.md §6 que ces champs sont à confirmer au 1er devis réel.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "U1-009",
+      "state_artifact": "app/Services/UberDirect/UberDirectDispatchService.php:576-581 + ledger.json (pickup_ready_dt des devis)",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "readyAt() = now() + preparation_time (plafonné 60) si la commande n'est pas PRÊTE, sans tenir compte du temps déjà écoulé depuis l'entrée en cuisine. Dans le banc toutes les commandes B…I (statut 7) donnent pickup_ready_dt = heure du clic + 30 min (ex. 14:22:55Z → '16:52:55+02:00') quelle que soit leur ancienneté. En production : commande en cuisine depuis 25 min sur 30 → Uber est prévenu pour dans 30 min → coursier 25 min en retard, ou pénalité d'attente si on force la prise.",
+      "fix_hint": "readyAt() : max(now(), created_at/accepted_at + preparation_time) ; si la cuisine a déjà bumpé (8) → now(). Exposer la valeur sur la ligne « Uber : 7,42 € · ~25 min » (« prêt à HH:MM ») pour que le caissier la voie.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "U1-010",
+      "state_artifact": "app/Services/UberDirect/UberDirectDispatchService.php:125-129, 148-155 + resources/js/components/admin/pos/PosDeliveryBoard.vue:64",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "quote() n'exige que `id` (:125) ; `fee` manquant ou non numérique → (int)(null ?? 0) = 0 (:129) → ligne enregistrée à 0 centime et la planche affiche « Uber : 0,00 € » avec « Confirmer Uber » actif (:64-65) → course dépêchée à un prix que personne n'a vu. Le faux Uber renvoie toujours fee=742 : jamais exercé.",
+      "fix_hint": "quote() : si !isset($raw['fee']) || !is_numeric($raw['fee']) || (int)$raw['fee'] <= 0 → ['ok'=>false, 'message'=>'Uber n\\'a pas donné de prix…'] ; ajouter un mode stub quote='nofee'.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "U1-011",
+      "state_artifact": "resources/js/components/admin/pos/PosDeliveryBoard.vue:104 + tests/Playwright/uber-direct-e2e-2026-10-24/U-uber-direct.spec.js:191,200,222,558",
+      "category": "loading_state_missing",
+      "severity": "P2",
+      "evidence": "La planche n'a aucun écouteur temps réel (grep Echo/listen/channel dans le composant : 0 résultat) ; elle se recharge par setInterval 20 000 ms (:104) et après chaque action. Un webhook Uber (sac pris, livrée, retour) n'apparaît donc qu'au prochain tic ≤ 20 s. Le spec ne l'a pas mesuré : il attend la réponse /pos-delivery/board après ses propres actions (:191, :200) et recharge l'écran livreur (:222) et le tracker (:558). Comment je l'ai vu : aucun `reload`-free attend d'un changement poussé dans le spec ; code du composant sans abonnement.",
+      "fix_hint": "Émettre un événement outbox `delivery.uber_status` sur applyStatus (canal private-branch.{id}, cf. SYNC_CONTRACT.md) et l'écouter dans PosDeliveryBoard pour recharger ; ou documenter le délai 20 s dans docs/LIVRAISON.md §6 et l'afficher (« mis à jour il y a Ns » existe déjà sur le tracker).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "U1-012",
+      "state_artifact": "captures-U/U7-devis-perime.png + ledger.json U-7.d_expired + PosDeliveryBoard.vue:154",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "Serveur : 409 code=quote_changed message=« Le devis a expiré : confirmez le nouveau prix. » (ledger d_expired). Écran : bandeau « Le prix d'Uber a changé : vérifiez et confirmez à nouveau. » (Vue :154 ignore r.message) alors que la ligne #2410268988 affiche le MÊME prix 7,42 € · ~25 min. Le caissier lit « le prix a changé » sans voir de changement.",
+      "fix_hint": "PosDeliveryBoard.vue:154 — afficher r.message du serveur (« Le devis a expiré… ») ; si fee identique, préciser « même prix, à reconfirmer ».",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "U1-013",
+      "state_artifact": "captures-U/U4-rendu.png (ligne #2410268984 « Payé / Remise 16:22 ») + captures-U/U3-tracker-livres.png (carte N°A0098)",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Une fois livrée par Uber, la commande #2410268984 est indiscernable d'une livraison par nos livreurs : planche « Payé · Remise 16:22 » sans 🚗 ni coût, carte tracker LIVRÉS sans marqueur Uber. Le coût de 7,42 € supporté par le restaurant (uber_direct_deliveries.29 quote_fee_cents=742) n'est visible nulle part après coup ; aucun total journalier des courses Uber.",
+      "fix_hint": "Planche : garder la pastille « 🚗 Uber · Livrée (7,42 €) » sur les arrêts remis dont activeCourse() est delivered ; tracker : icône Uber à côté du scooter ; Z/rapport du jour : ligne « Courses Uber Direct : N · X,XX € ».",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "U1-014",
+      "state_artifact": "captures-U/U3-site-en-route.png + U3-site-en-route.dom.html",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Suivi client « VOTRE COMMANDE EST EN ROUTE ! / Le livreur est en chemin vers votre adresse. » : aucune heure d'arrivée, aucun lien de suivi, alors que la course porte tracking_url (uber_direct_deliveries.29 = https://stub.uber.local/track/99) et dropoff_eta. Le caissier a le lien « Suivi » (U2-confie-uber.png), pas le client qui attend.",
+      "fix_hint": "Projection commande du site : exposer uber_tracking_url + uber_eta quand activeCourse() ; le tunnel affiche « Suivre le coursier » (target=_blank rel=noopener) et « Arrivée estimée HH:MM ».",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "U1-015",
+      "state_artifact": "captures-U/U3-en-route-planche.png + resources/js/helpers/posLivraison.js:100",
+      "category": "i18n_leak",
+      "severity": "P3",
+      "evidence": "Pastille « 🚗 Uber · Coursier a la commande » : se lit comme une faute (« à la commande ») ; le sens voulu est « le coursier A (possède) la commande ». Ambigu pour un caissier.",
+      "fix_hint": "posLivraison.js:100 → pickup_complete: 'Sac pris par le coursier'.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "U1-016",
+      "state_artifact": "resources/js/components/admin/pos/PosDeliveryBoard.vue:58,65,70 + captures-U/U2-confie-uber.png",
+      "category": "color_contrast",
+      "severity": "P3",
+      "evidence": "Boutons/pastilles Uber en `bg-black` (#000000) ; la palette caisse mandatée (CLAUDE.md §3bis) est Dark #1A1A1A. Contraste suffisant, mais teinte hors charte.",
+      "fix_hint": "Remplacer bg-black par bg-[#1A1A1A] sur les trois éléments.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "U1-017",
+      "state_artifact": "ledger.json (pickup_ready_dt='2026-10-24T16:22:07+02:00', street_address='437 Rue Élie Gruyelle, 62110 Hénin-Beaumont') + UberDirectDispatchService.php:564-581",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "`pickup_ready_dt` est émis avec décalage +02:00 (toIso8601String) ; RFC 3339 valide, mais tous les exemples Uber sont en « Z » et le faux Uber ne le vérifie pas. `street_address` répète le code postal et la ville déjà fournis dans zip_code/city (adresse restaurant), et l'adresse client n'a pas de numéro de voie — lat/long fournis compensent. Risque faible, à confronter au 1er devis réel.",
+      "fix_hint": "readyAt() : now()->utc()->toIso8601ZuluString() ; addressJson() : ne mettre que la voie dans street_address.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "U1-018",
+      "state_artifact": "captures-U/U3-site-livree.png + U3-site-en-route.png (libellé « TA COMMANDE »)",
+      "category": "i18n_leak",
+      "severity": "P3",
+      "evidence": "Le suivi client titre « TA COMMANDE » (tutoiement) ; la décision du 2026-10-22 pour la livraison à la commande est le vouvoiement (« Votre commande est en route », même écran). Incohérence dans la même page. Hors du diff HEAD (dépôt du site), à signaler au propriétaire du site.",
+      "fix_hint": "Site lecayenne : « VOTRE COMMANDE ».",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "U1-019",
+      "state_artifact": "app/Services/UberDirect/UberDirectDispatchService.php:458-470 + DeliveryWaveService.php:391-398",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "onFailed() : si l'arrêt n'existe plus ($stop null — ex. supprimé par ailleurs) on tombe dans la branche « coursier avait le sac » et failure_code='uber_canceled_after_pickup' est posé alors que le sac n'a peut-être jamais été pris ; uberBagTakenOrderIds() (LIKE 'uber\\_%\\_after\\_pickup') le compte alors comme sac pris. Cas rare, non reproduit.",
+      "fix_hint": "Tester `$stop && $stop->left_at !== null` pour la branche after_pickup ; sinon failure_code='uber_'.$status.'_no_stop'.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 2, "P2": 12, "P3": 5,
+    "open_P0": 0, "open_P1": 2, "open_P2": 12, "open_P3": 5
+  },
+  "round_to_round_closures": {},
+  "verdict": "AMBER",
+  "notes": "Vérifié et juste : prix Uber 7,42 € / 25 min identiques faux Uber ↔ planche ↔ uber_direct_deliveries.quote_fee_cents=742 ↔ audit_logs payload fee_cents ; montant 4,90 € identique planche/tracker/site/orders.total ; statuts A : orders 13 = uber delivered = stop delivered_at = tracker LIVRÉS = site Livrée ; en route : 10 = pickup_complete = EN LIVRAISON = site En route ; fiscal_sequence_no 3252-3259 uniques (relu en base), chaîne NF525 OK avant/après ; webhook signature fausse → 401 sans effet ; rejeu pickup après pickup_complete sans recul ; double « Confirmer » → 1 seule POST /deliveries ; porte (D) → 0 appel Uber ; U-9 cancel Uber AVANT disparition de l'arrêt ; audit_logs delivery.uber_dispatched ×8 / uber_released ×1 cohérents ; aucune erreur console applicative (les ERR_CONNECTION_REFUSED sont 127.0.0.1:9100/9101 /health = agents imprimante/afficheur absents en banc) ; 422/409 des U-7 tous accompagnés d'un role=alert visible ; lien « Suivi » target=_blank rel=noopener ; 1280 et 1920 : modale identique, pas de débordement. Trous de couverture : statut `dropoff` jamais poussé ; `pickup` (coursier vers le restaurant) jamais capturé en PNG ; mode create=timeout (réponse perdue avec course réellement créée) non simulé — cœur de U1-002 ; `event.courier_update` (nom/téléphone du coursier, courier_name reste null) ; `courier_imminent` ; preuve de remise photo/PIN ; zone de couverture géographique réelle ; facturation ; temps réel sans rechargement non mesuré ; U-5 jamais montré à l'écran (API seulement). PROUVÉ : U1-001 (texte ledger), U1-003 (journal), U1-005/006/007/012/013/014/015 (PNG+DOM+base), U1-011 (code). DÉDUIT du code, non reproduit : U1-002, U1-004 (effets), U1-006 (conséquence du clic), U1-008/009/010/017/019."
+}

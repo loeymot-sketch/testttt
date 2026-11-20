@@ -30,6 +30,13 @@ class KioskPaymentConfirmAmountTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // [AUDIT ABUSIF 2026-11-06 · W2-P1-1] Plan A (borne avec terminal) : en Plan B, payment-confirm est refusé.
+        config(['kiosk.payment_route_all_to_counter' => false]);
+    }
+
     public function test_rejects_payment_confirm_when_amount_is_under_total(): void
     {
         $order = $this->createKioskCardOrder(50.00);
@@ -88,6 +95,29 @@ class KioskPaymentConfirmAmountTest extends TestCase
             $body = $response->json();
             $this->assertNotEquals('AMOUNT_ECHO_MISMATCH', $body['error_code'] ?? null);
         }
+    }
+
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · W2-P1-1] PLAN B (tout au comptoir, configuration du Cayenne) : la borne n'a pas de terminal ;
+     * une confirmation carte avec un numéro de transaction INVENTÉ et le montant exact ne doit JAMAIS passer la commande
+     * payée ni la fiscaliser.
+     */
+    public function test_plan_b_refuse_toute_confirmation_carte_de_la_borne(): void
+    {
+        config(['kiosk.payment_route_all_to_counter' => true]);
+        $order = $this->createKioskCardOrder(12.50);
+
+        $this->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
+            'transaction_id' => 'TX-INVENTE-' . uniqid(),
+            'card_type'      => 'VISA',
+            'payment_method' => PaymentGateway::CARD,
+            'amount_cents'   => 1250,
+        ])->assertStatus(422);
+
+        $order->refresh();
+        $this->assertNotSame(PaymentStatus::PAID, (int) $order->payment_status, 'jamais payée sans encaissement');
+        $this->assertNull($order->transaction_id);
+        $this->assertNull($order->fiscal_sequence_no, 'jamais fiscalisée sans encaissement');
     }
 
     public function test_tolerates_one_cent_rounding_difference(): void

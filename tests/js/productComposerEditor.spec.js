@@ -62,6 +62,8 @@ describe('product composer editor contract', () => {
             'admin-composer-unpublish',
             'admin-composer-add-step',
         ].forEach((testId) => expect(editor).toContain(testId));
+        expect(editor).toContain('admin/item/show/${previewId}');
+        expect(editor).toContain('this.item = null');
 
         [
             'admin-composer-step-${index}',

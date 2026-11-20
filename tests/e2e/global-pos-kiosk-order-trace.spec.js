@@ -464,6 +464,12 @@ async function createKioskCardOrderViaApi(page, fixture) {
       transaction_id: `${prefix}-TPE-SIM-${fixture.run}-${Date.now()}`,
       card_type: 'simulated-card',
       payment_method: paymentCard,
+      // Montant confirmé en centimes (garde anti-falsification du contrat payment-confirm) : le total serveur.
+      amount_cents: Math.round(Number(order.total ?? quote.total) * 100),
+    }, {
+      // [2026-11-04] Route exigée par config/idempotency.php (écriture d'argent) : la vraie borne envoie la clé
+      // (buildIdempotencyHeaders) ; sans elle le serveur répond 422 MISSING_IDEMPOTENCY_KEY, à bon droit.
+      headers: { 'X-Idempotency-Key': `${prefix}-confirm-${order.id}` },
     });
     return {
       quote,
@@ -478,7 +484,10 @@ async function createKioskCardOrderViaApi(page, fixture) {
     prefix: PREFIX,
     askNo: ASK_NO,
     sourceKiosk: SOURCE_KIOSK,
-    orderTypeKiosk: ORDER_TYPE_KIOSK,
+    // [2026-11-04] « Sur place » est désactivé en V1 : le serveur refuse (422 « les commandes borne doivent être à
+    // emporter ») un order_type KIOSK (25), traité comme sur place. La vraie borne envoie le mode CHOISI par le
+    // client (buildKioskQuotePayload → « À emporter », 10) : le banc fait de même.
+    orderTypeKiosk: ORDER_TYPE_TAKEAWAY,
     paymentCard: PAYMENT_CARD,
   });
 }
@@ -516,14 +525,27 @@ async function kdsChangeStatus(page, orderId, expectedStatus, nextStatus) {
       };
     }
   }, { orderId, expectedStatus, nextStatus });
-  expect(result).toMatchObject({ ok: true });
+  // Le message du serveur DANS l'échec : sans lui, « ok: false » ne dit pas pourquoi la cuisine a refusé.
+  expect(result, `change-status ${expectedStatus}→${nextStatus} : ${JSON.stringify(result)}`).toMatchObject({ ok: true });
 }
 
 async function openKioskCategoryAsCustomer(page, categoryId) {
   await loginAsKiosk(page);
   await page.goto('/kiosk/idle');
-  await expect(page.getByTestId('kiosk-order-type-dine-in')).toBeVisible({ timeout: 20_000 });
-  await page.getByTestId('kiosk-order-type-dine-in').click();
+  // [2026-11-04] « Sur place » n'est rendu que si le service est activé (`dineInEnabled`) ; il ne l'est pas au
+  // Cayenne. Le choix « À emporter » est toujours là : on prend « Sur place » s'il existe, sinon « À emporter ».
+  // Les cartes de l'accueil sont animées en continu (« element is not stable ») : mouvement réduit + clic forcé,
+  // avec délai explicite (actionTimeout vaut 0 dans ce dépôt).
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(page.getByTestId('kiosk-order-type-chooser')).toBeVisible({ timeout: 20_000 });
+  // Même séquence que les bancs borne verts (finition-borne-2026-11-04) : laisser la borne finir son démarrage,
+  // toucher « Touchez l'écran pour commander », puis le mode si l'accueil est encore là.
+  await page.waitForTimeout(1500);
+  await page.getByTestId('kiosk-idle-touch-btn').click({ force: true, timeout: 8_000 }).catch(() => {});
+  await page.waitForTimeout(1000);
+  const surPlace = page.getByTestId('kiosk-order-type-dine-in');
+  const mode = (await surPlace.count()) ? surPlace : page.getByTestId('kiosk-order-type-takeaway');
+  if (await mode.count()) await mode.click({ force: true, timeout: 8_000 }).catch(() => {});
   await expect(page.getByTestId('kiosk-categories-root')).toBeVisible({ timeout: 20_000 });
   await page.goto(`/kiosk/categories?cat=${categoryId}`);
   await expect(page.getByTestId('kiosk-categories-root')).toBeVisible({ timeout: 20_000 });
@@ -731,9 +753,23 @@ test.describe('global POS + kiosk order trace audit', () => {
         addon_visible_ms: addonKdsMs,
       });
 
+      // [2026-11-04] On part de l'état RÉEL de chaque commande : une commande peut déjà être passée en préparation à
+      // son arrivée en cuisine (le banc supposait ACCEPT et le serveur répondait 409 « updated elsewhere », à bon
+      // droit). On ne joue que les transitions qui restent ; l'arrivée à PREPARED reste exigée.
       for (const orderId of [posCreated.order.id, kioskCreated.order.id]) {
-        await kdsChangeStatus(kdsPage, orderId, orderStatusEnum.ACCEPT, orderStatusEnum.PREPARING);
-        await kdsChangeStatus(kdsPage, orderId, orderStatusEnum.PREPARING, orderStatusEnum.PREPARED);
+        const etat = Number(parseArtisanJson(artisan(
+          `echo json_encode(['s' => (int) App\\Models\\Order::withoutGlobalScopes()->find(${Number(orderId)})->status]);`
+        )).s);
+        if (etat === orderStatusEnum.ACCEPT) {
+          await kdsChangeStatus(kdsPage, orderId, orderStatusEnum.ACCEPT, orderStatusEnum.PREPARING);
+        }
+        if (etat === orderStatusEnum.ACCEPT || etat === orderStatusEnum.PREPARING) {
+          await kdsChangeStatus(kdsPage, orderId, orderStatusEnum.PREPARING, orderStatusEnum.PREPARED);
+        }
+        const fin = Number(parseArtisanJson(artisan(
+          `echo json_encode(['s' => (int) App\\Models\\Order::withoutGlobalScopes()->find(${Number(orderId)})->status]);`
+        )).s);
+        expect(fin, `commande ${orderId} (état de départ ${etat}) doit finir PREPARED`).toBe(orderStatusEnum.PREPARED);
       }
       mark('kds_marked_both_orders_prepared', {
         status: orderStatusEnum.PREPARED,

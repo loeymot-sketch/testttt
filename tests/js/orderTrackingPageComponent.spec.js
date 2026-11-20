@@ -48,6 +48,22 @@ describe('[T-C SUIVI-CLIENT 2026-08-16] OrderTrackingPageComponent — page publ
     wrapper.unmount();
   });
 
+  it('[2026-09-23] montre une valeur unique "15 min" (pas "15-15 min") une fois le temps fixé précisément par le caissier', async () => {
+    axiosGet.mockResolvedValue({
+      data: {
+        found: true, status: 7, status_label: 'En préparation', step: 3,
+        queue_number: 'A0044', position_ahead: 3, almost_ready: false, ready: false,
+        wait_low: 15, wait_high: 15, server_time: '2026-08-16T12:00:00+02:00',
+      },
+    });
+    const wrapper = mountTracking();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('15 min');
+    expect(wrapper.text()).not.toContain('15-15 min');
+    wrapper.unmount();
+  });
+
   it('remplace position/fourchette par le bandeau "presque prête" quand almost_ready=true', async () => {
     axiosGet.mockResolvedValue({
       data: {

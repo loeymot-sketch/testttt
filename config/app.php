@@ -5,6 +5,20 @@ use Illuminate\Support\Facades\Facade;
 return [
 
     /*
+    | [ONB-05 2026-08-28] Symbole de devise, lu par la borne.
+    |
+    | `KioskMenuService.php:186` et `PricingPreviewService.php:220` appellent
+    | `config('app.currency_symbol', '€')` — une cle qu'AUCUN fichier ne
+    | definissait. La borne affichait donc toujours l'euro, en ignorant la devise
+    | choisie dans Reglages > Site (`site_default_currency_symbol`).
+    |
+    | Le defaut reste l'euro : rien ne change tant que la variable n'est pas posee.
+    | ⏳ Faire lire le REGLAGE de l'ecran plutot qu'une variable d'environnement
+    | reste a faire — c'est un chantier de propagation, pas une cle manquante.
+    */
+    'currency_symbol' => env('APP_CURRENCY_SYMBOL', '€'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Name
     |--------------------------------------------------------------------------
@@ -58,6 +72,10 @@ return [
 
     'asset_url' => env('ASSET_URL'),
 
+    // [W7-D D-002 2026-11-04] Mandataires crus pour X-Forwarded-* (TrustProxies). Vide = loopback seul (nginx local) ;
+    // liste « ip1,ip2 » ; `*` = tous (ancien comportement, usurpable : réservé à un vrai réseau de mandataires).
+    'trusted_proxies' => env('TRUSTED_PROXIES'),
+
     // [SEC-FIX] API key for x-api-key header validation — use config() not env() in middleware
     // MIX_API_KEY is canonical (Mix + runtime Blade). API_KEY kept for backward compat with old .env copies.
     'api_key' => trim((string) (env('MIX_API_KEY') ?: env('API_KEY', ''))),
@@ -76,7 +94,10 @@ return [
 
     // throttle:api — global /api/* cap per user id or IP (RouteServiceProvider::api).
     // Playwright SPA peut dépasser 120 req/min sur une fenêtre glissante; CI augmente via API_THROTTLE_PER_MINUTE.
-    'api_throttle_per_minute' => max(1, (int) env('API_THROTTLE_PER_MINUTE', 120)),
+    // [ANTI-429 2026-10-28] PLANCHER : un `.env` de production qui épingle une ancienne valeur basse (ex. 120)
+    //   ne peut plus rétablir un blocage « trop de requêtes » — la valeur lue est relevée au plancher. On peut
+    //   toujours MONTER via `.env` ; seul le bas est fermé. (Les tests posent le plafond avec config([...]), sans passer par ici.)
+    'api_throttle_per_minute' => max(1, 1200, (int) env('API_THROTTLE_PER_MINUTE', 1200)),
 
     // [GOAL-OPS-SWAP W3 2026-08-12] Plafond GLOBAL par compte, tous appareils
     // confondus. Depuis que le budget `throttle:api` est porté par le couple
@@ -86,7 +107,8 @@ return [
     // + cuisine + écran client + suivi + une marge, sans ouvrir la porte.
     'api_throttle_user_ceiling_per_minute' => max(
         1,
-        (int) env('API_THROTTLE_USER_CEILING_PER_MINUTE', 5 * max(1, (int) env('API_THROTTLE_PER_MINUTE', 120)))
+        6000,
+        (int) env('API_THROTTLE_USER_CEILING_PER_MINUTE', 5 * max(1, (int) env('API_THROTTLE_PER_MINUTE', 1200)))
     ),
 
     // throttle:admin-mutation non-GET cap — env-configurable to absorb owner
@@ -96,7 +118,7 @@ return [
     // POS_RATE_LIMIT_* knobs. NF525 fiscal chain UNAFFECTED — chain insert
     // happens inside controller transactions, not in the throttle bucket.
     // [Wave Y RATE-LIMIT 2026-05-21]
-    'admin_mutation_rate_limit' => max(1, (int) env('ADMIN_MUTATION_RATE_LIMIT', 60)),
+    'admin_mutation_rate_limit' => max(1, 600, (int) env('ADMIN_MUTATION_RATE_LIMIT', 600)),
 
     // [GOAL Phase F.1 2026-05-23] throttle:menu-availability dedicated bucket
     // for /admin/menu/availability/{toggle,extra/toggle,variation/toggle}
@@ -107,7 +129,7 @@ return [
     // dev raises via MENU_AVAILABILITY_RATE_LIMIT=1000 to absorb manager
     // bulk-toggle bursts. NF525 chain unaffected — toggle is not a fiscal
     // write.
-    'menu_availability_rate_limit' => max(1, (int) env('MENU_AVAILABILITY_RATE_LIMIT', 60)),
+    'menu_availability_rate_limit' => max(1, 300, (int) env('MENU_AVAILABILITY_RATE_LIMIT', 300)),
 
     // Full /api/health IP gate — read via config() so tests can override and config:cache works in prod.
     'health_ips_allowed' => env('HEALTH_IPS_ALLOWED', ''),
@@ -287,6 +309,9 @@ return [
         App\Providers\RouteServiceProvider::class,
         // [ARCH_STOCK_INTELLIGENT_BOM_2026-07-23 / P3b] Binding lecteur factures IA (mock↔OpenAI).
         App\Providers\PurchasingServiceProvider::class,
+        // [ONB-04 2026-08-27] Extraction de carte par photo. Même motif que le
+        // fournisseur ci-dessus : bouchon par défaut, réel derrière deux verrous.
+        App\Providers\AssistantServiceProvider::class,
         // [UBER-PHOTO 2026-08-10] Lecteur de ticket Uber photographié (doublure locale par défaut).
         App\Providers\UberVisionServiceProvider::class,
     ],

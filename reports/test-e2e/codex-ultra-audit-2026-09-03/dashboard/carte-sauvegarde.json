@@ -1,0 +1,4 @@
+{
+  "texte": "DERNIÈRE SAUVEGARDE\n\nil y a 71 jours\n\ndaily-2026-06-24.sql.gz\n\nRestauration de vérification ÉCHOUÉE : restored schema has 88 tables but live has 113 (partial restore?)\n\nVert seulement si un fichier .sql.gz a moins de 26 h et si la restauration de vérification de 5 h a réellement remonté cette sauvegarde. Un fichier récent qu'on n'a jamais réussi à restaurer ne protège de rien.",
+  "restauration": "Restauration de vérification ÉCHOUÉE : restored schema has 88 tables but live has 113 (partial restore?)"
+}

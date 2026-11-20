@@ -144,7 +144,7 @@ class KioskRedeemThroughSealedQuoteTest extends TestCase
         $this->assertSame(5.00, round((float) $commande->total, 2), 'le client paie le montant réduit');
 
         $client->refresh();
-        $this->assertSame(500, (int) $client->loyalty_points, 'les points doivent réellement partir');
+        $this->assertSame(500, $this->soldeHorsGains($client), 'les points doivent réellement partir');
 
         $this->assertDatabaseHas('loyalty_transactions', [
             'user_id' => $client->id,
@@ -177,6 +177,16 @@ class KioskRedeemThroughSealedQuoteTest extends TestCase
         $this->assertSame(20.00, round((float) $commande->total, 2));
 
         $client->refresh();
-        $this->assertSame(2000, (int) $client->loyalty_points);
+        $this->assertSame(2000, $this->soldeHorsGains($client));
+    }
+
+    /**
+     * [POINTS À LA VALIDATION 2026-11-06] Une commande borne envoyée en cuisine est VALIDÉE : elle crédite
+     * ses points tout de suite. Ce banc éprouve le RACHAT ; on compare donc le solde hors points gagnés.
+     */
+    private function soldeHorsGains(\App\Models\User $u): int
+    {
+        return (int) $u->fresh()->loyalty_points
+            - (int) \Illuminate\Support\Facades\DB::table('loyalty_transactions')->where('user_id', $u->id)->where('type', 'earn')->sum('points');
     }
 }

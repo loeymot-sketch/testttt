@@ -60,10 +60,38 @@ export function kioskIsDrinkAddonName(name) {
 }
 
 /**
+ * [QA 2026-09-28 — RAPPORT_DEV_CAISSE_2026-09-24 P0-16 / triage A5]
+ *
+ * Une boisson en RUPTURE ne doit pas être proposée dans l'étape menu de la
+ * borne. Le backend calcule déjà cette disponibilité par branche et l'envoie
+ * sur chaque addon (`KioskMenuService::menuPayload` → `addons[].is_available`,
+ * via `ChoiceAvailabilityResolver::availabilityForAddonItem` qui replie le 86
+ * de `item_branch_availability`) — ce filtre ne fait que la CONSOMMER.
+ *
+ * Ce n'est pas une règle nouvelle : les deux jumeaux du dépôt la respectent
+ * déjà, seul le chemin addon de la borne l'avait oubliée —
+ *   - `public/js/pos-wizard.js:609` (zone gelée §7, laissée intacte) ;
+ *   - `KioskStepMenuComponent.isDrinkCatalogItem` (repli catalogue du MÊME
+ *     composant, qui filtre `row.is_available === false`).
+ *
+ * Contrôle volontairement STRICT : seuls `false` et `0` (booléen sérialisé en
+ * entier par l'API) masquent la ligne. Une clé absente ou `null` laisse la
+ * boisson visible — sinon un payload legacy viderait toute la carte.
+ *
  * @param {{ addons?: any[] }|null|undefined} item
  * @returns {any[]}
  */
 export function kioskDrinkAddonRowsFromItem(item) {
   if (!item?.addons?.length) return [];
-  return item.addons.filter((a) => kioskIsDrinkAddon(a));
+  return item.addons.filter((a) => kioskIsDrinkAddon(a) && !kioskAddonIsOutOfStock(a));
+}
+
+/**
+ * Vrai uniquement si l'addon est explicitement déclaré indisponible.
+ * `undefined`/`null` → false (on ne masque pas sur une absence d'information).
+ */
+export function kioskAddonIsOutOfStock(addon) {
+  const flag = addon?.is_available;
+  if (flag === undefined || flag === null) return false;
+  return flag === false || flag === 0 || flag === '0';
 }

@@ -193,6 +193,27 @@ export const posOrder = {
                 });
             });
         },
+        /**
+         * [GOAL G1 2026-09-03] La journée de service ENTIÈRE, bornée SERVEUR aux états des quatre
+         * files du tiroir de contrôle (`PosOrderController::serviceDay`).
+         *
+         * Remplace `lists({ paginate: 1, per_page: 100 })` sur les deux surfaces de contrôle de la
+         * caisse. Cette page de cent, triée `id desc` par le défaut d'`OrderService::list`, jetait
+         * les commandes les PLUS ANCIENNES du service — celles qui traînent, celles qu'il faut
+         * voir — et rien ne le signalait.
+         *
+         * Aucun commit Vuex : cette liste appartient à la surface qui la demande. La réponse
+         * porte `meta.total` / `meta.truncated`, que l'écran DOIT afficher si une borne mord.
+         */
+        serviceDay: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                let url = 'admin/pos-order/service-day';
+                if (payload) {
+                    url = url + appService.requestHandler(payload);
+                }
+                axios.get(url).then(resolve).catch(reject);
+            });
+        },
         save: function (context, payload) {
             return new Promise((resolve, reject) => {
                 const idempotencyKey = payload?.idempotency_key
@@ -215,6 +236,10 @@ export const posOrder = {
                         // [RED-R1 P2 / Q-13-2] Idempotency-Key conflict — same key, different payload.
                         // Cashier-friendly toast: order may already be in ticker, do NOT retry blindly.
                         reject({ _idempotencyConflict: true, message: 'Commande déjà enregistrée — vérifier le ticker avant de relancer.' });
+                    } else if (!err?.response && err?.request) {
+                        // [AUDIT ABUSIF 2026-11-06 · W1-P1-01] Réponse PERDUE (réseau coupé après l'envoi) : la vente a pu être
+                        // enregistrée et fiscalisée. Avant : toast « Network Error » en anglais, et le caissier relançait.
+                        reject({ _networkLost: true, message: 'Connexion perdue pendant l\'envoi : la vente a peut-être été enregistrée. Vérifiez la liste des commandes avant de relancer (le même panier ne sera pas encaissé deux fois).' });
                     } else {
                         reject(err);
                     }
@@ -238,8 +263,18 @@ export const posOrder = {
         destroy: function (context, payload) {
             return new Promise((resolve, reject) => {
                 // [PS-2 audit 2026-05-18] Idempotency-Key on DELETE — pairs with
-                // server-side `idempotency` middleware on admin/pos-order/{order}
-                // (routes/api.php:885). Defense-in-depth against double-tap.
+                // server-side `idempotency` middleware on admin/pos-order/{order}.
+                //
+                // [QA 2026-09-28] Ce commentaire affirmait une protection serveur
+                // à « routes/api.php:885 » — cette ligne est une route de session
+                // de caisse sans rapport, et la route DELETE était en réalité NUE :
+                // l'en-tête envoyé ici n'était lu par personne. Le middleware est
+                // désormais réellement câblé (+ throttle), et déclaré dans
+                // config/idempotency.required_routes.
+                // Portée exacte : protège les duplicatas CONCURRENTS. Un second
+                // appel SÉQUENTIEL reçoit 404 (SubstituteBindings, du groupe `api`,
+                // résout le modèle avant les middlewares de route) — sans dégât.
+                // Voir tests/Feature/Idempotency/PosOrderDestroyIdempotencyTest.php.
                 axios.delete(`admin/pos-order/${payload.id}`, {
                     headers: buildIdempotencyHeaders(payload),
                 }).then((res) => {

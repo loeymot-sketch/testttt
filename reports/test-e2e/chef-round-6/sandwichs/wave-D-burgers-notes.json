@@ -1,0 +1,1286 @@
+{
+  "wave": "D-burgers-wizard-round-5-after-mix-57f379b6-W1",
+  "base_url": "http://127.0.0.1:8766",
+  "login": {
+    "status": 201,
+    "url": "http://127.0.0.1:8766/admin/dashboard"
+  },
+  "dashboard_to_catalogue": true,
+  "pos_clicked": false,
+  "published": false,
+  "products_created": false,
+  "flags_flipped": false,
+  "chosen_category": {
+    "testid": "catalog-studio-category-row-1",
+    "id": "1",
+    "name": "Sandwichs",
+    "count_text": "5 articles",
+    "product_count": 5,
+    "empty": false
+  },
+  "categories": [
+    {
+      "testid": "catalog-studio-category-row-1",
+      "id": "1",
+      "name": "Sandwichs",
+      "count_text": "5 articles",
+      "product_count": 5,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-21",
+      "id": "21",
+      "name": "Tacos Signature",
+      "count_text": "0 articles",
+      "product_count": 0,
+      "empty": true
+    },
+    {
+      "testid": "catalog-studio-category-row-66",
+      "id": "66",
+      "name": "Uber (technique)",
+      "count_text": "0 articles",
+      "product_count": 0,
+      "empty": true
+    },
+    {
+      "testid": "catalog-studio-category-row-2",
+      "id": "2",
+      "name": "Galette",
+      "count_text": "3 articles",
+      "product_count": 3,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-3",
+      "id": "3",
+      "name": "Sandwich Classique",
+      "count_text": "0 articles",
+      "product_count": 0,
+      "empty": true
+    },
+    {
+      "testid": "catalog-studio-category-row-4",
+      "id": "4",
+      "name": "Burgers",
+      "count_text": "6 articles",
+      "product_count": 6,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-5",
+      "id": "5",
+      "name": "Tacos",
+      "count_text": "3 articles",
+      "product_count": 3,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-6",
+      "id": "6",
+      "name": "Bols",
+      "count_text": "2 articles",
+      "product_count": 2,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-7",
+      "id": "7",
+      "name": "Frites",
+      "count_text": "6 articles",
+      "product_count": 6,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-8",
+      "id": "8",
+      "name": "Suppléments",
+      "count_text": "10 articles",
+      "product_count": 10,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-9",
+      "id": "9",
+      "name": "Desserts",
+      "count_text": "3 articles",
+      "product_count": 3,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-10",
+      "id": "10",
+      "name": "Boissons",
+      "count_text": "15 articles",
+      "product_count": 15,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-11",
+      "id": "11",
+      "name": "Menu enfant",
+      "count_text": "2 articles",
+      "product_count": 2,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-27",
+      "id": "27",
+      "name": "Technique (interne — upsell)",
+      "count_text": "3 articles",
+      "product_count": 3,
+      "empty": false
+    }
+  ],
+  "wizard_wait": {
+    "overlay_visible": true,
+    "iframe_src": "/admin/categories/1/composer",
+    "frame_ready": true,
+    "full_page_composer": false,
+    "wait_error": null
+  },
+  "hard_reload": {
+    "attempted": true,
+    "method": "iframe-goto-cache-bust",
+    "url_before": "http://127.0.0.1:8766/admin/categories/1/composer",
+    "url_after": "http://127.0.0.1:8766/admin/categories/1/composer?_hard=1788309510592",
+    "error": null
+  },
+  "composer": {
+    "mode": "drawer-iframe",
+    "overlay_title": "Wizard de la catégorie : Sandwichs",
+    "iframe_src": "/admin/categories/1/composer",
+    "parent_mix_scripts": [],
+    "inner": {
+      "url": "http://127.0.0.1:8766/admin/categories/1/composer?_hard=1788309510592",
+      "title": "Le Cayenne",
+      "mix_scripts": [],
+      "composer_name": "Wizard de la catégorie : Sandwichs",
+      "publish_state": "Brouillon",
+      "preview_empty": null,
+      "live_preview_visible": true,
+      "filiale": {
+        "value": "1",
+        "label": "Le Cayenne (principal)",
+        "empty_value": false,
+        "options": [
+          {
+            "value": "1",
+            "label": "Le Cayenne (principal)"
+          }
+        ]
+      },
+      "caisse_badge": "Disponible",
+      "borne_badge": "Disponible",
+      "caisse_status": "Disponible",
+      "borne_status": "Disponible",
+      "preview_item_name_pos": "Cayenne",
+      "preview_item_name_kiosk": "Cayenne",
+      "pos_text": "Caisse (POS) Disponible Cayenne Sandwichs 7,40 € Parcours d'achat client 1 Choisis ta viande Obligatoire — 1 choix - Source: Attribut produit POS Kiosk 2 Viande 2 Optionnel — 1 choix max - Source: Attribut produit POS Kiosk 3 Choisis ta sauce Obligatoire — 1 choix - Source: Attribut produit POS Kiosk 4 Choisis tes garnitures 0 à 6 choix - Source: Groupe extras POS Kiosk 5 Suppléments 0 à 5 choix - Source: Groupe extras POS Kiosk",
+      "kiosk_text": "Borne Disponible Cayenne Sandwichs 7,40 € Parcours d'achat client 1 Choisis ta viande Obligatoire — 1 choix - Source: Attribut produit POS Kiosk 2 Viande 2 Optionnel — 1 choix max - Source: Attribut produit POS Kiosk 3 Choisis ta sauce Obligatoire — 1 choix - Source: Attribut produit POS Kiosk 4 Choisis tes garnitures 0 à 6 choix - Source: Groupe extras POS Kiosk 5 Suppléments 0 à 5 choix - Source: Groupe extras POS Kiosk",
+      "vue_meta": {
+        "found": false,
+        "branch_id_scope": null,
+        "is_published": null,
+        "item_id": null,
+        "item_name": null,
+        "branches": [],
+        "preview_branches": [],
+        "preview_selected_branch_id": null
+      },
+      "vue_steps": [],
+      "preview_vue": {
+        "found": false,
+        "selectedBranchId": null,
+        "posName": null,
+        "kioskName": null,
+        "posAvailable": null,
+        "kioskAvailable": null
+      },
+      "body_has_collier": true,
+      "body_has_le_cayenne": true,
+      "body_has_disponible": true,
+      "body_has_indisponible": false,
+      "body_snippet": "Français Anglais Français Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 250,90 € Modifier Le Profil Changer Le Mot De Passe Appareils Connectés Déconnexion Tableau de bord POS Produits & Stock Conso & Stock Ajustement stock Catalogue Attribut d’articles Ingrédients Scan Facture Commandes caisse Historique Encaissement Vue caisse unifiée Caisse livreur Ticket promo Réglages ticket promo Commande Uber (photo) La roue CAISSE ET COMMANDES Écran cuisine Suivi client COMMUNICATIONS Notification pushs Messages Abonnés UTILISATEURS Administrateurs Employés Chefs COMPTES Transactions RAPPORTS Rapport des ventes Rapport articles CONFIGURATION Paramètres État du système WIZARD DE LA CATÉGORIE Wizard de la catégorie : Sandwichs Les produits déjà dans la catégorie reçoivent ce wizard au moment de Publier. Un produit ajouté ensuite : republier. Dépublier le retire de la caisse. Portee branche Toutes les branches Collier and Sons Branch Skiles-Johns Branch Brekke, Kub and Reichert Branch Shields Inc Branch Stiedemann and Sons Branch Le Cayenne (principal) Retour À La Catégorie Choisir Un Template Ajouter Une Page PAGES 6 Choisis ton pain item_attribute 1 / 1 POS Kiosk Inactive Choisis ta viande item_attribute 1 / 1 POS Kiosk Viande 2 item_attribute 0 / 1 POS Kiosk Choisis ta sauce item_attribute 1 / 1 POS Kiosk Choisis tes garnitures crudite 0 / 6 POS Kiosk Suppléments supplement 0 / 5 POS Kiosk Edition de la page Attribut produit Brouillon La caisse lit encore la version publiee. Ceci est un brouillon. Nom de la page D'où viennent les choix ? Détermine la base : ‘Attribut produit’ = tes attributs (viandes, sauces…). ‘Groupe d'extras’ = tes extras. ‘Add-on’ = tes add-ons catalogue. Attribut produit Groupe extras Addon catalogue Limiter à un groupe précis (optionnel) Vide = aucun choix en caisse (sauf extras : le nom de la page sert de groupe). Choisis un groupe précis. Aucune source — page vide en caisse Sauce (1ère Gratuite) Type de Pain Viande 1 Viande 2 Minimum Combien d'articles le client doit minimum choisir. 0 = optionnel, 1+ = obligatoire. 1 Maximum Combien d'articles le client peut maximum choisir. 1 = Obligatoire, le client doit choisir ex"
+    }
+  },
+  "api_profile": {
+    "url": "http://127.0.0.1:8766/api/admin/composer/categories/1/profile",
+    "is_published": false,
+    "template": "sandwich",
+    "branch_id_scope": null,
+    "item_id": null,
+    "step_count": 6,
+    "steps": [
+      {
+        "index": 0,
+        "id": 120,
+        "step_key": "pain",
+        "label": "Choisis ton pain",
+        "source_type": "item_attribute",
+        "source_ref": "",
+        "min_select": 1,
+        "max_select": 1,
+        "is_active": false,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ]
+      },
+      {
+        "index": 1,
+        "id": 121,
+        "step_key": "viande",
+        "label": "Choisis ta viande",
+        "source_type": "item_attribute",
+        "source_ref": "Viande 1",
+        "min_select": 1,
+        "max_select": 1,
+        "is_active": true,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ]
+      },
+      {
+        "index": 2,
+        "id": 122,
+        "step_key": "viande_2",
+        "label": "Viande 2",
+        "source_type": "item_attribute",
+        "source_ref": "Viande 2",
+        "min_select": 0,
+        "max_select": 1,
+        "is_active": true,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ]
+      },
+      {
+        "index": 3,
+        "id": 123,
+        "step_key": "sauce",
+        "label": "Choisis ta sauce",
+        "source_type": "item_attribute",
+        "source_ref": "Sauce (1ère Gratuite)",
+        "min_select": 1,
+        "max_select": 1,
+        "is_active": true,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ]
+      },
+      {
+        "index": 4,
+        "id": 124,
+        "step_key": "garnitures",
+        "label": "Choisis tes garnitures",
+        "source_type": "extra_group",
+        "source_ref": "crudite",
+        "min_select": 0,
+        "max_select": 6,
+        "is_active": true,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ]
+      },
+      {
+        "index": 5,
+        "id": 125,
+        "step_key": "supplements",
+        "label": "Suppléments",
+        "source_type": "extra_group",
+        "source_ref": "supplement",
+        "min_select": 0,
+        "max_select": 5,
+        "is_active": true,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ]
+      }
+    ]
+  },
+  "projections": [
+    {
+      "url": "http://127.0.0.1:8766/api/admin/menu-projection?channel=pos&branch_id=1",
+      "channel": "pos",
+      "branch_id": "1",
+      "category_count": 12,
+      "item_count": 46,
+      "sample_item_names": [
+        "Cayenne",
+        "Sandwich Classique",
+        "Suprême",
+        "Méga",
+        "Terminator",
+        "Galette Normale",
+        "Galette Cayenne",
+        "Galette Classique",
+        "Chicken Burger",
+        "Cheese Burger",
+        "Double Cheese",
+        "Fish Burger"
+      ],
+      "ts": 1788309510548
+    },
+    {
+      "url": "http://127.0.0.1:8766/api/admin/menu-projection?channel=kiosk&branch_id=1",
+      "channel": "kiosk",
+      "branch_id": "1",
+      "category_count": 12,
+      "item_count": 46,
+      "sample_item_names": [
+        "Cayenne",
+        "Sandwich Classique",
+        "Suprême",
+        "Méga",
+        "Terminator",
+        "Galette Normale",
+        "Galette Cayenne",
+        "Galette Classique",
+        "Chicken Burger",
+        "Cheese Burger",
+        "Double Cheese",
+        "Fish Burger"
+      ],
+      "ts": 1788309510770
+    },
+    {
+      "url": "http://127.0.0.1:8766/api/admin/menu-projection?channel=kiosk&branch_id=1",
+      "channel": "kiosk",
+      "branch_id": "1",
+      "category_count": 12,
+      "item_count": 46,
+      "sample_item_names": [
+        "Cayenne",
+        "Sandwich Classique",
+        "Suprême",
+        "Méga",
+        "Terminator",
+        "Galette Normale",
+        "Galette Cayenne",
+        "Galette Classique",
+        "Chicken Burger",
+        "Cheese Burger",
+        "Double Cheese",
+        "Fish Burger"
+      ],
+      "ts": 1788309512622
+    },
+    {
+      "url": "http://127.0.0.1:8766/api/admin/menu-projection?channel=pos&branch_id=1",
+      "channel": "pos",
+      "branch_id": "1",
+      "category_count": 12,
+      "item_count": 46,
+      "sample_item_names": [
+        "Cayenne",
+        "Sandwich Classique",
+        "Suprême",
+        "Méga",
+        "Terminator",
+        "Galette Normale",
+        "Galette Cayenne",
+        "Galette Classique",
+        "Chicken Burger",
+        "Cheese Burger",
+        "Double Cheese",
+        "Fish Burger"
+      ],
+      "ts": 1788309512812
+    },
+    {
+      "url": "http://127.0.0.1:8766/api/admin/menu-projection?channel=pos&branch_id=1",
+      "channel": "pos",
+      "branch_id": "1",
+      "category_count": 12,
+      "item_count": 46,
+      "sample_item_names": [
+        "Cayenne",
+        "Sandwich Classique",
+        "Suprême",
+        "Méga",
+        "Terminator",
+        "Galette Normale",
+        "Galette Cayenne",
+        "Galette Classique",
+        "Chicken Burger",
+        "Cheese Burger",
+        "Double Cheese",
+        "Fish Burger"
+      ],
+      "ts": 1788309513557
+    },
+    {
+      "url": "http://127.0.0.1:8766/api/admin/menu-projection?channel=kiosk&branch_id=1",
+      "channel": "kiosk",
+      "branch_id": "1",
+      "category_count": 12,
+      "item_count": 46,
+      "sample_item_names": [
+        "Cayenne",
+        "Sandwich Classique",
+        "Suprême",
+        "Méga",
+        "Terminator",
+        "Galette Normale",
+        "Galette Cayenne",
+        "Galette Classique",
+        "Chicken Burger",
+        "Cheese Burger",
+        "Double Cheese",
+        "Fish Burger"
+      ],
+      "ts": 1788309513858
+    }
+  ],
+  "w1": {
+    "mix_expected": "admin-shell.62958254.js",
+    "mix_loaded": true,
+    "mix_scripts_iframe": [],
+    "mix_scripts_parent": [],
+    "mix_network": [
+      {
+        "url": "http://127.0.0.1:8766/js/admin-shell.62958254.js",
+        "status": 200,
+        "ts": 1788309507135
+      },
+      {
+        "url": "http://127.0.0.1:8766/js/admin-shell.62958254.js",
+        "status": 200,
+        "ts": 1788309509294
+      },
+      {
+        "url": "http://127.0.0.1:8766/js/admin-shell.62958254.js",
+        "status": 200,
+        "ts": 1788309511151
+      }
+    ],
+    "hard_reload": {
+      "attempted": true,
+      "method": "iframe-goto-cache-bust",
+      "url_before": "http://127.0.0.1:8766/admin/categories/1/composer",
+      "url_after": "http://127.0.0.1:8766/admin/categories/1/composer?_hard=1788309510592",
+      "error": null
+    },
+    "preview_wait": {
+      "waited_ms": 21870,
+      "settled": false,
+      "reason": "timeout",
+      "last": {
+        "present": false,
+        "empty": false,
+        "busy": null,
+        "posBadge": null,
+        "kioskBadge": null,
+        "filiale": null,
+        "item": null
+      },
+      "samples": [
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 1617
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 1924
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 2232
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 2540
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 2847
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 3152
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 3459
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 3767
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 4103
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 4411
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 4716
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 5023
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 5328
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 5634
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 5939
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 6247
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 6556
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 6862
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 7167
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 7473
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 7778
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 8084
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 8388
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 8693
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 9000
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 9308
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 9615
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 9921
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 10228
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 10540
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 10847
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 11154
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 11459
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 11766
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 12072
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 12380
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 12690
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 13002
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 13309
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 13615
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 13920
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 14226
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 14532
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 14838
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 15144
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 15450
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 15756
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 16062
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 16368
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 16673
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 16981
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 17286
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 17591
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 17896
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 18202
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 18508
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 18813
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 19122
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 19429
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 19735
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 20041
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 20346
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 20651
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 20956
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 21262
+        },
+        {
+          "present": false,
+          "empty": false,
+          "busy": null,
+          "posBadge": null,
+          "kioskBadge": null,
+          "filiale": null,
+          "item": null,
+          "t": 21568
+        }
+      ]
+    },
+    "filiale": "Le Cayenne (principal)",
+    "filiale_select": {
+      "value": "1",
+      "label": "Le Cayenne (principal)",
+      "empty_value": false,
+      "options": [
+        {
+          "value": "1",
+          "label": "Le Cayenne (principal)"
+        }
+      ]
+    },
+    "caisse": "Disponible",
+    "caisse_badge": "Disponible",
+    "borne": "Disponible",
+    "borne_badge": "Disponible",
+    "preview_item_name": "Cayenne",
+    "preview_item_name_pos": "Cayenne",
+    "preview_item_name_kiosk": "Cayenne",
+    "preview_vue": {
+      "found": false,
+      "selectedBranchId": null,
+      "posName": null,
+      "kioskName": null,
+      "posAvailable": null,
+      "kioskAvailable": null
+    },
+    "preview_empty": null,
+    "live_preview_visible": true
+  },
+  "http_4xx_5xx_excluding_ws_debugbar_english_storage": [
+    {
+      "kind": "failed",
+      "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788309501254
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9100/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788309507494
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9100/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788309507495
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9101/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788309507495
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8766/themes/default/fonts/typography/public/PublicSans-Black.ttf",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_ABORTED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788309510866
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9100/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788309515169
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9100/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788309515169
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9101/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788309515169
+    }
+  ],
+  "mutating_requests_after_login_excluding_auth": [
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+      "ts": 1788309508974
+    }
+  ],
+  "states": [
+    {
+      "name": "burgers-wizard-after-hard-reload",
+      "url": "http://127.0.0.1:8766/admin/items/studio",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/chef-round-6/sandwichs/02-wizard.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/chef-round-6/sandwichs/02-wizard.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/chef-round-6/sandwichs/02-wizard.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/chef-round-6/sandwichs/02-wizard.network.json",
+      "notes": "Dashboard → Catalogue → Sandwichs → Wizard de la catégorie. HARD RELOAD iframe. Mix expected admin-shell.62958254.js. Did not publish."
+    }
+  ],
+  "blockers": [],
+  "final_url": "http://127.0.0.1:8766/admin/items/studio"
+}

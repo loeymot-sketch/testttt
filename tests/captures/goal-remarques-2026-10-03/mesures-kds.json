@@ -1,0 +1,20 @@
+{
+  "avec": {
+    "carteTexte": "[A] En coursBorneCUISSON2PN°A0032Attente02:331×#S | CAY | P | KTPŒuf·E2E visuelPrêt",
+    "aUneLigneSupplement": true,
+    "tailleSupplementPx": 22,
+    "poidsSupplement": "900",
+    "fondSupplement": "rgb(0, 0, 0)",
+    "tailleProduitPx": null,
+    "debordeHorizontalement": false
+  },
+  "sans": {
+    "carteTexte": "[D] En coursBorneCUISSON2PN°A0035Attente01:191×S | CAY | P | KTP·E2E visuel témoinPrêt",
+    "aUneLigneSupplement": false,
+    "tailleSupplementPx": null,
+    "poidsSupplement": null,
+    "fondSupplement": null,
+    "tailleProduitPx": null,
+    "debordeHorizontalement": null
+  }
+}

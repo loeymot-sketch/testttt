@@ -186,24 +186,22 @@ class PosUITest extends TestCase
         $this->actingAs($this->posOperator, 'sanctum');
 
         $subtotal = 10.00;
-        // [S2-02 / P2-f 2026-07-18] Le delivery_charge est SERVEUR-autoritatif (jamais la
-        // valeur client) : le flux POS normal envoie delivery_distance_km (PosComponent.vue:3911)
-        // et le serveur recalcule le fee depuis la distance. On fournit donc une distance et on
-        // vérifie que le fee SERVEUR (fromDistanceKm) est inclus au total puis persisté.
-        $deliveryDistanceKm = 3.0;
-        $deliveryCharge = app(\App\Services\Delivery\DeliveryFeeService::class)
-            ->fromDistanceKm($deliveryDistanceKm, $this->branch);
+        // [S2-02 / P2-f 2026-07-18 · LIVRAISON 2026-10-20] Le delivery_charge est SERVEUR-autoritatif
+        // (jamais la valeur client) : le serveur mesure l'adresse ENREGISTRÉE du client (haversine +
+        // commune) et applique le barème config/delivery.php. Adresse ≈ 3 km du restaurant, hors
+        // Hénin-Beaumont → palier « ≤ 5 km » = 4,90 €, inclus au total puis persisté.
+        $this->branch->update(['latitude' => '48.8566', 'longitude' => '2.3522']);
+        $this->customerDeliveryAddress->update([
+            'latitude' => '48.8836',   // +0,027° ≈ 3,0 km
+            'longitude' => '2.3522',
+            'city' => 'Oignies',
+            'postal_code' => '62590',
+            'geocode_status' => 'OK',
+        ]);
+        $deliveryCharge = 4.9;
         // OrderService: TVA % sur les lignes articles uniquement (pas sur delivery_charge).
         $tax = $subtotal * 0.10;
         $total = $subtotal + $deliveryCharge + $tax;
-        $address = Address::create([
-            'user_id' => $this->customer->id,
-            'label' => 'Home',
-            'address' => '123 Rue Test',
-            'apartment' => '',
-            'latitude' => '48.8566',
-            'longitude' => '2.3522',
-        ]);
 
         $orderData = [
             'token' => null,
@@ -212,8 +210,7 @@ class PosUITest extends TestCase
             'subtotal' => $subtotal,
             'discount' => 0,
             'delivery_charge' => 0.01, // valeur CLIENT forgée → doit être IGNORÉE (recalcul serveur)
-            'delivery_distance_km' => $deliveryDistanceKm,
-            'address_id' => $address->id,
+            'delivery_distance_km' => 0.2, // distance CLIENT forgée → IGNORÉE (mesure serveur de l'adresse)
             'coupon_id' => 0,
             'total' => $total,
             'order_type' => OrderType::DELIVERY,

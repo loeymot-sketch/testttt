@@ -1,0 +1,129 @@
+{
+  "wave": "S",
+  "round": 1,
+  "reviewer": "superviseur adverse",
+  "states_reviewed": 15,
+  "pngs_viewed": 13,
+  "findings": [
+    {
+      "id": "S-101",
+      "state_artifact": "captures-S/D-06-commande-refusee-cayenne.png",
+      "category": "unexpected_4xx / business_rule_mismatch",
+      "severity": "P0",
+      "evidence": "Trois produits ne peuvent JAMAIS être commandés sur le site en ligne : Cayenne (produit signature), Sandwich Classique, Tacos XL. (1) Site en ligne : data/menu.js récupéré par curl sur www.lecayenne.fr (SHA-256 1b3a0b2f02c10946… = miroir) : viandes:2 pour Cayenne (l.502), Sandwich Classique (l.522), Tacos XL (l.587). L'assistant impose exactement ce nombre (compiled/wizard-v2.js:278-288, min = n) et api.js n'envoie QUE n viandes en variations, le surplus part en extra payant (api.js:822, 838, 862). (2) Serveur : config/menu_meat_rules.php:37-38,34 → Cayenne 1, Classique 1, Tacos XL 3 ; MultiVariationConstraint.php:101-113 exige EXACTEMENT ce nombre. Base locale (tinker, lecture seule) : Cayenne #22 et Classique #163 n'ont qu'un emplacement « Viande 1 » [1-1] ; Tacos XL #234 a Viande 1/2/3. (3) Cayenne rejoué : POST /api/frontend/order → 422 « Sélectionnez au maximum 1 Viande 1 (actuel : 2). » + « « Cayenne » comprend 1 viande : choisis-en exactement 1 (reçu 2) » (S-ledger.json › refusCayenne). Classique : même chemin que le Cayenne (2 viandes sur 1 emplacement). Tacos XL : le site envoie toujours 2 viandes, le serveur en exige 3 → refus systématique, quel que soit le choix du client. Classique et XL NON rejoués, déduits du code et de la base (les deux sont déterministes). Les 13 autres produits à viande concordent (site = serveur) : Suprême 2, Méga 2, Terminator 2, Galette Cayenne/Classique 1, 6 burgers 1, Tacos M 1, Tacos L 2, Bols 1 (sauf cas partiels, voir S-102). Pourquoi P0 et non P1 : le produit signature est impossible à commander en ligne en production, et au moment du refus le message est hors de l'écran (S-103). Pour le client, la commande échoue sans explication visible.",
+      "fix_hint": "Aucune version du site dans git ne s'accorde avec le serveur : le site en ligne et la copie de travail locale ont 2/2/2 ; origin/main:data/menu.js a Cayenne viandes:0 (→ 0 viande envoyée, refus « reçu 0 ») et XL 3. Corriger la source (data/menu.js l.502/522/587 → 1/1/3), ou mieux : faire lire à l'assistant le `viande_count` que publie déjà le serveur (app/Http/Resources/NormalItemResource.php via IncludedMeatCount) au lieu du nombre écrit en dur dans menu.js, puis recompiler et redéployer. Ne PAS assouplir MultiVariationConstraint (décision du propriétaire du 2026-10-22). Avant de livrer : rejouer une commande Cayenne, une Classique et une Tacos XL sur le site.",
+      "status": "open"
+    },
+    {
+      "id": "S-102",
+      "state_artifact": "captures-S/D-03-assistant-recap.png",
+      "category": "unexpected_4xx",
+      "severity": "P1",
+      "evidence": "Même famille que S-101, commandes refusées seulement pour certains choix (NON rejoué, déduit du code et de la base). (a) Bol Frites #41 et Bol Riz #45 : la base n'a que 7 viandes sur « Viande 1 » (Mexicanos, Cordon Bleu, Viande Hachée, Nuggets, Tenders, Fricadelle, Poulet mariné), mais l'assistant propose les 11 viandes du catalogue commun (wizard-v2.js:410-420 → meatOptions():89, data/menu.js:146-159). Si le client choisit Poulet crispy, Poulet curry, Poulet tandoori ou Mixte, pickVariation rend null et la viande est ABANDONNÉE EN SILENCE (api.js:862 `if (vid != null)`). L'étape publiée « Choisis ta viande » (ref=1, min=1, active) la rend obligatoire → 422. (b) Tacos L, Suprême, Méga, Terminator : « Viande 2 » a 10 variations, sans « Mixte (hachée + poulet) » (présent sur Viande 1). Avec Mixte en 2e viande, le repli de pickVariation (api.js:735-739, sans contrôle de l'emplacement déjà pris) remet Mixte sur Viande 1 → 422 « Sélectionnez au maximum 1 Viande 1 (actuel : 2) ».",
+      "fix_hint": "Filtrer les viandes proposées par l'assistant avec les variations RÉELLES du produit (le détail /api/frontend/item/details est déjà chargé par api.js:indexDetails). Faire échouer api.js:862 avec un message clair au lieu d'abandonner la viande en silence. Rejouer : Bol Riz + Poulet curry, Tacos L Mexicanos puis Mixte.",
+      "status": "open"
+    },
+    {
+      "id": "S-103",
+      "state_artifact": "captures-S/D-06-commande-refusee-cayenne.png",
+      "category": "silent_error / aria_keyboard",
+      "severity": "P1",
+      "evidence": "Le refus n'est pas visible au moment où il se produit, et le client ne peut rien en faire. Position : au refus, scrollY = 977 et la fenêtre fait 900 px (bas visible à 1877) ; l'alerte est en haut à 1886, donc hors écran (S-ledger.json › refusPosition). La barre « Confirmer » est collante (styles-v4.css:365-366 `position: sticky; bottom: 0`), si bien que le client clique en bas de l'écran pendant que l'erreur s'affiche juste en dessous. L'instrument a écrit « fixe: static » parce que `closest('[class*=cta-bar]')` attrape le bouton `.lcf-cta-bar-next` lui-même, pas la barre (spec:394). Et la capture PNG est prise APRÈS `scrollIntoViewIfNeeded` (spec:397) : elle montre l'erreur au-dessus du bouton, ce que le client ne voyait pas. funnel.js:3493-3499 affiche apiError sans scrollIntoView (le défilement n'existe que pour l'identification et Mollie : l.1628, 2525, 2573). Texte : « Sélectionnez au maximum 1 Viande 1 (actuel : 2). (et 1 autre erreur) » expose un nom d'attribut interne. La phrase utile (« comprend 1 viande… ») est cachée derrière « (et 1 autre erreur) », car api.js:404 ne lit que json.message. La correction proposée est impossible : l'assistant impose 2 viandes (S-101). La seule issue, supprimer le produit signature, n'est indiquée nulle part. Sur la même page, l'alerte périmée « Le code n'a pas pu être envoyé » reste affichée (artefact SMTP local, connu). Contrôle d'équipe faussement vert : « REFUS : un message compréhensible est montré » passe sur la seule regex /viande/i (spec:402).",
+      "fix_hint": "funnel.js (source funnel.jsx) : à l'arrivée d'un apiError, faire défiler jusqu'à l'alerte et y mettre le focus (block:'center'). api.js:404 : afficher json.errors (première erreur métier) plutôt que le message agrégé de Laravel. Le vrai remède reste S-101.",
+      "status": "open"
+    },
+    {
+      "id": "S-104",
+      "state_artifact": "captures-S/D-05-commande-mode.png",
+      "category": "business_rule_mismatch",
+      "severity": "P1",
+      "evidence": "CONFIRMÉ (constat de l'équipe). Sur le site en ligne, la tuile « Livraison » n'est qu'un lien vers Uber Eats (D-05 DOM : <a href=ubereats.com… target=_blank>), sans champ adresse ni appel /delivery/* (S-ledger checks). Pourtant le serveur annonce enabled:true, avec le barème 3,90 / 4,90 / 5,90 / 6,90 € et 10 km (S-ledger instrument.serveurLivraison), et la caisse livre. Index en ligne : compiled/funnel.js?v=20260929audit1, pas de meta feature-delivery. INTÉGRITÉ : redéployer tel quel le dépôt local (v=20261020livraison3) ne règle pas tout. Le dépôt porte les P1 S-001/S-002 du matin (confirmation et paiement présentés comme un retrait au comptoir pour une livraison), toujours ouverts, et les mêmes nombres de viandes faux (S-101). Ces S-001/S-002 sont seulement INATTEIGNABLES en ligne aujourd'hui : ils ne doivent pas être comptés comme fermés.",
+      "fix_hint": "Ordre recommandé : corriger S-101 et S-001/S-002 dans le dépôt du site, puis compiler, bumper le jeton ?v= (index.html:422) et déployer. Après déploiement, réviser les pages qui disent « pas de livraison en propre » (S-005 du matin, vraies AUJOURD'HUI en ligne, fausses après le déploiement).",
+      "status": "open"
+    },
+    {
+      "id": "S-105",
+      "state_artifact": "data/menu.js (site en ligne, curl)",
+      "category": "deployment_traceability",
+      "severity": "P2",
+      "evidence": "Le site en ligne ne peut pas être reconstruit depuis git. data/menu.js en ligne (= miroir, SHA identique) diffère de origin/main (154 lignes : Cayenne viandes:0 → 2, burgers 0 → 1, Tacos XL 3 → 2) et du HEAD local (branche fix/paiement-visible-et-encoche-2026-09-28). En revanche, il est identique à la copie de travail NON commitée du dépôt local (`git status` : M data/menu.js, M api.js), à une ligne de description près. La version en ligne a donc été déployée depuis un arbre non commité.",
+      "fix_hint": "Commiter, ou écarter en le documentant, l'état réellement en ligne du site avant toute correction. Ajouter au déploiement une garde « arbre propre » (refus si `git status --porcelain` n'est pas vide).",
+      "status": "open"
+    },
+    {
+      "id": "S-106",
+      "state_artifact": "captures-S/VD-02-adresse-lille.png",
+      "category": "numeric_integrity (latent, code dormant)",
+      "severity": "P2",
+      "evidence": "CONFIRMÉ, latent : invisible aujourd'hui, mais il suffirait d'ajouter la meta feature-delivery=1 pour l'exposer. Hénin : le site affiche 4,00 €, le serveur 3,90 €. Lille : le site affiche 25,14 km, « Livraison 49,00 € », CTA 56,90 € et « +569 pts », alors que le serveur répond allowed:false et suggest_uber_eats (S-ledger quotes). Aucune durée affichée. Le géocodage part du navigateur vers nominatim.openstreetmap.org (api.js:177), ce qui envoie l'adresse du client à un tiers (RGPD). Les points de fidélité sont calculés sur les frais de livraison (+119 pts pour 11,90 €).",
+      "fix_hint": "Ne jamais activer feature-delivery sur la version en ligne actuelle. La vraie livraison doit passer par /api/frontend/delivery/quote (déjà présent dans le dépôt local).",
+      "status": "open"
+    },
+    {
+      "id": "S-107",
+      "state_artifact": "captures-S/D-05-commande-mode.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Le groupe role=radiogroup « Mode de retrait » contient un seul radio (« À emporter ») plus un <a role=link target=_blank> stylé comme une option radio (class lcf-paymethod, même carte, icône 🛵). Au clavier ou au lecteur d'écran, cette « option » sort du site vers un nouvel onglet Uber Eats. L'aria-label annonce bien « (nouvel onglet) », mais le lien n'a rien à faire dans un groupe de radios.",
+      "fix_hint": "Sortir le lien Uber Eats du radiogroup (funnel.jsx, section Mode) et lui donner un style de lien secondaire.",
+      "status": "open"
+    },
+    {
+      "id": "S-108",
+      "state_artifact": "captures-S/D-02-carte.png",
+      "category": "instrument (pas un défaut produit)",
+      "severity": "P3",
+      "evidence": "« 40 produits » face à 29 cartes : c'est l'instrument qui se trompe, pas le produit. Le sélecteur `[aria-label^=\"Voir \"]` (spec:299) ne compte pas la carte Coca-Cola 33cl « ÉPUISÉ » (sans aria-label « Voir ») ni les 10 boissons masquées derrière « Voir toutes → » : la section Boissons annonce 15 et n'en montre que 5. 29 + 1 + 10 = 40. Second moyen : base locale, 44 articles actifs visibles du client, moins les 4 SKU de style de frites (#107-110) fusionnés dans Petite/Grande Frites = 40 ; le site en déclare 15 (data/menu.js:626-642), la base en a 15.",
+      "fix_hint": "Spec : compter les cartes de toutes les catégories (filtre « Tout » + « Voir toutes ») ou comparer par catégorie. Constat à fermer côté produit.",
+      "status": "open"
+    },
+    {
+      "id": "S-109",
+      "state_artifact": "captures-S/VM-01-adresse-mobile.png",
+      "category": "text_truncation / instrument",
+      "severity": "P3",
+      "evidence": "Variante dormante, mobile : (a) le champ adresse tronque la saisie (« 1 RUE JEAN JAURES » coupé ; scrollWidth 355 > clientWidth 201), même défaut que S-006 du matin ; (b) « Calculer » ne déclenche aucune requête (varianteMAppels = []). Hypothèse NON prouvée : styles-mobile.css:529 (`.lcf-page:has(input:focus) .lcf-cta-bar { position: static }`) déplace la mise en page quand le champ perd le focus au moment du tap, et le clic tombe à côté. Si c'est le cas, cela touche aussi les autres champs du tunnel EN LIGNE sur mobile.",
+      "fix_hint": "Rejouer sur mobile en mesurant la position du bouton avant et après le blur. À éclaircir avant de livrer la livraison.",
+      "status": "open"
+    },
+    {
+      "id": "S-110",
+      "state_artifact": "captures-S/M-05-commande-mode.png",
+      "category": "visual_layout",
+      "severity": "P3",
+      "evidence": "Mobile 390 px : dès que le badge panier « 1 » apparaît, « Se connecter » passe sur deux lignes dans l'en-tête (M-05, VM-01). Sur M-01, panier vide, il tient sur une ligne. En-tête serré, logo réduit.",
+      "fix_hint": "En-tête mobile : icône seule pour « Se connecter » sous 400 px, ou white-space:nowrap avec une police plus petite.",
+      "status": "open"
+    },
+    {
+      "id": "S-111",
+      "state_artifact": "tests/Playwright/caisse-site-complet-2026-10-23/S-site.spec.js",
+      "category": "instrument_integrity",
+      "severity": "P2",
+      "evidence": "« 6/6 verts » ne veut pas dire produit vert. Les check() ne bloquent pas : il y a 5 KO dans S-ledger (Cayenne, frais Hénin, durée, Lille, champ mobile) et 1 faux vert (spec:402, voir S-103). Mesure de position fausse (spec:394). PNG du refus pris après défilement (spec:397). Libellé faux spec:475 « order_type=5 retrait ? » : 5 = DELIVERY et 10 = TAKEAWAY (app/Enums/OrderType.php:7-8) ; la base a bien 10, mais le contrôle ne teste que delivery_charge. Tests 3 et 4 bâtis sur le Cayenne : la variante ne peut jamais aboutir à une commande. Classique et Tacos XL non rejoués. Positif : réseau propre, origines = :8012, :8766 et nominatim (variante seulement), 0 requête vers la production, commande 8860 annulée (statut 16).",
+      "fix_hint": "Rendre bloquantes les assertions critiques, ou les compter explicitement en KO dans le verdict. Rejouer Classique et Tacos XL. Mesurer la position d'une alerte dans la fenêtre au moment de l'échec, sans faire défiler avant la capture.",
+      "status": "open"
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 3,
+    "P2": 4,
+    "P3": 3,
+    "open_P0": 1,
+    "open_P1": 3,
+    "open_P2": 4,
+    "open_P3": 3
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "notes": [
+    "Écart de viandes, liste exacte (site en ligne / serveur) : TOUJOURS refusés : Cayenne 2/1, Sandwich Classique 2/1, Tacos XL 2/3. Refusés selon le choix (non rejoués) : Bol Frites et Bol Riz avec Poulet crispy/curry/tandoori/Mixte ; Tacos L, Suprême, Méga, Terminator avec Mixte en 2e viande. Concordants : Suprême, Méga, Terminator 2 ; Galette Cayenne/Classique 1 ; Chicken/Cheese/Double Cheese/Fish/Big/Grill Burger 1 ; Tacos M 1 ; Tacos L 2 ; Bols 1.",
+    "Second moyen indépendant pour (a) : curl du data/menu.js EN LIGNE (empreinte identique au miroir) + lecture du code serveur + tinker en lecture seule sur foodking_e2e. Les emplacements viande de la base de PRODUCTION n'ont pas été lus par moi (règle et migration confirmées en prod par l'orchestrateur).",
+    "L'équipe a vu juste sur le Cayenne, mais l'a sous-classé : P0 ici, parce que c'est le produit signature et que le refus est invisible au moment du clic.",
+    "Le constat « refus sous le bouton » est juste dans les faits, mais l'instrument le mesurait mal : la barre est collante et la capture a été faite après défilement.",
+    "Les 40/29 cartes sont un artefact d'instrument (S-108) ; aucun produit inventé (absentsDeLaBase = []).",
+    "Décisions propriétaire en attente, non recomptées : vouvoiement (le message serveur « Sélectionnez » vouvoie au milieu d'un site qui tutoie, D5), seuil 7 km et Uber (D3), paiement après confirmation (D6).",
+    "Visuel : charte respectée (noir, orange, jaune, blanc), aucune image cassée, aucune clé i18n brute, pas de défilement horizontal, totaux cohérents à 6,00 € sur le panier, le bouton, la confirmation, l'API et la base (commande 8860, order_type 10 TAKEAWAY), et à 7,90 € sur le récap, le panier et le bouton pour le Cayenne."
+  ]
+}

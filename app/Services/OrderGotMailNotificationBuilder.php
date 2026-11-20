@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Mail;
 class OrderGotMailNotificationBuilder
 {
     public int $orderId;
-    public object $order;
+    public ?object $order; // [W7-D D-004 cycle C] nullable : FrontendOrder::find hors périmètre de branche ne doit jamais produire un 500
 
     public function __construct($orderId)
     {

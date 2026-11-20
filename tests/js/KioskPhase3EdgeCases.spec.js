@@ -163,15 +163,15 @@ describe('Phase 3 — RTL (ar) rendering', () => {
         }
     });
 
-    it('renders cash instruction in Arabic with action buttons functional', async () => {
+    it('renders cash instruction in Arabic WITHOUT any acknowledge button (owner 2026-10-19)', async () => {
         const wrapper = mount(KioskCashInstructionComponent, {
             ...mountOpts('ar'),
             props: { orderNumber: 'A1', orderTotal: 10, autoRedirectSeconds: 0 },
         });
-        const cta = wrapper.find('[data-testid="kiosk-cash-cta-understood"]');
-        expect(cta.exists()).toBe(true);
-        await cta.trigger('click');
-        expect(wrapper.emitted('acknowledged')).toBeTruthy();
+        // [CAISSE-SANS-BOUTON 2026-10-19] Le bouton « J'ai compris » n'existe plus : l'écran revient
+        // seul à l'accueil. Le numéro et le montant, eux, restent affichés.
+        expect(wrapper.find('[data-testid="kiosk-cash-cta-understood"]').exists()).toBe(false);
+        expect(wrapper.find('[data-testid="kiosk-cash-order-number"]').exists()).toBe(true);
     });
 });
 

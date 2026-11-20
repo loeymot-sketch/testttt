@@ -12,9 +12,16 @@ class ItemAttributeRequest extends FormRequest
      *
      * @return bool
      */
-    public function authorize() : bool
+    public function authorize(): bool
     {
-        return true;
+        // [GOAL LIVRAISON-TICKETS 2026-11-10 · T-2.4.2] Second verrou : miroir EXACT de la permission portée par la route
+        // (le middleware reste la garde principale ; celle-ci tient si la route est un jour recâblée sans lui).
+        $user = $this->user();
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->can('settings');
     }
 
     /**

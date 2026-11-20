@@ -14,9 +14,26 @@ class WaiterRequest extends FormRequest
      *
      * @return bool
      */
+    /**
+     * [ONB-13 C7 2026-08-28] Defense en profondeur — etait `return true;`.
+     *
+     * Cette regle CREE UN UTILISATEUR, avec un role et un mot de passe. Le GOAL la
+     * designe parmi les plus exposees : une route recablee sans son middleware
+     * ouvrirait la creation de comptes a n'importe qui.
+     *
+     * Miroir exact de la permission que porte la route : WaiterController:39+.
+     * Meme motif que `EmployeeRequest`, et la famille entiere (creation ET
+     * modification) est acceptee parce que les regles servent aux deux verbes.
+     */
     public function authorize(): bool
     {
-        return true;
+        $utilisateur = $this->user();
+
+        if ($utilisateur === null) {
+            return false;
+        }
+
+        return $utilisateur->can('waiters_create') || $utilisateur->can('waiters_edit');
     }
 
     /**
@@ -48,8 +65,15 @@ class WaiterRequest extends FormRequest
             'device_token'          => ['nullable', 'string'],
             'web_token'             => ['nullable', 'string'],
             'password_confirmation' => [$this->route('waiter.id') ? 'nullable' : 'required', 'string', 'min:12'],
+            // [ONB-06 2026-08-28] Etait `nullable`, alors que
+            // `2026_05_16_140100_make_user_phone_required` rend `users.phone` NOT NULL.
+            // Laisser le champ vide provoquait une erreur de base de donnees rendue au
+            // commercant comme « erreur de base de donnees » — un message qui ne dit ni
+            // quel champ, ni quoi faire. La validation doit refuser AVANT, en nommant le
+            // telephone. `ProfileRequest` portait deja `required` : l'intention etait
+            // connue, elle n'avait pas ete propagee.
             'phone'                 => [
-                'nullable',
+                'required',
                 'string',
                 'max:20',
                 new ValidPhone(),

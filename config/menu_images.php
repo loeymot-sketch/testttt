@@ -52,6 +52,8 @@ return [
         // cat 1 « Sandwich Cayenne » → « Sandwichs » (slug sandwichs) ; cat 6
         // « Bols Gourmands » → « Bols » (slug bols). Sans ces entrées → item-default.
         'sandwichs'          => 'cat-sandwich-cayenne.png',
+        // [OWNER 2026-11-11] Catégorie des 5 Tenders.
+        'tenders'            => 'tenders-5.png',
         'bols'               => 'cat-bols-gourmands.png',
 
         // Legacy V0 slugs (back-compat for fixtures / archived orders).
@@ -83,7 +85,6 @@ return [
 
         // ── Galette (cat 2)
         'galette-cayenne' => 'galette.png',
-        'galette-normale' => 'galette.png',
         // [AUDIT 2026-08-12] Créée le jour même, elle n'avait aucune entrée ici : l'accesseur
         // `Item::getThumbAttribute()` ne lit que `items` + `addons`, jamais `categories`. Une
         // entrée manquante ne casse rien et ne lève aucune erreur — elle sert simplement la
@@ -135,6 +136,7 @@ return [
         'jambon-de-dinde'         => 'jambon-dinde.png',
         'supp-jambon'             => 'jambon-dinde.png',
         'fromage-supplementaire'  => 'fromage.png',
+        'cheddar'                 => 'cheddar.png',
         'supp-cheddar'            => 'cheddar.png',
         'supp-emmental'           => 'fromage.png',
         'fromage-a-raclette'      => 'raclette.png',
@@ -171,12 +173,13 @@ return [
         'fanta-citron' => 'fanta-citron.png',
         // [2026-07-05] Repli DISTINCT en attendant les vrais visuels owner
         // (fuze-tea.png / hawai.png / perrier.png). Swap 1 ligne à réception.
-        'fuze-tea'    => 'lipton-framboise.png', // thé framboise ≠ ice-tea (pêche)
+        // [test-e2e stores B-045 · 2026-11-13] Les VRAIS visuels sont arrivés (site : assets/menu/*.png) : plus de replis.
+        'fuze-tea'    => 'fuze-tea.png',
         // [OWNER8 2026-07-06] renommage « Fanta Hawai 33cl » → « Hawaï 33cl » (slug hawai) ;
         // clé legacy conservée pour un VPS pas encore migré par le seeder.
-        'hawai'       => 'fanta-fraise.png',     // Hawaï rose ≠ orange/citron
-        'fanta-hawai' => 'fanta-fraise.png',     // legacy slug (pré-migration)
-        'perrier'     => 'eau.png',              // eau gazeuse (repli eau)
+        'hawai'       => 'hawai.png',
+        'fanta-hawai' => 'hawai.png',            // legacy slug (pré-migration)
+        'perrier'     => 'perrier.png',
 
         // ── Menu enfant (cat 11)
         'menu-nuggets' => 'nuggets.png',
@@ -220,6 +223,15 @@ return [
         'terminator'     => 'sandwich-terminator.png',
         'tacos-m'        => 'tacos-cayenne.png',
         'tacos-l'        => 'tacos-cayenne.png',
+        // [OWNER TACOS-XL 2026-08-24] Le tacos 3 viandes — « mettre la même photo » que ses
+        // aînés. Ce n'est pas un oubli de visuel dédié : les trois tailles montrent le même
+        // tacos, seule la garniture change. Sans cette ligne, le nouveau produit tomberait sur
+        // `item-default.svg` et sortirait en gris sur la borne, la caisse et le web.
+        'tacos-xl'       => 'tacos-cayenne.png',
+        // [OWNER 2026-11-11] Nouveaux produits (menu:owner-2026-11-11). Le Sandwich 2 Viandes est le
+        // Sandwich Classique en deux viandes : même photo. Les 5 Tenders ont leur photo dédiée.
+        'sandwich-2-viandes' => 'sandwich-classique.png',
+        'tenders-5'          => 'tenders-5.png',
         'chicken-burger' => 'chicken_burger.png',
         'cheese-burger'  => 'cheese-burger.png',
         'double-cheese'  => 'double-cheese.png',
@@ -329,6 +341,8 @@ return [
         // [IMG-HEAL 2026-06-27] Live extras that resolved to item-default.svg (placeholder)
         // — now keyed to the matching NEW asset so borne+caisse show a real image.
         'Viande supplémentaire'   => 'viande-marine.png',
+        // [OWNER 2026-11-11] Supplément « Façon Cayenne » : base fromage et crème fraîche.
+        'Façon Cayenne'           => 'sauce-fromagere-maison.png',
         'Option Gratiné'          => 'bol-frites-gratine.png',
         'Cheddar Fondu'           => 'cheddar.png',
         'Cheddar fondu'           => 'cheddar.png',
@@ -436,13 +450,14 @@ return [
     | PREMIÈRES étapes du wizard sandwich et bol — donc la toute première chose
     | que voit le client — étaient des cases grises.
     |
-    | « Pain » prend la photo du sandwich classique et « Galette » celle de la
-    | galette : c'est exactement la distinction utile à cette étape, pain long
-    | contre galette roulée.
+    | [OWNER 2026-10-21] « Pain » et « Galette » montrent le PAIN et la GALETTE
+    | seuls (illustrations pain-seul.svg / galette-seule.svg), plus un sandwich
+    | complet garni : le client choisit un support, pas une recette. Valable
+    | borne et caisse (même attribut « Type de Pain »).
     */
     'bases' => [
-        'Pain'        => 'sandwich-classique.png',
-        'Galette'     => 'galette.png',
+        'Pain'        => 'pain-seul.svg',
+        'Galette'     => 'galette-seule.svg',
         'Frites'      => 'frites.png',
         'Riz basmati' => 'bol-riz.png',
         'Riz'         => 'bol-riz.png',

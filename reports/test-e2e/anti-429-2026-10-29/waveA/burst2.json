@@ -1,0 +1,29 @@
+{
+  "steps": [
+    {
+      "name": "A2a charge soutenue : 761 requêtes en 60 s (~761/min), plafond 1200/min",
+      "ok": true,
+      "detail": {
+        "200": 761
+      }
+    },
+    {
+      "name": "A2b saturation après 1212 requêtes : le serveur répond 429 avec Retry-After",
+      "ok": true,
+      "detail": {
+        "access-control-allow-credentials": "true",
+        "access-control-allow-origin": "http://localhost:8011",
+        "access-control-expose-headers": "Retry-After, X-RateLimit-Limit, X-RateLimit-Remaining",
+        "retry-after": "47",
+        "x-ratelimit-limit": "1200",
+        "x-ratelimit-remaining": "0",
+        "x-ratelimit-reset": "1793283347"
+      }
+    },
+    {
+      "name": "A2b CORS : Retry-After est exposé aux navigateurs d'une autre origine (site, application)",
+      "ok": true,
+      "detail": "Retry-After, X-RateLimit-Limit, X-RateLimit-Remaining"
+    }
+  ]
+}

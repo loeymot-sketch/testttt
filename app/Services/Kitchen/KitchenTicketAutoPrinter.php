@@ -2,7 +2,9 @@
 
 namespace App\Services\Kitchen;
 
+use App\Domain\Kds\KitchenReleaseRule;
 use App\Enums\Status;
+use App\Models\Order;
 use App\Models\Printer;
 use App\Models\Scopes\BranchScope;
 use App\Services\Hardware\EscPosPrinterService;
@@ -58,7 +60,7 @@ final class KitchenTicketAutoPrinter
      *
      * @param  object  $order    Order ou FrontendOrder
      * @param  string  $trigger  d'où vient le déclenchement (journalisation)
-     * @return string  'printed' | 'already' | 'no_printer' | 'no_order' | 'failed'
+     * @return string  'printed' | 'already' | 'no_printer' | 'no_order' | 'failed' | 'not_released'
      */
     public function printOnce(object $order, string $trigger): string
     {
@@ -67,6 +69,18 @@ final class KitchenTicketAutoPrinter
 
         if ($orderId <= 0 || $branchId <= 0) {
             return 'no_order';
+        }
+
+        // [VG-2026-10-21 M1-103] Une commande RETENUE (programmée, livraison dont le départ est
+        // loin) n'est pas encore en cuisine : pas de papier maintenant. On ne la réclame PAS, pour
+        // qu'un déclencheur ultérieur (passage en préparation, pont d'impression) puisse la sortir.
+        if (! $this->estEntreeEnCuisine($orderId)) {
+            Log::info('[KitchenTicketAutoPrinter] ticket cuisine différé : commande pas encore libérée en cuisine', [
+                'order_id' => $orderId,
+                'trigger' => $trigger,
+            ]);
+
+            return 'not_released';
         }
 
         $printer = $this->kitchenPrinter($branchId);
@@ -137,6 +151,21 @@ final class KitchenTicketAutoPrinter
         // Zéro ligne mise à jour : soit déjà réclamée, soit inexistante. Seule la première
         // justifie de ne pas imprimer.
         return ! DB::table('orders')->where('id', $orderId)->exists();
+    }
+
+    /**
+     * [VG-2026-10-21 M1-103] Même définition que le board (KitchenReleaseRule), relue en BASE :
+     * l'instance de l'événement peut précéder l'écriture de l'heure de tournée. Commande absente
+     * de la base → on imprime (même sens de défaillance que claim()).
+     */
+    private function estEntreeEnCuisine(int $orderId): bool
+    {
+        $commande = Order::query()
+            ->withoutGlobalScope(BranchScope::class)
+            ->select(['id', 'scheduled_at', 'delivery_slot_at', 'created_at'])
+            ->find($orderId);
+
+        return $commande === null || KitchenReleaseRule::orderIsWithinScheduledWindow($commande);
     }
 
     private function release(int $orderId): void

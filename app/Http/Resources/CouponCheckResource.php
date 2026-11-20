@@ -26,6 +26,13 @@ class CouponCheckResource extends JsonResource
             "flat_discount"     => AppLibrary::flatAmountFormat($amount),
             "convert_discount"  => AppLibrary::convertAmountFormat($amount),
             "currency_discount" => AppLibrary::currencyAmountFormat($amount),
+            // [TICKET PROMO 2026-11-03] Coupon « livraison offerte » : le site doit afficher
+            // « Livraison offerte » (et non « −0,00 € ») et savoir jusqu'où elle s'applique.
+            'free_delivery'        => (bool) ($this->free_delivery ?? false),
+            'free_delivery_max_km' => ($this->free_delivery ?? false)
+                ? (float) ($this->free_delivery_max_km ?? config('delivery.free_delivery_coupon_max_km', 7))
+                : null,
+            'minimum_order'        => (float) ($this->minimum_order ?? 0),
         ];
     }
 

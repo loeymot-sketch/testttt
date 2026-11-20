@@ -77,7 +77,15 @@ class OrphanSettingsRatchetSentinelTest extends TestCase
         'company_city',
         'company_state',
         'company_zip_code',
-        'company_website',
+        // [ONB-05 2026-08-28] `company_website` RETIRE de la liste : il a desormais un
+        // lecteur. `OrderReceiptEscPosRenderer` lisait le site en dur depuis
+        // `config/printing.php`, dont le defaut vaut `lecayenne.fr` — le ticket remis
+        // au client portait donc l'adresse web d'un AUTRE restaurant, alors que le
+        // commercant avait rempli son champ. Le ticket lit maintenant son reglage,
+        // avec la configuration en repli.
+        //
+        // C'est ce banc qui a exige ce commit : il a vu le lecteur apparaitre et a
+        // demande le resserrage, pour que la dette ne puisse pas revenir en silence.
     ];
 
     /** Chemins qui ÉCRIVENT ou exposent la clé — ce ne sont pas des lecteurs. */

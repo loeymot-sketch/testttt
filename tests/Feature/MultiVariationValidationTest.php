@@ -10,6 +10,8 @@ use App\Models\Item;
 use App\Models\ItemAttribute;
 use App\Models\ItemCategory;
 use App\Models\ItemVariation;
+use App\Models\ItemWizardProfile;
+use App\Models\ItemWizardStep;
 use App\Models\KioskMachine;
 use App\Models\Tax;
 use App\Models\User;
@@ -346,6 +348,62 @@ class MultiVariationValidationTest extends TestCase
 
         $r->assertStatus(422)
             ->assertJsonValidationErrors(['items.0.item_variations']);
+    }
+
+    public function test_preview_uses_the_published_composer_steps_not_inactive_legacy_attributes(): void
+    {
+        $pain = $this->makeAttribute('Type de pain', 1, 1, false);
+        $sauce = $this->makeAttribute('Sauce', 1, 1, false);
+        $this->makeVariation($this->item, $pain, 'Pain', 0.0);
+        $sauceVariation = $this->makeVariation($this->item, $sauce, 'Ketchup', 0.0);
+
+        ItemWizardProfile::query()->create([
+            'item_id' => $this->item->id,
+            'template' => 'sandwich',
+            'version' => 1,
+            'is_published' => true,
+            'published_at' => now(),
+            'branch_id_scope' => null,
+        ])->steps()->create([
+            'step_key' => 'pain',
+            'label' => 'Pain',
+            'source_type' => 'item_attribute',
+            'source_ref' => (string) $pain->id,
+            'source_item_attribute_id' => $pain->id,
+            'min_select' => 1,
+            'max_select' => 1,
+            'position' => 1,
+            'is_active' => true,
+        ]);
+
+        $profile = ItemWizardProfile::query()->create([
+            'item_id' => $this->item->id,
+            'template' => 'sandwich',
+            'version' => 2,
+            'is_published' => true,
+            'published_at' => now(),
+            'branch_id_scope' => $this->branch->id,
+        ]);
+        ItemWizardStep::query()->create([
+            'profile_id' => $profile->id,
+            'step_key' => 'sauce',
+            'label' => 'Sauce',
+            'source_type' => 'item_attribute',
+            'source_ref' => (string) $sauce->id,
+            'source_item_attribute_id' => $sauce->id,
+            'min_select' => 1,
+            'max_select' => 1,
+            'position' => 2,
+            'is_active' => true,
+        ]);
+
+        $this->authedKiosk()->postJson('/api/frontend/pricing/preview', [
+            'items' => [[
+                'item_id' => $this->item->id,
+                'quantity' => 1,
+                'item_variations' => [['id' => $sauceVariation->id]],
+            ]],
+        ])->assertOk();
     }
 
     /** False-positive guard: a valid order with every required attribute present must pass. */

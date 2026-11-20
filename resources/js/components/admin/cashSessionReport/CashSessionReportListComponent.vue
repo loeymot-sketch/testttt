@@ -61,11 +61,35 @@
                                 <span>
                                     {{ $t('label.opening_total') }}: <strong>{{ formatMoney(day.totalOpening) }}</strong>
                                 </span>
-                                <span>
+                                <!-- [AUDIT-SUPERVISEUR 2026-08-25 · D-003] Le total ne porte
+                                     QUE les caisses réellement clôturées. Celles qui sont
+                                     encore ouvertes sont annoncées à côté, jamais fondues
+                                     dans le chiffre sous forme de zéro. -->
+                                <span data-testid="cash-session-closing-total">
                                     {{ $t('label.closing_total') }}: <strong>{{ formatMoney(day.totalClosing) }}</strong>
+                                    <em v-if="day.sessionsOuvertes > 0"
+                                        class="not-italic opacity-75"
+                                        data-testid="cash-session-still-open">
+                                        — {{ libelleOuvertes(day.sessionsOuvertes) }}
+                                    </em>
                                 </span>
                             </div>
                         </header>
+
+                        <!-- [AUDIT-COMPTA 2026-10-04] Les totaux ci-dessus portent sur la page
+                             chargée. Une journée au bord de la page peut se poursuivre sur la
+                             page voisine : on le dit, au lieu de laisser lire un total complet. -->
+                        <p
+                            v-if="day.suitePagePrecedente || day.suitePageSuivante"
+                            class="px-4 py-2 text-xs bg-amber-50 text-amber-800 border-b border-amber-200"
+                            data-testid="cash-session-day-partial"
+                        >
+                            {{ $t(day.suitePagePrecedente && day.suitePageSuivante
+                                ? 'label.cash_day_may_continue_both'
+                                : (day.suitePagePrecedente
+                                    ? 'label.cash_day_may_continue_prev'
+                                    : 'label.cash_day_may_continue_next')) }}
+                        </p>
 
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
@@ -105,6 +129,22 @@
                                         <td class="px-3 py-2">
                                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs" :class="statusClass(s.status)">
                                                 {{ $t('label.cash_status_' + s.status) }}
+                                            </span>
+                                            <!--
+                                                [ULTRA-AUDIT 2026-09-26 · A20] Une session OPEN peut
+                                                légitimement le rester longtemps entre deux vérifications,
+                                                mais 78 jours sans comptage/clôture (constaté en recette)
+                                                doit se voir ICI, pas seulement se calculer en silence côté
+                                                serveur. Seuil 24h : au-delà d'une journée d'exploitation,
+                                                une session encore ouverte est anormale dans ce mandat V1
+                                                mono-restaurant.
+                                            -->
+                                            <span
+                                                v-if="s.status === 'open' && s.open_since_hours >= 24"
+                                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 ml-1"
+                                                data-testid="cash-session-stale-badge"
+                                            >
+                                                ⚠️ {{ $t('label.cash_session_open_since_hours', { hours: s.open_since_hours }) }}
                                             </span>
                                             <!--
                                                 [P0 CLÔTURE-BLOQUÉE 2026-08-15 · GOAL_CONFORT_MAX] Une session
@@ -225,23 +265,74 @@ export default {
                         totalOpening: 0,
                         totalClosing: 0,
                         totalTransactions: 0,
+                        // [AUDIT-SUPERVISEUR 2026-08-25 · D-003] Combien de caisses de ce
+                        // jour ne sont PAS clôturées. Sans ce compte, leur absence de
+                        // clôture se lisait comme une clôture à zéro.
+                        sessionsOuvertes: 0,
                     });
                 }
                 const bucket = map.get(key);
                 bucket.sessions.push(s);
                 bucket.totalOpening += Number(s.opening_amount || 0);
-                bucket.totalClosing += Number(s.closing_amount || 0);
+                // [AUDIT-SUPERVISEUR 2026-08-25 · D-003] `Number(null || 0)` valait 0 : une
+                // caisse ENCORE OUVERTE était comptée comme clôturée à 0,00 €. Mesuré par le
+                // superviseur sur 11 groupes-jours : 5 journées touchées, 11 sessions, et un
+                // jour qui se lisait littéralement « 150,00 € entrés, 0,00 € sortis ».
+                //
+                // Une caisse ouverte n'a pas de clôture — on ne l'invente pas. On somme ce
+                // qui est RÉELLEMENT clos et on annonce le reste : la cellule de détail
+                // disait déjà « — » honnêtement (ligne 99), c'est le total du jour qui
+                // fabriquait le zéro.
+                if (s.closing_amount === null || s.closing_amount === undefined) {
+                    bucket.sessionsOuvertes += 1;
+                } else {
+                    bucket.totalClosing += Number(s.closing_amount);
+                }
                 bucket.totalTransactions += Number(s.transactions_count || 0);
             }
             // Map iteration preserves insertion order; sessions arrive
             // sorted opened_at desc so days come out desc as expected.
-            return Array.from(map.values());
+            const jours = Array.from(map.values());
+
+            // [AUDIT-COMPTA 2026-10-04] Un total de JOURNÉE calculé sur UNE PAGE de sessions.
+            //
+            // Le serveur pagine les SESSIONS (50 par page, tri `opened_at` décroissant), pas les
+            // jours : une journée qui tombe à cheval sur deux pages voit ses totaux calculés sur
+            // une partie seulement de ses caisses — « Sessions », « Transactions », « Total
+            // ouverture » et « Total clôture » deviennent partiels sans que rien ne le dise, alors
+            // que le pagineur est juste en dessous. Un total de clôture partiel présenté comme
+            // celui de la journée est un chiffre de caisse faux.
+            //
+            // Seuls les deux jours AUX BORDS de la page peuvent être concernés : le plus récent
+            // (continue sur la page précédente) et le plus ancien (continue sur la suivante).
+            // Les jours intermédiaires sont forcément complets. On le DÉCLARE plutôt que de
+            // l'inventer exact — le même principe que D-003 : un chiffre incomplet mais annoncé
+            // vaut mieux qu'un chiffre complet et faux. L'indicateur est conservateur : il peut
+            // signaler une journée qui s'arrête pile à la frontière, jamais en taire une coupée.
+            const meta = this.meta || {};
+            const page = Number(meta.current_page || 1);
+            const derniere = Number(meta.last_page || 1);
+            if (jours.length > 0) {
+                if (page > 1) jours[0].suitePagePrecedente = true;
+                if (page < derniere) jours[jours.length - 1].suitePageSuivante = true;
+            }
+            return jours;
         },
     },
     mounted() {
         this.loadSessions();
     },
     methods: {
+        /**
+         * [AUDIT-SUPERVISEUR 2026-08-25 · D-003] Accord en nombre, par DEUX clés explicites.
+         * Pas de « caisse(s) ouverte(s) » : ce même audit a relevé un « prête(s) » ailleurs
+         * dans le produit et l'a qualifié d'aveu écrit d'un accord jamais fait. On ne
+         * reproduit pas le défaut qu'on vient de corriger. (`$tc` est indisponible :
+         * vue-i18n tourne en mode non-legacy.)
+         */
+        libelleOuvertes(n) {
+            return this.$t(n > 1 ? 'label.session_still_open_many' : 'label.session_still_open_one', { count: n });
+        },
         async loadSessions(page = 1) {
             this.loading = true;
             try {

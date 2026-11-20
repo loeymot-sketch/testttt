@@ -1,0 +1,83 @@
+{
+ "role": "adverse-visuel-t2",
+ "constats": [
+  {
+   "id": "V2-01",
+   "severite": "P2",
+   "fichier": "loyalty-v2.jsx:428 (site-nfc-2026-11-19)",
+   "titre": "Hub Profil : la ligne Notifications dit encore « Commande prête : activée » alors que le réglage s'appelle « Alertes de commande » et couvre validée, prête ou en route",
+   "reproduction": "Android 390x844, abonné, Profil > hub. Terme périmé, inexact en livraison (« prête » n'y est jamais envoyée, OrderPushMessage.php:96-98). Éteint : « Offres par e-mail », sans mention des alertes ; même texte au premier affichage du hub même si abonné (mesuré 360 et 390).",
+   "preuve": "reports/test-e2e/nfc-notifications/round-2/captures/profil-hub-ligne-notifs-actif-390x844.png (lue)",
+   "recommandation": "Aligner la ligne sur le nouveau vocabulaire : « Alertes de commande : activées » / « Alertes de commande : désactivées »."
+  },
+  {
+   "id": "V2-02",
+   "severite": "P2",
+   "fichier": "installation-ui.jsx:162 et :187",
+   "titre": "« … et quand vos points arrivent » annonce une alerte à part que le serveur n'envoie pas",
+   "reproduction": "Carte a-demander (360x640) et Profil interrupteur éteint/allumé. Le serveur ajoute les points au corps de la notification « validée », et seulement s'ils sont crédités au destinataire (OrderPushMessage.php:113-119). Aucune notification distincte « points ». Le client sans points crédités lit une promesse non tenue.",
+   "preuve": "reports/test-e2e/nfc-notifications/round-2/captures/carte-a-demander-360x640.png (lue) ; profil-notifs-desactive-360x640.png (lue)",
+   "recommandation": "« Une alerte quand elle est validée (avec vos points gagnés), prête ou en route. » ou retirer la mention des points."
+  },
+  {
+   "id": "V2-03",
+   "severite": "P2",
+   "fichier": "installation-ui.jsx:89",
+   "titre": "Chemin de déblocage rédigé en vocabulaire iOS : « Réglages du téléphone › Notifications › Le Cayenne »",
+   "reproduction": "Pixel 7 émulé, permission refusée. Sur Android l'application s'appelle « Paramètres » ; pour un site dans Chrome, aucune entrée « Le Cayenne » sous Notifications. Impasse probable sur Android. Non vérifié sur appareil réel.",
+   "preuve": "reports/test-e2e/nfc-notifications/round-2/captures/carte-refuse-360x640.png (lue) ; profil-notifs-bloque-360x640.png (lue)",
+   "recommandation": "Deux textes selon la plateforme déjà détectée (iOS : Réglages › Notifications › Le Cayenne ; Android : Paramètres > Notifications ou réglages du site dans Chrome), à valider sur un vrai téléphone."
+  },
+  {
+   "id": "V2-04",
+   "severite": "P2",
+   "fichier": "installation-ui.jsx:89, :97, :98, :144",
+   "titre": "Césures typographiques : guillemet « ou chevron › en fin de ligne, « Le / Cayenne » coupé, « ? » et « : » sans espace insécable",
+   "reproduction": "Mesuré par Range, 6 états x 4 viewports. Guillemet « en fin de ligne : profil iOS 360 (capture lue), carte iOS 430 et 768. « › » en bord de ligne : profil bloqué 360, carte refus 430 et 768. « Le » / « Cayenne » séparés : refus 360/390, profil 390/768, carte iOS 430. Aucune espace insécable devant « ? » ni « : ».",
+   "preuve": "reports/test-e2e/nfc-notifications/round-2/captures/profil-notifs-ios-sans-partage-360x640.png (lue) ; carte-refuse-360x640.png (lue) ; profil-notifs-bloque-360x640.png (lue) ; carte-refuse-768x1024.png (lue)",
+   "recommandation": "U+00A0 dans « Le Cayenne », devant « ? » et « : », dans « « Sur l'écran d'accueil » » et autour de « › »."
+  },
+  {
+   "id": "V2-05",
+   "severite": "P3",
+   "fichier": "installation-ui.jsx:91",
+   "titre": "« vous serez prévenu » : accord au masculin générique (le « prévenu(e) » a disparu mais la formule reste genrée)",
+   "reproduction": "Carte active, tous viewports. Même tournure côté serveur (OrderPushMessage.php:111-112).",
+   "preuve": "reports/test-e2e/nfc-notifications/round-2/captures/carte-actif-360x640.png (lue)",
+   "recommandation": "Tournure neutre : « C'est activé : vous recevrez une alerte dès que votre commande est validée, prête ou en route. » (idem serveur)."
+  },
+  {
+   "id": "V2-06",
+   "severite": "P3",
+   "fichier": "installation-ui.jsx:150 et :159 ; :4",
+   "titre": "Nom accessible du groupe resté « Notifications » alors que le titre visible est « Recevoir une alerte pour votre commande ? » ; commentaire d'en-tête périmé",
+   "reproduction": "Carte a-installer et a-demander : aria-label=\"Notifications\". Ligne 4 cite encore « Être prévenu quand elle est prête ? ».",
+   "preuve": "reports/test-e2e/nfc-notifications/round-2/captures/carte-a-demander-360x640.png (lue)",
+   "recommandation": "aria-label=\"Alerte de commande\" ; corriger le commentaire."
+  },
+  {
+   "id": "V2-07",
+   "severite": "P3",
+   "fichier": "styles-installation.css:56",
+   "titre": "Profil : l'apparition du message d'échec décale l'interrupteur d'environ 31 px ; le texte porteur du chemin de déblocage reste en 12,5 px gris",
+   "reproduction": "Android 360x640 : centre de l'interrupteur à y=320 px CSS (éteint) puis y=351 (échec). Texte d'aide 12,5 px, contraste 7,09:1 (suffisant) mais petit pour une consigne en trois étapes.",
+   "preuve": "reports/test-e2e/nfc-notifications/round-2/captures/profil-notifs-erreur-360x640.png (lue) ; profil-notifs-desactive-360x640.png (lue) ; profil-notifs-bloque-360x640.png (lue)",
+   "recommandation": "Aligner l'interrupteur en haut de ligne (align-items: flex-start) ; porter le texte d'aide à 13 px."
+  }
+ ],
+ "etats_captures": [
+  "Carte a-demander, actif, refus, échec, occupé : 4 viewports (occupé : 360 seul)",
+  "Carte a-installer : Safari avec Installer, sans feuille de partage, Instagram : 4 viewports",
+  "Profil Notifications : éteint, allumé, bloqué, à installer (partage, guide), serveur coupé, échec (aussi thème sombre 390) : 4 viewports ; hub, ligne Notifications : 360 et 390",
+  "Menu hamburger ouvert avec bandeau ?src=nfc, et bandeau sans menu : Android, iPhone guide, Instagram x 4 viewports ; réapparition après fermeture : 360 et 768 ; 126 PNG dans round-2/captures/"
+ ],
+ "verifie_sans_defaut": [
+  "Aucun texte tronqué, débordement horizontal ni élément hors écran sur toutes les cartes et tous les écrans Profil",
+  "Cibles >= 44 px (boutons carte, interrupteur 60x44, Installer) ; aucun bouton superposé ; boutons de la carte centrés (styles-installation.css:58) sur 4 viewports",
+  "Contrastes : texte carte 17,89:1 ; bouton plein 6,01:1 ; échec carte 6,78:1 ; échec Profil 7,50:1 et bien rouge (css:56)",
+  "Bandeau masqué menu ouvert (body.lc-nav-open) : 7 liens atteignables, 3 variantes x 4 viewports ; bandeau intact après fermeture (bouton, lien, Échap)",
+  "Aucun montant en euros dans les notifications (seul « 9,50 € » du ticket), aucun libellé brut, aucune erreur page ni console",
+  "Annonces conformes au serveur (OrderPushMessage.php:96-129) : validée, prête (retrait seulement), en route (livraison seulement) ; réserve points = V2-02. Texte de secours sw.js:107 sans faute ; aucun « prévenu(e) »",
+  "Connus tour 1, non aggravés : V-04, V-06, paysage, zone sûre iPhone"
+ ]
+}

@@ -44,8 +44,10 @@
                         <router-link :to="{ path: '/admin/' + kdsHeaderMenu.url }" @click="closeFullScreen"
                             class="flex items-center gap-2 h-9 px-3 rounded-lg bg-[#FFE8DD]">
                             <i class="lab-font-size-17 text-primary" :class="kdsHeaderMenu.icon"></i>
+                            <!-- [FINITION 2026-11-04] Sans `capitalize` : la traduction est déjà bien casée (« Tableau de bord ») ;
+                                 text-transform: capitalize en faisait « Tableau De Bord » (majuscules à l'anglaise). -->
                             <span
-                                class=" md:block hidden whitespace-nowrap text-xs font-medium capitalize text-[#111827]">{{
+                                class=" md:block hidden whitespace-nowrap text-xs font-medium text-[#111827]">{{
                                     kdsHeaderMenu.label }}</span>
                         </router-link>
                     </div>

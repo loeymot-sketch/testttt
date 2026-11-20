@@ -1,0 +1,564 @@
+PHPUnit 9.6.36 by Sebastian Bergmann and contributors.
+
+.............................................................   61 / 5531 (  1%)
+.............................................................  122 / 5531 (  2%)
+.............................................................  183 / 5531 (  3%)
+.............................................................  244 / 5531 (  4%)
+.............................................................  305 / 5531 (  5%)
+.............................................................  366 / 5531 (  6%)
+.............................................................  427 / 5531 (  7%)
+.............................................................  488 / 5531 (  8%)
+..........................[stock-n1-heal] lowAlerts query count = 11
+...................................  549 / 5531 (  9%)
+.....
+
+--- AG-02: API wizard_template ---
+[POS-WIZARD] wizard_template from API: simple
+has_menu: false
+
+--- AG-04: Order with Instruction ---
+Order Status: 201
+Saved Instruction in DB: VIANDES: Merguez, Poulet. SAUCE: Harissa. FORMULE: Menu Complet.
+.....
+--- AG-02: API wizard_template ---
+Template: simple
+HasMenu: false
+
+--- AG-03-T01: D-001 Fake Item ID ---
+Status: 422
+Message: No open cash drawer — open a session before accepting a cash payment.
+
+--- AG-03-T02: D-004 Missing Item ID ---
+Status: 422
+Errors: {"items":["L'article \u00e0 l'index 0 n'a pas d'item_id valide."]}
+
+--- AG-03-T03: Valid Order ---
+Status: 422
+...................................................  610 / 5531 ( 11%)
+.............................................................  671 / 5531 ( 12%)
+.............................................................  732 / 5531 ( 13%)
+.............................................................  793 / 5531 ( 14%)
+.............................................................  854 / 5531 ( 15%)
+.....................................................SSS.....  915 / 5531 ( 16%)
+.............................................................  976 / 5531 ( 17%)
+...........................................................SS 1037 / 5531 ( 18%)
+............................................................. 1098 / 5531 ( 19%)
+............................................S................ 1159 / 5531 ( 20%)
+............................................................. 1220 / 5531 ( 22%)
+................................................S............ 1281 / 5531 ( 23%)
+............................................................. 1342 / 5531 ( 24%)
+............................................................. 1403 / 5531 ( 25%)
+...........................SS................................ 1464 / 5531 ( 26%)
+.........SS............=== MENU SEEDER - Le Grill House ===
+Restaurant: Le Cayenne
+Locale: fr | Currency: EUR
+====================================
+
+Running pre-flight checks...
+✓ Pre-flight checks passed
+
+Checking existing menu data...
+  - Existing categories: 0
+  - Existing items: 0
+
+Purging existing menu data...
+  ✓ Purged legacy media from database
+  ✓ Purged item_addons
+  ✓ Purged item_extras
+  ✓ Purged item_variations
+  ✓ Purged item_attributes
+  ✓ Purged items
+  ✓ Purged item_categories
+✓ All menu data purged
+
+Creating categories...
+  ✓ Created: Sandwich Cayenne (template: sandwich)
+  ✓ Created: Galette (template: sandwich)
+  ✓ Created: Sandwich Classique (template: sandwich)
+  ✓ Created: Burgers (template: sandwich)
+  ✓ Created: Tacos (template: tacos)
+  ✓ Created: Bols Gourmands (template: custom)
+  ✓ Created: Frites (template: custom)
+  ✓ Created: Suppléments (template: simple)
+  ✓ Created: Desserts (template: simple)
+  ✓ Created: Boissons (template: simple)
+  ✓ Created: Menu enfant (template: simple)
+✓ Created 11 categories
+
+Creating item attributes...
+  ✓ Created: Viande 1, Viande 2, Viande 3, Viande 4
+  ✓ Created: Sauce (1ère Gratuite)
+  ✓ Created: Type de Pain
+✓ Attributes created
+
+Creating addon items (upsell)...
+  ✓ Created addon: Menu (Frites + Boisson) (3€)
+  ✓ Created addon: Frites Seules (2€)
+  ✓ Created addon: Boisson Seule (2€)
+✓ Created 3 addon items
+
+Creating menu items...
+  ⚠️  Skipping unknown category: nos-tacos
+  ⚠️  Skipping unknown category: nos-sandwichs
+  ⚠️  Skipping unknown category: nos-burgers
+  ⚠️  Skipping unknown category: nos-assiettes
+  ⚠️  Skipping unknown category: ojja
+  ⚠️  Skipping unknown category: omelettes
+  ⚠️  Skipping unknown category: nos-salades
+  ⚠️  Skipping unknown category: chicken-tenders
+  ⚠️  Skipping unknown category: nos-menus-enfants
+  ⚠️  Skipping unknown category: frites-accompagnements
+  ⚠️  Skipping unknown category: nos-desserts
+  ⚠️  Skipping unknown category: nos-boissons
+  ✓ Sauce supplémentaire (0.5€)
+  ✓ Fromage supplémentaire (1€)
+  ✓ Jambon de dinde (1€)
+  ✓ Boursin (1€)
+  ✓ Fromage à raclette (1€)
+  ✓ Œuf (1€)
+  ✓ Galette pommes de terre (1€)
+  ✓ Salade verte (2€)
+✓ Created 8 menu items
+
+
+Verifying French integrity...
+  - Categories: 11
+  - Items: 11
+  - Item Attributes: 6
+  - Item Variations: 0
+  - Item Extras: 48
+  - Item Addons: 24
+
+⚠️  INTEGRITY WARNINGS:
+  - Category 'Sandwich Cayenne' contains English word: Sandwich
+  - Category 'Sandwich Classique' contains English word: Sandwich
+  - Category 'Burgers' contains English word: Burger
+
+✅ Menu seeding completed successfully!
+====================================
+...................................... 1525 / 5531 ( 27%)
+............................................................. 1586 / 5531 ( 28%)
+.................................................SSS......... 1647 / 5531 ( 29%)
+....S........................................................ 1708 / 5531 ( 30%)
+............................................................. 1769 / 5531 ( 31%)
+............................................................. 1830 / 5531 ( 33%)
+............................................................. 1891 / 5531 ( 34%)
+............................................................. 1952 / 5531 ( 35%)
+............................................................. 2013 / 5531 ( 36%)
+............................................................. 2074 / 5531 ( 37%)
+............................................................. 2135 / 5531 ( 38%)
+.....................................................
+
+=== KDS UNRELEASED ORDER BUMP TEST ===
+HTTP Response Status: 422
+Order Status Before: 4
+Order Status After: 4
+Bump Blocked: YES - OK
+Order Payment Status: 10
+Order Type: 5
+........ 2196 / 5531 ( 39%)
+............................................................. 2257 / 5531 ( 40%)
+............................................................. 2318 / 5531 ( 41%)
+..........................S.................................. 2379 / 5531 ( 43%)
+............................................................. 2440 / 5531 ( 44%)
+............................................................. 2501 / 5531 ( 45%)
+............................................................. 2562 / 5531 ( 46%)
+............................................................. 2623 / 5531 ( 47%)
+............................................................. 2684 / 5531 ( 48%)
+............................................................. 2745 / 5531 ( 49%)
+............................................................. 2806 / 5531 ( 50%)
+........SSSSSSSSSS........................................... 2867 / 5531 ( 51%)
+............................................=== MENU SEEDER - Le Grill House ===
+Restaurant: Le Cayenne
+Locale: fr | Currency: EUR
+====================================
+
+Running pre-flight checks...
+✓ Pre-flight checks passed
+
+Checking existing menu data...
+  - Existing categories: 0
+  - Existing items: 0
+
+Purging existing menu data...
+  ✓ Purged legacy media from database
+  ✓ Purged item_addons
+  ✓ Purged item_extras
+  ✓ Purged item_variations
+  ✓ Purged item_attributes
+  ✓ Purged items
+  ✓ Purged item_categories
+✓ All menu data purged
+
+Creating categories...
+  ✓ Created: Sandwich Cayenne (template: sandwich)
+  ✓ Created: Galette (template: sandwich)
+  ✓ Created: Sandwich Classique (template: sandwich)
+  ✓ Created: Burgers (template: sandwich)
+  ✓ Created: Tacos (template: tacos)
+  ✓ Created: Bols Gourmands (template: custom)
+  ✓ Created: Frites (template: custom)
+  ✓ Created: Suppléments (template: simple)
+  ✓ Created: Desserts (template: simple)
+  ✓ Created: Boissons (template: simple)
+  ✓ Created: Menu enfant (template: simple)
+✓ Created 11 categories
+
+Creating item attributes...
+  ✓ Created: Viande 1, Viande 2, Viande 3, Viande 4
+  ✓ Created: Sauce (1ère Gratuite)
+  ✓ Created: Type de Pain
+✓ Attributes created
+
+Creating addon items (upsell)...
+  ✓ Created addon: Menu (Frites + Boisson) (3€)
+  ✓ Created addon: Frites Seules (2€)
+  ✓ Created addon: Boisson Seule (2€)
+✓ Created 3 addon items
+
+Creating menu items...
+  ⚠️  Skipping unknown category: nos-tacos
+  ⚠️  Skipping unknown category: nos-sandwichs
+  ⚠️  Skipping unknown category: nos-burgers
+  ⚠️  Skipping unknown category: nos-assiettes
+  ⚠️  Skipping unknown category: ojja
+  ⚠️  Skipping unknown category: omelettes
+  ⚠️  Skipping unknown category: nos-salades
+  ⚠️  Skipping unknown category: chicken-tenders
+  ⚠️  Skipping unknown category: nos-menus-enfants
+  ⚠️  Skipping unknown category: frites-accompagnements
+  ⚠️  Skipping unknown category: nos-desserts
+  ⚠️  Skipping unknown category: nos-boissons
+  ✓ Sauce supplémentaire (0.5€)
+  ✓ Fromage supplémentaire (1€)
+  ✓ Jambon de dinde (1€)
+  ✓ Boursin (1€)
+  ✓ Fromage à raclette (1€)
+  ✓ Œuf (1€)
+  ✓ Galette pommes de terre (1€)
+  ✓ Salade verte (2€)
+✓ Created 8 menu items
+
+
+Verifying French integrity...
+  - Categories: 11
+  - Items: 11
+  - Item Attributes: 6
+  - Item Variations: 0
+  - Item Extras: 48
+  - Item Addons: 24
+
+⚠️  INTEGRITY WARNINGS:
+  - Category 'Sandwich Cayenne' contains English word: Sandwich
+  - Category 'Sandwich Classique' contains English word: Sandwich
+  - Category 'Burgers' contains English word: Burger
+
+✅ Menu seeding completed successfully!
+====================================
+.=== MENU SEEDER - Le Grill House ===
+Restaurant: Le Cayenne
+Locale: fr | Currency: EUR
+====================================
+
+Running pre-flight checks...
+✓ Pre-flight checks passed
+
+Checking existing menu data...
+  - Existing categories: 0
+  - Existing items: 0
+
+Purging existing menu data...
+  ✓ Purged legacy media from database
+  ✓ Purged item_addons
+  ✓ Purged item_extras
+  ✓ Purged item_variations
+  ✓ Purged item_attributes
+  ✓ Purged items
+  ✓ Purged item_categories
+✓ All menu data purged
+
+Creating categories...
+  ✓ Created: Sandwich Cayenne (template: sandwich)
+  ✓ Created: Galette (template: sandwich)
+  ✓ Created: Sandwich Classique (template: sandwich)
+  ✓ Created: Burgers (template: sandwich)
+  ✓ Created: Tacos (template: tacos)
+  ✓ Created: Bols Gourmands (template: custom)
+  ✓ Created: Frites (template: custom)
+  ✓ Created: Suppléments (template: simple)
+  ✓ Created: Desserts (template: simple)
+  ✓ Created: Boissons (template: simple)
+  ✓ Created: Menu enfant (template: simple)
+✓ Created 11 categories
+
+Creating item attributes...
+  ✓ Created: Viande 1, Viande 2, Viande 3, Viande 4
+  ✓ Created: Sauce (1ère Gratuite)
+  ✓ Created: Type de Pain
+✓ Attributes created
+
+Creating addon items (upsell)...
+  ✓ Created addon: Menu (Frites + Boisson) (3€)
+  ✓ Created addon: Frites Seules (2€)
+  ✓ Created addon: Boisson Seule (2€)
+✓ Created 3 addon items
+
+Creating menu items...
+  ⚠️  Skipping unknown category: nos-tacos
+  ⚠️  Skipping unknown category: nos-sandwichs
+  ⚠️  Skipping unknown category: nos-burgers
+  ⚠️  Skipping unknown category: nos-assiettes
+  ⚠️  Skipping unknown category: ojja
+  ⚠️  Skipping unknown category: omelettes
+  ⚠️  Skipping unknown category: nos-salades
+  ⚠️  Skipping unknown category: chicken-tenders
+  ⚠️  Skipping unknown category: nos-menus-enfants
+  ⚠️  Skipping unknown category: frites-accompagnements
+  ⚠️  Skipping unknown category: nos-desserts
+  ⚠️  Skipping unknown category: nos-boissons
+  ✓ Sauce supplémentaire (0.5€)
+  ✓ Fromage supplémentaire (1€)
+  ✓ Jambon de dinde (1€)
+  ✓ Boursin (1€)
+  ✓ Fromage à raclette (1€)
+  ✓ Œuf (1€)
+  ✓ Galette pommes de terre (1€)
+  ✓ Salade verte (2€)
+✓ Created 8 menu items
+
+
+Verifying French integrity...
+  - Categories: 11
+  - Items: 11
+  - Item Attributes: 6
+  - Item Variations: 0
+  - Item Extras: 48
+  - Item Addons: 24
+
+⚠️  INTEGRITY WARNINGS:
+  - Category 'Sandwich Cayenne' contains English word: Sandwich
+  - Category 'Sandwich Classique' contains English word: Sandwich
+  - Category 'Burgers' contains English word: Burger
+
+✅ Menu seeding completed successfully!
+====================================
+.=== MENU SEEDER - Le Grill House ===
+Restaurant: Le Cayenne
+Locale: fr | Currency: EUR
+====================================
+
+Running pre-flight checks...
+✓ Pre-flight checks passed
+
+Checking existing menu data...
+  - Existing categories: 0
+  - Existing items: 0
+
+Purging existing menu data...
+  ✓ Purged legacy media from database
+  ✓ Purged item_addons
+  ✓ Purged item_extras
+  ✓ Purged item_variations
+  ✓ Purged item_attributes
+  ✓ Purged items
+  ✓ Purged item_categories
+✓ All menu data purged
+
+Creating categories...
+  ✓ Created: Sandwich Cayenne (template: sandwich)
+  ✓ Created: Galette (template: sandwich)
+  ✓ Created: Sandwich Classique (template: sandwich)
+  ✓ Created: Burgers (template: sandwich)
+  ✓ Created: Tacos (template: tacos)
+  ✓ Created: Bols Gourmands (template: custom)
+  ✓ Created: Frites (template: custom)
+  ✓ Created: Suppléments (template: simple)
+  ✓ Created: Desserts (template: simple)
+  ✓ Created: Boissons (template: simple)
+  ✓ Created: Menu enfant (template: simple)
+✓ Created 11 categories
+
+Creating item attributes...
+  ✓ Created: Viande 1, Viande 2, Viande 3, Viande 4
+  ✓ Created: Sauce (1ère Gratuite)
+  ✓ Created: Type de Pain
+✓ Attributes created
+
+Creating addon items (upsell)...
+  ✓ Created addon: Menu (Frites + Boisson) (3€)
+  ✓ Created addon: Frites Seules (2€)
+  ✓ Created addon: Boisson Seule (2€)
+✓ Created 3 addon items
+
+Creating menu items...
+  ⚠️  Skipping unknown category: nos-tacos
+  ⚠️  Skipping unknown category: nos-sandwichs
+  ⚠️  Skipping unknown category: nos-burgers
+  ⚠️  Skipping unknown category: nos-assiettes
+  ⚠️  Skipping unknown category: ojja
+  ⚠️  Skipping unknown category: omelettes
+  ⚠️  Skipping unknown category: nos-salades
+  ⚠️  Skipping unknown category: chicken-tenders
+  ⚠️  Skipping unknown category: nos-menus-enfants
+  ⚠️  Skipping unknown category: frites-accompagnements
+  ⚠️  Skipping unknown category: nos-desserts
+  ⚠️  Skipping unknown category: nos-boissons
+  ✓ Sauce supplémentaire (0.5€)
+  ✓ Fromage supplémentaire (1€)
+  ✓ Jambon de dinde (1€)
+  ✓ Boursin (1€)
+  ✓ Fromage à raclette (1€)
+  ✓ Œuf (1€)
+  ✓ Galette pommes de terre (1€)
+  ✓ Salade verte (2€)
+✓ Created 8 menu items
+
+
+Verifying French integrity...
+  - Categories: 11
+  - Items: 11
+  - Item Attributes: 6
+  - Item Variations: 0
+  - Item Extras: 48
+  - Item Addons: 24
+
+⚠️  INTEGRITY WARNINGS:
+  - Category 'Sandwich Cayenne' contains English word: Sandwich
+  - Category 'Sandwich Classique' contains English word: Sandwich
+  - Category 'Burgers' contains English word: Burger
+
+✅ Menu seeding completed successfully!
+====================================
+=== MENU SEEDER - Le Grill House ===
+Restaurant: Le Cayenne
+Locale: fr | Currency: EUR
+====================================
+
+Running pre-flight checks...
+✓ Pre-flight checks passed
+
+Checking existing menu data...
+  - Existing categories: 11
+  - Existing items: 11
+  - Found French categories: 4
+  ⚠️ Found English category: 'Sandwich Cayenne'
+🚨 ENGLISH MENU DETECTED! Force purging...
+
+Purging existing menu data...
+  ✓ Purged legacy media from database
+  ✓ Purged item_addons
+  ✓ Purged item_extras
+  ✓ Purged item_variations
+  ✓ Purged item_attributes
+  ✓ Purged items
+  ✓ Purged item_categories
+✓ All menu data purged
+
+Creating categories...
+  ✓ Created: Sandwich Cayenne (template: sandwich)
+  ✓ Created: Galette (template: sandwich)
+  ✓ Created: Sandwich Classique (template: sandwich)
+  ✓ Created: Burgers (template: sandwich)
+  ✓ Created: Tacos (template: tacos)
+  ✓ Created: Bols Gourmands (template: custom)
+  ✓ Created: Frites (template: custom)
+  ✓ Created: Suppléments (template: simple)
+  ✓ Created: Desserts (template: simple)
+  ✓ Created: Boissons (template: simple)
+  ✓ Created: Menu enfant (template: simple)
+✓ Created 11 categories
+
+Creating item attributes...
+  ✓ Created: Viande 1, Viande 2, Viande 3, Viande 4
+  ✓ Created: Sauce (1ère Gratuite)
+  ✓ Created: Type de Pain
+✓ Attributes created
+
+Creating addon items (upsell)...
+  ✓ Created addon: Menu (Frites + Boisson) (3€)
+  ✓ Created addon: Frites Seules (2€)
+  ✓ Created addon: Boisson Seule (2€)
+✓ Created 3 addon items
+
+Creating menu items...
+  ⚠️  Skipping unknown category: nos-tacos
+  ⚠️  Skipping unknown category: nos-sandwichs
+  ⚠️  Skipping unknown category: nos-burgers
+  ⚠️  Skipping unknown category: nos-assiettes
+  ⚠️  Skipping unknown category: ojja
+  ⚠️  Skipping unknown category: omelettes
+  ⚠️  Skipping unknown category: nos-salades
+  ⚠️  Skipping unknown category: chicken-tenders
+  ⚠️  Skipping unknown category: nos-menus-enfants
+  ⚠️  Skipping unknown category: frites-accompagnements
+  ⚠️  Skipping unknown category: nos-desserts
+  ⚠️  Skipping unknown category: nos-boissons
+  ✓ Sauce supplémentaire (0.5€)
+  ✓ Fromage supplémentaire (1€)
+  ✓ Jambon de dinde (1€)
+  ✓ Boursin (1€)
+  ✓ Fromage à raclette (1€)
+  ✓ Œuf (1€)
+  ✓ Galette pommes de terre (1€)
+  ✓ Salade verte (2€)
+✓ Created 8 menu items
+
+
+Verifying French integrity...
+  - Categories: 11
+  - Items: 11
+  - Item Attributes: 6
+  - Item Variations: 0
+  - Item Extras: 48
+  - Item Addons: 24
+
+⚠️  INTEGRITY WARNINGS:
+  - Category 'Sandwich Cayenne' contains English word: Sandwich
+  - Category 'Sandwich Classique' contains English word: Sandwich
+  - Category 'Burgers' contains English word: Burger
+
+✅ Menu seeding completed successfully!
+====================================
+............... 2928 / 5531 ( 52%)
+...S......................................................... 2989 / 5531 ( 54%)
+............................................................. 3050 / 5531 ( 55%)
+............................................................. 3111 / 5531 ( 56%)
+............................................................. 3172 / 5531 ( 57%)
+............................................................. 3233 / 5531 ( 58%)
+............................................................. 3294 / 5531 ( 59%)
+............................................................. 3355 / 5531 ( 60%)
+............................................................. 3416 / 5531 ( 61%)
+............................................................. 3477 / 5531 ( 62%)
+............................................................. 3538 / 5531 ( 63%)
+............................................................. 3599 / 5531 ( 65%)
+............................................................. 3660 / 5531 ( 66%)
+............................................................. 3721 / 5531 ( 67%)
+............................................................. 3782 / 5531 ( 68%)
+............................................................. 3843 / 5531 ( 69%)
+............................................................. 3904 / 5531 ( 70%)
+................................................SS........... 3965 / 5531 ( 71%)
+............................................................. 4026 / 5531 ( 72%)
+............................................................. 4087 / 5531 ( 73%)
+............................................................. 4148 / 5531 ( 74%)
+............................................................. 4209 / 5531 ( 76%)
+............................................................. 4270 / 5531 ( 77%)
+............................................................. 4331 / 5531 ( 78%)
+............................................................. 4392 / 5531 ( 79%)
+............................................................. 4453 / 5531 ( 80%)
+............................................................. 4514 / 5531 ( 81%)
+............................................................. 4575 / 5531 ( 82%)
+........................................................S.... 4636 / 5531 ( 83%)
+........................................SS................... 4697 / 5531 ( 84%)
+............................................................. 4758 / 5531 ( 86%)
+............................................................. 4819 / 5531 ( 87%)
+............................................................. 4880 / 5531 ( 88%)
+............................................................. 4941 / 5531 ( 89%)
+.........................................................SSSS 5002 / 5531 ( 90%)
+............................................................. 5063 / 5531 ( 91%)
+............................................................. 5124 / 5531 ( 92%)
+............................................................. 5185 / 5531 ( 93%)
+............................................................. 5246 / 5531 ( 94%)
+............................................................. 5307 / 5531 ( 95%)
+............................................................. 5368 / 5531 ( 97%)
+............................................................. 5429 / 5531 ( 98%)
+.........................................................

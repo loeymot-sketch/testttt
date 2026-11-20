@@ -610,6 +610,35 @@ Pas de publish. Frozen 0. Preview admin liste encore les inactifs (P2).
 `docs/grok/HANDOFF_CLAUDE_2026-09-01.md`
 PHPUnit Grok **81/81 (257)** · Vitest **39/39**. Pas CONVERGENCE_FINAL. Claude = chef.
 
+## 2026-09-01 — MISSION validation absolue Grok (écrite, pas lancée)
+
+`docs/grok/MISSION_VALIDATION_ABSOLUE_GROK_2026-09-01.md`
+Tampon seulement si Grok relance 81+39, lit PNG, frozen 0. P1 restants : preview Le Cayenne indisponible, 2e round wizards, interrupteur POS 403. Viande 2 = BLOCK owner.
+
+## 2026-09-01 — GOAL validation absolue (écrit)
+
+`plans/GOAL_VALIDATION_ABSOLUE_GROK_2026-09-01.md`
+W0 smoke → W1 preview Le Cayenne → W2 interrupteur 403 → W3 round-5 wizards → W5 certificat.
+Pas lancé. `lance le GOAL` = exécution.
+
+## 2026-09-01 — GOAL VALIDATION_ABSOLUE W0+W1
+
+SHARED déclaré : `ProductComposerEditorComponent.vue` (preview item),
+`ComposerProfileController.php` availableSourcesForCategory `item_id`.
+
+W0 : PHPUnit 81/81 · Vitest 39/39 · frozen 0 · Mix `admin-shell.5fb225ac.js`.
+
+## 2026-09-01 — GOAL W1–W3 + certificat ciblé
+
+Preview catégorie : bind 1er item ACTIVE (`available-sources.item_id` + `item/show`).
+PNG round-5 : Burgers/Sandwichs/Galette **Disponible** (plus Indisponible).
+Caissier PUT wheel **403**. PHPUnit **83/83 (263)**.
+`reports/grok/CERTIFICAT_VALIDATION_ABSOLUE.md` — **ciblé**, pas ABSOLU 2 rounds preview.
+
+## 2026-09-02 — Rapport chef Claude
+
+`docs/grok/RAPPORT_CHEF_CLAUDE_2026-09-02.md` — paquet unique passation (chrono, fixes, PNG, mission mois).
+
 ### POS réel (après adversaire)
 - Caissier `pos@lecayenne.fr` : barre **sans** « État du système »
   (`x100-pos-cockpit-deeplink.png` sidebar). Menu PHP live.

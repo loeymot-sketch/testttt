@@ -9,6 +9,8 @@ use App\Models\KioskMachine;
 use App\Models\ItemWizardProfile;
 use App\Services\Composer\ComposerProfileProjection;
 use App\Services\Stock\ChoiceAvailabilityResolver;
+use App\Support\Menu\IncludedMeatCount;
+use App\Support\Menu\IncludedSauceCount;
 use App\Support\Menu\SauceCatalog;
 use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -37,8 +39,10 @@ class NormalItemResource extends JsonResource
             ? $this->variations->filter(fn($v) => $v->isVisibleOn($surface))->values()
             : $this->variations;
         $branchId = $this->resolveComposerBranchId($request);
-        $choiceAvailability = $branchId !== null
-            ? app(ChoiceAvailabilityResolver::class)->snapshotForItem($this->resource, $branchId, (string) ($surface ?: 'kiosk'))
+        // Branche des ruptures : celle de l'utilisateur, sinon celle que précise un client public (voir brancheDemandee).
+        $brancheDispo = $branchId ?? (($request->user() && ($request->user()->hasRole('Admin') || $request->user()->hasRole('Tenant Admin'))) ? null : $this->brancheDemandee($request));
+        $choiceAvailability = $brancheDispo !== null
+            ? app(ChoiceAvailabilityResolver::class)->snapshotForItem($this->resource, $brancheDispo, (string) ($surface ?: 'kiosk'))
             : ['variations' => [], 'extras' => [], 'addons' => []];
         // [GOAL WIZARD-CAISSE 2026-08-28 · owner] Même ordre canonique de sauces
         // qu'en caisse (cf. ItemResource) — la borne et la caisse doivent lister
@@ -91,22 +95,22 @@ class NormalItemResource extends JsonResource
             ? (bool) $effectiveAvailability
             : ($this->is_available === null ? true : (bool) $this->is_available);
 
-        // [VIANDE-COUNT 2026-06-24] SSOT serveur du nombre de viandes à choisir
-        // = nombre d'attributs « Viande N » distincts ayant des variations actives.
+        // [VIANDE-COUNT 2026-06-24] SSOT serveur du nombre de viandes à choisir.
         // KioskWizardComponent.detectViandeCount() (frozen) lit ce champ EN PRIORITÉ
         // (avant l'heuristique nom : « Méga »→4, « Terminator »/« Bol »→null = étape
-        // viande absente/fausse). Méga/Terminator=2, Tacos M/Bols=1, Tacos L=2.
-        $viandeCount = $filteredVariations
-            ->filter(function ($v): bool {
-                $n = mb_strtolower((string) optional($v->itemAttribute)->name);
-                return str_contains($n, 'viande') || str_contains($n, 'meat');
-            })
-            ->pluck('item_attribute_id')
-            ->unique()
-            ->count();
+        // viande absente/fausse) ; le site (wizard-v2.jsx) en tire ses viandes incluses.
+        // [VG-2026-10-21 M5-001b M3-101 M1-004] Viandes INCLUSES selon la règle du propriétaire, plus le nombre brut
+        // d'attributs « Viande N » (Tacos M=3, Cayenne=2) ; même calcul que KioskMenuService (borne).
+        $viandeCount = IncludedMeatCount::resolve(
+            (string) $this->name,
+            optional($this->category)->name,
+            $filteredVariations->map(fn ($v) => optional($v->itemAttribute)->name)
+        );
 
         return [
             "viande_count" => $viandeCount,
+            // [OWNER 2026-11-11] Sauces offertes (sandwichs : 2). Voir IncludedSauceCount.
+            "sauce_included" => IncludedSauceCount::forItem($this->resource),
             "id" => $this->id,
             "name" => $this->name,
             "category_name" => optional($this->category)->name,
@@ -140,7 +144,7 @@ class NormalItemResource extends JsonResource
                 // [PERF 2026-07-23 POS-instant-open] Snapshot dispo déjà calculé ci-dessus
                 // (même item/branche/surface) → évite un 2ᵉ ChoiceAvailabilityResolver dans
                 // la projection composer. Null quand pas de branche (comportement inchangé).
-                $branchId !== null ? $choiceAvailability : null,
+                $brancheDispo !== null ? $choiceAvailability : null,
             ),
             "offer" => SimpleOfferResource::collection(
                 $this->offer->filter(function ($offer) use ($price) {
@@ -240,6 +244,24 @@ class NormalItemResource extends JsonResource
 
         $branchId = (int) $candidate;
         return $branchId > 0 ? $branchId : null;
+    }
+
+    /**
+     * [RUPTURE-CHOIX-CLIENT 2026-11-15] Branche dont on lit les RUPTURES pour un client public (site, application) :
+     * celle qu'il précise (`?branch_id=`), comme pour la liste `/api/frontend/item?branch_id=`. Sans cela la rupture
+     * d'un choix (une viande, un supplément) n'était jamais calculée pour le client : il composait son plat avec la
+     * viande en rupture et la commande était refusée à la fin.
+     * Elle ne sert QU'À la disponibilité : le choix du PROFIL de composition reste celui de resolveComposerBranchId()
+     * (un visiteur ne peut pas se faire servir le profil d'une branche — ItemAttributeComposerResourceTest).
+     */
+    private function brancheDemandee($request): ?int
+    {
+        $demandee = (int) ($request->get('branch_id') ?? 0);
+        if ($demandee <= 0) {
+            return null;
+        }
+
+        return \App\Models\Branch::query()->whereKey($demandee)->exists() ? $demandee : null;
     }
 
 }

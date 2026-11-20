@@ -75,3 +75,16 @@ npx vitest run tests/js/kitchenLocalPrinter.spec.js  # helper front + dé-dup (1
 
 Zéro dépendance npm (http + winspool RAW via PowerShell intégré). Miroir exact du pont
 caisse (`tools/caisse-bridge/`), port 9101 au lieu de 9100.
+
+## Imprimante débranchée : plus de vieux tickets (2026-10-20)
+Même défaut que la caisse : une imprimante éteinte laissait le spouleur Windows empiler les tickets,
+tous réimprimés au retour. Le pont :
+- **refuse** un ticket (`503 printer_offline`) quand Windows déclare l'imprimante hors ligne : rien
+  n'entre dans le spouleur et le KDS le **réessaie** tout seul (il traite un 5xx comme « à réessayer ») ;
+  au moindre doute (statut inconnu, contrôle > 3 s) il imprime quand même ;
+- **supprime** toutes les 5 s (et au démarrage) les jobs du spouleur de CETTE imprimante plus vieux que
+  900 s = 15 min (`KITCHEN_STALE_JOB_SECONDS`, `0` = désactivé). Plus long que la caisse (120 s) : un
+  ticket cuisine de 10 minutes est encore un plat à faire ;
+- `KITCHEN_OFFLINE_GATE=0` désactive le refus.
+Mise à jour du PC cuisine : télécharger `https://vps-418872ac.vps.ovh.net/dl/kitchen-bridge.js`,
+remplacer le fichier, relancer le pont.

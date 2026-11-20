@@ -54,6 +54,12 @@ class AdminRoutePermissionFloorTest extends TestCase
         'api/admin/cash-overview',            // can('cash-sessions-report')
         'api/admin/cash-sessions-report',     // can('cash-sessions-report')
         'api/admin/fiscal/z-report',          // can('pos-manage-fiscal')
+        // [fusion 2026-09-02] Gardé INLINE dans index() : `can('settings') || rôle Admin`.
+        // La garde globale `role:Admin|Tenant Admin` a été retirée du constructeur parce
+        // qu'elle fermait aussi la porte à un gérant porteur de `settings` — le compte qui
+        // doit précisément pouvoir lire le plan de panne (InterrupteurLectureGardeeTest).
+        // Un middleware ne sait pas exprimer ce OU ; le contrôle par méthode, si.
+        'api/admin/observability/interrupteurs', // can('settings') || rôle Admin, inline
 
         // — Non-PII : catalogue / config / lookups —
         'api/admin/country-code',

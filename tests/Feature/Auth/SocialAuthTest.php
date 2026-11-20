@@ -466,4 +466,106 @@ class SocialAuthTest extends TestCase
         $this->assertNotSame('PHONE_REQUIRED', $reponse->json('code'),
             'Une borne ne doit jamais se voir réclamer un numéro de téléphone.');
     }
+
+    // ------------------------------------------- [STORES 2026-11-12 · Apple 5.1.1(v)] révocation à la suppression
+
+    /** Configure une clé « Sign in with Apple » de TEST (EC P-256) ; rend la clé publique PEM. */
+    private function cleAppleDeTest(): string
+    {
+        $cle = openssl_pkey_new(['private_key_type' => OPENSSL_KEYTYPE_EC, 'curve_name' => 'prime256v1']);
+        openssl_pkey_export($cle, $pem);
+        config([
+            'services.apple.team_id' => 'EQUIPE1234',
+            'services.apple.key_id' => 'CLE1234567',
+            'services.apple.private_key' => str_replace("\n", '\n', $pem), // une ligne, comme dans .env
+            'services.apple.client_id' => self::AUDIENCE,
+        ]);
+
+        return openssl_pkey_get_details($cle)['key'];
+    }
+
+    /** R‖S (64 octets) → DER, pour vérifier la signature JOSE avec openssl_verify. */
+    private static function brutVersDer(string $brut): string
+    {
+        $entier = function (string $x): string {
+            $x = ltrim($x, "\x00");
+            if ($x === '' || (ord($x[0]) & 0x80)) {
+                $x = "\x00" . $x;
+            }
+
+            return "\x02" . chr(strlen($x)) . $x;
+        };
+        $seq = $entier(substr($brut, 0, 32)) . $entier(substr($brut, 32, 32));
+
+        return "\x30" . chr(strlen($seq)) . $seq;
+    }
+
+    /** @test */
+    public function le_client_secret_apple_est_un_jwt_es256_valide(): void
+    {
+        $publique = $this->cleAppleDeTest();
+        $jwt = app(\App\Services\Auth\AppleTokenRevoker::class)->clientSecret();
+        [$h, $c, $sig] = explode('.', $jwt);
+        $dec = fn (string $s) => base64_decode(strtr($s, '-_', '+/') . str_repeat('=', (4 - strlen($s) % 4) % 4));
+
+        $entete = json_decode($dec($h), true);
+        $charge = json_decode($dec($c), true);
+        $this->assertSame(['alg' => 'ES256', 'kid' => 'CLE1234567'], $entete);
+        $this->assertSame('EQUIPE1234', $charge['iss']);
+        $this->assertSame('https://appleid.apple.com', $charge['aud']);
+        $this->assertSame(self::AUDIENCE, $charge['sub']);
+        $this->assertLessThanOrEqual(300, $charge['exp'] - $charge['iat']);
+        $this->assertSame(64, strlen($dec($sig)), 'Signature JOSE ES256 = R‖S, 64 octets.');
+        $this->assertSame(1, openssl_verify($h . '.' . $c, self::brutVersDer($dec($sig)), $publique, OPENSSL_ALGO_SHA256),
+            'La signature doit se vérifier avec la clé publique (sinon Apple refuse le client secret).');
+    }
+
+    /** @test */
+    public function connexion_apple_garde_le_jeton_chiffre_et_la_suppression_le_revoque_chez_apple(): void
+    {
+        $this->cleAppleDeTest();
+        Http::fake([
+            'appleid.apple.com/auth/token' => Http::response(['refresh_token' => 'rt-de-test-123', 'access_token' => 'a'], 200),
+            'appleid.apple.com/auth/revoke' => Http::response('', 200),
+        ]);
+
+        $reponse = $this->postJson('/api/auth/social/apple', [
+            'id_token' => $this->jeton(),
+            'authorization_code' => 'code-apple-de-test',
+        ]);
+        $reponse->assertSuccessful();   // 201 : compte créé
+        $user = User::where('apple_sub', 'sub-client-001')->firstOrFail();
+        $this->assertSame('rt-de-test-123', $user->apple_refresh_token);
+        $brut = DB::table('users')->where('id', $user->id)->value('apple_refresh_token');
+        $this->assertNotSame('rt-de-test-123', $brut, 'Le jeton Apple doit être CHIFFRÉ en base.');
+        $this->assertArrayNotHasKey('apple_refresh_token', $user->toArray(), 'Jamais sérialisé.');
+
+        Http::assertSent(fn ($r) => str_contains($r->url(), '/auth/token') && $r['code'] === 'code-apple-de-test'
+            && $r['grant_type'] === 'authorization_code' && $r['client_id'] === self::AUDIENCE && substr_count((string) $r['client_secret'], '.') === 2);
+
+        // Fixture : la connexion sociale attribue le rôle par son identifiant de PRODUCTION (EnumRole::CUSTOMER), qui ne
+        // désigne pas « Customer » dans la base de test ; on aligne comme AccountDeletionTest (assignRole('Customer')).
+        $user->syncRoles(['Customer']);
+        $jetonSession = $reponse->json('token') ?? $reponse->json('data.token');
+        $this->assertNotEmpty($jetonSession);
+        $sup = $this->withHeaders(['Authorization' => 'Bearer ' . $jetonSession])->postJson('/api/auth/delete-account');
+        $this->assertSame(200, $sup->status(), (string) $sup->getContent());
+
+        Http::assertSent(fn ($r) => str_contains($r->url(), '/auth/revoke') && $r['token'] === 'rt-de-test-123'
+            && $r['token_type_hint'] === 'refresh_token');
+        $this->assertNull(DB::table('users')->where('id', $user->id)->value('apple_refresh_token'));
+    }
+
+    /** @test */
+    public function sans_cle_apple_la_connexion_ne_change_pas_et_rien_ne_part_chez_apple(): void
+    {
+        config(['services.apple.private_key' => null]);
+        $this->postJson('/api/auth/social/apple', [
+            'id_token' => $this->jeton(),
+            'authorization_code' => 'code-apple-de-test',
+        ])->assertSuccessful();
+
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), '/auth/token') || str_contains($r->url(), '/auth/revoke'));
+        $this->assertNull(User::where('apple_sub', 'sub-client-001')->firstOrFail()->apple_refresh_token);
+    }
 }

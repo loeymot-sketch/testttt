@@ -229,7 +229,7 @@ final class MeatPortionCalculator
         $iSupp = 0;
         foreach (($snapshot['extras'] ?? []) as $e) {
             $nomExtra = (string) ($e['extra_name'] ?? $e['name'] ?? '');
-            if (! preg_match('/viande\s*suppl/iu', $nomExtra)) {
+            if (! preg_match('/viande\s*(?:suppl|en\s+plus)/iu', $nomExtra)) { // « Viande en plus » = même extra (Cayenne, Suprême)
                 continue;
             }
             $n = max(1, (int) ($e['quantity'] ?? 1));

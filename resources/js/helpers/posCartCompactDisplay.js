@@ -46,25 +46,67 @@ function normalizeGroup(label) {
 /**
  * Replie une liste de crudités en symboles ordonnés : « Salade, Tomate, Oignon » → « STO ».
  * Les refus (« Sans oignons ») sont écartés par la garde de négation de `cruditeSymbol`.
+ *
+ * [AUDIT-SUPERVISEUR 2026-08-25 · AB-001] UN INGRÉDIENT NE DOIT JAMAIS DISPARAÎTRE.
+ *
+ * Mesure : deux lignes du panier affichaient la MÊME composition « Poulet mariné · STO ·
+ * … » alors que la seconde contenait « Salade, Tomate, Oignon, CORNICHON ». Le cornichon
+ * était absent du libellé visible — quatre crudités compressées en un sigle de trois
+ * lettres.
+ *
+ * Cause : `cruditeSymbol()` ne connaît que salade, tomate et oignon (table volontairement
+ * fermée — c'est le jumeau STRICT du formateur de ticket cuisine, on n'y touche pas). Tout
+ * le reste rendait une chaîne vide, que le `.filter(Boolean)` jetait ensuite en silence.
+ * Le commentaire promettait « conservé en fin, jamais perdu » : c'était vrai des symboles
+ * PRODUITS, pas des ingrédients SANS symbole.
+ *
+ * C'est l'écran sur lequel le caissier confirme la commande avant qu'elle parte en cuisine.
+ * Un ingrédient qui s'évapore là se paie en salle.
+ *
+ * On garde donc le NOM des crudités inconnues, à la suite des symboles. « STO Cornichon »
+ * est moins élégant que « STO » — et infiniment plus honnête.
  */
 function foldCrudites(rawValue) {
-    const symbols = String(rawValue || '')
-        .split(',')
-        .map((part) => cruditeSymbol(part.trim()))
-        .filter(Boolean);
+    const connus = [];
+    const inconnus = [];
 
-    if (symbols.length === 0) return '';
+    String(rawValue || '')
+        .split(',')
+        .forEach((part) => {
+            const nom = part.trim();
+            if (!nom) return;
+
+            const sym = cruditeSymbol(nom);
+            if (sym) {
+                connus.push(sym);
+                return;
+            }
+
+            // Pas de symbole — mais l'ingrédient existe. `cruditeSymbol` écarte aussi les
+            // refus (« sans oignon ») en rendant une chaîne vide : on ne doit donc PAS les
+            // repêcher ici, sinon un refus se lirait comme un ajout. La garde de négation
+            // est la même que celle de `cruditeSymbol`.
+            if (/^(sans|no|pas de)\b/i.test(nom.normalize('NFD').replace(/[\u0300-\u036f]/g, ''))) {
+                return;
+            }
+
+            inconnus.push(nom);
+        });
+
+    if (connus.length === 0 && inconnus.length === 0) return '';
 
     const unique = [];
     CRUDITE_ORDER.forEach((sym) => {
-        if (symbols.includes(sym)) unique.push(sym);
+        if (connus.includes(sym)) unique.push(sym);
     });
     // Symbole hors table canonique : conservé en fin, jamais perdu.
-    symbols.forEach((sym) => {
+    connus.forEach((sym) => {
         if (!unique.includes(sym)) unique.push(sym);
     });
 
-    return unique.join('');
+    const sigle = unique.join('');
+
+    return [sigle, ...inconnus].filter(Boolean).join(' ');
 }
 
 /**

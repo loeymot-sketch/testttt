@@ -1,0 +1,2288 @@
+[
+ {
+  "id": 6598,
+  "queue_number": "A0032",
+  "order_serial_no": "1908266598",
+  "source_surface": "phone",
+  "order_type": 10,
+  "created_at_iso": "2026-08-19T10:00:24+02:00",
+  "status": 16,
+  "scheduled_hm": null,
+  "table_name": null,
+  "customer": {
+   "name": "Client Test",
+   "phone": null
+  },
+  "order_items": [
+   {
+    "id": 5978,
+    "order_id": 6598,
+    "item_id": 22,
+    "item_name": "Cayenne",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 5,
+      "variation_id": 281,
+      "attribute_name": "Sauce (1ère Gratuite)",
+      "variation_name": "Algérienne"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 6,
+      "variation_id": 450,
+      "attribute_name": "Type de Pain",
+      "variation_name": "Pain"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 1,
+      "variation_id": 680,
+      "attribute_name": "Viande 1",
+      "variation_name": "Poulet mariné"
+     }
+    ],
+    "item_extras": [
+     {
+      "extra_id": 49,
+      "quantity": 1,
+      "extra_name": "Salade",
+      "line_total": 0,
+      "unit_price": 0
+     },
+     {
+      "extra_id": 50,
+      "quantity": 1,
+      "extra_name": "Tomate",
+      "line_total": 0,
+      "unit_price": 0
+     }
+    ],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 5,
+       "variation_id": 281,
+       "attribute_name": "Sauce (1ère Gratuite)",
+       "variation_name": "Algérienne"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 6,
+       "variation_id": 450,
+       "attribute_name": "Type de Pain",
+       "variation_name": "Pain"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 1,
+       "variation_id": 680,
+       "attribute_name": "Viande 1",
+       "variation_name": "Poulet mariné"
+      }
+     ],
+     "addons": [],
+     "extras": [
+      {
+       "extra_id": 49,
+       "quantity": 1,
+       "extra_name": "Salade",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "extra_id": 50,
+       "quantity": 1,
+       "extra_name": "Tomate",
+       "line_total": 0,
+       "unit_price": 0
+      }
+     ],
+     "captured_at": "2026-08-19T08:50:33+02:00",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": "CAYENNE\nPain Viandes : Poulet mariné - Salade, Tomate Sauce : Algérienne\n+ Menu (Frites + Boisson) (+2,50 €)\n↳ Sauce frites: Mayonnaise\nBOISSON: Coca-Cola 33cl",
+    "kds_station": "cuisine_chaude"
+   },
+   {
+    "id": 5979,
+    "order_id": 6598,
+    "item_id": 1,
+    "item_name": "Menu (Frites + Boisson)",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [],
+    "item_extras": [],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [],
+     "addons": [],
+     "extras": [],
+     "captured_at": "2026-08-19T08:50:33+02:00",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": "Sauce frites: Mayonnaise",
+    "kds_station": "none"
+   },
+   {
+    "id": 5980,
+    "order_id": 6598,
+    "item_id": 52,
+    "item_name": "Coca-Cola 33cl",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [],
+    "item_extras": [],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [],
+     "addons": [],
+     "extras": [],
+     "captured_at": "2026-08-19T08:50:33+02:00",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": "COCA-COLA 33CL",
+    "kds_station": "bar"
+   }
+  ]
+ },
+ {
+  "id": 6277,
+  "queue_number": "U2RZA",
+  "order_serial_no": "#MSQJH2RZa",
+  "source_surface": "uber_eats",
+  "order_type": 5,
+  "created_at_iso": "2026-08-12T22:25:47+02:00",
+  "status": 4,
+  "scheduled_hm": null,
+  "table_name": null,
+  "customer": {
+   "name": "Client Test",
+   "phone": null
+  },
+  "order_items": [
+   {
+    "id": 5963,
+    "order_id": 6277,
+    "item_id": 26,
+    "item_name": "Tacos M",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [
+     {
+      "attribute_name": "Viande 1",
+      "variation_name": "Poulet mariné"
+     },
+     {
+      "attribute_name": "Sauce 1",
+      "variation_name": "Algérienne"
+     }
+    ],
+    "item_extras": [
+     {
+      "quantity": 1,
+      "extra_name": "Salade",
+      "line_total": 0,
+      "unit_price": 0
+     },
+     {
+      "quantity": 1,
+      "extra_name": "Tomate",
+      "line_total": 0,
+      "unit_price": 0
+     },
+     {
+      "quantity": 1,
+      "extra_name": "Supplément Cheddar",
+      "line_total": 1,
+      "unit_price": 1,
+      "uber_supplement": true
+     }
+    ],
+    "item_addons": [
+     {
+      "role": "menu_full",
+      "quantity": 1,
+      "addon_name": "Menu (Frites + Boisson)",
+      "line_total": 0,
+      "unit_price": 0
+     },
+     {
+      "role": "drink",
+      "quantity": 1,
+      "addon_name": "Coca-Cola 33cl",
+      "line_total": 0,
+      "unit_price": 0
+     }
+    ],
+    "composition_snapshot": {
+     "lines": [
+      {
+       "attribute_name": "Viande 1",
+       "variation_name": "Poulet mariné"
+      },
+      {
+       "attribute_name": "Sauce 1",
+       "variation_name": "Algérienne"
+      }
+     ],
+     "addons": [
+      {
+       "role": "menu_full",
+       "quantity": 1,
+       "addon_name": "Menu (Frites + Boisson)",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "role": "drink",
+       "quantity": 1,
+       "addon_name": "Coca-Cola 33cl",
+       "line_total": 0,
+       "unit_price": 0
+      }
+     ],
+     "extras": [
+      {
+       "quantity": 1,
+       "extra_name": "Salade",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "quantity": 1,
+       "extra_name": "Tomate",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "quantity": 1,
+       "extra_name": "Supplément Cheddar",
+       "line_total": 1,
+       "unit_price": 1,
+       "uber_supplement": true
+      }
+     ],
+     "source": "uber_eats_photo",
+     "uber_title": "Tacos M",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": "[SANS OIGNONS SVP]",
+    "kds_station": "cuisine_chaude"
+   },
+   {
+    "id": 5964,
+    "order_id": 6277,
+    "item_id": 22,
+    "item_name": "Cayenne",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 2,
+    "item_variations": [
+     {
+      "attribute_name": "Viande 1",
+      "variation_name": "Viande Hachée"
+     },
+     {
+      "attribute_name": "Sauce 1",
+      "variation_name": "Sauce Samouraï"
+     }
+    ],
+    "item_extras": [
+     {
+      "quantity": 1,
+      "extra_name": "Oignons cuits",
+      "line_total": 0,
+      "unit_price": 0
+     }
+    ],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [
+      {
+       "attribute_name": "Viande 1",
+       "variation_name": "Viande Hachée"
+      },
+      {
+       "attribute_name": "Sauce 1",
+       "variation_name": "Sauce Samouraï"
+      }
+     ],
+     "addons": [],
+     "extras": [
+      {
+       "quantity": 1,
+       "extra_name": "Oignons cuits",
+       "line_total": 0,
+       "unit_price": 0
+      }
+     ],
+     "source": "uber_eats_photo",
+     "uber_title": "Cayenne",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": "",
+    "kds_station": "cuisine_chaude"
+   },
+   {
+    "id": 5965,
+    "order_id": 6277,
+    "item_id": 34,
+    "item_name": "Grande Frites",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [],
+    "item_extras": [],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [],
+     "addons": [],
+     "extras": [],
+     "source": "uber_eats_photo",
+     "uber_title": "Grande Frites",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": "Sauce frites : Ketchup",
+    "kds_station": "cuisine_chaude"
+   }
+  ]
+ },
+ {
+  "id": 6268,
+  "queue_number": "U9BUJ",
+  "order_serial_no": "#MSN89BUJ",
+  "source_surface": "uber_eats",
+  "order_type": 10,
+  "created_at_iso": "2026-08-10T14:48:30+02:00",
+  "status": 4,
+  "scheduled_hm": null,
+  "table_name": null,
+  "customer": {
+   "name": "Client Test",
+   "phone": null
+  },
+  "order_items": [
+   {
+    "id": 5946,
+    "order_id": 6268,
+    "item_id": 98,
+    "item_name": "Cheese Burger",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [],
+    "item_extras": [],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [],
+     "addons": [],
+     "extras": [],
+     "source": "uber_eats_photo",
+     "uber_title": "Cheese Burger",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": "",
+    "kds_station": "cuisine_chaude"
+   },
+   {
+    "id": 5947,
+    "order_id": 6268,
+    "item_id": 38,
+    "item_name": "Chicken Burger",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [],
+    "item_extras": [],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [],
+     "addons": [],
+     "extras": [],
+     "source": "uber_eats_photo",
+     "uber_title": "Chicken Burger",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": "",
+    "kds_station": "cuisine_chaude"
+   },
+   {
+    "id": 5948,
+    "order_id": 6268,
+    "item_id": 106,
+    "item_name": "Menu Enfant Chicken Burger",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [],
+    "item_extras": [],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [],
+     "addons": [],
+     "extras": [],
+     "source": "uber_eats_photo",
+     "uber_title": "Menu Enfant Chicken Burger",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": "",
+    "kds_station": "cuisine_chaude"
+   },
+   {
+    "id": 5949,
+    "order_id": 6268,
+    "item_id": 22,
+    "item_name": "Cayenne",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [
+     {
+      "attribute_name": "Viande 1",
+      "variation_name": "Poulet mariné"
+     },
+     {
+      "attribute_name": "Sauce 1",
+      "variation_name": "Fromagère maison"
+     }
+    ],
+    "item_extras": [
+     {
+      "quantity": 1,
+      "extra_name": "Salade",
+      "line_total": 0,
+      "unit_price": 0
+     }
+    ],
+    "item_addons": [
+     {
+      "role": "menu_full",
+      "quantity": 1,
+      "addon_name": "Menu (Frites + Boisson)",
+      "line_total": 0,
+      "unit_price": 0
+     }
+    ],
+    "composition_snapshot": {
+     "lines": [
+      {
+       "attribute_name": "Viande 1",
+       "variation_name": "Poulet mariné"
+      },
+      {
+       "attribute_name": "Sauce 1",
+       "variation_name": "Fromagère maison"
+      }
+     ],
+     "addons": [
+      {
+       "role": "menu_full",
+       "quantity": 1,
+       "addon_name": "Menu (Frites + Boisson)",
+       "line_total": 0,
+       "unit_price": 0
+      }
+     ],
+     "extras": [
+      {
+       "quantity": 1,
+       "extra_name": "Salade",
+       "line_total": 0,
+       "unit_price": 0
+      }
+     ],
+     "source": "uber_eats_photo",
+     "uber_title": "Cayenne",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": "Sauce frites : Ketchup, Mayonnaise",
+    "kds_station": "cuisine_chaude"
+   }
+  ]
+ },
+ {
+  "id": 6230,
+  "queue_number": "A0152",
+  "order_serial_no": "0508266230",
+  "source_surface": "web",
+  "order_type": 10,
+  "created_at_iso": "2026-08-05T10:43:28+02:00",
+  "status": 1,
+  "scheduled_hm": null,
+  "table_name": null,
+  "customer": {
+   "name": "Client Test",
+   "phone": null
+  },
+  "order_items": [
+   {
+    "id": 5892,
+    "order_id": 6230,
+    "item_id": 41,
+    "item_name": "Bol Frites",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 1,
+      "variation_id": 550,
+      "attribute_name": "Viande 1",
+      "variation_name": "Tenders"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 8,
+      "variation_id": 202,
+      "attribute_name": "Sauce bol",
+      "variation_name": "Sauce fromagère maison"
+     }
+    ],
+    "item_extras": [
+     {
+      "extra_id": 396,
+      "quantity": 2,
+      "extra_name": "Viande supplémentaire",
+      "line_total": 5,
+      "unit_price": 2.5
+     }
+    ],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 1,
+       "variation_id": 550,
+       "attribute_name": "Viande 1",
+       "variation_name": "Tenders"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 8,
+       "variation_id": 202,
+       "attribute_name": "Sauce bol",
+       "variation_name": "Sauce fromagère maison"
+      }
+     ],
+     "addons": [],
+     "extras": [
+      {
+       "extra_id": 396,
+       "quantity": 2,
+       "extra_name": "Viande supplémentaire",
+       "line_total": 5,
+       "unit_price": 2.5
+      }
+     ],
+     "captured_at": "2026-08-05T10:43:28+02:00",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": "Viandes en plus : Poulet mariné, Cordon Bleu.",
+    "kds_station": "cuisine_chaude"
+   },
+   {
+    "id": 5893,
+    "order_id": 6230,
+    "item_id": 52,
+    "item_name": "Coca-Cola 33cl",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [],
+    "item_extras": [],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [],
+     "addons": [],
+     "extras": [],
+     "captured_at": "2026-08-05T10:43:28+02:00",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": null,
+    "kds_station": "bar"
+   }
+  ]
+ },
+ {
+  "id": 6174,
+  "queue_number": "A0114",
+  "order_serial_no": "0508266174",
+  "source_surface": "web",
+  "order_type": 10,
+  "created_at_iso": "2026-08-05T08:38:10+02:00",
+  "status": 1,
+  "scheduled_hm": null,
+  "table_name": null,
+  "customer": {
+   "name": "Client Test",
+   "phone": null
+  },
+  "order_items": [
+   {
+    "id": 5849,
+    "order_id": 6174,
+    "item_id": 104,
+    "item_name": "Méga",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 1,
+      "variation_id": 473,
+      "attribute_name": "Viande 1",
+      "variation_name": "Tenders"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 2,
+      "variation_id": 477,
+      "attribute_name": "Viande 2",
+      "variation_name": "Cordon Bleu"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 5,
+      "variation_id": 487,
+      "attribute_name": "Sauce (1ère Gratuite)",
+      "variation_name": "Blanche"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 6,
+      "variation_id": 483,
+      "attribute_name": "Type de Pain",
+      "variation_name": "Pain"
+     }
+    ],
+    "item_extras": [
+     {
+      "extra_id": 343,
+      "quantity": 1,
+      "extra_name": "Salade",
+      "line_total": 0,
+      "unit_price": 0
+     },
+     {
+      "extra_id": 553,
+      "quantity": 1,
+      "extra_name": "Maïs",
+      "line_total": 0.9,
+      "unit_price": 0.9
+     },
+     {
+      "extra_id": 349,
+      "quantity": 1,
+      "extra_name": "Cheddar",
+      "line_total": 0.9,
+      "unit_price": 0.9
+     },
+     {
+      "extra_id": 353,
+      "quantity": 1,
+      "extra_name": "Œuf",
+      "line_total": 0.9,
+      "unit_price": 0.9
+     }
+    ],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 1,
+       "variation_id": 473,
+       "attribute_name": "Viande 1",
+       "variation_name": "Tenders"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 2,
+       "variation_id": 477,
+       "attribute_name": "Viande 2",
+       "variation_name": "Cordon Bleu"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 5,
+       "variation_id": 487,
+       "attribute_name": "Sauce (1ère Gratuite)",
+       "variation_name": "Blanche"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 6,
+       "variation_id": 483,
+       "attribute_name": "Type de Pain",
+       "variation_name": "Pain"
+      }
+     ],
+     "addons": [],
+     "extras": [
+      {
+       "extra_id": 343,
+       "quantity": 1,
+       "extra_name": "Salade",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "extra_id": 553,
+       "quantity": 1,
+       "extra_name": "Maïs",
+       "line_total": 0.9,
+       "unit_price": 0.9
+      },
+      {
+       "extra_id": 349,
+       "quantity": 1,
+       "extra_name": "Cheddar",
+       "line_total": 0.9,
+       "unit_price": 0.9
+      },
+      {
+       "extra_id": 353,
+       "quantity": 1,
+       "extra_name": "Œuf",
+       "line_total": 0.9,
+       "unit_price": 0.9
+      }
+     ],
+     "captured_at": "2026-08-05T08:38:10+02:00",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": null,
+    "kds_station": "cuisine_chaude"
+   }
+  ]
+ },
+ {
+  "id": 6133,
+  "queue_number": "A0087",
+  "order_serial_no": "0508266133",
+  "source_surface": "web",
+  "order_type": 10,
+  "created_at_iso": "2026-08-05T06:54:19+02:00",
+  "status": 1,
+  "scheduled_hm": null,
+  "table_name": null,
+  "customer": {
+   "name": "Client Test",
+   "phone": null
+  },
+  "order_items": [
+   {
+    "id": 5808,
+    "order_id": 6133,
+    "item_id": 105,
+    "item_name": "Terminator",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 1,
+      "variation_id": 499,
+      "attribute_name": "Viande 1",
+      "variation_name": "Viande Hachée"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 2,
+      "variation_id": 505,
+      "attribute_name": "Viande 2",
+      "variation_name": "Cordon Bleu"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 5,
+      "variation_id": 518,
+      "attribute_name": "Sauce (1ère Gratuite)",
+      "variation_name": "Algérienne"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 6,
+      "variation_id": 511,
+      "attribute_name": "Type de Pain",
+      "variation_name": "Pain"
+     }
+    ],
+    "item_extras": [
+     {
+      "extra_id": 395,
+      "quantity": 2,
+      "extra_name": "Viande supplémentaire",
+      "line_total": 5,
+      "unit_price": 2.5
+     }
+    ],
+    "item_addons": [
+     {
+      "role": "menu_frites",
+      "addon_id": 78,
+      "quantity": 1,
+      "addon_name": "Menu (Frites + Boisson)",
+      "line_total": 1.9,
+      "unit_price": 1.9,
+      "addon_item_id": 1,
+      "catalog_price": 2.5
+     }
+    ],
+    "composition_snapshot": {
+     "lines": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 1,
+       "variation_id": 499,
+       "attribute_name": "Viande 1",
+       "variation_name": "Viande Hachée"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 2,
+       "variation_id": 505,
+       "attribute_name": "Viande 2",
+       "variation_name": "Cordon Bleu"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 5,
+       "variation_id": 518,
+       "attribute_name": "Sauce (1ère Gratuite)",
+       "variation_name": "Algérienne"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 6,
+       "variation_id": 511,
+       "attribute_name": "Type de Pain",
+       "variation_name": "Pain"
+      }
+     ],
+     "addons": [
+      {
+       "role": "menu_frites",
+       "addon_id": 78,
+       "quantity": 1,
+       "addon_name": "Menu (Frites + Boisson)",
+       "line_total": 1.9,
+       "unit_price": 1.9,
+       "addon_item_id": 1,
+       "catalog_price": 2.5
+      }
+     ],
+     "extras": [
+      {
+       "extra_id": 395,
+       "quantity": 2,
+       "extra_name": "Viande supplémentaire",
+       "line_total": 5,
+       "unit_price": 2.5
+      }
+     ],
+     "captured_at": "2026-08-05T06:54:19+02:00",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": "Sauce frites : Ketchup",
+    "kds_station": "cuisine_chaude"
+   }
+  ]
+ },
+ {
+  "id": 6101,
+  "queue_number": "A0060",
+  "order_serial_no": "0508266101",
+  "source_surface": "web",
+  "order_type": 10,
+  "created_at_iso": "2026-08-05T03:45:39+02:00",
+  "status": 19,
+  "scheduled_hm": null,
+  "table_name": null,
+  "customer": {
+   "name": "Client Test",
+   "phone": null
+  },
+  "order_items": [
+   {
+    "id": 5776,
+    "order_id": 6101,
+    "item_id": 22,
+    "item_name": "Cayenne",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 6,
+      "variation_id": 450,
+      "attribute_name": "Type de Pain",
+      "variation_name": "Pain"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 5,
+      "variation_id": 453,
+      "attribute_name": "Sauce (1ère Gratuite)",
+      "variation_name": "Fromagère maison"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 1,
+      "variation_id": 680,
+      "attribute_name": "Viande 1",
+      "variation_name": "Poulet mariné"
+     }
+    ],
+    "item_extras": [
+     {
+      "extra_id": 50,
+      "quantity": 1,
+      "extra_name": "Tomate",
+      "line_total": 0,
+      "unit_price": 0
+     },
+     {
+      "extra_id": 51,
+      "quantity": 1,
+      "extra_name": "Oignon",
+      "line_total": 0,
+      "unit_price": 0
+     },
+     {
+      "extra_id": 329,
+      "quantity": 1,
+      "extra_name": "Oignons frits",
+      "line_total": 0.9,
+      "unit_price": 0.9
+     }
+    ],
+    "item_addons": [
+     {
+      "role": "menu_full",
+      "addon_id": 25,
+      "quantity": 1,
+      "addon_name": "Menu (Frites + Boisson)",
+      "line_total": 2.5,
+      "unit_price": 2.5,
+      "addon_item_id": 1,
+      "catalog_price": 2.5
+     }
+    ],
+    "composition_snapshot": {
+     "lines": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 6,
+       "variation_id": 450,
+       "attribute_name": "Type de Pain",
+       "variation_name": "Pain"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 5,
+       "variation_id": 453,
+       "attribute_name": "Sauce (1ère Gratuite)",
+       "variation_name": "Fromagère maison"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 1,
+       "variation_id": 680,
+       "attribute_name": "Viande 1",
+       "variation_name": "Poulet mariné"
+      }
+     ],
+     "addons": [
+      {
+       "role": "menu_full",
+       "addon_id": 25,
+       "quantity": 1,
+       "addon_name": "Menu (Frites + Boisson)",
+       "line_total": 2.5,
+       "unit_price": 2.5,
+       "addon_item_id": 1,
+       "catalog_price": 2.5
+      }
+     ],
+     "extras": [
+      {
+       "extra_id": 50,
+       "quantity": 1,
+       "extra_name": "Tomate",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "extra_id": 51,
+       "quantity": 1,
+       "extra_name": "Oignon",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "extra_id": 329,
+       "quantity": 1,
+       "extra_name": "Oignons frits",
+       "line_total": 0.9,
+       "unit_price": 0.9
+      }
+     ],
+     "captured_at": "2026-08-05T03:45:39+02:00",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": "Boisson menu: Coca-Cola 33cl · Sauce frites : Mayonnaise",
+    "kds_station": "cuisine_chaude"
+   },
+   {
+    "id": 5777,
+    "order_id": 6101,
+    "item_id": 22,
+    "item_name": "Cayenne",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 6,
+      "variation_id": 450,
+      "attribute_name": "Type de Pain",
+      "variation_name": "Pain"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 5,
+      "variation_id": 453,
+      "attribute_name": "Sauce (1ère Gratuite)",
+      "variation_name": "Fromagère maison"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 1,
+      "variation_id": 680,
+      "attribute_name": "Viande 1",
+      "variation_name": "Poulet mariné"
+     }
+    ],
+    "item_extras": [
+     {
+      "extra_id": 50,
+      "quantity": 1,
+      "extra_name": "Tomate",
+      "line_total": 0,
+      "unit_price": 0
+     },
+     {
+      "extra_id": 51,
+      "quantity": 1,
+      "extra_name": "Oignon",
+      "line_total": 0,
+      "unit_price": 0
+     },
+     {
+      "extra_id": 329,
+      "quantity": 1,
+      "extra_name": "Oignons frits",
+      "line_total": 0.9,
+      "unit_price": 0.9
+     }
+    ],
+    "item_addons": [
+     {
+      "role": "menu_full",
+      "addon_id": 25,
+      "quantity": 1,
+      "addon_name": "Menu (Frites + Boisson)",
+      "line_total": 2.5,
+      "unit_price": 2.5,
+      "addon_item_id": 1,
+      "catalog_price": 2.5
+     }
+    ],
+    "composition_snapshot": {
+     "lines": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 6,
+       "variation_id": 450,
+       "attribute_name": "Type de Pain",
+       "variation_name": "Pain"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 5,
+       "variation_id": 453,
+       "attribute_name": "Sauce (1ère Gratuite)",
+       "variation_name": "Fromagère maison"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 1,
+       "variation_id": 680,
+       "attribute_name": "Viande 1",
+       "variation_name": "Poulet mariné"
+      }
+     ],
+     "addons": [
+      {
+       "role": "menu_full",
+       "addon_id": 25,
+       "quantity": 1,
+       "addon_name": "Menu (Frites + Boisson)",
+       "line_total": 2.5,
+       "unit_price": 2.5,
+       "addon_item_id": 1,
+       "catalog_price": 2.5
+      }
+     ],
+     "extras": [
+      {
+       "extra_id": 50,
+       "quantity": 1,
+       "extra_name": "Tomate",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "extra_id": 51,
+       "quantity": 1,
+       "extra_name": "Oignon",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "extra_id": 329,
+       "quantity": 1,
+       "extra_name": "Oignons frits",
+       "line_total": 0.9,
+       "unit_price": 0.9
+      }
+     ],
+     "captured_at": "2026-08-05T03:45:39+02:00",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": "Boisson menu: Coca-Cola 33cl · Sauce frites : Mayonnaise",
+    "kds_station": "cuisine_chaude"
+   }
+  ]
+ },
+ {
+  "id": 6043,
+  "queue_number": "A0035",
+  "order_serial_no": "0208266043",
+  "source_surface": "pos",
+  "order_type": 15,
+  "created_at_iso": "2026-08-02T04:24:59+02:00",
+  "status": 16,
+  "scheduled_hm": null,
+  "table_name": null,
+  "customer": {
+   "name": "Client Test",
+   "phone": null
+  },
+  "order_items": [
+   {
+    "id": 5723,
+    "order_id": 6043,
+    "item_id": 38,
+    "item_name": "Chicken Burger",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 5,
+      "variation_id": 168,
+      "attribute_name": "Sauce (1ère Gratuite)",
+      "variation_name": "Ketchup"
+     }
+    ],
+    "item_extras": [],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 5,
+       "variation_id": 168,
+       "attribute_name": "Sauce (1ère Gratuite)",
+       "variation_name": "Ketchup"
+      }
+     ],
+     "addons": [],
+     "extras": [],
+     "captured_at": "2026-08-02T04:24:59+02:00",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": null,
+    "kds_station": "cuisine_chaude"
+   },
+   {
+    "id": 5724,
+    "order_id": 6043,
+    "item_id": 106,
+    "item_name": "Menu Enfant Chicken Burger",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 5,
+      "variation_id": 674,
+      "attribute_name": "Sauce (1ère Gratuite)",
+      "variation_name": "Ketchup"
+     }
+    ],
+    "item_extras": [],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 5,
+       "variation_id": 674,
+       "attribute_name": "Sauce (1ère Gratuite)",
+       "variation_name": "Ketchup"
+      }
+     ],
+     "addons": [],
+     "extras": [],
+     "captured_at": "2026-08-02T04:24:59+02:00",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": null,
+    "kds_station": "cuisine_chaude"
+   }
+  ]
+ },
+ {
+  "id": 5835,
+  "queue_number": "A0038",
+  "order_serial_no": "2007265835",
+  "source_surface": "kiosk",
+  "order_type": 10,
+  "created_at_iso": "2026-07-20T02:25:59+02:00",
+  "status": 16,
+  "scheduled_hm": null,
+  "table_name": null,
+  "customer": {
+   "name": "Client Test",
+   "phone": null
+  },
+  "order_items": [
+   {
+    "id": 5561,
+    "order_id": 5835,
+    "item_id": 106,
+    "item_name": "Menu Enfant Chicken Burger",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [],
+    "item_extras": [
+     {
+      "extra_id": 466,
+      "quantity": 1,
+      "extra_name": "Cheddar",
+      "line_total": 0.9,
+      "unit_price": 0.9
+     },
+     {
+      "extra_id": 469,
+      "quantity": 1,
+      "extra_name": "Œuf",
+      "line_total": 0.9,
+      "unit_price": 0.9
+     }
+    ],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [],
+     "addons": [],
+     "extras": [
+      {
+       "extra_id": 466,
+       "quantity": 1,
+       "extra_name": "Cheddar",
+       "line_total": 0.9,
+       "unit_price": 0.9
+      },
+      {
+       "extra_id": 469,
+       "quantity": 1,
+       "extra_name": "Œuf",
+       "line_total": 0.9,
+       "unit_price": 0.9
+      }
+     ],
+     "captured_at": "2026-07-20T02:25:59+02:00",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": null,
+    "kds_station": "cuisine_chaude"
+   }
+  ]
+ },
+ {
+  "id": 5833,
+  "queue_number": "A0036",
+  "order_serial_no": "2007265833",
+  "source_surface": "kiosk",
+  "order_type": 10,
+  "created_at_iso": "2026-07-20T02:25:59+02:00",
+  "status": 16,
+  "scheduled_hm": null,
+  "table_name": null,
+  "customer": {
+   "name": "Client Test",
+   "phone": null
+  },
+  "order_items": [
+   {
+    "id": 5559,
+    "order_id": 5833,
+    "item_id": 45,
+    "item_name": "Bol Riz",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 1,
+      "variation_id": 554,
+      "attribute_name": "Viande 1",
+      "variation_name": "Mexicanos"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 8,
+      "variation_id": 246,
+      "attribute_name": "Sauce bol",
+      "variation_name": "Sauce fromagère maison"
+     }
+    ],
+    "item_extras": [
+     {
+      "extra_id": 201,
+      "quantity": 1,
+      "extra_name": "Option Gratiné",
+      "line_total": 2,
+      "unit_price": 2
+     },
+     {
+      "extra_id": 397,
+      "quantity": 1,
+      "extra_name": "Viande supplémentaire",
+      "line_total": 2.5,
+      "unit_price": 2.5
+     },
+     {
+      "extra_id": 382,
+      "quantity": 1,
+      "extra_name": "Cheddar",
+      "line_total": 0.9,
+      "unit_price": 0.9
+     }
+    ],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 1,
+       "variation_id": 554,
+       "attribute_name": "Viande 1",
+       "variation_name": "Mexicanos"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 8,
+       "variation_id": 246,
+       "attribute_name": "Sauce bol",
+       "variation_name": "Sauce fromagère maison"
+      }
+     ],
+     "addons": [],
+     "extras": [
+      {
+       "extra_id": 201,
+       "quantity": 1,
+       "extra_name": "Option Gratiné",
+       "line_total": 2,
+       "unit_price": 2
+      },
+      {
+       "extra_id": 397,
+       "quantity": 1,
+       "extra_name": "Viande supplémentaire",
+       "line_total": 2.5,
+       "unit_price": 2.5
+      },
+      {
+       "extra_id": 382,
+       "quantity": 1,
+       "extra_name": "Cheddar",
+       "line_total": 0.9,
+       "unit_price": 0.9
+      }
+     ],
+     "captured_at": "2026-07-20T02:25:59+02:00",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": null,
+    "kds_station": "cuisine_chaude"
+   }
+  ]
+ },
+ {
+  "id": 7593,
+  "queue_number": "A0032",
+  "order_serial_no": "1610267593",
+  "source_surface": "web",
+  "order_type": 10,
+  "created_at_iso": "2026-10-16T06:11:46+02:00",
+  "status": 1,
+  "scheduled_hm": null,
+  "table_name": null,
+  "customer": {
+   "name": "Client Test",
+   "phone": null
+  },
+  "order_items": [
+   {
+    "id": 7238,
+    "order_id": 7593,
+    "item_id": 22,
+    "item_name": "Cayenne",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 6,
+      "variation_id": 451,
+      "attribute_name": "Type de Pain",
+      "variation_name": "Galette"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 5,
+      "variation_id": 289,
+      "attribute_name": "Sauce (1ère Gratuite)",
+      "variation_name": "Samouraï"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 1,
+      "variation_id": 680,
+      "attribute_name": "Viande 1",
+      "variation_name": "Poulet mariné"
+     }
+    ],
+    "item_extras": [
+     {
+      "extra_id": 49,
+      "quantity": 1,
+      "extra_name": "Salade",
+      "line_total": 0,
+      "unit_price": 0
+     },
+     {
+      "extra_id": 50,
+      "quantity": 1,
+      "extra_name": "Tomate",
+      "line_total": 0,
+      "unit_price": 0
+     },
+     {
+      "extra_id": 51,
+      "quantity": 1,
+      "extra_name": "Oignon",
+      "line_total": 0,
+      "unit_price": 0
+     },
+     {
+      "extra_id": 59,
+      "quantity": 1,
+      "extra_name": "Jambon",
+      "line_total": 0.9,
+      "unit_price": 0.9
+     },
+     {
+      "extra_id": 53,
+      "quantity": 1,
+      "extra_name": "Cheddar",
+      "line_total": 0.9,
+      "unit_price": 0.9
+     },
+     {
+      "extra_id": 54,
+      "quantity": 1,
+      "extra_name": "Raclette",
+      "line_total": 0.9,
+      "unit_price": 0.9
+     }
+    ],
+    "item_addons": [
+     {
+      "role": "menu_full",
+      "addon_id": 25,
+      "quantity": 1,
+      "addon_name": "Menu (Frites + Boisson)",
+      "line_total": 2.5,
+      "unit_price": 2.5,
+      "addon_item_id": 1,
+      "catalog_price": 2.5
+     }
+    ],
+    "composition_snapshot": {
+     "lines": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 6,
+       "variation_id": 451,
+       "attribute_name": "Type de Pain",
+       "variation_name": "Galette"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 5,
+       "variation_id": 289,
+       "attribute_name": "Sauce (1ère Gratuite)",
+       "variation_name": "Samouraï"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 1,
+       "variation_id": 680,
+       "attribute_name": "Viande 1",
+       "variation_name": "Poulet mariné"
+      }
+     ],
+     "addons": [
+      {
+       "role": "menu_full",
+       "addon_id": 25,
+       "quantity": 1,
+       "addon_name": "Menu (Frites + Boisson)",
+       "line_total": 2.5,
+       "unit_price": 2.5,
+       "addon_item_id": 1,
+       "catalog_price": 2.5
+      }
+     ],
+     "extras": [
+      {
+       "extra_id": 49,
+       "quantity": 1,
+       "extra_name": "Salade",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "extra_id": 50,
+       "quantity": 1,
+       "extra_name": "Tomate",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "extra_id": 51,
+       "quantity": 1,
+       "extra_name": "Oignon",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "extra_id": 59,
+       "quantity": 1,
+       "extra_name": "Jambon",
+       "line_total": 0.9,
+       "unit_price": 0.9
+      },
+      {
+       "extra_id": 53,
+       "quantity": 1,
+       "extra_name": "Cheddar",
+       "line_total": 0.9,
+       "unit_price": 0.9
+      },
+      {
+       "extra_id": 54,
+       "quantity": 1,
+       "extra_name": "Raclette",
+       "line_total": 0.9,
+       "unit_price": 0.9
+      }
+     ],
+     "captured_at": "2026-10-16T06:11:46+02:00",
+     "schema_version": 1,
+     "sauce_destinations": {
+      "fries": [
+       "Samouraï"
+      ],
+      "product": []
+     }
+    },
+    "allergens_snapshot": [],
+    "instruction": "Boisson menu: Fanta Orange 33cl · Sauce frites: Samouraï",
+    "kds_station": "cuisine_chaude"
+   }
+  ]
+ },
+ {
+  "id": 5135,
+  "queue_number": "A0017",
+  "order_serial_no": "2406265135",
+  "source_surface": "pos",
+  "order_type": 10,
+  "created_at_iso": "2026-06-24T04:15:03+02:00",
+  "status": 7,
+  "scheduled_hm": null,
+  "table_name": null,
+  "customer": {
+   "name": "Client Test",
+   "phone": null
+  },
+  "order_items": [
+   {
+    "id": 4889,
+    "order_id": 5135,
+    "item_id": 26,
+    "item_name": "Tacos M",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 5,
+      "variation_id": 314,
+      "attribute_name": "Sauce (1ère Gratuite)",
+      "variation_name": "Curry"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 1,
+      "variation_id": 43,
+      "attribute_name": "Viande 1",
+      "variation_name": "Poulet mariné"
+     }
+    ],
+    "item_extras": [
+     {
+      "extra_id": 244,
+      "quantity": 1,
+      "extra_name": "Salade",
+      "line_total": 0,
+      "unit_price": 0
+     },
+     {
+      "extra_id": 245,
+      "quantity": 1,
+      "extra_name": "Tomate",
+      "line_total": 0,
+      "unit_price": 0
+     },
+     {
+      "extra_id": 246,
+      "quantity": 1,
+      "extra_name": "Oignon",
+      "line_total": 0,
+      "unit_price": 0
+     }
+    ],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 5,
+       "variation_id": 314,
+       "attribute_name": "Sauce (1ère Gratuite)",
+       "variation_name": "Curry"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 1,
+       "variation_id": 43,
+       "attribute_name": "Viande 1",
+       "variation_name": "Poulet mariné"
+      }
+     ],
+     "addons": [],
+     "extras": [
+      {
+       "extra_id": 244,
+       "quantity": 1,
+       "extra_name": "Salade",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "extra_id": 245,
+       "quantity": 1,
+       "extra_name": "Tomate",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "extra_id": 246,
+       "quantity": 1,
+       "extra_name": "Oignon",
+       "line_total": 0,
+       "unit_price": 0
+      }
+     ],
+     "captured_at": "2026-06-24T04:15:03+02:00",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": "TACOS M\nViandes : Poulet mariné - Salade, Tomate, Oignon Sauce : Curry\n+ Boisson Seule (+2,00 €)",
+    "kds_station": "cuisine_chaude"
+   },
+   {
+    "id": 4890,
+    "order_id": 5135,
+    "item_id": 3,
+    "item_name": "Boisson Seule",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [],
+    "item_extras": [],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [],
+     "addons": [],
+     "extras": [],
+     "captured_at": "2026-06-24T04:15:03+02:00",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": "",
+    "kds_station": "none"
+   }
+  ]
+ },
+ {
+  "id": 5533,
+  "queue_number": "A0012",
+  "order_serial_no": "0607265533",
+  "source_surface": "kiosk",
+  "order_type": 10,
+  "created_at_iso": "2026-07-06T20:20:46+02:00",
+  "status": 4,
+  "scheduled_hm": null,
+  "table_name": null,
+  "customer": {
+   "name": "Client Test",
+   "phone": null
+  },
+  "order_items": [
+   {
+    "id": 5286,
+    "order_id": 5533,
+    "item_id": 22,
+    "item_name": "Cayenne",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 5,
+      "variation_id": 281,
+      "attribute_name": "Sauce (1ère Gratuite)",
+      "variation_name": "Algérienne"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 6,
+      "variation_id": 450,
+      "attribute_name": "Type de Pain",
+      "variation_name": "Pain"
+     }
+    ],
+    "item_extras": [
+     {
+      "extra_id": 49,
+      "quantity": 1,
+      "extra_name": "Salade",
+      "line_total": 0,
+      "unit_price": 0
+     },
+     {
+      "extra_id": 50,
+      "quantity": 1,
+      "extra_name": "Tomate",
+      "line_total": 0,
+      "unit_price": 0
+     },
+     {
+      "extra_id": 408,
+      "quantity": 1,
+      "extra_name": "Oignons cuits",
+      "line_total": 0,
+      "unit_price": 0
+     }
+    ],
+    "item_addons": [
+     {
+      "role": "menu_full",
+      "addon_id": 25,
+      "quantity": 1,
+      "addon_name": "Menu (Frites + Boisson)",
+      "line_total": 2.5,
+      "unit_price": 2.5,
+      "addon_item_id": 1,
+      "catalog_price": 2.5
+     }
+    ],
+    "composition_snapshot": {
+     "lines": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 5,
+       "variation_id": 281,
+       "attribute_name": "Sauce (1ère Gratuite)",
+       "variation_name": "Algérienne"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 6,
+       "variation_id": 450,
+       "attribute_name": "Type de Pain",
+       "variation_name": "Pain"
+      }
+     ],
+     "addons": [
+      {
+       "role": "menu_full",
+       "addon_id": 25,
+       "quantity": 1,
+       "addon_name": "Menu (Frites + Boisson)",
+       "line_total": 2.5,
+       "unit_price": 2.5,
+       "addon_item_id": 1,
+       "catalog_price": 2.5
+      }
+     ],
+     "extras": [
+      {
+       "extra_id": 49,
+       "quantity": 1,
+       "extra_name": "Salade",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "extra_id": 50,
+       "quantity": 1,
+       "extra_name": "Tomate",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "extra_id": 408,
+       "quantity": 1,
+       "extra_name": "Oignons cuits",
+       "line_total": 0,
+       "unit_price": 0
+      }
+     ],
+     "captured_at": "2026-07-06T20:20:46+02:00",
+     "schema_version": 1
+    },
+    "allergens_snapshot": [],
+    "instruction": "Pain : Pain. Formule : Menu complet (frites + boisson) (Hawaï 33cl). Sauce frites : Algérienne",
+    "kds_station": "cuisine_chaude"
+   }
+  ]
+ },
+ {
+  "id": 7572,
+  "queue_number": "A0033",
+  "order_serial_no": "0210267572",
+  "source_surface": "web",
+  "order_type": 10,
+  "created_at_iso": "2026-10-02T07:12:36+02:00",
+  "status": 16,
+  "scheduled_hm": "18:20",
+  "table_name": null,
+  "customer": {
+   "name": "Client Test",
+   "phone": null
+  },
+  "order_items": [
+   {
+    "id": 7217,
+    "order_id": 7572,
+    "item_id": 26,
+    "item_name": "Tacos M",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 1,
+      "variation_id": 356,
+      "attribute_name": "Viande 1",
+      "variation_name": "Tenders"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 5,
+      "variation_id": 311,
+      "attribute_name": "Sauce (1ère Gratuite)",
+      "variation_name": "Algérienne"
+     },
+     {
+      "quantity": 1,
+      "line_total": 0,
+      "unit_price": 0,
+      "attribute_id": 3,
+      "variation_id": 1185,
+      "attribute_name": "Viande 3",
+      "variation_name": "Cordon Bleu"
+     }
+    ],
+    "item_extras": [
+     {
+      "extra_id": 250,
+      "quantity": 1,
+      "extra_name": "Cheddar",
+      "line_total": 0.9,
+      "unit_price": 0.9
+     }
+    ],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 1,
+       "variation_id": 356,
+       "attribute_name": "Viande 1",
+       "variation_name": "Tenders"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 5,
+       "variation_id": 311,
+       "attribute_name": "Sauce (1ère Gratuite)",
+       "variation_name": "Algérienne"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 3,
+       "variation_id": 1185,
+       "attribute_name": "Viande 3",
+       "variation_name": "Cordon Bleu"
+      }
+     ],
+     "addons": [],
+     "extras": [
+      {
+       "extra_id": 250,
+       "quantity": 1,
+       "extra_name": "Cheddar",
+       "line_total": 0.9,
+       "unit_price": 0.9
+      }
+     ],
+     "captured_at": "2026-10-02T07:12:36+02:00",
+     "schema_version": 1,
+     "sauce_destinations": {
+      "fries": [],
+      "product": []
+     }
+    },
+    "allergens_snapshot": [],
+    "instruction": null,
+    "kds_station": "cuisine_chaude"
+   },
+   {
+    "id": 7218,
+    "order_id": 7572,
+    "item_id": 54,
+    "item_name": "Fanta Orange 33cl",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [],
+    "item_extras": [],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [],
+     "addons": [],
+     "extras": [],
+     "captured_at": "2026-10-02T07:12:36+02:00",
+     "schema_version": 1,
+     "sauce_destinations": {
+      "fries": [],
+      "product": []
+     }
+    },
+    "allergens_snapshot": [],
+    "instruction": null,
+    "kds_station": "bar"
+   }
+  ]
+ },
+ {
+  "id": 7580,
+  "queue_number": "K913",
+  "order_serial_no": "GOAL0210-KDS-3",
+  "source_surface": "pos",
+  "order_type": 10,
+  "created_at_iso": "2026-10-02T22:47:08+02:00",
+  "status": 4,
+  "scheduled_hm": null,
+  "table_name": null,
+  "customer": {
+   "name": "Client Test",
+   "phone": null
+  },
+  "order_items": [
+   {
+    "id": 7225,
+    "order_id": 7580,
+    "item_id": 33,
+    "item_name": "Petite Frites",
+    "line_type": "catalog",
+    "manual_label": null,
+    "quantity": 1,
+    "item_variations": [
+     {
+      "attribute_name": "Sauce (1ère Gratuite)",
+      "variation_name": "Algérienne"
+     }
+    ],
+    "item_extras": [
+     {
+      "quantity": 2,
+      "extra_name": "Sauce supplémentaire",
+      "line_total": 1,
+      "unit_price": 0.5
+     },
+     {
+      "quantity": 1,
+      "extra_name": "Cheddar",
+      "line_total": 0.9,
+      "unit_price": 0.9
+     },
+     {
+      "quantity": 1,
+      "extra_name": "Boursin",
+      "line_total": 0.9,
+      "unit_price": 0.9
+     }
+    ],
+    "item_addons": [],
+    "composition_snapshot": {
+     "lines": [
+      {
+       "attribute_name": "Sauce (1ère Gratuite)",
+       "variation_name": "Algérienne"
+      }
+     ],
+     "addons": [],
+     "extras": [
+      {
+       "quantity": 2,
+       "extra_name": "Sauce supplémentaire",
+       "line_total": 1,
+       "unit_price": 0.5
+      },
+      {
+       "quantity": 1,
+       "extra_name": "Cheddar",
+       "line_total": 0.9,
+       "unit_price": 0.9
+      },
+      {
+       "quantity": 1,
+       "extra_name": "Boursin",
+       "line_total": 0.9,
+       "unit_price": 0.9
+      }
+     ]
+    },
+    "allergens_snapshot": [],
+    "instruction": "PETITE FRITES\nSauce : Algérienne, Andalouse, Harissa Supplément : Cheddar (+€0.90), Boursin (+€0.90)",
+    "kds_station": "cuisine_chaude"
+   }
+  ]
+ }
+]

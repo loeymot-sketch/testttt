@@ -40,10 +40,12 @@ describe('symbol mappers — owner table', () => {
         expect(sauceSymbol('Blanche')).toBe('BL');
         expect(sauceSymbol('Ketchup')).toBe('KTP');
         expect(sauceSymbol('Sauce Burger')).toBe('Burg');
+    expect(sauceSymbol('Sans sauce')).toBe('X');
+    expect(sauceSymbol('Sans sauces')).toBe('X');
     });
     it('falls back to a 3-letter uppercase code for unlisted sauces', () => {
         expect(sauceSymbol('Algérienne')).toBe('ALG');
-        expect(sauceSymbol('Harissa')).toBe('HAR');
+        expect(sauceSymbol('Harissa')).toBe('HH');
     });
     it('maps crudités', () => {
         expect(cruditeSymbol('Salade')).toBe('S');
@@ -61,7 +63,7 @@ describe('couverture EXHAUSTIVE du vrai menu (parité avec le ticket imprimé)',
     it('chaque viande/sauce/crudité/support du menu → symbole attendu', () => {
         const meats = { Mexicanos: 'Mex', 'Cordon Bleu': 'Cordon', 'Viande Hachée': 'K', Nuggets: 'Nug', Tenders: 'Tender', Fricadelle: 'Frec', 'Poulet mariné': 'P' };
         Object.entries(meats).forEach(([n, s]) => expect(meatSymbol(n)).toBe(s));
-        const sauces = { Mayonnaise: 'MAY', Ketchup: 'KTP', Blanche: 'BL', Hannibal: 'HAN', 'Samouraï': 'SAM', 'Algérienne': 'ALG', Andalouse: 'AND', Curry: 'CURY', Barbecue: 'BBQ', Harissa: 'HAR', 'Fromagère maison': 'FRO', 'Spicy maison': 'SPI' };
+        const sauces = { Mayonnaise: 'MAY', Ketchup: 'KTP', Blanche: 'BL', Hannibal: 'HAN', 'Samouraï': 'SAM', 'Algérienne': 'ALG', Andalouse: 'AND', Curry: 'CURY', Barbecue: 'BBQ', Harissa: 'HH', 'Fromagère maison': 'FRO', 'Spicy maison': 'SPI' };
         const seen = new Set();
         Object.entries(sauces).forEach(([n, s]) => { expect(sauceSymbol(n)).toBe(s); seen.add(s); });
         expect(seen.size).toBe(12); // 12 symboles distincts
@@ -93,7 +95,7 @@ describe('symbolicMainLine — owner examples', () => {
         expect(symbolicMainLine(item)).toBe('G | SAN | P | STO | SAM');
     });
 
-    it('tacos / viande hachée / mayonnaise (no size, no crudités) → "G | TAC | K | MAY"', () => {
+    it('tacos / viande hachée / mayonnaise (no size, no crudités) → "Tacos | K | MAY"', () => {
         const item = {
             item_name: 'Tacos M',
             composition_snapshot: {
@@ -104,7 +106,7 @@ describe('symbolicMainLine — owner examples', () => {
             },
         };
         // [MEGA-BORNE 2026-07-22] Un tacos ne montre PAS la taille (le nombre de viandes porte l'info).
-        expect(symbolicMainLine(item)).toBe('G | TAC | K | MAY');
+        expect(symbolicMainLine(item)).toBe('Tacos | K | MAY');
     });
 
     it('crudités are concatenated in canonical S,T,O order regardless of input order', () => {
@@ -134,7 +136,7 @@ describe('symbolicMainLine — owner examples', () => {
             },
         };
         // [MEGA-BORNE 2026-07-22] Plus de « L » : les 2 viandes (K P) portent l'info de taille.
-        expect(symbolicMainLine(item)).toBe('G | TAC | K P | CURY');
+        expect(symbolicMainLine(item)).toBe('Tacos | K P | CURY');
     });
 
     it('never drops a meat when attribute_name is null (malformed snapshot)', () => {
@@ -148,7 +150,7 @@ describe('symbolicMainLine — owner examples', () => {
             },
         };
         // The meat must still surface (P), not vanish. [MEGA-BORNE] tacos → no size.
-        expect(symbolicMainLine(item)).toBe('G | TAC | P | MAY');
+        expect(symbolicMainLine(item)).toBe('Tacos | P | MAY');
     });
 
     it('a drink renders just the product name (no slots)', () => {
@@ -200,7 +202,7 @@ describe('renderItemSymbolic — line list for the KDS card', () => {
         expect(out.lines[0]).toMatchObject({
             type: 'symbolic-main',
             qty: 2,
-            label: 'G | TAC | K | SAM',
+            label: 'Tacos | K | SAM',
             hasAllergen: true,
         });
         expect(out.lines[2]).toMatchObject({ type: 'supplement', label: '⭐ Cheddar' });
@@ -336,7 +338,7 @@ describe('[MEGA-BORNE] product sauces on Line 1 + tacos without size', () => {
         expect(buildSymbolic(item).supplements).toEqual([]);
     });
 
-    it('a tacos drops its size and shows the meats (Tacos L → "G | TAC | K P | CURY")', () => {
+    it('a tacos drops its size and shows the meats (Tacos L → "Tacos | K P | CURY")', () => {
         const item = {
             item_name: 'Tacos L',
             composition_snapshot: {
@@ -347,7 +349,7 @@ describe('[MEGA-BORNE] product sauces on Line 1 + tacos without size', () => {
                 ],
             },
         };
-        expect(symbolicMainLine(item)).toBe('G | TAC | K P | CURY');
+        expect(symbolicMainLine(item)).toBe('Tacos | K P | CURY');
     });
 
     it('retro-compat: an unrecoverable sauce name stays a generic "+ Sauce supplémentaire" line', () => {
@@ -373,5 +375,25 @@ describe('[MEGA-BORNE] product sauces on Line 1 + tacos without size', () => {
         };
         const out = renderItemSymbolic(item);
         expect(out.lines[0]).toMatchObject({ type: 'symbolic-main', label: 'MENU : AND' });
+    });
+
+    it('uses immutable structured sauce destinations before a contradictory legacy instruction', () => {
+        const item = {
+            item_name: 'Tacos M',
+            instruction: 'Sauces en plus : Andalouse\nSauce frites : Mayonnaise',
+            composition_snapshot: {
+                lines: [{ attribute_name: 'Sauce', variation_name: 'Mayonnaise' }],
+                extras: [{ extra_name: 'Sauce supplémentaire', unit_price: 0.5, quantity: 2 }],
+                addons: [{ role: 'menu_full', addon_name: 'Menu (Frites + Boisson)', quantity: 1 }],
+                sauce_destinations: {
+                    product: ['Harissa'],
+                    fries: ['Ketchup', 'Hannibal'],
+                },
+            },
+        };
+        const out = renderItemSymbolic(item);
+        expect(out.lines[0].label).toBe('Tacos | MAY HH');
+        expect(out.lines.find((line) => line.type === 'symbolic-menu')).toMatchObject({ label: 'MENU : KTP HAN' });
+        expect(buildSymbolic(item).supplements).toEqual([]);
     });
 });

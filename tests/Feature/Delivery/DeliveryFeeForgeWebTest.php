@@ -47,6 +47,7 @@ class DeliveryFeeForgeWebTest extends TestCase
             'address' => '10 Rue de Test',
             'latitude' => '48.8566',
             'longitude' => '2.3522',
+            'geocode_status' => 'OK',
         ]);
         $item = $this->activeItem();
 
@@ -77,8 +78,9 @@ class DeliveryFeeForgeWebTest extends TestCase
         $this->assertContains($response->status(), [200, 201], $response->getContent());
 
         $order = FrontendOrder::withoutGlobalScopes()->findOrFail((int) $response->json('data.id'));
-        $this->assertSame(5.0, (float) $order->delivery_charge);
-        $this->assertSame(15.0, (float) $order->total);
+        // Adresse sans commune connue, distance 0 → tarif « autre commune ≤ 5 km » = 4,90 € (jamais le 999 forgé).
+        $this->assertSame(4.9, (float) $order->delivery_charge);
+        $this->assertSame(14.9, (float) $order->total);
     }
 
     /**
@@ -130,6 +132,63 @@ class DeliveryFeeForgeWebTest extends TestCase
         $order = FrontendOrder::withoutGlobalScopes()->findOrFail((int) $response->json('data.id'));
         $this->assertSame(0.0, (float) $order->delivery_charge, 'Takeaway order must drop the forged delivery charge.');
         $this->assertSame(10.0, (float) $order->total, 'Takeaway total must exclude any delivery charge.');
+    }
+
+    /**
+     * [VG-2026-10-21 L2 · décision du propriétaire 2026-10-22] Titre-restaurant (mode 5) ACCEPTÉ sur une livraison.
+     * Il était refusé (422) depuis la supervision du 2026-10-21 parce qu'au départ du livreur le flip historique
+     * « non-espèces → PAYÉ » scellait la vente sans paiement ; ce flip ne s'applique plus au titre-restaurant, payé et
+     * scellé à la REMISE avec sa tranche order_payments (DeliveryMealVoucherDoorstepTest). Prix toujours serveur.
+     */
+    public function test_ticket_restaurant_is_accepted_on_a_delivery_order_and_priced_by_the_server(): void
+    {
+        $this->seedMinimalSettings();
+        config(['app.api_key' => 'test-api-key']);
+        Settings::group('order_setup')->set([
+            'order_setup_food_preparation_time' => 30,
+            'order_setup_delivery' => 5,
+            'order_setup_takeaway' => 5,
+        ]);
+
+        $branch = Branch::factory()->create(['latitude' => '48.8566', 'longitude' => '2.3522']);
+        $customer = User::factory()->create(['branch_id' => $branch->id, 'status' => Status::ACTIVE]);
+        $address = Address::query()->create([
+            'user_id' => $customer->id, 'label' => 'Home', 'address' => '10 Rue de Test',
+            'latitude' => '48.8566', 'longitude' => '2.3522', 'geocode_status' => 'OK',
+        ]);
+        $item = $this->activeItem();
+
+        $response = $this
+            ->actingAs($customer, 'sanctum')
+            ->withHeader('x-api-key', 'test-api-key')
+            ->postJson('/api/frontend/order', [
+                'branch_id' => $branch->id,
+                'subtotal' => 10,
+                'discount' => 0,
+                'delivery_charge' => 0.01,
+                'total' => 0.01,
+                'order_type' => (string) OrderType::DELIVERY,
+                'is_advance_order' => Ask::NO,
+                'address_id' => $address->id,
+                'delivery_time' => now()->addHour()->format('Y-m-d H:i:s'),
+                'source' => Source::WEB,
+                'payment_method' => PaymentGateway::TICKET_RESTAURANT,
+                'items' => json_encode([[
+                    'item_id' => $item->id,
+                    'quantity' => 1,
+                    'item_variations' => [],
+                    'item_extras' => [],
+                ]]),
+            ]);
+
+        $response->assertCreated();
+        $order = FrontendOrder::withoutGlobalScopes()->findOrFail((int) $response->json('data.id'));
+        $this->assertSame(PaymentGateway::TICKET_RESTAURANT, (int) $order->payment_method);
+        // Montants forgés (0,01 €) ignorés : frais et total recalculés par le serveur.
+        $this->assertSame(4.9, (float) $order->delivery_charge);
+        $this->assertSame(14.9, (float) $order->total);
+        $this->assertNotSame(\App\Enums\PaymentStatus::PAID, (int) $order->payment_status, 'Rien n\'est encaissé à la prise de commande.');
+        $this->assertNull($order->fiscal_sequence_no, 'Aucun numéro fiscal avant la remise.');
     }
 
     private function activeItem(): Item

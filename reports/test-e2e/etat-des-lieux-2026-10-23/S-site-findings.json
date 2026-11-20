@@ -1,0 +1,51 @@
+[
+  {
+    "id": "S-001",
+    "severity": "P1",
+    "title": "Confirmation et suivi d'une commande en LIVRAISON présentés comme un retrait au comptoir",
+    "evidence": "Commande 8842 (order_type=5, payment_method=1, delivery_charge 3,90). Écran de confirmation : « Ta commande #2310268842 est envoyée. Présente ce QR à la caisse pour la récupérer. Tu paies sur place. », bandeau « TICKET RETRAIT / HÉNIN-BEAUMONT », QR « QR de retrait — commande 2310268842 » (S-captures/D-10-confirmation.png, M-10-confirmation.png). Suivi : « Prête dans ~980 min », étape « Récupéré », bouton « Voir le QR de retrait » (S-captures/M-11-suivi.png). Code : funnel.jsx:2459 (texte), :2504-2508 (Ticket retrait + TicketQR), :2735 (étape Récupéré), :2807/:2827 (Prête dans), :2896 (Voir le QR de retrait) ; ConfirmationPage (funnel.jsx:2324) et TrackingPage (:2593) ne lisent jamais ctx.fulfillment (seul FunnelSteps :2397 le reçoit).",
+    "repro": "Site :8011, livraison active. Carte → Cheese Burger → panier → Passer commande → tuile Livraison → saisir « 12 rue Elie Gruyelle 62110 » (choisir la suggestion) → Calculer (3,90 €) → s'authentifier → Confirmer ma commande → lire la page de confirmation puis « Suivre ma commande ». Automatisé : tests 1 et 2 de S-site-livraison.spec.js (checks R5/R6/R7 confirmation, états 10-confirmation et 11-suivi)."
+  },
+  {
+    "id": "S-002",
+    "severity": "P1",
+    "title": "Page de paiement d'une livraison : libellés « Payer sur place / au comptoir » faux, aucun choix du mode d'encaissement à la porte",
+    "evidence": "Avec Livraison choisie et un devis Hénin valide, la section Paiement affiche « Payer sur place — Espèces ou carte au comptoir — ton plat t'attend » + « Carte bancaire (en ligne) », la barre « Commande envoyée en direct à la caisse » et la pastille « PAIEMENT AU COMPTOIR » (S-captures/D-07-paiement-avant-confirmation.png). Code : funnel.jsx:1829 (méthode counter), :2164-2165 (barre + pastille). La commande part avec payment_method=1 (orders 8838-8842) ; docs/LIVRAISON.md §3quinquies : le site n'envoie jamais le titre-restaurant, et aucune carte à la porte.",
+    "repro": "Même parcours que S-001, s'arrêter avant « Confirmer ma commande », lire la section PAIEMENT (état 07-paiement-avant-confirmation, mobile et desktop)."
+  },
+  {
+    "id": "S-003",
+    "severity": "P2",
+    "title": "Adresse refusée : le récapitulatif affiche « Livraison Offerte » et Total 6,00 €",
+    "evidence": "Lille (24,34 km, allowed:false, fee:0) : le récap dit « Livraison — Offerte » en vert (S-captures/D-06-adresse-lille-gt12.png) pendant que le bloc d'erreur dit « trop loin… ». Code : funnel.jsx:2314 passe ctx.deliveryQuote.estimate.fee (0) sans tester allowed ; funnel.jsx:289 rend « Offerte » pour 0. Le bouton est grisé (garde funnel.jsx:1882) donc aucune commande ne part : P2.",
+    "repro": "Commande → Livraison → saisir « 10 rue Nationale 59000 Lille », choisir la suggestion, Calculer → lire le récap noir à droite (desktop) / en bas (mobile)."
+  },
+  {
+    "id": "S-004",
+    "severity": "P2",
+    "title": "Suggestions d'adresse : un appel par frappe, 429 silencieux et liste vide dès la 2e saisie dans la minute",
+    "evidence": "funnel.jsx:555 appelle api.deliverySuggest à chaque frappe dès 4 caractères, sans debounce : 21, 25, 25, 28 et 38 appels pour 5 adresses. Limite 'suggest' => 40 par minute et par IP (RouteServiceProvider.php:210). api.js:159-166 avale l'erreur (catch → []). Mesure (S-captures/S-ledger-debit.json › debit) : adresse A 25 appels, 5 options ; adresse B tapée juste après : 53 appels cumulés, 13 réponses 429, 0 option, aucune alerte relative à la limite (seule l'alerte générique de garde « Renseigne une adresse livrable… »). Une IP partagée (Wi-Fi du restaurant, réseau mobile NAT) aggrave.",
+    "repro": "Test 5 de S-site-livraison.spec.js (mobile 390x844) : Livraison → réinitialiser le limiteur → taper « 12 rue de la Gare 62300 Lens » puis, sans attendre, « 1 rue Jean Jaures 62590 Oignies ». À la main : taper deux adresses complètes en moins d'une minute."
+  },
+  {
+    "id": "S-005",
+    "severity": "P2",
+    "title": "Copie du site contradictoire avec l'offre : « pas de livraison en propre, Uber Eats »",
+    "evidence": "index.html:347 et :352 (pré-rendu de #root) : « Tout se prend à emporter ; la livraison passe par Uber Eats », « Le Cayenne livre-t-il à domicile ? Non, pas en propre » ; livraison-henin-beaumont.html (title « Uber Eats ou à emporter », tableau « Qui livre : un coursier Uber Eats »), llms.txt:20. Déjà listé à faire dans docs/LIVRAISON.md §4 point 5.",
+    "repro": "Ouvrir http://127.0.0.1:8011/livraison-henin-beaumont.html ; lire index.html:347-352 (rendu avant hydratation / robots)."
+  },
+  {
+    "id": "S-006",
+    "severity": "P3",
+    "title": "Mobile : le champ adresse tronque la saisie",
+    "evidence": "S-captures/M-06-adresse-oignies-6km.png : le champ affiche « 1 RUE JEAN JAUI » (bouton Calculer large à côté, funnel.jsx:554-557) ; l'adresse complète n'est relue que dans le bloc « Adresse comprise » en dessous.",
+    "repro": "Viewport 390x844, Livraison, choisir « 1 Rue Jean Jaurès 62590 Oignies »."
+  },
+  {
+    "id": "S-007",
+    "severity": "P3",
+    "title": "Liste de suggestions = <datalist> natif, puis appui obligatoire sur « Calculer » (rendu mobile NON prouvé)",
+    "evidence": "funnel.jsx:554-560 (list=\"lcf-delivery-suggest\", <datalist>). Chaque frappe remet deliveryQuote à null (funnel.jsx:555) : choisir une suggestion n'affiche aucun prix tant que « Calculer » n'est pas pressé. Non vérifié sur iOS Safari / Android Chrome / Capacitor réels : la fenêtre datalist n'est pas capturable en Chromium de test, seuls les <option> du DOM l'ont été (5 options pour Lens).",
+    "repro": "Livraison, taper « 12 rue de la Gare 62300 Lens », observer qu'aucun prix n'apparaît avant « Calculer » ; vérifier le rendu de la liste sur appareil."
+  }
+]

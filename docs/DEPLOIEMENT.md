@@ -1,5 +1,21 @@
 # Procédures de Déploiement FoodKing
 
+> ## ⛔ AVERTISSEMENT NF525 — ne pas lancer `php artisan config:cache`
+>
+> **Mesuré en production le 2026-09-03 :** `config:cache` fait passer
+> `fiscal:verify-chain --all` de `CHAIN OK` à `TAMPER detected`, et `config:clear` le
+> ramène à `CHAIN OK`. Cause : `AuditLogService.php:324` lit la clé dynamique
+> `FISCAL_AUDIT_SECRET_BRANCH_{id}` via `env()`, qui renvoie `null` dès que la
+> configuration est en cache — la signature retombe alors sur le mauvais secret.
+>
+> Une commande encaissée pendant cette fenêtre serait signée avec le mauvais secret, et
+> `audit_logs` est en append-only : la scission serait **définitive**.
+>
+> Les commandes `config:cache` qui suivent dans ce document sont donc **à ne pas exécuter**
+> tant que le correctif sous LOCK n'est pas fait.
+> Détail et voie de correction : `reports/chef-2026-09-03/PIEGE_CONFIG_CACHE_NF525.md`.
+
+
 > **Document:** Guide de déploiement et maintenance en production  
 > **Version:** 1.0  
 > **Date:** 11 Mars 2026  

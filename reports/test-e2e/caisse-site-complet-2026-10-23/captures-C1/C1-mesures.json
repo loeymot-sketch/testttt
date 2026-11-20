@@ -1,0 +1,403 @@
+{
+  "debut": "2026-10-23T18:29:14.451Z",
+  "notes": [
+    "opérateur pos@ = {\"id\":3,\"name\":\"Caissier Le Cayenne\"}",
+    "chargement 1280 : {\"inner\":[1280,720],\"zoom\":0.9,\"docScrollH\":720,\"asideBottomEcran\":583,\"headerH\":47,\"headerLignes\":3,\"catalogue\":[\"Sandwichs\",\"Galette\",\"Burgers\",\"Tacos\",\"Bols\",\"Frites\",\"Desserts\",\"Boissons\",\"Menu enfant\",\"Sauces supplémentaires\"],\"lignesPanier\":0,\"total\":\"Total\\n0,00 €\",\"livraisonsLien\":[{\"texte\":\"Livraisons\",\"visible\":true}],\"segments\":[\"🥡 À emporter\",\"🛵 Livraison\"],\"bandeaux\":[\"Article indisponible : Coca-Cola 33cl\\n×\"],\"grandTotalRect\":{\"top\":586,\"bottom\":634,\"h\":49,\"w\":329}}",
+    "chargement 1920 : {\"inner\":[1920,1080],\"zoom\":0.9,\"docScrollH\":1080,\"asideBottomEcran\":875,\"headerH\":47,\"headerLignes\":3,\"catalogue\":[\"Sandwichs\",\"Galette\",\"Burgers\",\"Tacos\",\"Bols\",\"Frites\",\"Desserts\",\"Boissons\",\"Menu enfant\",\"Sauces supplémentaires\"],\"lignesPanier\":0,\"total\":\"Total\\n0,00 €\",\"livraisonsLien\":[{\"texte\":\"Livraisons\",\"visible\":true}],\"segments\":[\"🥡 À emporter\",\"🛵 Livraison\"],\"bandeaux\":[\"Article indisponible : Coca-Cola 33cl\\n×\"],\"grandTotalRect\":{\"top\":946,\"bottom\":994,\"h\":49,\"w\":329}}",
+    "assistant Cayenne : {\"prix\":[\"7,40 €\",\"—\",\"+2,50 €\",\"+1,90 €\",\"+1,90 €\",\"Total 7,40 €\",\"Total\",\"7,40 €\"],\"sauceSelectionnee\":[\"🌶️\\nAlgérienne\\nofferte\"],\"boutonsAjouter\":[{\"cls\":\"pos-v5-item-add-cta flex items-center justify-center gap-3 r\",\"visible\":false},{\"cls\":\"wizard-btn-cart\",\"visible\":true}]}",
+    "panier : {\"lignes\":[{\"texte\":\"Cayenne ✎ ⧉ Algérienne 7,40 € 🗑 +\",\"prix\":\"7,40 €\",\"detail\":\"Algérienne\"},{\"texte\":\"Fanta Orange 33cl ✎ ⧉ 1,90 € 🗑 +\",\"prix\":\"1,90 €\",\"detail\":null}],\"total\":\"Total\\n9,30 €\",\"sommeLignes\":9.3,\"cartDisplay\":[null,null]}",
+    "paiement : {\"totalPaiement\":9.3,\"recu\":10,\"rendu\":0.7}",
+    "POST /api/admin/pos : {\"http\":201,\"id\":8872,\"total\":9.3,\"operator_name\":\"Caissier Le Cayenne\"}",
+    "aperçu ticket client : [\"SIRET: 10417050100019\",\"TVA intra: FR19104170501\",\"Opérateur: Caissier Le Cayenne\",\"Le Cayenne\",\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\",\"Tel: 0365678291\",\"Commande #2310268872\",\"23-10-2026\\t08:29 PM\",\"Qté\",\"Désignation\",\"Prix\",\"1\",\"Cayenne\",\"6,73 €\",\"Sauce (1ère Gratuite): Algérienne ,Type de Pain: Pain ,Viande 1: Poulet mariné\",\"Suppléments: Salade,Tomate,Oignon\",\"VAT (10.00 %)\",\"0,67 €\",\"1\",\"Fanta Orange 33cl\",\"1,73 €\",\"VAT (10.00 %)\",\"0,17 €\",\"SOUS-TOTAL:\\t8,46 €\",\"TOTAL TAXES:\\t0,84 €\",\"VAT (10%)· Base HT 8,46 €\\t0,84 €\",\"REMISE:\\t0,00 €\",\"TOTAL:\\t9,30 €\",\"Type de commande: À emporter\",\"Type de paiement: Espèces\",\"Espèces: 10,00 €\",\"Rendu : 0,70 €\",\"N°A0309\",\"N° ticket NF525: 3194\",\"Empreinte audit: 2ef4ea5a5305\",\"Mentions légales: TVA intracommunautaire - Merci de votre visite\",\"Merci\",\"À Très Bientôt !\",\"Propulsé par\",\"Le Cayenne\"]",
+    "base : {\"id\":8872,\"order_serial_no\":\"2310268872\",\"total\":\"9.300000\",\"subtotal\":\"9.300000\",\"payment_status\":5,\"payment_method\":1,\"pos_payment_method\":1,\"fiscal_sequence_no\":3194,\"creator_id\":3,\"user_id\":2,\"order_type\":10,\"status\":7,\"source\":\"15\",\"client\":{\"id\":2,\"name\":\"Client passage\",\"email\":\"walkingcustomer@example.com\"}}",
+    "escpos : {\"http\":200,\"lignes\":[\"Le Cayenne (principal)\",\"437 Rue Élie Gruyelle, 62110\",\"Hénin-Beaumont\",\"Tél : 03 65 67 82 91\",\"E-mail : contact@lecayenne.fr\",\"Web : https://lecayenne.fr\",\"SIRET 10417050100019\",\"--------------------------------\",\"A0309\",\"23 octobre 2026 20:29\",\"--------------------------------\",\"*** À EMPORTER ***\",\"Client : E2E-C1-Vente\",\"QT ARTICLES              MONTANT\",\"--------------------------------\",\"1  Cayenne                7,40 €\",\"   Algérienne, Pain, Poulet\",\"   mariné, Salade, Tomate,\",\"   Oignon\",\"1  Fanta Orange 33cl      1,90 €\",\"--------------------------------\",\"SOUS-TOTAL :              9,30 €\",\"REDUCTION :               0,00 €\",\"--------------------------------\",\"MONTANT TOTAL             9,30 €\",\"--------------------------------\",\"TVA 10% :                 0,84 €\",\"ESPÈCES :                10,00 €\",\"RENDU :                   0,70 €\",\"--------------------------------\",\"BON APPÉTIT ET À BIENTÔT !\",\"Ticket fiscal N 3194\",\"TVA FR19104170501\",\"TVA intracommunautaire - Merci\",\"de votre visite\",\"Prix nets en euros TTC\",\"--------------------------------\",\"Operation : VENTE\",\"Caissier : Caissier Le Cayenne\",\"Ticket : 2310268872\",\"23 octobre 2026 20:29\"]} · show : {\"http\":200,\"operator_name\":\"Caissier Le Cayenne\",\"total\":9.3,\"user\":\"Client passage\"}",
+    "intégrité : {\"panier\":9.3,\"paiement\":9.3,\"ticketEscPos\":9.3,\"montantsApercu\":[6.73,0.67,1.73,0.17,8.46,0.84,10,0,9.3,10,0.7],\"base\":9.3}",
+    "caissier : {\"escpos\":\"Caissier : Caissier Le Cayenne\",\"apercu\":[\"Opérateur: Caissier Le Cayenne\"],\"api\":\"Caissier Le Cayenne\",\"client\":\"Client passage\"}",
+    "téléphone avant encaissement : {\"http\":201,\"id\":8873,\"totalPanier\":1.9,\"fileAvant\":15,\"toast\":[\"Article indisponible : Coca-Cola 33cl\\n×\",\"Commande téléphone enregistrée — à encaisser à l'arrivée\\n×\",\"Commande téléphone enregistrée — à encaisser à l'arrivée\",\"Article ajouté au panier\\n×\",\"Article ajouté au panier\"],\"delaiEcranMs\":367,\"titreFile\":\"💰\\nÀ ENCAISSER — COMPTOIR (16)\",\"voirPlus\":\"Voir plus (12) →\",\"tiroirCompteOuverture\":\"15\",\"trace\":[\"0s:0\",\"1s:0\",\"2s:0\",\"3s:0\",\"4s:0\",\"5s:0\",\"6s:0\",\"7s:0\",\"8s:0\",\"9s:0\",\"10s:0\",\"11s:0\",\"12s:0\",\"13s:0\",\"14s:0\",\"15s:0\",\"16s:0\",\"17s:0\",\"18s:0\",\"19s:0\",\"20s:0\",\"21s:0\",\"22s:0\",\"23s:0\",\"24s:0\",\"25s:0\",\"26s:0\",\"27s:0\",\"28s:0\",\"29s:0\",\"refresh KO locator.click: Timeout 5000ms exceeded.\\nCall log:\\n\\u001b[2m  - waiting for getByTestI\",\"35s:0\",\"36s:0\",\"37s:0\",\"38s:0\",\"39s:0\",\"40s:1\"],\"delaiTiroirMs\":40154,\"rafraichissementManuel\":true,\"tiroirCompte\":\"16\",\"viaTiroir\":true,\"avant\":{\"id\":8873,\"total\":\"1.900000\",\"payment_status\":15,\"pos_payment_method\":6,\"fiscal_sequence_no\":null,\"creator_id\":3,\"user_id\":2,\"order_type\":10,\"status\":7,\"source_surface\":\"phone\"}}",
+    "téléphone après : {\"http\":201,\"id\":8873,\"totalPanier\":1.9,\"fileAvant\":15,\"toast\":[\"Article indisponible : Coca-Cola 33cl\\n×\",\"Commande téléphone enregistrée — à encaisser à l'arrivée\\n×\",\"Commande téléphone enregistrée — à encaisser à l'arrivée\",\"Article ajouté au panier\\n×\",\"Article ajouté au panier\"],\"delaiEcranMs\":367,\"titreFile\":\"💰\\nÀ ENCAISSER — COMPTOIR (16)\",\"voirPlus\":\"Voir plus (12) →\",\"tiroirCompteOuverture\":\"15\",\"trace\":[\"0s:0\",\"1s:0\",\"2s:0\",\"3s:0\",\"4s:0\",\"5s:0\",\"6s:0\",\"7s:0\",\"8s:0\",\"9s:0\",\"10s:0\",\"11s:0\",\"12s:0\",\"13s:0\",\"14s:0\",\"15s:0\",\"16s:0\",\"17s:0\",\"18s:0\",\"19s:0\",\"20s:0\",\"21s:0\",\"22s:0\",\"23s:0\",\"24s:0\",\"25s:0\",\"26s:0\",\"27s:0\",\"28s:0\",\"29s:0\",\"refresh KO locator.click: Timeout 5000ms exceeded.\\nCall log:\\n\\u001b[2m  - waiting for getByTestI\",\"35s:0\",\"36s:0\",\"37s:0\",\"38s:0\",\"39s:0\",\"40s:1\"],\"delaiTiroirMs\":40154,\"rafraichissementManuel\":true,\"tiroirCompte\":\"16\",\"viaTiroir\":true,\"avant\":{\"id\":8873,\"total\":\"1.900000\",\"payment_status\":15,\"pos_payment_method\":6,\"fiscal_sequence_no\":null,\"creator_id\":3,\"user_id\":2,\"order_type\":10,\"status\":7,\"source_surface\":\"phone\"},\"totalModale\":1.9,\"confirmHttp\":200,\"apres\":{\"id\":8873,\"total\":\"1.900000\",\"payment_status\":5,\"pos_payment_method\":1,\"payment_method\":1,\"fiscal_sequence_no\":3195,\"creator_id\":3,\"user_id\":2,\"order_type\":10,\"status\":7},\"memeNumero\":1,\"operator_name\":\"Caissier Le Cayenne\"}",
+    "mode livraison : {\"telephone\":0,\"livraison\":true,\"libelle\":\"🛵 Commande livraison · paiement à la porte Envoyée en cuisine · le livreur encaisse à la porte\"}"
+  ],
+  "posUser": {
+    "id": 3,
+    "name": "Caissier Le Cayenne"
+  },
+  "chargement1280": {
+    "inner": [
+      1280,
+      720
+    ],
+    "zoom": 0.9,
+    "docScrollH": 720,
+    "asideBottomEcran": 583,
+    "headerH": 47,
+    "headerLignes": 3,
+    "catalogue": [
+      "Sandwichs",
+      "Galette",
+      "Burgers",
+      "Tacos",
+      "Bols",
+      "Frites",
+      "Desserts",
+      "Boissons",
+      "Menu enfant",
+      "Sauces supplémentaires"
+    ],
+    "lignesPanier": 0,
+    "total": "Total\n0,00 €",
+    "livraisonsLien": [
+      {
+        "texte": "Livraisons",
+        "visible": true
+      }
+    ],
+    "segments": [
+      "🥡 À emporter",
+      "🛵 Livraison"
+    ],
+    "bandeaux": [
+      "Article indisponible : Coca-Cola 33cl\n×"
+    ],
+    "grandTotalRect": {
+      "top": 586,
+      "bottom": 634,
+      "h": 49,
+      "w": 329
+    }
+  },
+  "chargement1920": {
+    "inner": [
+      1920,
+      1080
+    ],
+    "zoom": 0.9,
+    "docScrollH": 1080,
+    "asideBottomEcran": 875,
+    "headerH": 47,
+    "headerLignes": 3,
+    "catalogue": [
+      "Sandwichs",
+      "Galette",
+      "Burgers",
+      "Tacos",
+      "Bols",
+      "Frites",
+      "Desserts",
+      "Boissons",
+      "Menu enfant",
+      "Sauces supplémentaires"
+    ],
+    "lignesPanier": 0,
+    "total": "Total\n0,00 €",
+    "livraisonsLien": [
+      {
+        "texte": "Livraisons",
+        "visible": true
+      }
+    ],
+    "segments": [
+      "🥡 À emporter",
+      "🛵 Livraison"
+    ],
+    "bandeaux": [
+      "Article indisponible : Coca-Cola 33cl\n×"
+    ],
+    "grandTotalRect": {
+      "top": 946,
+      "bottom": 994,
+      "h": 49,
+      "w": 329
+    }
+  },
+  "assistant": {
+    "prix": [
+      "7,40 €",
+      "—",
+      "+2,50 €",
+      "+1,90 €",
+      "+1,90 €",
+      "Total 7,40 €",
+      "Total",
+      "7,40 €"
+    ],
+    "sauceSelectionnee": [
+      "🌶️\nAlgérienne\nofferte"
+    ],
+    "boutonsAjouter": [
+      {
+        "cls": "pos-v5-item-add-cta flex items-center justify-center gap-3 r",
+        "visible": false
+      },
+      {
+        "cls": "wizard-btn-cart",
+        "visible": true
+      }
+    ]
+  },
+  "panier": {
+    "lignes": [
+      {
+        "texte": "Cayenne ✎ ⧉ Algérienne 7,40 € 🗑 +",
+        "prix": "7,40 €",
+        "detail": "Algérienne"
+      },
+      {
+        "texte": "Fanta Orange 33cl ✎ ⧉ 1,90 € 🗑 +",
+        "prix": "1,90 €",
+        "detail": null
+      }
+    ],
+    "total": "Total\n9,30 €",
+    "sommeLignes": 9.3,
+    "cartDisplay": [
+      null,
+      null
+    ]
+  },
+  "paiement": {
+    "totalPaiement": 9.3,
+    "recu": 10,
+    "rendu": 0.7
+  },
+  "creation": {
+    "http": 201,
+    "id": 8872,
+    "total": 9.3,
+    "operator_name": "Caissier Le Cayenne"
+  },
+  "apercuTicket": [
+    "SIRET: 10417050100019",
+    "TVA intra: FR19104170501",
+    "Opérateur: Caissier Le Cayenne",
+    "Le Cayenne",
+    "437 Rue Élie Gruyelle, 62110 Hénin-Beaumont",
+    "Tel: 0365678291",
+    "Commande #2310268872",
+    "23-10-2026\t08:29 PM",
+    "Qté",
+    "Désignation",
+    "Prix",
+    "1",
+    "Cayenne",
+    "6,73 €",
+    "Sauce (1ère Gratuite): Algérienne ,Type de Pain: Pain ,Viande 1: Poulet mariné",
+    "Suppléments: Salade,Tomate,Oignon",
+    "VAT (10.00 %)",
+    "0,67 €",
+    "1",
+    "Fanta Orange 33cl",
+    "1,73 €",
+    "VAT (10.00 %)",
+    "0,17 €",
+    "SOUS-TOTAL:\t8,46 €",
+    "TOTAL TAXES:\t0,84 €",
+    "VAT (10%)· Base HT 8,46 €\t0,84 €",
+    "REMISE:\t0,00 €",
+    "TOTAL:\t9,30 €",
+    "Type de commande: À emporter",
+    "Type de paiement: Espèces",
+    "Espèces: 10,00 €",
+    "Rendu : 0,70 €",
+    "N°A0309",
+    "N° ticket NF525: 3194",
+    "Empreinte audit: 2ef4ea5a5305",
+    "Mentions légales: TVA intracommunautaire - Merci de votre visite",
+    "Merci",
+    "À Très Bientôt !",
+    "Propulsé par",
+    "Le Cayenne"
+  ],
+  "base": {
+    "id": 8872,
+    "order_serial_no": "2310268872",
+    "total": "9.300000",
+    "subtotal": "9.300000",
+    "payment_status": 5,
+    "payment_method": 1,
+    "pos_payment_method": 1,
+    "fiscal_sequence_no": 3194,
+    "creator_id": 3,
+    "user_id": 2,
+    "order_type": 10,
+    "status": 7,
+    "source": "15",
+    "client": {
+      "id": 2,
+      "name": "Client passage",
+      "email": "walkingcustomer@example.com"
+    }
+  },
+  "escpos": {
+    "http": 200,
+    "lignes": [
+      "Le Cayenne (principal)",
+      "437 Rue Élie Gruyelle, 62110",
+      "Hénin-Beaumont",
+      "Tél : 03 65 67 82 91",
+      "E-mail : contact@lecayenne.fr",
+      "Web : https://lecayenne.fr",
+      "SIRET 10417050100019",
+      "--------------------------------",
+      "A0309",
+      "23 octobre 2026 20:29",
+      "--------------------------------",
+      "*** À EMPORTER ***",
+      "Client : E2E-C1-Vente",
+      "QT ARTICLES              MONTANT",
+      "--------------------------------",
+      "1  Cayenne                7,40 €",
+      "   Algérienne, Pain, Poulet",
+      "   mariné, Salade, Tomate,",
+      "   Oignon",
+      "1  Fanta Orange 33cl      1,90 €",
+      "--------------------------------",
+      "SOUS-TOTAL :              9,30 €",
+      "REDUCTION :               0,00 €",
+      "--------------------------------",
+      "MONTANT TOTAL             9,30 €",
+      "--------------------------------",
+      "TVA 10% :                 0,84 €",
+      "ESPÈCES :                10,00 €",
+      "RENDU :                   0,70 €",
+      "--------------------------------",
+      "BON APPÉTIT ET À BIENTÔT !",
+      "Ticket fiscal N 3194",
+      "TVA FR19104170501",
+      "TVA intracommunautaire - Merci",
+      "de votre visite",
+      "Prix nets en euros TTC",
+      "--------------------------------",
+      "Operation : VENTE",
+      "Caissier : Caissier Le Cayenne",
+      "Ticket : 2310268872",
+      "23 octobre 2026 20:29"
+    ]
+  },
+  "apiShow": {
+    "http": 200,
+    "operator_name": "Caissier Le Cayenne",
+    "total": 9.3,
+    "user": "Client passage"
+  },
+  "integrite": {
+    "panier": 9.3,
+    "paiement": 9.3,
+    "ticketEscPos": 9.3,
+    "montantsApercu": [
+      6.73,
+      0.67,
+      1.73,
+      0.17,
+      8.46,
+      0.84,
+      10,
+      0,
+      9.3,
+      10,
+      0.7
+    ],
+    "base": 9.3
+  },
+  "caissier": {
+    "escpos": "Caissier : Caissier Le Cayenne",
+    "apercu": [
+      "Opérateur: Caissier Le Cayenne"
+    ],
+    "api": "Caissier Le Cayenne",
+    "client": "Client passage"
+  },
+  "tel": {
+    "http": 201,
+    "id": 8873,
+    "totalPanier": 1.9,
+    "fileAvant": 15,
+    "toast": [
+      "Article indisponible : Coca-Cola 33cl\n×",
+      "Commande téléphone enregistrée — à encaisser à l'arrivée\n×",
+      "Commande téléphone enregistrée — à encaisser à l'arrivée",
+      "Article ajouté au panier\n×",
+      "Article ajouté au panier"
+    ],
+    "delaiEcranMs": 367,
+    "titreFile": "💰\nÀ ENCAISSER — COMPTOIR (16)",
+    "voirPlus": "Voir plus (12) →",
+    "tiroirCompteOuverture": "15",
+    "trace": [
+      "0s:0",
+      "1s:0",
+      "2s:0",
+      "3s:0",
+      "4s:0",
+      "5s:0",
+      "6s:0",
+      "7s:0",
+      "8s:0",
+      "9s:0",
+      "10s:0",
+      "11s:0",
+      "12s:0",
+      "13s:0",
+      "14s:0",
+      "15s:0",
+      "16s:0",
+      "17s:0",
+      "18s:0",
+      "19s:0",
+      "20s:0",
+      "21s:0",
+      "22s:0",
+      "23s:0",
+      "24s:0",
+      "25s:0",
+      "26s:0",
+      "27s:0",
+      "28s:0",
+      "29s:0",
+      "refresh KO locator.click: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestI",
+      "35s:0",
+      "36s:0",
+      "37s:0",
+      "38s:0",
+      "39s:0",
+      "40s:1"
+    ],
+    "delaiTiroirMs": 40154,
+    "rafraichissementManuel": true,
+    "tiroirCompte": "16",
+    "viaTiroir": true,
+    "avant": {
+      "id": 8873,
+      "total": "1.900000",
+      "payment_status": 15,
+      "pos_payment_method": 6,
+      "fiscal_sequence_no": null,
+      "creator_id": 3,
+      "user_id": 2,
+      "order_type": 10,
+      "status": 7,
+      "source_surface": "phone"
+    },
+    "totalModale": 1.9,
+    "confirmHttp": 200,
+    "apres": {
+      "id": 8873,
+      "total": "1.900000",
+      "payment_status": 5,
+      "pos_payment_method": 1,
+      "payment_method": 1,
+      "fiscal_sequence_no": 3195,
+      "creator_id": 3,
+      "user_id": 2,
+      "order_type": 10,
+      "status": 7
+    },
+    "memeNumero": 1,
+    "operator_name": "Caissier Le Cayenne"
+  },
+  "livraison": {
+    "telephone": 0,
+    "livraison": true,
+    "libelle": "🛵 Commande livraison · paiement à la porte Envoyée en cuisine · le livreur encaisse à la porte"
+  },
+  "fin": "2026-10-23T18:30:30.017Z"
+}

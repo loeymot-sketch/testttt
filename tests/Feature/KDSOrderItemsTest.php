@@ -48,11 +48,15 @@ class KDSOrderItemsTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token,
             'x-api-key' => config('app.api_key', 'test-api-key'),
-        ])->getJson('/api/v1/admin/kds-order/items');
+        ])->getJson('/api/admin/kds-order/items');
 
         $response->assertStatus(200);
-        // Admin avec branch_id=0 doit voir les commandes de toutes les branches
-        // (le test vérifie que la réponse n'est pas vide à cause du bug branch_id=0)
+        // [2026-11-04] Route corrigée : `/api/v1/admin/kds-order/items` n'existe pas (404 depuis la refonte des
+        // routes), la vraie est `/api/admin/kds-order/items`. Ce test prouve que l'administrateur (branch_id=0)
+        // atteint l'écran cuisine sans erreur. Il NE prouve PAS que la liste est non vide : cette commande n'a
+        // ni article ni passage en cuisine, et KitchenReleaseRule::applyBoardReleaseFilter l'écarte à bon droit
+        // (vérifié : `{"data":[]}` sur /items comme sur la liste). Le non-filtrage de branch_id=0 est lu dans
+        // KitchenDisplaySystemOrderService::list (`if ($userBranchId > 0)`).
     }
 
     public function test_kitchen_status_filter_does_not_crash(): void
@@ -66,7 +70,7 @@ class KDSOrderItemsTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token,
             'x-api-key' => config('app.api_key', 'test-api-key'),
-        ])->getJson('/api/v1/admin/kds-order?kitchen_status=1');
+        ])->getJson('/api/admin/kds-order?kitchen_status=1');
 
         // Ne doit pas retourner 500
         $this->assertNotEquals(500, $response->status());

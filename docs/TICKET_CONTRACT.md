@@ -34,6 +34,31 @@ n'est PAS au format symbolique 3 lignes = bug. Les deux doivent rester **imprima
 | **Borne — ticket CUISINE** | symbolique 3 lignes | listener `app/Listeners/PrintKioskKitchenTicketOnOrderCreated.php` → `renderKitchenTicket()` (même renderer que la caisse) |
 | **Écran KDS** | symbolique 3 lignes | `resources/js/helpers/kdsSymbolic.js` (jumeau JS du formatter PHP) |
 
+### 2bis. QUI imprime QUOI, et QUAND (cartographie relue dans le code le 2026-11-10)
+
+Le serveur applicatif est chez l'hébergeur : il ne joint aucune imprimante. Tout papier sort par le **pont local**
+d'un poste (`127.0.0.1:9100` caisse, `:9101` cuisine) qui **réclame** les tickets au serveur ou les demande au clic.
+Les chemins « serveur → imprimante » (`PrintKioskOrderToCounter`, `PrintFiscalReceiptAndOpenDrawerOnCounterPaid`,
+`KitchenTicketAutoPrinter::printOnce`) existent mais n'ont jamais rien sorti en production (table `printers` vide).
+
+| Événement | Ticket CUISINE (symbolique) | Ticket CLIENT (détaillé, fiscal) |
+|---|---|---|
+| Commande entre en cuisine (ACCEPTÉE / EN PRÉPARATION), toute surface | **Automatique** sur le pont cuisine (`KitchenTicketPrintListener.vue` → `kitchen-tickets/pending`, réclamation `kitchen_ticket_claims` par destination). Copie caisse **coupée** par défaut (`kds.counter_auto_print=false`, propriétaire 2026-10-19 ; interrupteur « impression_caisse_auto ») | rien |
+| Encaissement au comptoir (caisse, Encaissement, Suivi) | — | **Question** « Imprimer le ticket client ? » (`PosQuestionImpressionTicket`, R-048, propriétaire : « garder le choix ») ; automatique seulement si `printing.auto_print_client_receipt` (défaut `false`) |
+| Vente directe caisse payée | — | boutons de `ReceiptComponent` (pont ou navigateur), jamais `window.print` automatique |
+| Borne, paiement en ligne | — | la borne imprime sa copie sur son propre pont (`kioskPrinter.js`) |
+| **Livraison du site à régler à la porte** | automatique en cuisine (avec `Tel :` et `Livrer :` depuis le 2026-11-10) | **AUCUNE impression automatique** : pas d'encaissement au comptoir → pas de question ; départ de tournée = sur le téléphone du livreur (`DeliveryRunController::depart`). Impression à la demande : Suivi des commandes (réimpression) et, depuis le 2026-11-10, bouton **« Ticket »** de la planche Tournées (`PosDeliveryBoard.vue`, `GET pos/orders/{id}/escpos?ticket=client`, QR de remise si `DELIVERY_HANDOVER_QR_PRINT`) |
+| Réimpression | KDS (ticket cuisine, rôle Chef autorisé) | Suivi / planche : `?duplicata=1` marque « DUPLICATA » ; **jamais** de compteur fiscal sur ce chemin (`PosTicketBytesController` = lecture seule) |
+
+Garde d'accès de `GET api/admin/pos/orders/{order}/escpos` (dans le contrôleur, pas en route) : ticket client → permission
+`pos` ; ticket cuisine → `pos` ou `kitchen-display-system` ; Livreur (aucune permission) → 403 sur les deux
+(`DeliveryBoyAccessMatrixTest`, `KdsKitchenTicketAuthzTest`).
+
+**Décision ouverte (porte G2, propriétaire)** : faut-il imprimer **seul** le ticket client d'une livraison de nos tournées
+(au passage PRÊTE, une fois, journalisé dans une table de réclamation comme la cuisine), ou garder le clic ? La règle
+« plus aucun papier automatique à la caisse » du 2026-10-19 visait la copie de COMMANDE ; le ticket de livraison porte
+le téléphone, l'adresse, le règlement à la porte et le QR : sans lui le livreur part avec le ticket cuisine seul.
+
 ➡️ Le format **cuisine** (ticket imprimé) et l'**écran KDS** partagent la même logique,
 implémentée DEUX FOIS : `KitchenTicketSymbolicFormatter.php` (impression) et
 `kdsSymbolic.js` (écran). **Ils DOIVENT rester identiques** — verrouillé par le sentinel §5.
@@ -82,6 +107,18 @@ Par produit : `<qté>  <Nom> .......... <prix>` puis, en dessous, en toutes lett
 - la **formule** + la **boisson** (`+ Menu (Frites + Boisson)`).
 Puis les totaux, la TVA, le moyen de paiement, et les mentions fiscales (caisse) /
 « À régler en caisse » (borne Plan B).
+
+**Client à distance (site / application), depuis le 2026-11-10** — SSOT `App\Support\CoordonneesClientTicket`,
+même périmètre que le nom (par SURFACE `web` / `online` / `delivery`, jamais par type de commande ; la caisse et la
+borne n'empruntent rien à leur compte technique) :
+- `Tel : <numéro du compte>` à défaut de saisie caisse (`pos_customer_phone` prime) — client ET cuisine ;
+- LIVRAISON de nos tournées seulement (jamais retrait, borne, table, Uber) : bloc `LIVRER A :` (voie, complément,
+  CP ville sans répéter la commune déjà dans la voie) sur le ticket client, `Livrer : …` sur UNE ligne d'en-tête cuisine ;
+- livraison pas encore encaissée : `** A REGLER A LA LIVRAISON : ESPÈCES | CARTE AU LIVREUR | TITRE-RESTAURANT **`
+  selon `payment_method` (1/5) et `door_payment_mode='card'` — jamais « en caisse » ; payée en ligne → `*** PAYÉ ***`
+  inchangé ; carte en ligne en attente → règle habituelle.
+- L'écran caisse (`OrderDetailsResource`) lit le même SSOT (il ne repliait que sur `'web'`, donc jamais sur une livraison).
+Verrou : `tests/Feature/Hardware/ClientTicketLivraisonCoordonneesTest.php`.
 
 Exemple (caisse) :
 ```

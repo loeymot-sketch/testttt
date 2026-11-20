@@ -21,6 +21,17 @@
     <!-- Étape 1: Saisie du code -->
     <div v-if="step === 'input'" class="kiosk-loyalty-step">
       <div class="kiosk-loyalty-card">
+        <!-- [DÉCISION PROPRIÉTAIRE 2026-11-06 · « QR, téléphone, e-mail, plein de choix »] Trois façons de s'identifier. -->
+        <div class="kiosk-loyalty-modes" role="tablist" :aria-label="$t('kiosk.loyalty_screen.title')">
+          <button v-for="m in idModes" :key="m.id" type="button" role="tab" class="kiosk-loyalty-mode"
+            :class="{ 'is-on': idMode === m.id }" :aria-selected="idMode === m.id" :data-testid="'kiosk-loyalty-mode-' + m.id"
+            @click="setIdMode(m.id)">
+            <span class="kiosk-loyalty-mode-icon" aria-hidden="true">{{ m.icon }}</span>
+            <span>{{ $t('kiosk.loyalty_screen.' + m.label) }}</span>
+          </button>
+        </div>
+
+        <template v-if="idMode === 'tel'">
         <p class="kiosk-loyalty-subtitle">{{ $t('kiosk.loyalty_screen.input_sub') }}</p>
 
         <div class="kiosk-loyalty-input-row">
@@ -55,12 +66,32 @@
             <template v-else>{{ key }}</template>
           </button>
         </div>
+        </template>
+
+        <!-- QR : le lecteur de la borne « tape » le contenu du QR suivi d'Entrée dans ce champ (aucune limite de 20). -->
+        <template v-else-if="idMode === 'qr'">
+          <p class="kiosk-loyalty-subtitle">{{ $t('kiosk.loyalty_screen.qr_sub') }}</p>
+          <div class="kiosk-loyalty-qr-zone" aria-hidden="true">▣</div>
+          <input ref="qrInput" v-model="qrSaisie" type="text" class="kiosk-loyalty-input kiosk-loyalty-input--qr"
+            :placeholder="$t('kiosk.loyalty_screen.qr_placeholder')" autocomplete="off" autocapitalize="off" spellcheck="false"
+            data-testid="kiosk-loyalty-qr-input" @keyup.enter="checkLoyalty" />
+        </template>
+
+        <!-- E-mail : saisi au clavier virtuel de la borne. -->
+        <template v-else>
+          <p class="kiosk-loyalty-subtitle">{{ $t('kiosk.loyalty_screen.email_sub') }}</p>
+          <input ref="emailInput" v-model="loginEmail" type="email" inputmode="email" class="kiosk-loyalty-input"
+            :class="{ 'kiosk-loyalty-input--active': vkeybActiveField === 'loginEmail' }"
+            :placeholder="$t('kiosk.loyalty_screen.email_placeholder')" autocomplete="off" autocapitalize="off" spellcheck="false"
+            maxlength="120" data-testid="kiosk-loyalty-email-input"
+            @focus="vkeybActiveField = 'loginEmail'" @click="vkeybActiveField = 'loginEmail'" @keyup.enter="checkLoyalty" />
+        </template>
 
         <div v-if="error" class="kiosk-loyalty-error">{{ error }}</div>
 
         <button type="button"
           class="kiosk-btn-primary full"
-          :disabled="!code.trim() || loading"
+          :disabled="!saisieCourante.trim() || loading"
           @click="checkLoyalty"
         >
           <span v-if="!loading">{{ $t('kiosk.loyalty_screen.verify_btn') }}</span>
@@ -71,27 +102,46 @@
           {{ $t('kiosk.loyalty_screen.skip') }}
         </button>
 
-        <!-- Register new customer -->
-        <button type="button" class="kiosk-loyalty-register-btn" @click="step = 'register'">
+        <!-- Register new customer (chemin manuel — l'entrée automatique après un
+             numéro non trouvé se fait dans checkLoyalty(), voir phoneCapturedFromCheck). -->
+        <button type="button" class="kiosk-loyalty-register-btn" @click="openManualRegister">
           {{ $t('kiosk.loyalty_screen.register_cta') }}
         </button>
       </div>
     </div>
 
-    <!-- Étape 1b: Inscription nouveau client -->
+    <!-- Étape 1b: Inscription nouveau client.
+         [OPTIM SOUSCRIPTION 2026-09-25 · owner] « le client a du mal à créer un compte
+         directement lorsqu'il a mis son numéro ». Avant ce fix, un numéro non trouvé
+         affichait juste une erreur et le client devait cliquer "S'inscrire" PUIS retaper
+         son numéro dans un formulaire à 3 champs — double saisie, abandon fréquent.
+         Désormais checkLoyalty() bascule ICI automatiquement (phoneCapturedFromCheck),
+         le téléphone déjà tapé est conservé (jamais retapé), et il ne reste que le
+         prénom à saisir (email toujours optionnel, ne pas le rendre obligatoire :
+         chaque champ en plus coûte des souscriptions). Le formulaire complet à 3 champs
+         reste intact pour l'entrée manuelle "S'inscrire" depuis l'écran de saisie. -->
     <div v-if="step === 'register'" class="kiosk-loyalty-step">
       <div class="kiosk-loyalty-card">
-        <p class="kiosk-loyalty-subtitle">{{ $t('kiosk.loyalty_screen.register_title') }}</p>
+        <p class="kiosk-loyalty-subtitle">
+          {{ phoneCapturedFromCheck ? $t('kiosk.loyalty_screen.quick_register_sub') : $t('kiosk.loyalty_screen.register_title') }}
+        </p>
+
+        <div v-if="phoneCapturedFromCheck" class="kiosk-loyalty-phone-confirm" data-testid="kiosk-loyalty-phone-confirm">
+          <span aria-hidden="true">📱</span> {{ registerPhone }}
+          <button type="button" class="kiosk-loyalty-not-my-number" data-testid="kiosk-loyalty-not-my-number" @click="backFromRegister">
+            {{ $t('kiosk.loyalty_screen.not_my_number') }}
+          </button>
+        </div>
 
         <div class="kiosk-register-fields">
           <div class="kiosk-field-group">
-            <label class="kiosk-field-label">{{ $t('kiosk.loyalty_screen.label_name') }}</label>
+            <label class="kiosk-field-label">{{ phoneCapturedFromCheck ? $t('kiosk.loyalty_screen.label_first_name') : $t('kiosk.loyalty_screen.label_name') }}</label>
             <input
               v-model="registerName"
               type="text"
               class="kiosk-loyalty-input"
               :class="{ 'kiosk-loyalty-input--active': vkeybActiveField === 'registerName' }"
-              :placeholder="$t('kiosk.loyalty_screen.placeholder_name')"
+              :placeholder="phoneCapturedFromCheck ? $t('kiosk.loyalty_screen.placeholder_first_name') : $t('kiosk.loyalty_screen.placeholder_name')"
               maxlength="60"
               readonly
               data-testid="kiosk-loyalty-register-name"
@@ -99,7 +149,7 @@
               @click="onFocusRegisterField('registerName')"
             />
           </div>
-          <div class="kiosk-field-group">
+          <div v-if="!phoneCapturedFromCheck" class="kiosk-field-group">
             <label class="kiosk-field-label">{{ $t('kiosk.loyalty_screen.label_phone') }}</label>
             <input
               v-model="registerPhone"
@@ -138,10 +188,10 @@
           :disabled="!registerName.trim() || !registerPhone.trim() || registerLoading"
           @click="submitRegister"
         >
-          <span v-if="!registerLoading">{{ $t('kiosk.loyalty_screen.register_submit') }}</span>
+          <span v-if="!registerLoading">{{ phoneCapturedFromCheck ? $t('kiosk.loyalty_screen.quick_register_submit') : $t('kiosk.loyalty_screen.register_submit') }}</span>
           <span v-else class="kiosk-spinner-inline"></span>
         </button>
-        <button type="button" class="kiosk-loyalty-skip" @click="step = 'input'">← {{ $t('kiosk.loyalty_screen.back') }}</button>
+        <button type="button" class="kiosk-loyalty-skip" @click="backFromRegister">← {{ $t('kiosk.loyalty_screen.back') }}</button>
       </div>
     </div>
 
@@ -167,7 +217,8 @@
         <div class="kiosk-loyalty-points-badge">
           <span class="kiosk-loyalty-points-value">{{ customer.loyalty_point }}</span>
           <span class="kiosk-loyalty-points-label">{{ $t('kiosk.loyalty_screen.points_label') }}</span>
-          <span v-if="discountValue > 0 && kioskLoyaltyRedeemEnabled" class="kiosk-loyalty-points-equiv" data-testid="kiosk-loyalty-points-equiv">
+          <!-- [VG-2026-10-21 M5-101] Sous le seuil serveur, aucune « réduction » annoncée (925 pts < 1000 promettait 7,40 €). -->
+          <span v-if="canRedeem && discountValue > 0 && kioskLoyaltyRedeemEnabled" class="kiosk-loyalty-points-equiv" data-testid="kiosk-loyalty-points-equiv">
             {{ $t('kiosk.loyalty_screen.points_equiv', { amount: formatPrice(Math.min(discountValue, total)) }) }}
           </span>
         </div>
@@ -227,8 +278,10 @@
           </button>
         </div>
 
-        <div v-else-if="!canRedeem" class="kiosk-loyalty-not-enough">
-          <p>{{ $t('kiosk.loyalty_screen.not_enough', { current: customer.loyalty_point, min: minRedeemPoints }) }}</p>
+        <!-- [VG-2026-10-21 M5-101] « il en faut au moins N » seulement si N vient du serveur. -->
+        <div v-else-if="!canRedeem && minRedeemPoints !== null" class="kiosk-loyalty-not-enough">
+          <p>{{ $t('kiosk.loyalty_screen.not_enough', { current: pointsDepensables, min: minRedeemPoints }) }}</p>
+          <p v-if="customer.points_pending > 0" data-testid="kiosk-loyalty-pending">{{ $t('kiosk.loyalty_screen.pending_note', { n: customer.points_pending }) }}</p>
           <p class="green">{{ $t('kiosk.loyalty_screen.not_enough_green') }}</p>
         </div>
 
@@ -351,7 +404,9 @@ export default {
       // /loyalty/config mais jamais lu : il sert a exprimer la demande en POINTS, seule
       // unite que le payload borne a le droit de porter (aucun champ monetaire, SSOT/NF525).
       pointsFor1Euro: 100,
-      minRedeemPoints: 100,
+      // [VG-2026-10-21 M5-101] Seuil = celui du SERVEUR (/loyalty/config) ; null tant qu'il n'est
+      // pas lu. L'ancien repli « 100 » proposait un rachat que le serveur (seuil 1000) refusait.
+      minRedeemPoints: null,
       rewardTiers: [100, 250, 500, 1000, 2000],
       redeemChoice: null,
       appliedDiscount: 0,
@@ -369,10 +424,37 @@ export default {
       // `vkeybActiveField` = clé du champ actuellement édité ('registerName'
       // | 'registerPhone' | 'registerEmail'). null → clavier masqué.
       vkeybActiveField: null,
+      // [OPTIM SOUSCRIPTION 2026-09-25] true quand step='register' a été atteint
+      // automatiquement depuis un numéro non trouvé (checkLoyalty) : le téléphone
+      // est déjà connu (registerPhone), son champ est masqué, et il ne reste que
+      // le prénom à saisir. false = entrée manuelle "S'inscrire" (formulaire complet).
+      phoneCapturedFromCheck: false,
+      // [DÉCISION PROPRIÉTAIRE 2026-11-06] Mode d'identification choisi : 'tel' (code ou téléphone), 'qr', 'email'.
+      idMode: 'tel',
+      qrSaisie: '',
+      loginEmail: '',
     };
   },
 
   computed: {
+    idModes() {
+      return [
+        { id: 'tel', icon: '📱', label: 'mode_tel' },
+        { id: 'qr', icon: '▣', label: 'mode_qr' },
+        { id: 'email', icon: '✉', label: 'mode_email' },
+      ];
+    },
+    // Points DÉPENSABLES ; un client sans le champ (serveur ancien, objet restauré) retombe sur son solde (comportement d'avant).
+    pointsDepensables() {
+      const c = this.customer || {};
+      const d = Number(c.points_depensables);
+      return Number.isFinite(d) ? d : (parseInt(c.loyalty_point, 10) || 0);
+    },
+    saisieCourante() {
+      if (this.idMode === 'qr') return this.qrSaisie || '';
+      if (this.idMode === 'email') return this.loginEmail || '';
+      return this.code || '';
+    },
     ...mapGetters('kioskCart', ['total', 'upsellShown', 'items']),
     ...mapGetters('kioskMenu', ['categories']),
     shouldSkipKioskUpsell() {
@@ -385,7 +467,10 @@ export default {
     },
 
     canRedeem() {
-      return this.customer && this.customer.loyalty_point >= this.minRedeemPoints;
+      // [VG-2026-10-21 M5-101] Seuil inconnu = pas de rachat proposé (une seule source : le serveur).
+      if (!this.customer || this.minRedeemPoints === null) return false;
+      // [DÉCISION PROPRIÉTAIRE 2026-11-06] Seuls les points DÉPENSABLES (ceux d'une commande à distance pas encore remise attendent).
+      return this.pointsDepensables >= this.minRedeemPoints;
     },
     // [FIX P2 audit 2026-06-28] Même flag que le panier (window.foodkingConfig.
     // discountsEnabled = config pos.manual_discount_enabled, défaut false). Si OFF,
@@ -465,6 +550,7 @@ export default {
       if (f === 'registerName') return this.registerName;
       if (f === 'registerPhone') return this.registerPhone;
       if (f === 'registerEmail') return this.registerEmail;
+      if (f === 'loginEmail') return this.loginEmail;
       return '';
     },
     // Kiosk Phase 9.1.7 — interdit l'espace pour email (format RFC) et pour
@@ -480,6 +566,7 @@ export default {
       if (this.vkeybActiveField === 'registerName') return 60;
       if (this.vkeybActiveField === 'registerEmail') return 80;
       if (this.vkeybActiveField === 'registerPhone') return 20;
+      if (this.vkeybActiveField === 'loginEmail') return 120;
       return 200;
     },
   },
@@ -490,6 +577,16 @@ export default {
   },
 
   methods: {
+    setIdMode(mode) {
+      this.idMode = mode;
+      this.error = null;
+      this.vkeybActiveField = mode === 'email' ? 'loginEmail' : null;
+      this.$nextTick(() => {
+        if (mode === 'qr') this.$refs.qrInput?.focus();
+        else if (mode === 'email') this.$refs.emailInput?.focus();
+        else this.$refs.codeInput?.focus();
+      });
+    },
     ...mapActions('kioskCart', ['setLoyalty', 'markUpsellShown']),
 
     async loadConfig() {
@@ -497,7 +594,8 @@ export default {
       try {
         const res = await axios.get('frontend/loyalty/config', { timeout: ms });
         const cfg = res.data?.data || res.data || {};
-        this.minRedeemPoints = cfg.min_redeem_points || 100;
+        // [VG-2026-10-21 M5-101] Plancher effectif publié par le serveur, sans repli inventé.
+        this.minRedeemPoints = Number(cfg.min_redeem_points) > 0 ? Number(cfg.min_redeem_points) : null;
         this.pointsFor1Euro = Number(cfg.points_for_1_euro_discount) > 0
           ? Number(cfg.points_for_1_euro_discount)
           : 100;
@@ -510,11 +608,24 @@ export default {
       } catch (_) {}
     },
 
+    // [OPTIM SOUSCRIPTION 2026-09-25 · test-e2e et optimise] Sur le numpad tactile
+    // (le SEUL moyen de taper ce champ à la borne — jamais de clavier physique),
+    // un numéro FR complet (10 chiffres) déclenche la vérification tout seul :
+    // encore un tap économisé, sur celui qui compte le plus (la toute première
+    // interaction). Restreint au numpad (jamais au champ texte v-model, utilisé
+    // par les tests et un éventuel clavier externe) pour ne jamais auto-soumettre
+    // une saisie encore en cours par un autre moyen. Ne se déclenche jamais deux
+    // fois pour la même frappe (loading déjà vrai) ni sur un CODE fidélité
+    // numérique (8 caractères chez nous, jamais 10 — cf. looksLikePhoneNumber).
     handleNumpad(key) {
       if (key === 'del') {
         this.code = this.code.slice(0, -1);
-      } else if (this.code.length < 20) {
-        this.code += key;
+        return;
+      }
+      if (this.code.length >= 20) return;
+      this.code += key;
+      if (!this.loading && this.code.length === 10 && this.looksLikePhoneNumber(this.code)) {
+        this.checkLoyalty();
       }
     },
 
@@ -532,11 +643,34 @@ export default {
       this[f] = next;
     },
     onVkeybSubmit() {
+      // Identification par e-mail : ✓ vérifie directement.
+      if (this.vkeybActiveField === 'loginEmail') {
+        this.vkeybActiveField = null;
+        if (this.loginEmail.trim() && !this.loading) this.checkLoyalty();
+        return;
+      }
       // La touche ✓ valide le formulaire si tout est rempli ; sinon elle
       // passe juste au champ suivant. Cela reproduit le comportement
       // attendu d'un clavier matériel avec "Enter".
       if (this.vkeybActiveField === 'registerName' && this.registerPhone === '') {
         this.vkeybActiveField = 'registerPhone';
+        return;
+      }
+      /*
+       * [OPTIM SOUSCRIPTION 2026-09-25 · test-e2e et optimise] Parcours rapide
+       * (téléphone déjà connu, phoneCapturedFromCheck) : le prénom est le SEUL
+       * champ requis. Sans cette garde, ✓ après le prénom route vers l'email —
+       * TOUJOURS vide à ce stade puisqu'il est facultatif et pas encore visité —
+       * forçant un second ✓ juste pour le sauter. Ça défait exactement
+       * l'optimisation "un seul champ" : ✓ doit soumettre directement. Le client
+       * qui VEUT ajouter un email le fait en touchant CE champ lui-même avant de
+       * valider — cette garde ne s'applique qu'au routage automatique de ✓.
+       */
+      if (this.vkeybActiveField === 'registerName' && this.phoneCapturedFromCheck) {
+        this.vkeybActiveField = null;
+        if (this.registerName.trim() && this.registerPhone.trim() && !this.registerLoading) {
+          this.submitRegister();
+        }
         return;
       }
       if (this.vkeybActiveField === 'registerPhone' && this.registerEmail === '') {
@@ -553,31 +687,104 @@ export default {
       this.vkeybActiveField = null;
     },
 
+    // [OPTIM SOUSCRIPTION 2026-09-25] Heuristique CLIENT (le backend seul sait
+    // trancher code-vs-téléphone via PhoneIdentity, indisponible ici) : ne basculer
+    // automatiquement en inscription rapide que si ce qui a été tapé RESSEMBLE à un
+    // numéro (que des chiffres/+/espaces/tirets, 8 à 15 chiffres). Un vrai code
+    // fidélité mal tapé (ex. lettres) affiche l'erreur classique — jamais de faux
+    // "créons votre compte" sur une faute de frappe de code.
+    looksLikePhoneNumber(value) {
+      const digits = String(value || '').replace(/[\s\-]/g, '');
+      return /^\+?\d{8,15}$/.test(digits);
+    },
+
     async checkLoyalty() {
-      if (!this.code.trim()) return;
+      if (!this.saisieCourante.trim()) return;
       this.loading = true;
       this.error = null;
+      this.vkeybActiveField = null;
       const ms = this.$options.LOYALTY_HTTP_TIMEOUT_MS;
+      const typed = this.saisieCourante.trim();
       try {
-        const res = await axios.post('frontend/loyalty/check', { code: this.code.trim() }, { timeout: ms });
+        const res = await axios.post('frontend/loyalty/check', { code: typed }, { timeout: ms });
         const data = res.data?.data || res.data || {};
         // Normalize field names: API returns `points`, UI uses `loyalty_point`
         this.customer = {
           ...data,
           loyalty_point: parseInt(data.loyalty_point ?? data.points ?? 0, 10),
+          // Serveur ancien sans le champ : tout le solde est dépensable (comportement d'avant).
+          points_depensables: parseInt(data.points_depensables ?? data.loyalty_point ?? data.points ?? 0, 10),
+          points_pending: Math.max(0, parseInt(data.points_pending ?? 0, 10) || 0),
         };
         this.discountValue = parseFloat(data.discount_value || 0);
         this.step = 'balance';
       } catch (err) {
         if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
           this.error = this.$t('kiosk.loyalty_screen.request_timeout');
+        } else if (err.response?.status === 404 && this.idMode === 'tel' && this.looksLikePhoneNumber(typed)) {
+          /*
+           * [OPTIM SOUSCRIPTION 2026-09-25 · owner] « le client a du mal à créer un
+           * compte directement lorsqu'il a mis son numéro ». Avant ce fix : numéro
+           * non trouvé → erreur générique → le client doit REMARQUER le lien
+           * "S'inscrire", cliquer, puis RETAPER son numéro dans un formulaire à 3
+           * champs. Beaucoup abandonnaient là. Désormais : le numéro qu'il vient de
+           * taper devient directement registerPhone (jamais retapé), on saute droit
+           * à l'écran d'inscription, et son champ téléphone y est masqué
+           * (phoneCapturedFromCheck) — il ne reste que le prénom à remplir.
+           */
+          this.registerName = '';
+          this.registerPhone = typed;
+          this.registerEmail = '';
+          this.registerError = null;
+          this.phoneCapturedFromCheck = true;
+          this.step = 'register';
+          // [OPTIM SOUSCRIPTION 2026-09-25 · test-e2e et optimise] Le clavier virtuel
+          // s'ouvre tout seul sur le prénom — un tap de moins que devoir toucher le
+          // champ soi-même pour l'unique information encore à saisir.
+          this.$nextTick(() => { this.vkeybActiveField = 'registerName'; });
         } else {
           const msg = err.response?.data?.message || err.response?.data?.errors?.code?.[0];
-          this.error = msg || this.$t('kiosk.loyalty_screen.error_not_found');
+          if (err.response?.status === 404 && this.idMode === 'email') {
+            this.error = this.$t('kiosk.loyalty_screen.email_not_found');
+          } else if (err.response?.status === 404 || !msg) {
+            this.error = this.$t('kiosk.loyalty_screen.error_not_found');
+          } else {
+            this.error = msg;
+          }
+          // Un QR rejeté (expiré, déjà lu) : le champ se vide et reste prêt pour le scan suivant.
+          if (this.idMode === 'qr') { this.qrSaisie = ''; this.$nextTick(() => this.$refs.qrInput?.focus()); }
         }
       } finally {
         this.loading = false;
       }
+    },
+
+    // [OPTIM SOUSCRIPTION 2026-09-25] Entrée MANUELLE "S'inscrire" depuis l'écran de
+    // saisie : toujours le formulaire complet à 3 champs (aucun numéro connu à l'avance).
+    openManualRegister() {
+      this.phoneCapturedFromCheck = false;
+      this.registerName = '';
+      this.registerPhone = '';
+      this.registerEmail = '';
+      this.registerError = null;
+      this.vkeybActiveField = null;
+      this.step = 'register';
+    },
+
+    // [OPTIM SOUSCRIPTION 2026-09-25] Retour depuis l'inscription — utilisé par
+    // "← Retour" ET par "Ce n'est pas mon numéro" (le numéro capturé est alors
+    // effacé pour que le client puisse en retaper un autre proprement).
+    backFromRegister() {
+      if (this.phoneCapturedFromCheck) {
+        this.registerPhone = '';
+      }
+      this.phoneCapturedFromCheck = false;
+      // [OPTIM SOUSCRIPTION 2026-09-25] Le clavier virtuel a pu s'ouvrir tout seul
+      // sur le prénom (auto-focus) ou être en cours d'usage : le laisser ouvert en
+      // quittant l'écran d'inscription le ferait flotter, orphelin, par-dessus la
+      // saisie du numéro (KsVirtualKeyboard est monté hors du v-if de step).
+      this.vkeybActiveField = null;
+      this.step = 'input';
     },
 
     async applyLoyalty() {
@@ -661,14 +868,31 @@ export default {
       try {
         const res = await axios.post('frontend/loyalty/register', payload);
         const data = res.data?.data || {};
+        // Existing phone/email is a conflict response without a customer payload.
+        // Never transition to balance with an empty loyalty code: that rendered a
+        // blank/unclickable kiosk state and looked like a white-page freeze.
+        if (res.data?.code === 'PHONE_EXISTS' || res.data?.code === 'EMAIL_EXISTS') {
+          this.registerError = res.data?.message || this.$t('kiosk.loyalty_screen.register_error_generic');
+          return;
+        }
+        if (!data.loyalty_code) {
+          this.registerError = this.$t('kiosk.loyalty_screen.register_error_generic');
+          return;
+        }
         this.customer = {
           name:          data.name || payload.name,
           loyalty_point: parseInt(data.points ?? 0, 10),
+          points_depensables: parseInt(data.points_depensables ?? data.points ?? 0, 10),
+          points_pending: Math.max(0, parseInt(data.points_pending ?? 0, 10) || 0),
           loyalty_code:  data.loyalty_code || '',
         };
         this.discountValue = 0;
         this.code = data.loyalty_code || '';
         this.showToast(this.$t('kiosk.loyalty_screen.toast_welcome', { name: this.customer.name }), 'success', 3500);
+        // [OPTIM SOUSCRIPTION 2026-09-25] Le clavier virtuel a pu s'auto-ouvrir sur
+        // le prénom — le fermer avant de quitter l'écran, sinon il flotte par-dessus
+        // le solde (KsVirtualKeyboard est monté hors du v-if de step).
+        this.vkeybActiveField = null;
         this.step = 'balance';
         // [PHASE-6.4] Analytics : registration réussie (anonyme — pas de phone/email ici).
         try { kioskAnalytics.track('loyalty_scanned', { registration: true }); } catch (_) {}
@@ -813,6 +1037,46 @@ export default {
   text-align: center;
 }
 
+.kiosk-loyalty-modes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.kiosk-loyalty-mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 72px;
+  padding: 10px 8px;
+  border: 2px solid #E5E5E5;
+  border-radius: 16px;
+  background: #fff;
+  color: #1A1A1A;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.kiosk-loyalty-mode.is-on {
+  border-color: #F4501E;
+  background: #FFF3EE;
+  color: #C23A0F;
+}
+.kiosk-loyalty-mode-icon { font-size: 24px; line-height: 1; }
+.kiosk-loyalty-qr-zone {
+  margin: 8px auto 14px;
+  width: 120px;
+  height: 120px;
+  border: 3px dashed #F4501E;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 56px;
+  color: #F4501E;
+}
+.kiosk-loyalty-input--qr { width: 100%; text-align: center; letter-spacing: 0; }
 .kiosk-loyalty-input-row {
   position: relative;
 }
@@ -958,6 +1222,35 @@ export default {
   box-shadow: 0 6px 16px rgba(245, 197, 24, 0.42);
 }
 .kiosk-loyalty-register-btn:active { transform: translateY(0); }
+
+/* [OPTIM SOUSCRIPTION 2026-09-25] Bandeau de confirmation du numéro déjà capturé
+   (inscription rapide) + lien correctif si le client s'est trompé de numéro. */
+.kiosk-loyalty-phone-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  background: rgba(244, 80, 30, 0.07);
+  border: 1px solid rgba(244, 80, 30, 0.2);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0F0F0F;
+  text-align: center;
+}
+.kiosk-loyalty-not-my-number {
+  background: none;
+  border: none;
+  color: #5A5A5A;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0.15rem 0.3rem;
+}
+.kiosk-loyalty-not-my-number:hover { color: #F4501E; }
 
 .kiosk-register-fields {
   display: flex;

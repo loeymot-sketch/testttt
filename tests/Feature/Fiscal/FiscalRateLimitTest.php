@@ -54,7 +54,8 @@ class FiscalRateLimitTest extends TestCase
             ->first(fn ($r) => $r->uri() === 'api/admin/fiscal/z-report/open');
 
         $this->assertNotNull($route, 'Route /admin/fiscal/z-report/open must exist.');
-        $this->assertContains('throttle:10,1', $route->gatherMiddleware(),
+        // [VG-2026-10-21 M1-002] même seuil 10/min, compteur propre (3e argument = préfixe de clé).
+        $this->assertContains('throttle:10,1,z-report-open', $route->gatherMiddleware(),
             'Z-report open must carry throttle:10,1 to block sequence-number burn attacks.');
     }
 
@@ -64,7 +65,8 @@ class FiscalRateLimitTest extends TestCase
             ->first(fn ($r) => $r->uri() === 'api/admin/fiscal/z-report/close');
 
         $this->assertNotNull($route, 'Route /admin/fiscal/z-report/close must exist.');
-        $this->assertContains('throttle:10,1', $route->gatherMiddleware(),
+        // [VG-2026-10-21 M1-002] même seuil 10/min, compteur propre (3e argument = préfixe de clé).
+        $this->assertContains('throttle:10,1,z-report-close', $route->gatherMiddleware(),
             'Z-report close must carry throttle:10,1.');
     }
 

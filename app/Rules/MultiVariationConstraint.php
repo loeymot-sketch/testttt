@@ -3,8 +3,12 @@
 namespace App\Rules;
 
 use App\Enums\Status;
+use App\Models\Item;
 use App\Models\ItemAttribute;
 use App\Models\ItemVariation;
+use App\Models\ItemWizardProfile;
+use App\Models\Scopes\WizardProfileBranchScope;
+use App\Support\Menu\IncludedMeatCount;
 use Closure;
 use Illuminate\Support\Collection;
 
@@ -24,7 +28,7 @@ class MultiVariationConstraint
      * @param  array<int, mixed>  $orderItems  Liste d'items (chacun peut contenir item_variations)
      * @param  Closure(int $itemIndex, string $message): void  $failItem
      */
-    public static function validateCollectionKeyedByItemIndex(array $orderItems, Closure $failItem): void
+    public static function validateCollectionKeyedByItemIndex(array $orderItems, Closure $failItem, ?int $branchId = null): void
     {
         $allVarIds = [];
         foreach ($orderItems as $item) {
@@ -53,12 +57,14 @@ class MultiVariationConstraint
         // per-attribute min check below only inspects attributes PRESENT in the
         // payload, so an order missing a required modifier entirely (a tacos
         // with no meat, a sandwich with no bread, a bol with no sauce) was
-        // silently accepted. All required attributes in the V1 menu are visible
-        // on both pos & kiosk, so enforcing presence cannot reject a valid order
-        // (the wizard always defaults a value for each required attribute).
-        $requiredByItem = self::requiredAttributesByOrderedItem($orderItems);
+        // silently accepted. The active published composer profile is the
+        // visibility contract when it exists; otherwise preserve the legacy
+        // V1 required-attribute behavior.
+        $requiredByItem = self::requiredAttributesByOrderedItem($orderItems, $branchId);
+        // [VG-2026-10-21 R2-005] Viandes INCLUSES imposées par la règle du propriétaire (Méga/Terminator 2, Tacos M/L/XL 1/2/3).
+        $includedMeatByItem = self::includedMeatByOrderedItem($orderItems);
 
-        if ($allVarIds === [] && $requiredByItem === []) {
+        if ($allVarIds === [] && $requiredByItem === [] && $includedMeatByItem === []) {
             return;
         }
 
@@ -89,6 +95,24 @@ class MultiVariationConstraint
             }
 
             $itemId = (int) ($item['item_id'] ?? 0);
+
+            // [VG-2026-10-21 R2-005] Une composition doit porter EXACTEMENT les viandes incluses de l'article : la 2e viande
+            // d'un Méga n'est pas facultative (décision du propriétaire), et une viande en trop passe par l'extra payant.
+            if (isset($includedMeatByItem[$itemId])) {
+                ['name' => $itemName, 'count' => $expected] = $includedMeatByItem[$itemId];
+                $selected = self::selectedMeatCount($vars, $variationModels, $attributeModels, $itemId);
+                if ($selected !== $expected) {
+                    $failItem((int) $index, sprintf(
+                        '« %s » comprend %d %s : choisis-en exactement %d (reçu %d). Une viande en plus se commande en supplément.',
+                        $itemName,
+                        $expected,
+                        $expected > 1 ? 'viandes' : 'viande',
+                        $expected,
+                        $selected,
+                    ));
+                }
+            }
+
             $required = $requiredByItem[$itemId] ?? [];
             if ($required === []) {
                 continue;
@@ -115,7 +139,7 @@ class MultiVariationConstraint
      * @param  array<int, mixed>  $orderItems
      * @return array<int, array<int, array{name: string, min: int}>>  [item_id => [attribute_id => [name, min]]]
      */
-    private static function requiredAttributesByOrderedItem(array $orderItems): array
+    private static function requiredAttributesByOrderedItem(array $orderItems, ?int $branchId = null): array
     {
         $itemIds = [];
         foreach ($orderItems as $item) {
@@ -128,8 +152,57 @@ class MultiVariationConstraint
             return [];
         }
 
-        $rows = ItemVariation::query()
+        // A published composer profile is the product's active contract. An
+        // inactive legacy step (for example “pain”) must not be resurrected
+        // by the generic presence validator: the kiosk cannot select it, yet
+        // the old rule rejected the quote at checkout. PricingService already
+        // enforces the profile's active step min/max rules.
+        // Only the nullable wizard-profile tenant filter must be lifted here:
+        // the query re-applies the permitted global-or-requested-branch policy
+        // below. Do not use `withoutGlobalScopes()` as it would silently widen
+        // any future scope added to this model.
+        $profiles = ItemWizardProfile::withoutGlobalScope(WizardProfileBranchScope::class)
+            ->with(['steps' => fn ($query) => $query->where('is_active', true)->orderBy('position')])
             ->whereIn('item_id', $itemIds)
+            ->where('is_published', true)
+            ->where(function ($query) use ($branchId): void {
+                $query->whereNull('branch_id_scope');
+                if ($branchId !== null && $branchId > 0) {
+                    $query->orWhere('branch_id_scope', $branchId);
+                }
+            })
+            ->get()
+            ->groupBy('item_id')
+            ->map(function (Collection $candidates) use ($branchId): ItemWizardProfile {
+                return $candidates->sortByDesc(function (ItemWizardProfile $profile) use ($branchId): int {
+                    return $branchId !== null && (int) $profile->branch_id_scope === $branchId ? 2 : 1;
+                })->first();
+            });
+
+        $out = [];
+        foreach ($profiles as $itemId => $profile) {
+            foreach ($profile->steps as $step) {
+                if ($step->source_type !== 'item_attribute' || (int) $step->min_select < 1) {
+                    continue;
+                }
+                $attributeId = (int) ($step->source_item_attribute_id ?: $step->source_ref);
+                if ($attributeId < 1) {
+                    continue;
+                }
+                $out[(int) $itemId][$attributeId] = [
+                    'name' => (string) $step->label,
+                    'min' => (int) $step->min_select,
+                ];
+            }
+        }
+
+        $legacyItemIds = array_values(array_diff($itemIds, $profiles->keys()->map(fn ($id) => (int) $id)->all()));
+        if ($legacyItemIds === []) {
+            return $out;
+        }
+
+        $rows = ItemVariation::query()
+            ->whereIn('item_id', $legacyItemIds)
             ->where('status', Status::ACTIVE)
             ->get(['item_id', 'item_attribute_id']);
         if ($rows->isEmpty()) {
@@ -141,7 +214,6 @@ class MultiVariationConstraint
             ? collect()
             : ItemAttribute::query()->whereIn('id', $attrIds)->get()->keyBy('id');
 
-        $out = [];
         foreach ($rows as $row) {
             $attrId = (int) $row->item_attribute_id;
             $attr = $attrs->get($attrId);
@@ -159,6 +231,81 @@ class MultiVariationConstraint
         }
 
         return $out;
+    }
+
+    /**
+     * [VG-2026-10-21 R2-005] Pour chaque article commandé PORTANT une règle du propriétaire (config/menu_meat_rules.php),
+     * le nombre de viandes incluses à choisir — même calcul que la borne et le site (`viande_count`,
+     * IncludedMeatCount::resolve sur les attributs « Viande N » portant une variation active). Un article sans règle
+     * (bols, burgers, galettes) n'est pas concerné : son emplacement unique est déjà tenu par min_select.
+     *
+     * @param  array<int, mixed>  $orderItems
+     * @return array<int, array{name: string, count: int}>  [item_id => [name, count]]
+     */
+    private static function includedMeatByOrderedItem(array $orderItems): array
+    {
+        $itemIds = [];
+        foreach ($orderItems as $item) {
+            if (is_array($item) && (int) ($item['item_id'] ?? 0) > 0) {
+                $itemIds[(int) $item['item_id']] = true;
+            }
+        }
+        if ($itemIds === []) {
+            return [];
+        }
+
+        $items = Item::query()->with('category:id,name')->whereIn('id', array_keys($itemIds))->get(['id', 'name', 'item_category_id']);
+        $ruled = $items->filter(fn (Item $item): bool => IncludedMeatCount::rule((string) $item->name, $item->category?->name) !== null);
+        if ($ruled->isEmpty()) {
+            return [];
+        }
+
+        $attributeNamesByItem = ItemVariation::query()
+            ->join('item_attributes', 'item_attributes.id', '=', 'item_variations.item_attribute_id')
+            ->whereIn('item_variations.item_id', $ruled->pluck('id')->all())
+            ->where('item_variations.status', Status::ACTIVE)
+            ->get(['item_variations.item_id', 'item_attributes.name as attribute_name'])
+            ->groupBy('item_id');
+
+        $out = [];
+        foreach ($ruled as $item) {
+            $count = IncludedMeatCount::resolve(
+                (string) $item->name,
+                $item->category?->name,
+                collect($attributeNamesByItem->get($item->id, []))->pluck('attribute_name')
+            );
+            if ($count > 0) {
+                $out[(int) $item->id] = ['name' => (string) $item->name, 'count' => $count];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * [VG-2026-10-21 R2-005] Viandes choisies sur une ligne : variations de l'article dont l'attribut est un emplacement
+     * viande (« Viande N »). L'extra « Viande supplémentaire » (payant) n'est pas une viande incluse.
+     *
+     * @param  array<int, mixed>  $vars
+     */
+    private static function selectedMeatCount(array $vars, Collection $variationModels, Collection $attributeModels, int $itemId): int
+    {
+        $count = 0;
+        foreach ($vars as $v) {
+            if (! is_array($v)) {
+                continue;
+            }
+            $model = $variationModels->get((int) ($v['id'] ?? 0));
+            if (! $model instanceof ItemVariation || (int) $model->item_id !== $itemId) {
+                continue;
+            }
+            $attribute = $attributeModels->get((int) $model->item_attribute_id);
+            if ($attribute instanceof ItemAttribute && IncludedMeatCount::isMeatSlot((string) $attribute->name)) {
+                $count += max(1, (int) ($v['quantity'] ?? 1));
+            }
+        }
+
+        return $count;
     }
 
     /**

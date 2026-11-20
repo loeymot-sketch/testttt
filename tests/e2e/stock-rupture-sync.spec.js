@@ -35,7 +35,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const { test, expect } = require('@playwright/test');
 const { clearFoodKingRateLimits } = require('./helpers/rate-limit');
 
@@ -95,7 +95,11 @@ async function snap(page, step, slug, state) {
 // Tinker bridge — JSON as the very last line of stdout.
 function tinker(code) {
   try {
-    const out = execSync(`php artisan tinker --execute=${JSON.stringify(code)}`, {
+    // Passer le code comme argument séparé évite que le shell réinterprète les
+    // backslashes/quotes d'un try/catch PHP et transforme une réponse JSON en
+    // résultat indéfini. Les scénarios de rupture doivent lire l'exception
+    // métier, pas dépendre d'un quoting shell implicite.
+    const out = execFileSync('php', ['artisan', 'tinker', '--execute', code], {
       cwd: process.cwd(), encoding: 'utf8', timeout: 30_000,
     });
     const lines = out.trim().split(/\r?\n/);
@@ -266,7 +270,10 @@ async function fetchBranchAvailabilitySnapshot(page, token, branchId) {
 // in which case scenarios degrade to test.skip with a documented reason.
 function discoverFixtures() {
   // Note on relations: Item::extras() / Item::variations() (verified in app/Models/Item.php).
-  // We pick a generic active item; extras and variations are pulled
+  // La disponibilité du catalogue est portée par `is_available`; ne pas
+  // dépendre de l'ancienne valeur numérique de `status`, qui varie selon les
+  // jeux de données mais ne décide pas si l'article est vendable.
+  // We pick a generic available item; extras and variations are pulled
   // independently so the spec stays usable even if seed coverage is partial.
   return tinker(
     'echo json_encode(['
@@ -274,10 +281,10 @@ function discoverFixtures() {
     + '"item_with_extra_and_variation" => optional('
       + '\\App\\Models\\Item::query()'
         + '->whereHas("extras")->whereHas("variations")'
-        + '->where("status", 1)->first()'
+        + '->where("is_available", true)->whereNull("deleted_at")->first()'
     + ')?->only(["id","name"]),'
     + '"item_active_fallback" => optional('
-      + '\\App\\Models\\Item::query()->where("status", 1)->first()'
+      + '\\App\\Models\\Item::query()->where("is_available", true)->whereNull("deleted_at")->first()'
     + ')?->only(["id","name"]),'
     + '"extra_id" => optional(\\App\\Models\\ItemExtra::query()->first())?->id,'
     + '"variation_id" => optional(\\App\\Models\\ItemVariation::query()->first())?->id,'

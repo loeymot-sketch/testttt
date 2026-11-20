@@ -440,7 +440,8 @@ class ComposerMerchantLiesTest extends TestCase
         $this->actingAs($this->admin, 'sanctum')
             ->getJson("/api/admin/composer/categories/{$category->id}/available-sources")
             ->assertOk()
-            ->assertJsonPath('data.item_attribute.0.name', 'Viande 1');
+            ->assertJsonPath('data.item_attribute.0.name', 'Viande 1')
+            ->assertJsonPath('data.item_id', $item->id);
     }
 
     public function test_extra_group_default_includes_extras_with_null_group_label(): void
@@ -862,6 +863,17 @@ class ComposerMerchantLiesTest extends TestCase
             'is_active' => false,
             'position' => 1,
             'visible_on' => ['pos'],
+        ]);
+        // [INCIDENT COMPOSEUR 2026-09-04] Le témoin « l'étape active survit » doit porter
+        // un VRAI choix : depuis le correctif d'impasse, une étape sans la moindre tuile
+        // n'est plus projetée (deux produits phares rendus invendables par ce défaut).
+        // Sans cette variation, le témoin passerait pour une mauvaise raison.
+        $attributSauce = ItemAttribute::create([
+            'name' => 'Sauce (1ère Gratuite)', 'min_select' => 1, 'max_select' => 1, 'status' => Status::ACTIVE,
+        ]);
+        ItemVariation::create([
+            'item_id' => $item->id, 'item_attribute_id' => $attributSauce->id,
+            'name' => 'Andalouse', 'price' => 0, 'status' => Status::ACTIVE,
         ]);
         ItemWizardStep::factory()->create([
             'profile_id' => $profile->id,

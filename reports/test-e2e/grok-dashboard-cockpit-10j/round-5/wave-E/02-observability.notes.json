@@ -1,0 +1,233 @@
+{
+  "name": "02-observability",
+  "url": "http://127.0.0.1:8766/admin/dashboard",
+  "title": "Le Cayenne",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "sidebar": {
+    "present": true,
+    "visible": true,
+    "exactLabels": [
+      "CAISSE ET COMMANDES",
+      "Tableau de bord",
+      "POS",
+      "Commandes caisse",
+      "Historique",
+      "Encaissement",
+      "Ticket promo",
+      "Réglages ticket promo",
+      "Commande Uber (photo)",
+      "La roue",
+      "Écran cuisine",
+      "Suivi client"
+    ],
+    "labeled": [
+      {
+        "kind": "group",
+        "text": "CAISSE ET COMMANDES"
+      },
+      {
+        "kind": "item",
+        "text": "Tableau de bord"
+      },
+      {
+        "kind": "item",
+        "text": "POS"
+      },
+      {
+        "kind": "item",
+        "text": "Commandes caisse"
+      },
+      {
+        "kind": "item",
+        "text": "Historique"
+      },
+      {
+        "kind": "item",
+        "text": "Encaissement"
+      },
+      {
+        "kind": "item",
+        "text": "Ticket promo"
+      },
+      {
+        "kind": "item",
+        "text": "Réglages ticket promo"
+      },
+      {
+        "kind": "item",
+        "text": "Commande Uber (photo)"
+      },
+      {
+        "kind": "item",
+        "text": "La roue"
+      },
+      {
+        "kind": "item",
+        "text": "Écran cuisine"
+      },
+      {
+        "kind": "item",
+        "text": "Suivi client"
+      }
+    ],
+    "hasEtatDuSysteme": false,
+    "hasEtatInRaw": false,
+    "hrefs": [
+      {
+        "tag": "A",
+        "href": "/home",
+        "text": ""
+      },
+      {
+        "tag": "A",
+        "href": "/admin/dashboard",
+        "text": "Tableau de bord"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/pos",
+        "text": "POS"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/pos-orders",
+        "text": "Commandes caisse"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/historique",
+        "text": "Historique"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/encaissement",
+        "text": "Encaissement"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/promo-flyer",
+        "text": "Ticket promo"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/promo-flyer/settings",
+        "text": "Réglages ticket promo"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/uber-photo",
+        "text": "Commande Uber (photo)"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/roue",
+        "text": "La roue"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/kitchen-display-system",
+        "text": "Écran cuisine"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/order-status-screen",
+        "text": "Suivi client"
+      }
+    ],
+    "rawText": "Tableau de bord POS Commandes caisse Historique Encaissement Ticket promo Réglages ticket promo Commande Uber (photo) La roue CAISSE ET COMMANDES Écran cuisine Suivi client"
+  },
+  "mix": {
+    "mixScripts": [
+      "http://127.0.0.1:8766/js/manifest.js?id=73713f1e701c87fcd478c5245c061dfe",
+      "http://127.0.0.1:8766/js/vendor.js?id=31f487d9b010b06497b5a89bd0fcbcf2",
+      "http://127.0.0.1:8766/js/app.js?id=7af395861f8184d98e5a7fad8cad66a4"
+    ],
+    "allScriptCount": 11,
+    "perf": [
+      {
+        "name": "http://127.0.0.1:8766/js/manifest.js?id=73713f1e701c87fcd478c5245c061dfe",
+        "transferSize": 13450,
+        "encodedBodySize": 13150,
+        "initiatorType": "script"
+      },
+      {
+        "name": "http://127.0.0.1:8766/js/vendor.js?id=31f487d9b010b06497b5a89bd0fcbcf2",
+        "transferSize": 4023567,
+        "encodedBodySize": 4023267,
+        "initiatorType": "script"
+      },
+      {
+        "name": "http://127.0.0.1:8766/js/app.js?id=7af395861f8184d98e5a7fad8cad66a4",
+        "transferSize": 7554995,
+        "encodedBodySize": 7554695,
+        "initiatorType": "script"
+      }
+    ],
+    "appFromScript": "http://127.0.0.1:8766/js/app.js?id=7af395861f8184d98e5a7fad8cad66a4",
+    "appFromPerf": "http://127.0.0.1:8766/js/app.js?id=7af395861f8184d98e5a7fad8cad66a4",
+    "adminShellFromScript": null,
+    "adminShellFromPerf": null
+  },
+  "appJsUrl": "http://127.0.0.1:8766/js/app.js?id=7af395861f8184d98e5a7fad8cad66a4",
+  "appJsHash": "7af395861f8184d98e5a7fad8cad66a4",
+  "adminShellUrl": null,
+  "adminShellHash": null,
+  "vueSystemHealthExists": false,
+  "vueSystemHealthVisible": false,
+  "healthCockpitPresent": false,
+  "interrupteursPresent": false,
+  "h2EtatDuSysteme": false,
+  "redirectedToDashboard": true,
+  "stillOnObservability": false,
+  "stillOnPos": false,
+  "systemHealthErreurText": null,
+  "toastOrAlert": [],
+  "bodyHasVentesDuJour": true,
+  "bodyHasEtatDuSysteme": false,
+  "bodyHasImpossibleLire": false,
+  "bodySnippet": "Français\nAnglais\nFrançais\nBonjour\nCaissier Le Cayenne\nCaissier Le Cayenne\n\npos@lecayenne.fr\n\n+330600000002\n\n0,00 €\nModifier Le Profil\nChanger Le Mot De Passe\nAppareils Connectés\nDéconnexion\nTableau de bord\nPOS\nCommandes caisse\nHistorique\nEncaissement\nTicket promo\nRéglages ticket promo\nCommande Uber (photo)\nLa roue\nCAISSE ET COMMANDES\nÉcran cuisine\nSuivi client\nBonsoir !\nCaissier Le Cayenne\nAccès rapides\nPOS\nCommandes caisse\nSuivi caisse (kanban)\nEncaissement\nHistorique\nÉcran cuisine\nSuivi client\nVue d’ensemble\nVentes du jour\n0,00 €\nCommandes du jour\n0\nTotal articles menu\n55\nSuivi en direct\nTicket Moyen\n0,00 €\n\nSUPERVISION CUISINE\n\nDélais de préparation\n\nActualisé à l’instant\n\n0\nhors délai\n0\nurgentes\n—\nplus ancienne\n\nAucune préparation hors délai\n\nDernier contrôle terminé avec succès.\n\n0 préparations hors délai, dont 0 urgentes.\nRépartition par Canal (Aujourd'hui)\nWeb\n0%\nKiosk/App\n0%\nPOS\n0%\nAudit Trail NF525 (Journal Inviolable)\n\nSource : audit_logs (INSERT-only, HMAC SHA-256 chain-signed). Le préfixe de hash atteste l'intégrité de la chaîne.\n\nUTILISATEUR\tACTION\tRESSOURCE\tHASH\tTEMPS\nSystème\tuser.device_revoked\tpersonal_access_token#11720\t0651fd3b\til y a 6 jours\nSystème\tCommande annulée\torder#6929\t05731fbb\til y a 1 semaine\nSystème\tCommande annulée\torder#6920\t7caed138\til y a 1 semaine\nSystème\tCommande annulée\torder#6915\t320b649e\til y a 1 semaine\nSystème\tCommande annulée\torder#6908\t79453d45\til y a 1 semaine\nSystème\tCommande annulée\torder#6907\te8ce9ef0\til y a 1 semaine\nSystème\tCommande annulée\torder#6906\t86a6b100\til y a 1 semaine\nSystème\tCommande annulée\torder#6902\t18655c4c\til y a 1 semaine\nSystème\tCommande annulée\torder#6901\t0d3058a7\til y a 1 semaine\nSystème\tCommande annulée\torder#6900\tafd2c6c0\til y a 1 semaine\nSystème\tCommande annulée\torder#6899\t6d909761\til y a 1 semaine\nSystème\tCommande annulée\torder#6898\t99a33812\til y a 1 semaine\nSystème\tCommande annulée\torder#6897\ted41d689\til y a 1 semaine\nSystème\tCommande annulée\torder#6896\td3eff8c8\til y a 1 semaine\nSystème\tCommande annulée\torder#6894\t2b2e092e\til y a 1 semaine\nSystème\tCommande annulée\torder#6893\t162adcb6\til y a 1 semaine\nSystème\tCommande annulée\torder#6892\t4ded5a2d\til y a 1 semaine\nSystème\tCommande annulée\torder#6891\t73b646ab\til y a 1 semaine\nSystème\tCommande annulée\torder#6890\t9ab9fb0d\til y a 1 semaine\nSystème\tCommande annulée\torder#6889\t456dc2dc\til y a 1 semaine\nStatistiques Des Commandes\nDate\nTotal Commandes\n0\nEn Attente\n0\nAcceptée\n0\nEn Préparation\n0\nPréparée\n0\nEn Livraison\n0\nLivré\n0\nAnnulé\n0\nRetournée\n0\nRefusée\n0\nRésumé Des Ventes\nDate\n0,00 €\n\nTotal Ventes\n\n0,00 €\n\nVentes Moyennes Par Jour\n\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\nRésumé Des Commandes\nDate\nTotal\n0\nLivré (0%)\nRetournée (0%)\nAnnulé (0%)\nRefusée (0%)\nDernier Rapport Z\n\nAucune donnée\n\nVoir toutes\nArticles Mis En Avant\nMéga\nBig Burger\nGrill Burger\nFish Burger\nPetite Frites Cheddar Fondu\nGrande Frites Cheddar + Oignons Frits\nTacos L\nArticles Les Plus Populaires\nCayenne\nSandwichs\n7,40 €\nCoca-Cola 33cl\nBoissons\n1,90 €\nTacos M\nTacos\n6,90 €\nEau Plate 50cl\nBoissons\n1,00 €\nAlertes Stock Bas\nVoir toutes\n\nAucune alerte de stock bas pour le moment.\n\nRequest\nTimeline\nQueries\n2\nModels\n1\n2\n#1 system (20:18:31)\n#2 show/1 (ajax) (20:18:33)\n25.51ms\n3MB\n9.x\nGET api/admin/setting/branch/show/{branch}",
+  "requestedUrl": "http://127.0.0.1:8766/admin/observability/system",
+  "landingUrl": "http://127.0.0.1:8766/admin/pos",
+  "landedOnPos": true,
+  "didClickPaymentOrWizard": false,
+  "didClickPosUi": false,
+  "forcedPut": {
+    "url": "/api/admin/observability/interrupteurs/wheel",
+    "status": 403,
+    "body": "{\n    \"message\": \"User does not have the right roles.\",\n    \"exception\": \"Spatie\\\\Permission\\\\Exceptions\\\\UnauthorizedException\",\n    \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/spatie/laravel-permission/src/Exceptions/UnauthorizedException.php\",\n    \"line\": 21,\n    \"trace\": [\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/spatie/laravel-permission/src/Middlewares/RoleMiddleware.php\",\n            \"line\": 24,\n            \"function\": \"forRoles\",\n            \"class\": \"Spatie\\\\Permission\\\\Exceptions\\\\UnauthorizedException\",\n            \"type\": \"::\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php\",\n            \"line\": 180,\n            \"function\": \"handle\",\n            \"class\": \"Spatie\\\\Permission\\\\Middlewares\\\\RoleMiddleware\",\n            \"type\": \"->\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Middleware/localization.php\",\n            \"line\": 33,\n            \"function\": \"Illuminate\\\\Pipeline\\\\{closure}\",\n            \"class\": \"Illuminate\\\\Pipeline\\\\Pipeline\",\n            \"type\": \"->\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php\",\n            \"line\": 180,\n            \"function\": \"handle\",\n     ",
+    "hasToken": true,
+    "forced": true
+  },
+  "naturalPutInterrupteur": [
+    {
+      "kind": "http",
+      "url": "http://127.0.0.1:8766/api/admin/observability/interrupteurs/wheel",
+      "method": "PUT",
+      "status": 403,
+      "resourceType": "fetch",
+      "ts": 1788286745398,
+      "bodySnippet": "{\n    \"message\": \"User does not have the right roles.\",\n    \"exception\": \"Spatie\\\\Permission\\\\Exceptions\\\\UnauthorizedException\",\n    \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/spatie/laravel-permission/src/Exceptions/UnauthorizedException.php\",\n    \"line\": 21,\n    \"trace\": [\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/spatie/laravel-permission/src/Middlewares/RoleMiddleware.php\",\n            \"line\": 24,\n            \"function\": \"forRoles\",\n            \"class\": \"Spatie\\\\Permission\\\\Exceptions\\\\UnauthorizedException\",\n            \"type\": \"::\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php\",\n            \"line\": 180,\n            \"function\": \"handle\",\n            \"class\": \"Spatie\\\\Permission\\\\Middlewares\\\\RoleMiddleware\",\n            \"type\": \"->\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Middleware/localization.php\",\n            \"line\": 33,\n            \"function\": \"Illuminate\\\\Pipeline\\\\{closure}\",\n            \"class\": \"Illuminate\\\\Pipeline\\\\Pipeline\",\n            \"type\": \"->\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php\",\n            \"line\": 180,\n            \"function\": \"handle\",\n     "
+    }
+  ],
+  "observabilityApi": [
+    {
+      "kind": "http",
+      "url": "http://127.0.0.1:8766/api/admin/observability/interrupteurs/wheel",
+      "method": "PUT",
+      "status": 403,
+      "resourceType": "fetch",
+      "ts": 1788286745398,
+      "bodySnippet": "{\n    \"message\": \"User does not have the right roles.\",\n    \"exception\": \"Spatie\\\\Permission\\\\Exceptions\\\\UnauthorizedException\",\n    \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/spatie/laravel-permission/src/Exceptions/UnauthorizedException.php\",\n    \"line\": 21,\n    \"trace\": [\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/spatie/laravel-permission/src/Middlewares/RoleMiddleware.php\",\n            \"line\": 24,\n            \"function\": \"forRoles\",\n            \"class\": \"Spatie\\\\Permission\\\\Exceptions\\\\UnauthorizedException\",\n            \"type\": \"::\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php\",\n            \"line\": 180,\n            \"function\": \"handle\",\n            \"class\": \"Spatie\\\\Permission\\\\Middlewares\\\\RoleMiddleware\",\n            \"type\": \"->\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Middleware/localization.php\",\n            \"line\": 33,\n            \"function\": \"Illuminate\\\\Pipeline\\\\{closure}\",\n            \"class\": \"Illuminate\\\\Pipeline\\\\Pipeline\",\n            \"type\": \"->\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php\",\n            \"line\": 180,\n            \"function\": \"handle\",\n     "
+    }
+  ],
+  "wheelBefore": {
+    "wheel": false
+  },
+  "wheelAfter": {
+    "wheel": false
+  },
+  "chromium": "/Users/1millnonstop/Library/Caches/ms-playwright/chromium_headless_shell-1237/chrome-headless-shell-mac-arm64/chrome-headless-shell"
+}

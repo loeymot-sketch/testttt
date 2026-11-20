@@ -41,6 +41,20 @@ return [
     'attribute_ids' => [5, 8],
 
     /*
+     | [OWNER 2026-11-11] Sauces OFFERTES dans le prix (App\Support\Menu\IncludedSauceCount).
+     | « Deux sauces offertes » pour les sandwichs ; partout ailleurs, la 1ʳᵉ seule (défaut 1).
+     | Les sauces au-delà passent par l'extra « Sauce supplémentaire » au prix de la base (0,50 €).
+     | Les frites (seules ou en formule) gardent 1 incluse puis payante : non concernées ici.
+     | Publié aux surfaces en `sauce_included` ; aucune surface ne garde ce nombre en dur.
+     */
+    'included' => [
+        'by_item' => [],
+        'by_category' => [
+            'Sandwichs' => 2,
+        ],
+    ],
+
+    /*
      | Articles qui DOIVENT porter la liste de sauces alors qu'ils n'ont encore
      | aucun attribut sauce en base. Par défaut la commande `foodking:sauces:sync`
      | ne touche QUE les articles qui en ont déjà un — un Coca ne doit pas hériter

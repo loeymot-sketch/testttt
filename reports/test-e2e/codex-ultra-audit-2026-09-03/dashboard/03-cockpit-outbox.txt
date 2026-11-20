@@ -1,0 +1,196 @@
+Français
+Anglais
+Français
+Bonjour
+Admin Le Cayenne
+Admin Le Cayenne
+
+admin@lecayenne.fr
+
++330600000000
+
+250,90 €
+Modifier Le Profil
+Changer Le Mot De Passe
+Appareils Connectés
+Déconnexion
+Tableau de bord
+POS
+Produits & Stock
+Conso & Stock
+Ajustement stock
+Catalogue
+Pages de wizard
+Attribut d’articles
+Ingrédients
+Scan Facture
+Commandes caisse
+Historique
+Encaissement
+Vue caisse unifiée
+Caisse livreur
+Ticket promo
+Réglages ticket promo
+Commande Uber (photo)
+La roue
+CAISSE ET COMMANDES
+Écran cuisine
+Suivi client
+COMMUNICATIONS
+Notifications push
+Messages
+Abonnés
+UTILISATEURS
+Administrateurs
+Employés
+Chefs
+COMPTES
+Transactions
+RAPPORTS
+Rapport des ventes
+Rapport articles
+CONFIGURATION
+Paramètres
+État du système
+Pipeline outbox & événements
+
+Santé du pipeline domain_events, files de jobs et workers
+
+Généré à 03/09/2026 14:55:41
+Rafraîchir
+Rejouer Les Échecs
+Purger Échecs > 24h
+queue:work
+DOWN
+
+Dernier signal il y a 194h
+
+websockets:serve
+DOWN
+
+Aucun signal
+
+Claims en cours, orphelins et échecs terminaux
+En vol (claimé depuis moins de 10 min)
+0
+Orphelins (claimé depuis 10 min ou plus, jamais diffusé)
+2150
+Échecs terminaux
+17 dont 17 violation(s) de contrat, non rejouable(s)
+ID	TYPE D'ÉVÉNEMENT	BRANCHE	TENTATIVES	CLAIMÉ À	DERNIÈRE ERREUR
+13864	order.payment_status_changed	1	1	14/08/2026 13:49:43	—
+13863	order.status_changed	1	1	14/08/2026 13:49:43	—
+13862	order.payment_status_changed	1	1	14/08/2026 13:49:40	—
+13861	order.status_changed	1	1	14/08/2026 13:49:40	—
+13860	order.payment_status_changed	1	1	14/08/2026 13:47:55	—
+13859	order.status_changed	1	1	14/08/2026 13:47:55	—
+13858	order.payment_status_changed	1	1	14/08/2026 13:47:09	—
+13857	order.status_changed	1	1	14/08/2026 13:47:09	—
+13856	order.payment_status_changed	1	1	14/08/2026 13:44:22	—
+13855	order.status_changed	1	1	14/08/2026 13:44:22	—
+13854	order.payment_status_changed	1	1	14/08/2026 13:43:49	—
+13853	order.status_changed	1	1	14/08/2026 13:43:49	—
+13852	order.payment_status_changed	1	1	14/08/2026 13:43:04	—
+13851	order.status_changed	1	1	14/08/2026 13:43:04	—
+13850	settings.updated	9	1	13/08/2026 15:36:41	—
+13849	settings.updated	8	1	13/08/2026 15:36:41	—
+13848	settings.updated	7	1	13/08/2026 15:36:41	—
+13847	settings.updated	1	1	13/08/2026 15:36:41	—
+13846	settings.updated	9	1	13/08/2026 15:36:37	—
+13845	settings.updated	8	1	13/08/2026 15:36:37	—
+
+20 ligne(s) affichée(s) sur 2150.
+
+Événements en attente (10920)
+ID	TYPE D'ÉVÉNEMENT	BRANCHE	TENTATIVES	CRÉÉ LE	DERNIÈRE ERREUR
+15058	catalog.changed	10	0	02/09/2026 20:09:36	—
+15057	catalog.changed	9	0	02/09/2026 20:09:36	—
+15056	catalog.changed	8	0	02/09/2026 20:09:36	—
+15055	catalog.changed	7	0	02/09/2026 20:09:36	—
+15054	catalog.changed	2	0	02/09/2026 20:09:36	—
+15053	catalog.changed	1	0	02/09/2026 20:09:36	—
+15052	catalog.changed	10	0	02/09/2026 20:09:36	—
+15051	catalog.changed	9	0	02/09/2026 20:09:36	—
+15050	catalog.changed	8	0	02/09/2026 20:09:36	—
+15049	catalog.changed	7	0	02/09/2026 20:09:36	—
+15048	catalog.changed	2	0	02/09/2026 20:09:36	—
+15047	catalog.changed	1	0	02/09/2026 20:09:36	—
+15046	catalog.changed	10	0	02/09/2026 20:09:36	—
+15045	catalog.changed	9	0	02/09/2026 20:09:36	—
+15044	catalog.changed	8	0	02/09/2026 20:09:36	—
+15043	catalog.changed	7	0	02/09/2026 20:09:36	—
+15042	catalog.changed	2	0	02/09/2026 20:09:36	—
+15041	catalog.changed	1	0	02/09/2026 20:09:36	—
+15040	catalog.changed	10	0	02/09/2026 20:09:36	—
+15039	catalog.changed	9	0	02/09/2026 20:09:36	—
+15038	catalog.changed	8	0	02/09/2026 20:09:36	—
+15037	catalog.changed	7	0	02/09/2026 20:09:36	—
+15036	catalog.changed	2	0	02/09/2026 20:09:36	—
+15035	catalog.changed	1	0	02/09/2026 20:09:36	—
+15034	catalog.changed	10	0	02/09/2026 20:09:36	—
+15033	catalog.changed	9	0	02/09/2026 20:09:36	—
+15032	catalog.changed	8	0	02/09/2026 20:09:36	—
+15031	catalog.changed	7	0	02/09/2026 20:09:36	—
+15030	catalog.changed	2	0	02/09/2026 20:09:36	—
+15029	catalog.changed	1	0	02/09/2026 20:09:36	—
+15028	catalog.changed	10	0	02/09/2026 18:32:45	—
+15027	catalog.changed	9	0	02/09/2026 18:32:45	—
+15026	catalog.changed	8	0	02/09/2026 18:32:45	—
+15025	catalog.changed	7	0	02/09/2026 18:32:45	—
+15024	catalog.changed	2	0	02/09/2026 18:32:45	—
+15023	catalog.changed	1	0	02/09/2026 18:32:45	—
+15022	catalog.changed	10	0	02/09/2026 18:32:45	—
+15021	catalog.changed	9	0	02/09/2026 18:32:45	—
+15020	catalog.changed	8	0	02/09/2026 18:32:45	—
+15019	catalog.changed	7	0	02/09/2026 18:32:45	—
+15018	catalog.changed	2	0	02/09/2026 18:32:45	—
+15017	catalog.changed	1	0	02/09/2026 18:32:45	—
+15016	catalog.changed	10	0	02/09/2026 18:32:45	—
+15015	catalog.changed	9	0	02/09/2026 18:32:45	—
+15014	catalog.changed	8	0	02/09/2026 18:32:45	—
+15013	catalog.changed	7	0	02/09/2026 18:32:45	—
+15012	catalog.changed	2	0	02/09/2026 18:32:45	—
+15011	catalog.changed	1	0	02/09/2026 18:32:45	—
+15010	catalog.changed	10	0	02/09/2026 18:32:45	—
+15009	catalog.changed	9	0	02/09/2026 18:32:45	—
+Événements dispatchés (24h)
+Nombre
+0
+p50
+—
+p95
+—
+p99
+—
+Échantillons
+0
+File queue=high
+Nombre
+249
+Âge plus ancien
+—
+Disponible
+✓
+Jobs en échec (1)
+ID	FILE	ÉCHOUÉ LE	EXCEPTION
+2461	default	25/08/2026 13:15:39	Error: Typed property App\Events\OrderCanceled::$fromStatus must not be accessed before initialization in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Events/OrderCanceled.php:55
+Request
+Timeline
+Queries
+2
+Models
+1
+9
+#1 outbox (14:55:40)
+#2 language?paginate=0&order_column=id&order_type=asc&status=5 (ajax) (14:55:41)
+#3 show/2 (ajax) (14:55:41)
+#4 item-category?paginate=0&order_column=sort&order_type=asc&status=5 (ajax) (14:55:41)
+#5 default-access (ajax) (14:55:41)
+#6 outbox (ajax) (14:55:41)
+#7 branch?paginate=0&order_column=id&order_type=asc&status=5 (ajax) (14:55:41)
+#8 authcheck (ajax) (14:55:41)
+#9 show/1 (ajax) (14:55:41)
+30.43ms
+3MB
+9.x
+GET api/admin/setting/branch/show/{branch}

@@ -64,7 +64,7 @@
                 <div class="grid grid-cols-3 gap-2 mb-4" aria-label="Synthèse des délais cuisine">
                     <div class="sla-metric">
                         <span class="sla-metric-value" data-testid="sla-alert-count">{{ alertCount }}</span>
-                        <span class="sla-metric-label">hors délai</span>
+                        <span class="sla-metric-label">hors délai<span class="sla-metric-scope"> · {{ fenetreHeures }} h</span></span>
                     </div>
                     <div class="sla-metric">
                         <span class="sla-metric-value" data-testid="sla-urgent-count">{{ urgentCount }}</span>
@@ -84,7 +84,10 @@
                     <i class="lab lab-check-circle text-2xl text-emerald-600" aria-hidden="true"></i>
                     <div>
                         <p class="font-semibold">Aucune préparation hors délai</p>
-                        <p class="text-sm text-emerald-800">Dernier contrôle terminé avec succès.</p>
+                        <p class="text-sm text-emerald-800" data-testid="sla-empty-scope">
+                            Sur les {{ fenetreHeures }} dernières heures. Les commandes plus
+                            anciennes ne sont pas contrôlées ici.
+                        </p>
                     </div>
                 </div>
 
@@ -127,6 +130,9 @@ export default {
     data() {
         return {
             alerts: [],
+            // [2026-09-03] Fenêtre de contrôle, publiée par le serveur. Déclarée ICI pour
+            // être réactive : une propriété assignée sans être déclarée ne fait rien réagir.
+            fenetreHeures: 24,
             timer: null,
             loading: true,
             refreshing: false,
@@ -208,6 +214,8 @@ export default {
                 const res = await this.$store.dispatch('dashboard/slaAlerts');
                 if (sequence !== this.requestSequence) return;
                 this.alerts = Array.isArray(res?.data?.data) ? res.data.data : [];
+                // Repli sur 24 si un serveur plus ancien ne publie pas la clé.
+                this.fenetreHeures = Number(res?.data?.fenetre_heures) || 24;
                 this.lastSuccessfulAt = Date.now();
                 this.clock = this.lastSuccessfulAt;
                 this.error = '';

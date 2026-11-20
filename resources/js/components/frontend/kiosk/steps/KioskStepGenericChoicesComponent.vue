@@ -2,6 +2,14 @@
   <section class="kiosk-step-generic">
     <h3 class="kiosk-step-title">{{ stepLabel }}</h3>
 
+    <!-- [FINITION 2026-11-04] Étape FACULTATIVE (min_select = 0, ex. « Viande 2 » d'un sandwich) : rien ne
+         le disait, et le client qui venait de choisir ses viandes croyait devoir en reprendre une. Le prix
+         d'un ajout est calculé par le serveur et apparaît dans le total en bas : on ne l'invente pas ici. -->
+    <p v-if="minSelect === 0" class="kiosk-step-generic-optional" data-testid="kiosk-generic-optional">
+      <span class="kiosk-step-generic-optional__badge">{{ fallbackText('kiosk.wizard.generic.optional_badge', 'Facultatif') }}</span>
+      <span class="kiosk-step-generic-optional__hint">{{ fallbackText('kiosk.wizard.generic.optional_hint', 'Touchez « Suivant » pour passer. Un ajout s’affiche dans le total.') }}</span>
+    </p>
+
     <p v-if="showValidationHint" class="kiosk-validation-hint">
       {{ validationHint }}
     </p>
@@ -180,6 +188,30 @@ export default {
   font-size: 16px;
   font-weight: 700;
   color: var(--kiosk-text, #1a1a1a);
+}
+
+.kiosk-step-generic-optional {
+  margin: -6px auto 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 10px;
+  text-align: center;
+}
+.kiosk-step-generic-optional__badge {
+  background: var(--kiosk-primary-soft, rgba(244, 80, 30, 0.06));
+  border: 1px solid var(--kiosk-border, rgba(244, 80, 30, 0.2));
+  color: var(--kiosk-primary, #F4501E);
+  padding: 6px 16px;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.kiosk-step-generic-optional__hint {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--kiosk-text-muted, #5A5A5A);
 }
 
 .kiosk-validation-hint {

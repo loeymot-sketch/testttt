@@ -40,6 +40,9 @@ class Coupon extends Model implements HasMedia
         'max_uses_global',
         'usage_count',
         'status',
+        // [TICKET PROMO 2026-11-03] Coupon « livraison offerte » (aucune remise sur les articles).
+        'free_delivery',
+        'free_delivery_max_km',
     ];
 
     protected $casts = [
@@ -62,6 +65,8 @@ class Coupon extends Model implements HasMedia
         'max_uses_global'    => 'integer',
         'usage_count'        => 'integer',
         'status'             => 'integer',
+        'free_delivery'      => 'boolean',
+        'free_delivery_max_km' => 'decimal:2',
     ];
 
     /**

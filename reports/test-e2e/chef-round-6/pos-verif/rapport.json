@@ -1,0 +1,425 @@
+{
+  "produit": "Chicken Burger",
+  "base": "http://127.0.0.1:8766",
+  "etapes": [
+    {
+      "etape": "pos_ouvert",
+      "url": "http://127.0.0.1:8766/admin/pos"
+    },
+    {
+      "etape": "rayon_ouvert",
+      "rayon": "Burgers"
+    },
+    {
+      "etape": "produit_clique",
+      "ouvert": true,
+      "selecteur": "button.pos-item-tile"
+    }
+  ],
+  "rayons_visibles": [
+    "Sandwichs",
+    "Galette",
+    "Burgers",
+    "Tacos",
+    "Bols",
+    "Frites",
+    "Desserts",
+    "Boissons",
+    "Menu enfant"
+  ],
+  "tuiles_du_rayon": 6,
+  "overlays": [
+    {
+      "cls": "modal ff-modal pos-v4-item-wizard-modal pos-v5-item-modal active",
+      "testid": null,
+      "taille": "1440x900",
+      "texte": "Chicken BurgerSalade, tomate, oignon, sauce.4,90 €Quantité:Sauce (1ère Gratuite) Min 1 / Max 1KetchupMayonnaiseBlancheAlgérienneSamouraïAndalouseAméricaineBarbecueCurryHarissaHannibalFromagère maiso..Spicy maisonSans sauceViande 1 Min 1 / M"
+    },
+    {
+      "cls": "modal-dialog pos-v4-item-wizard-dialog max-w-[820px] w-full flex flex-col max-h-[min(100dvh,100vh)] overflow-hidden roun",
+      "testid": null,
+      "taille": "990x778",
+      "texte": "Chicken BurgerSalade, tomate, oignon, sauce.4,90 €Quantité:Sauce (1ère Gratuite) Min 1 / Max 1KetchupMayonnaiseBlancheAlgérienneSamouraïAndalouseAméricaineBarbecueCurryHarissaHannibalFromagère maiso..Spicy maisonSans sauceViande 1 Min 1 / M"
+    },
+    {
+      "cls": "pos-wizard single-page",
+      "testid": null,
+      "taille": "988x776",
+      "texte": "Chicken Burger€4.90−1+🥩 Viande0/1 incluse1 viande incluse — au-delà : +€2.50 / viande🍗Poulet mariné🥩Viande Hachée🔵Cordon Bleu🌭Fricadelle🥩Mexicanos🟡Nuggets🍗Tenders🍗Poulet crispy🍗Poulet curry🍗Poulet tandoori🍗Mixte (hachée + poulet"
+    },
+    {
+      "cls": "wizard-section viande-section",
+      "testid": null,
+      "taille": "945x332",
+      "texte": "🥩 Viande0/1 incluse1 viande incluse — au-delà : +€2.50 / viande🍗Poulet mariné🥩Viande Hachée🔵Cordon Bleu🌭Fricadelle🥩Mexicanos🟡Nuggets🍗Tenders🍗Poulet crispy🍗Poulet curry🍗Poulet tandoori🍗Mixte (hachée + poulet)"
+    },
+    {
+      "cls": "wizard-viande-grid",
+      "testid": null,
+      "taille": "945x248",
+      "texte": "🍗Poulet mariné🥩Viande Hachée🔵Cordon Bleu🌭Fricadelle🥩Mexicanos🟡Nuggets🍗Tenders🍗Poulet crispy🍗Poulet curry🍗Poulet tandoori🍗Mixte (hachée + poulet)"
+    },
+    {
+      "cls": "wizard-2col",
+      "testid": null,
+      "taille": "945x320",
+      "texte": "🥬 CruditésCliquez pour retirer.🚫 Sans crudités🥬 ✓ Salade🍅 ✓ Tomate🧅 ✓ Oignon🧅 ✕ Sans Oignons cuits🥄 Sauce1ère gratuite🍅Ketchupofferte+€0.50🥚Mayonnaiseofferte+€0.50🥛Blancheofferte+€0.50🌶️Algérienneofferte+€0.50⚔️Samouraïofferte+€0"
+    },
+    {
+      "cls": "wizard-2col-block crudites-section",
+      "testid": null,
+      "taille": "468x279",
+      "texte": "🥬 CruditésCliquez pour retirer.🚫 Sans crudités🥬 ✓ Salade🍅 ✓ Tomate🧅 ✓ Oignon🧅 ✕ Sans Oignons cuits"
+    },
+    {
+      "cls": "wizard-2col-block sauce-section",
+      "testid": null,
+      "taille": "468x307",
+      "texte": "🥄 Sauce1ère gratuite🍅Ketchupofferte+€0.50🥚Mayonnaiseofferte+€0.50🥛Blancheofferte+€0.50🌶️Algérienneofferte+€0.50⚔️Samouraïofferte+€0.50🫑Andalouseofferte+€0.50🌟Américaineofferte+€0.50🔥Barbecueofferte+€0.50🍛Curryofferte+€0.50🌶️Hariss"
+    }
+  ],
+  "wizard_a_l_ouverture": {
+    "present": true,
+    "pages": [],
+    "nb_options_visibles": 40,
+    "options_echantillon": [
+      "🧀Cheddar+0,90 €🫕Raclette+0,90 €➕Emmental+0,90 €🥚Œuf+0,90 €🧀Boursin+0,90 €➕Légumes sautés+0,90 €🥓Jambon+0,90 €➕Champignons+0,90 €➕Oignons frits+0,90 €➕Poivrons cuits+0,90 €➕Maïs+0,90 €➕Olives+0,90 €",
+      "🧀Cheddar+0,90 €",
+      "🧀",
+      "Cheddar",
+      "+0,90 €",
+      "🫕Raclette+0,90 €",
+      "🫕",
+      "Raclette",
+      "+0,90 €",
+      "➕Emmental+0,90 €",
+      "➕",
+      "Emmental"
+    ],
+    "erreur_visible": null,
+    "boutons": [
+      {
+        "texte": "−",
+        "disabled": false,
+        "classe": "wizard-qty-btn"
+      },
+      {
+        "texte": "+",
+        "disabled": false,
+        "classe": "wizard-qty-btn"
+      },
+      {
+        "texte": "🍗Poulet mariné",
+        "disabled": false,
+        "classe": "viande-btn viande-tile-add plus"
+      },
+      {
+        "texte": "🥩Viande Hachée",
+        "disabled": false,
+        "classe": "viande-btn viande-tile-add plus"
+      },
+      {
+        "texte": "🔵Cordon Bleu",
+        "disabled": false,
+        "classe": "viande-btn viande-tile-add plus"
+      },
+      {
+        "texte": "🌭Fricadelle",
+        "disabled": false,
+        "classe": "viande-btn viande-tile-add plus"
+      },
+      {
+        "texte": "🥩Mexicanos",
+        "disabled": false,
+        "classe": "viande-btn viande-tile-add plus"
+      },
+      {
+        "texte": "🟡Nuggets",
+        "disabled": false,
+        "classe": "viande-btn viande-tile-add plus"
+      },
+      {
+        "texte": "🍗Tenders",
+        "disabled": false,
+        "classe": "viande-btn viande-tile-add plus"
+      },
+      {
+        "texte": "🍗Poulet crispy",
+        "disabled": false,
+        "classe": "viande-btn viande-tile-add plus"
+      },
+      {
+        "texte": "🍗Poulet curry",
+        "disabled": false,
+        "classe": "viande-btn viande-tile-add plus"
+      },
+      {
+        "texte": "🍗Poulet tandoori",
+        "disabled": false,
+        "classe": "viande-btn viande-tile-add plus"
+      },
+      {
+        "texte": "🍗Mixte (hachée + poulet)",
+        "disabled": false,
+        "classe": "viande-btn viande-tile-add plus"
+      },
+      {
+        "texte": "🚫 Sans crudités",
+        "disabled": false,
+        "classe": "garniture-toggle-btn"
+      },
+      {
+        "texte": "🥬 ✓ Salade",
+        "disabled": false,
+        "classe": "garniture-toggle-btn included"
+      },
+      {
+        "texte": "🍅 ✓ Tomate",
+        "disabled": false,
+        "classe": "garniture-toggle-btn included"
+      },
+      {
+        "texte": "🧅 ✓ Oignon",
+        "disabled": false,
+        "classe": "garniture-toggle-btn included"
+      },
+      {
+        "texte": "🧅 ✕ Sans Oignons cuits",
+        "disabled": false,
+        "classe": "garniture-toggle-btn removed"
+      },
+      {
+        "texte": "🍅Ketchupofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🥚Mayonnaiseofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🥛Blancheofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🌶️Algérienneofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "⚔️Samouraïofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🫑Andalouseofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🌟Américaineofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🔥Barbecueofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🍛Curryofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🌶️Harissaofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🦁Hannibalofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🧀Fromagère maisonofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🥵Spicy maisonofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🚫Sans sauceofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "➕ Suppléments ▼",
+        "disabled": false,
+        "classe": "suppl-toggle"
+      },
+      {
+        "texte": "🍅Ketchupofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🥚Mayonnaiseofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🥛Blancheofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🌶️Algérienneofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "⚔️Samouraïofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🫑Andalouseofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🌟Américaineofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🔥Barbecueofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🍛Curryofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🌶️Harissaofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🦁Hannibalofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🧀Fromagère maisonofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🥵Spicy maisonofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "🚫Sans sauceofferte+€0.50",
+        "disabled": false,
+        "classe": "sauce-chip"
+      },
+      {
+        "texte": "Annuler",
+        "disabled": false,
+        "classe": "wizard-btn-cancel"
+      },
+      {
+        "texte": "Ajouter au panier",
+        "disabled": false,
+        "classe": "wizard-btn-cart"
+      }
+    ],
+    "texte_wizard": "Chicken Burger€4.90−1+🥩 Viande0/1 incluse1 viande incluse — au-delà : +€2.50 / viande🍗Poulet mariné🥩Viande Hachée🔵Cordon Bleu🌭Fricadelle🥩Mexicanos🟡Nuggets🍗Tenders🍗Poulet crispy🍗Poulet curry🍗Poulet tandoori🍗Mixte (hachée + poulet)🥬 CruditésCliquez pour retirer.🚫 Sans crudités🥬 ✓ Salade🍅 ✓ Tomate🧅 ✓ Oignon🧅 ✕ Sans Oignons cuits🥄 Sauce1ère gratuite🍅Ketchupofferte+€0.50🥚Mayonnaiseofferte+€0.50🥛Blancheofferte+€0.50🌶️Algérienneofferte+€0.50⚔️Samouraïofferte+€0.50🫑Andalouseofferte+€0.50🌟Américaineofferte+€0.50🔥Barbecueofferte+€0.50🍛Curryofferte+€0.50🌶️Harissaofferte+€0.50🦁Hannibalofferte+€0.50🧀Fromagère maisonofferte+€0.50🥵Spicy maisonofferte+€0.50🚫Sans sauceofferte+€0.50➕ Suppléments ▼🧀Cheddar+0,90 €🫕Raclette+0,90 €➕Emmental+0,90 €🥚Œuf+0,90 €🧀Boursin+0,90 €➕Légumes sautés+0,90 €🥓Jambon+0,90 €➕Champignons+0,90 €➕Oignons frits+0,90 €➕Poivrons cuits+0,90 €➕Maïs+0,90 €➕Olives+0,90 €🍟🥤 Formule🚫Sans formule—🥤Menu (Frites + Boisson)+2,50 €🍟Frites Seules+1,90 €🥤Boisson Seule+1,90 €Options fritesGrande Portion+€1.00Cheddar Fondu+€1.00🍟 Sauce pour frites🍅Ketchupofferte+€0.50🥚Mayonnaiseofferte+€0.50🥛Blancheofferte+€0.50🌶️Algérienneofferte+€0.50⚔️Samou"
+  },
+  "viande": {
+    "trouvee": true,
+    "texte": "✓1🍗Poulet mariné"
+  },
+  "ajout_reel": {
+    "trouve": true,
+    "nb_candidats": 2,
+    "candidats": [
+      {
+        "texte": "Ajouter au panier · 4,90 €",
+        "disabled": false,
+        "visible": false,
+        "taille": "0x0",
+        "cls": "pos-v5-item-add-cta flex items-center justify-center gap-3 rounded-2xl text-base py-3 px-4"
+      },
+      {
+        "texte": "Ajouter au panier",
+        "disabled": false,
+        "visible": true,
+        "taille": "194x47",
+        "cls": "wizard-btn-cart"
+      }
+    ],
+    "clique": {
+      "texte": "Ajouter au panier",
+      "disabled": false,
+      "visible": true,
+      "taille": "194x47",
+      "cls": "wizard-btn-cart"
+    }
+  },
+  "message_bloquant": [
+    "🥤 Choisissez votre boisson",
+    "⚠️ Sélectionnez au moins une sauce"
+  ],
+  "modal_encore_ouverte": true,
+  "lignes_panier": [],
+  "panier": "Ajouter au panier · 4,90 €",
+  "console": [
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    }
+  ]
+}

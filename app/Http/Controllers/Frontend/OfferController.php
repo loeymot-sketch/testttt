@@ -46,8 +46,11 @@ class OfferController extends Controller
     public function offerItems(
         $slug
     ): \Illuminate\Http\Response | OfferResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory {
+        // [W7-D D-014 2026-11-04] `first()` rendait `null` à `OfferService::show(Offer)` : TypeError hors du
+        // `catch (Exception)` → 500 « Server Error » pour TOUT slug tant que la table est vide. `firstOrFail()`
+        // HORS du try : `ModelNotFoundException` remonte à `Handler` → 404 JSON (NOT_FOUND, « Ressource introuvable. »).
+        $offer = Offer::where(['slug' => $slug])->firstOrFail();
         try {
-            $offer = Offer::where(['slug' => $slug])->first();
             return new OfferResource($this->offerService->show($offer));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);

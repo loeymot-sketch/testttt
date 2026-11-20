@@ -1,0 +1,21 @@
+✅ D01-pain-desktop : 2 vraies photos chargées + libellés Pain/Galette — {"imgs":[{"src":"assets/menu/sandwich-cayenne-768.webp","w":768},{"src":"assets/menu/galette-cayenne-768.webp","w":768}],"labels":["Pain","Galette"]}
+✅ D02-pain-mobile : 2 vraies photos chargées + libellés Pain/Galette — {"imgs":[{"src":"assets/menu/sandwich-cayenne-768.webp","w":768},{"src":"assets/menu/galette-cayenne-768.webp","w":768}],"labels":["Pain","Galette"]}
+✅ validation de commande : 2 refus 429 puis succès, sans erreur pour le client — {"r":"ok","appels":3}
+✅ 3 envois : même clé d'idempotence — ["web6b635891bb514791bdffdd6a","web6b635891bb514791bdffdd6a","web6b635891bb514791bdffdd6a"]
+✅ 3 envois : corps strictement identique — {"len":[149,149,149]}
+✅ attente respectée entre rejeux (≥ ~1 s, Retry-After) — [1003,1004]
+✅ AUCUN « trop de requêtes » à l'écran — []
+✅ [galette] état initial (Pain par défaut) : aperçu = sandwich — "assets/menu/sandwich-cayenne-768.webp"
+✅ [galette] après choix « Galette » : l'aperçu live montre la galette — "assets/menu/galette-cayenne-768.webp"
+✅ [pain] état initial (Pain par défaut) : aperçu = sandwich — "assets/menu/sandwich-cayenne-768.webp"
+✅ [pain] après choix « Pain » : l'aperçu live montre le sandwich — "assets/menu/sandwich-cayenne-768.webp"
+✅ récap (téléphone) avec Galette : la vignette est la galette — {"recap":true,"rsrc":"assets/menu/galette-cayenne-768.webp"}
+✅ panier : la ligne « Galette » porte la photo de la galette (pas du sandwich) — ["assets/menu/galette-cayenne-768.webp"]
+✅ modification : « Pain » = photo du sandwich, « Galette » = photo de la galette — ["assets/menu/sandwich-cayenne-768.webp","assets/menu/galette-cayenne-768.webp"]
+✅ récap de paiement : la vignette est la galette — ["assets/menu/galette-cayenne-768.webp"]
+✅ page de commande atteinte avec un bouton de validation — "Confirmer ma commande\n8,30 €"
+✅ attente longue (12 s annoncées) : après 10 s le BOUTON FIXE dit « Envoi en cours, ne quitte pas… » (visible à l'écran), Retour est bloqué pendant l'envoi — {"slowMsg":"Envoi en cours, ne quitte pas…\n8,30 €","slowVisible":true,"backDisabledEarly":true}
+✅ validation : 2 refus 429 (Retry-After 12 s puis 3 s) rejoués par le VRAI entonnoir, puis commande acceptée — {"appels":3,"gaps":[12009,3007],"etat_pendant_attente":"Confirmation…\n8,30 €"}
+✅ même clé d'idempotence et même corps aux 3 envois — ["webmvtp5j6msqwviyg931","webmvtp5j6msqwviyg931","webmvtp5j6msqwviyg931"]
+✅ AUCUN « trop de requêtes » affiché — []
+✅ écran final : confirmation de commande — "Aller au contenu | Panier | 👤 | Accueil | Menu | Avis | Réseaux | Itinéraire | Retrait & paiement | → | 2 | Confirmé | C'EST PARTI ! |  | Ta commande #WEB-9003 est envoyée. Présente ce QR"

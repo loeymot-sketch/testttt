@@ -22,7 +22,8 @@ use App\Models\Scopes\BranchScope;
  *   viande, sauce, pain/galette  → `lines`   → ligne 1 symbolique  (« G | TAC | P | STO | ALG »)
  *   crudités gratuites           → `extras`  → repliées dans « STO »
  *   suppléments payants          → `extras`  → « + Cheddar », EN TOUTES LETTRES
- *   boissons                     → `addons`  → « 1 Coca-Cola 33cl »
+ *   boissons, desserts           → `addons`  → EN BAS du ticket cuisine (« 1 Coca-Cola 33cl »)
+ *   sauce des frites             → note « Sauce frites : … » → « MENU : KTP » / « FRITES : KTP »
  *   formule avec frites          → `addons`  → « MENU » + 1 frite au bandeau de cuisson
  *   note client                  → instruction, ENTRE CROCHETS (voir plus bas)
  *
@@ -106,10 +107,21 @@ final class UberPhotoOrderMapper
 
         $nbViandes = 0;
         $nbSauces = 0;
+        // [SAUCES FRITES UBER 2026-11-20 · owner] Le ticket Uber imprime les sauces du produit, PUIS
+        // la formule, PUIS la sauce des frites. Quand la rubrique des frites a perdu son titre (ou
+        // porte le même titre « SAUCE »), c'est cet ORDRE qui reste : une sauce qui revient après la
+        // formule, alors que celles du produit sont déjà passées, appartient aux frites. On ne
+        // tranche qu'à la fin de la ligne, une fois sûr qu'elle porte bien des frites.
+        $sauceDuProduitVue = false;
+        $formuleApresLesSauces = false;
+        $saucesTardives = [];
+        $formuleFritesChoisie = false;
 
-        foreach ((array) ($line['options'] ?? []) as $option) {
+        // Un titre de rubrique encore présent (« SAUCE FRITES », lecture ancienne ou titre composé)
+        // étiquette les choix qui le suivent, au lieu de passer pour un choix lui-même.
+        foreach (UberTicketRubriques::attacher(array_map('strval', (array) ($line['options'] ?? []))) as $option) {
             $option = trim((string) $option);
-            if ($option === '') {
+            if ($option === '' || self::estChoixSansFormule($option)) {
                 continue;
             }
             $o = $this->classifier->classify($option);
@@ -125,6 +137,22 @@ final class UberPhotoOrderMapper
                     break;
 
                 case UberTicketOptionClassifier::SAUCE:
+                    // Une sauce se range par sa place, SAUF sous « SUPPLÉMENTS » (ou extra, option,
+                    // ajout) : c'est alors une sauce en plus DU PRODUIT, payée comme telle.
+                    // [relecture adverse 3] … ni sous une rubrique de sauce NOMMÉE (« SAUCE GRATINÉE »
+                    // d'un tacos reste au produit). Une sauce égarée sous « BOISSON » (titre des frites
+                    // absent de la photo), elle, se range par sa place.
+                    $etq = (string) ($o['etiquette'] ?? '');
+                    $rangeeParSaPlace = ! preg_match('/suppl|extra|option|ajout/u', $etq)
+                        && (! str_contains($etq, 'sauce')
+                            || preg_match('/^((au\s+)?choix\s+(de\s+(la\s+|l\s*)?|des\s+|du\s+)?|vos\s+|votre\s+|tes\s+|ta\s+)?sauces?$/u', $etq));
+                    if ($formuleApresLesSauces && $rangeeParSaPlace) {
+                        for ($i = 0; $i < $o['quantity']; $i++) {
+                            $saucesTardives[] = $o['label'];
+                        }
+                        break;
+                    }
+                    $sauceDuProduitVue = true;
                     for ($i = 0; $i < $o['quantity']; $i++) {
                         $nbSauces++;
                         $lines[] = ['attribute_name' => 'Sauce '.$nbSauces, 'variation_name' => $o['label']];
@@ -145,7 +173,17 @@ final class UberPhotoOrderMapper
                     ];
                     break;
 
+                case UberTicketOptionClassifier::DESSERT:
+                    $formuleApresLesSauces = $formuleApresLesSauces || $sauceDuProduitVue;
+                    $addons[] = [
+                        'role' => 'dessert', 'addon_name' => $o['label'],
+                        'quantity' => $o['quantity'], 'unit_price' => $o['price'],
+                        'line_total' => $o['price'] * $o['quantity'],
+                    ];
+                    break;
+
                 case UberTicketOptionClassifier::BOISSON:
+                    $formuleApresLesSauces = $formuleApresLesSauces || $sauceDuProduitVue;
                     $addons[] = [
                         'role' => 'drink', 'addon_name' => $o['label'],
                         'quantity' => $o['quantity'], 'unit_price' => $o['price'],
@@ -154,6 +192,11 @@ final class UberPhotoOrderMapper
                     break;
 
                 case UberTicketOptionClassifier::MENU:
+                    $formuleApresLesSauces = $formuleApresLesSauces || $sauceDuProduitVue;
+                    // [relecture adverse 6] UNE formule par ligne : « FORMULE » puis « 1x Menu (Grande
+                    // Frites + Boisson) » ne fait pas deux menus (le bain comptait 3F au lieu de 2F). La
+                    // dernière lue, la plus précise (« Grande »), remplace la précédente.
+                    $addons = array_values(array_filter($addons, static fn (array $a): bool => ($a['role'] ?? '') !== 'menu_full'));
                     $addons[] = [
                         'role' => 'menu_full', 'addon_name' => $this->menuAddonName($o['label']),
                         'quantity' => $o['quantity'], 'unit_price' => $o['price'],
@@ -162,6 +205,10 @@ final class UberPhotoOrderMapper
                     break;
 
                 case UberTicketOptionClassifier::FRITES:
+                    $formuleApresLesSauces = $formuleApresLesSauces || $sauceDuProduitVue;
+                    // [2026-11-20] « Frites seules » est le CHOIX DE FORMULE de la
+                    // carte Uber (seul / en menu / frites seules) : la sauce qui suit est celle des frites.
+                    $formuleFritesChoisie = $formuleFritesChoisie || (bool) preg_match('/seule|avec/u', mb_strtolower($o['label']));
                     // Frites seules : la cuisine affiche « FRITES » (et non « MENU », qui lui
                     // ferait servir aussi la boisson — une fuite de marchandise), et le bandeau
                     // de cuisson compte la portion à plonger. Le nom conserve « Grande » : une
@@ -185,7 +232,10 @@ final class UberPhotoOrderMapper
                     // Canal dédié : la cuisine la rend sur la ligne du menu (« MENU : KTP »),
                     // jamais dans la sauce du produit. Elle ne vit que dans le texte libre —
                     // c'est le contrat que lisent déjà le ticket et l'écran.
-                    $saucesFrites[] = $o['label'];
+                    // « 2x Ketchup » = deux ketchups : la quantité compte (une seule était annoncée).
+                    for ($i = 0; $i < $o['quantity']; $i++) {
+                        $saucesFrites[] = $o['label'];
+                    }
                     break;
 
                 default:
@@ -213,6 +263,24 @@ final class UberPhotoOrderMapper
                 'role' => 'menu_full', 'addon_name' => $this->menuAddonName($titreUber),
                 'quantity' => 1, 'unit_price' => 0.0, 'line_total' => 0.0,
             ];
+        }
+
+        // Sauces revenues après la formule : celles des frites si la ligne est un vrai MENU ; sinon
+        // elles restent au produit — on ne jette jamais une sauce. [relecture adverse 2] De simples
+        // frites ne suffisent pas : un bol à base de frites garde sa sauce (« BASE BOL : Frites »).
+        if ($saucesTardives !== []) {
+            $roles = array_column($addons, 'role');
+            // Un vrai menu : formule complète, ou des frites PLUS une boisson / un titre « Menu … ».
+            $menu = in_array('menu_full', $roles, true)
+                || (in_array('menu_frites', $roles, true) && ($estMenu || $formuleFritesChoisie || in_array('drink', $roles, true)));
+            if ($menu) {
+                array_push($saucesFrites, ...$saucesTardives);
+            } else {
+                foreach ($saucesTardives as $sauce) {
+                    $nbSauces++;
+                    $lines[] = ['attribute_name' => 'Sauce '.$nbSauces, 'variation_name' => $sauce];
+                }
+            }
         }
 
         // La sauce des frites s'écrit dans le format EXACT que lisent le ticket et l'écran
@@ -285,11 +353,39 @@ final class UberPhotoOrderMapper
             return [$direct, $estMenu];
         }
 
+        // [2026-11-20] La carte Uber ajoute un slogan après une virgule ou un
+        // tiret : « Sandwich Cayenne, Ultra GOURMAND et Original ». Le produit est AVANT.
+        $avant = trim((string) preg_split('/\s*[,–—]\s*|\s+-\s+/u', $title)[0]);
+        if ($avant !== '' && $avant !== trim($title)) {
+            [$id] = $this->resoudreArticle($avant);
+            if ($id !== null) {
+                return [$id, $estMenu];
+            }
+        }
+
         $mots = preg_split('/\s+/u', trim($title)) ?: [];
         for ($i = 1; $i < count($mots); $i++) {
             $candidat = trim(implode(' ', array_slice($mots, $i)));
             if (mb_strlen($candidat) < 3) {
                 break;
+            }
+            // [VRAIS TICKETS 2026-11-20 soir] « maison » seul trouvait « Sauce Fromagère maison » (recherche
+            // « contient ») : le tiramisu partait en cuisine sous le nom d'une sauce. Un mot qui qualifie
+            // sans nommer ne désigne jamais un produit.
+            if (self::queDesQualificatifs($candidat)) {
+                continue;
+            }
+            $id = $this->catalog->resolveItemId($candidat);
+            if ($id !== null) {
+                return [$id, $estMenu];
+            }
+        }
+
+        // Le produit EN TÊTE, qualificatif derrière : « Tiramisu maison » → « Tiramisu ».
+        for ($i = count($mots) - 1; $i >= 1; $i--) {
+            $candidat = trim(implode(' ', array_slice($mots, 0, $i)));
+            if (mb_strlen($candidat) < 3 || self::queDesQualificatifs($candidat)) {
+                continue;
             }
             $id = $this->catalog->resolveItemId($candidat);
             if ($id !== null) {
@@ -365,5 +461,30 @@ final class UberPhotoOrderMapper
         $clean = preg_replace('/[^A-Za-z0-9]/', '', $displayId) ?? '';
 
         return $clean !== '' ? 'U'.mb_strtoupper(mb_substr($clean, -4)) : null;
+    }
+
+    /**
+     * [VRAIS TICKETS 2026-11-20 soir] « FORMULE : Seul » (Terminator, commande réelle) = le client a pris
+     * le produit SANS menu. Ce choix n'apporte rien à préparer : il ne s'imprime pas (il sortait en
+     * supplément « Seul » sous un faux « MENU »).
+     */
+    private static function estChoixSansFormule(string $option): bool
+    {
+        $n = strtolower(trim((string) preg_replace('/[^a-z0-9:]+/i', ' ', \Illuminate\Support\Str::ascii($option))));
+        $n = trim((string) preg_replace('/^\d{1,2}\s*x\s*/', '', $n));
+        $n = trim((string) preg_replace('/^(formules?|menus?|seul ou en menu)\s*:\s*/', '', $n));
+
+        return (bool) preg_match('/^(seule?s?|sans (menu|formule)|a l unite)$/', $n);
+    }
+
+    /** Mots qui qualifient un produit sans le nommer (« maison », « gourmand », « original »…). */
+    private static function queDesQualificatifs(string $candidat): bool
+    {
+        $mots = preg_split('/\s+/', strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', ' ', \Illuminate\Support\Str::ascii($candidat))))) ?: [];
+        $qualificatifs = ['maison', 'gourmand', 'gourmande', 'ultra', 'original', 'originale', 'classique', 'nouveau',
+            'nouvelle', 'special', 'speciale', 'signature', 'extra', 'xl', 'maxi', 'et', 'le', 'la', 'les',
+            'du', 'de', 'des', 'au', 'aux', 'a', 'avec', 'en', 'fait', 'faite', 'frais', 'fraiche', 'croustillant', 'fondant'];
+
+        return array_diff(array_filter($mots, static fn (string $m): bool => $m !== ''), $qualificatifs) === [];
     }
 }

@@ -185,6 +185,19 @@ class SocialAuthController extends Controller
             $user->loyalty_code = strtoupper(substr(md5(uniqid('', true)), 0, 8));
         }
 
+        // [STORES 2026-11-12 · Apple 5.1.1(v)] Code d'autorisation Apple (envoyé par l'application) → jeton de
+        // rafraîchissement, conservé chiffré pour pouvoir le RÉVOQUER à la suppression du compte. Facultatif et
+        // non bloquant : sans clé Apple configurée, ou si Apple ne répond pas, la connexion réussit comme avant.
+        if ($provider === 'apple' && is_string($request->post('authorization_code')) && $request->post('authorization_code') !== '') {
+            $revoker = app(\App\Services\Auth\AppleTokenRevoker::class);
+            if ($revoker->actif()) {
+                $jeton = $revoker->echangerCode(mb_substr((string) $request->post('authorization_code'), 0, 2048));
+                if ($jeton !== null) {
+                    $user->apple_refresh_token = $jeton;
+                }
+            }
+        }
+
         $user->save();
 
         return $this->reponseSession($user, trans('all.message.login_success'));
@@ -306,7 +319,7 @@ class SocialAuthController extends Controller
         // (`kiosk:order` seulement — un jeton client qui fuite ne doit rien pouvoir faire
         // sur l'administration), même durée de 30 jours, même purge par appareil.
         $token = $this->tokens
-            ->issueForDevice($user, 'auth_token', ['kiosk:order'], request(), 60 * 24 * 30)
+            ->issueForDevice($user, 'auth_token', ['kiosk:order'], request(), \App\Services\Auth\CustomerSessionPolicy::LIFETIME_MINUTES)
             ->plainTextToken;
 
         return response()->json([

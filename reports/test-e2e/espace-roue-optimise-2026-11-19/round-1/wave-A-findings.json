@@ -1,0 +1,235 @@
+{
+  "wave": "A",
+  "round": 1,
+  "states_reviewed": 15,
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "round-1/captures/mobile-lots.png",
+      "category": "element_hidden_primary_action",
+      "severity": "P1",
+      "evidence": "À 390 px, la colonne Statut est coupée (« À reme… ») et le bouton « Remettre » (action principale de l'écran) est entièrement hors écran, sans indice de défilement horizontal. Cause : resources/views/admin/wheel/espace.blade.php:163 (.tablewrap{overflow-x:auto}) + tableau 6 colonnes resources/views/admin/wheel/espace.blade.php:490-495.",
+      "fix_hint": "resources/views/admin/wheel/espace.blade.php:1102-1111 + CSS : sous 640 px rendre chaque lot en carte (gagné le / cadeau / client / statut + bouton Remettre pleine largeur), ou au minimum déplacer le bouton en 1re colonne / sticky right:0.",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "resources/views/admin/wheel/espace.blade.php (code)",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "Échecs réseau avalés sans aucun message : Publier la roue resources/views/admin/wheel/espace.blade.php:908 (.catch → seulement b.disabled=false), Enregistrer les liens :1060, Enregistrer réglages :1172, toutes les actions de la modale (remise d'un lot, ouvrir/suspendre le jeu, nouvelle campagne) :670 (catch sans mErr). chargerLots() :1079-1082 n'a AUCUN catch : réseau coupé → tableau bloqué sur « Chargement… » (:1078) + promesse rejetée non gérée. (Les 4xx/5xx JSON sont bien affichés ; seul le rejet fetch est muet.)",
+      "fix_hint": "Dans chaque .catch : if(e.message!=='locked') toast('Pas de réseau : rien n\\'a été enregistré. Réessayez.','err') ; modale :670 → $('mErr').textContent=… ; chargerLots : ajouter .catch qui écrit une ligne d'erreur + bouton Réessayer dans #tLots.",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "app/Http/Controllers/Admin/Wheel/WheelMerchantController.php",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "evidence": "La pastille « Lots gagnés » et le KPI « Lots à remettre » (aRemettre, :93-99) comptent tous les lots non remis dans la validité (réglable jusqu'à 365 j : :405 et resources/views/admin/wheel/espace.blade.php:539), mais la liste « Lots gagnés » ne charge que 90 jours / 500 lignes (:108, historique(…,90,500)). Avec une validité > 90 j, la pastille annonce des lots qu'on ne peut ni voir ni remettre depuis l'espace. Latent (validité actuelle 30 j).",
+      "fix_hint": "WheelMerchantController.php:108 : passer max(90, prize_validity_days) comme fenêtre (et/ou plafonner prize_validity_days à 90 en :405) ; idéalement compter aRemettre avec la même fonction que l'état « du » de WheelReportService::historique.",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "round-1/captures/desktop-tableau.png (latent)",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "evidence": "Côte à côte, deux définitions de « à remettre » : sous-titre du KPI « Cadeaux remis » = p.cadeaux_dus (resources/views/admin/wheel/espace.blade.php:767) calculé SANS filtre de validité (app/Services/Wheel/WheelReportService.php:384-385, donc expirés inclus), et KPI « Lots à remettre » = aRemettre (validité appliquée, WheelMerchantController.php:93-99). Le commentaire du contrôleur :90-92 reconnaît que lots dus compte les expirés. Cohérents dans la capture (1/1) uniquement parce que validité 30 j ≈ période ; avec une validité de 7 j, vue « 30 jours » → « N encore à remettre » ≠ « Lots à remettre ».",
+      "fix_hint": "WheelReportService.php:384 : ajouter ->where('created_at','>=', now()->subDays(validité)) ou exposer cadeaux_dus_valables et l'utiliser en resources/views/admin/wheel/espace.blade.php:767.",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-005",
+      "state_artifact": "round-1/captures/desktop-tableau.png ; round-1/captures/mobile-tableau.png",
+      "category": "text_quality",
+      "severity": "P2",
+      "evidence": "« Sur 30 jours, 4 cadeaux a été remis sans sortir du stock » : faute d'accord, générée par app/Services/Wheel/WheelReportService.php:433 (($sans > 1 ? 'x a' : ' a')).",
+      "fix_hint": "WheelReportService.php:433 : ($sans > 1 ? 'x ont' : ' a').",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "round-1/captures/desktop-tableau.png vs round-1/captures/desktop-stats.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "Même écran : « 4 cadeaux remis sans sortir du stock » (30 j) alors que « Cadeaux remis (30 j) = 0 » et « Lots gagnés › Remis 0 ». Deux horloges : l'avertissement compte les stock_outflows par leur date (WheelReportService.php:421-427) alors que les KPI datent par le tour (:321-333, dont le commentaire :312-315 exige « c'est le TOUR qui date un lot »). Vérifié en base foodking_e2e (SELECT lecture seule) : 5 sorties promo_gift du 19/11 (#128-132) pointent les tours #4191-#4195 qui N'EXISTENT PLUS dans wheel_spins (max id 4185) → le banc E2E supprime les tours après remise et laisse des sorties immuables : chaque round ajoute +1 à l'avertissement (pollution d'instrument, pas un défaut prod direct).",
+      "fix_hint": "WheelReportService.php:421 : joindre wheel_spins (cost_outflow_id) et dater par le tour, ou libeller « sorties enregistrées ». Côté banc : ne plus supprimer les wheel_spins remis (ou utiliser une base jetable) avant le round 2.",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "round-1/captures/desktop-comptoir.png",
+      "category": "dev_jargon_visible",
+      "severity": "P2",
+      "evidence": "Le commerçant lit « Adresse publique non configurée (WHEEL_ PUBLIC_URL). », nom de variable d'environnement coupé en deux par word-break:break-all (resources/views/admin/wheel/espace.blade.php:1066 et :472). Idem avertissement « Pose un plafond dans config/wheel.php (max_discount) » (WheelReportService.php:446) — instruction développeur, tutoiement, et renvoie à un « chiffre ci-dessus » absent de cet espace.",
+      "fix_hint": "resources/views/admin/wheel/espace.blade.php:1066 → « L'adresse de la page du jeu n'est pas encore réglée : contactez votre installateur. » ; :472 word-break:break-word ; WheelReportService.php:443-446 → message commerçant (« Fixez un plafond en € à ce cadeau dans Mes cadeaux »).",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-008",
+      "state_artifact": "resources/views/admin/wheel/espace.blade.php (code)",
+      "category": "data_loss_silent",
+      "severity": "P2",
+      "evidence": "Saisies non enregistrées écrasées sans avertissement : charger() → rendreTout() réécrit les champs Avis (:1021-1024) et Réglages (:1156-1157). Repro : Réglages › modifier « Validité » sans enregistrer › cliquer l'interrupteur « Jeu ouvert » → basculerJeu → charger() (:748) → valeur saisie remplacée. Ou : modifier Avis, aller au Tableau, attendre le rafraîchissement 60 s (:1187-1191). beforeunload (:694) ne protège que le brouillon de la roue (sale).",
+      "fix_hint": "Suivre un drapeau 'saleForm' par formulaire (input sur #formLiens/#formJeu) ; dans rendreLiens/rendreReglages ne pas réécrire si sale, et l'inclure dans beforeunload :694.",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-009",
+      "state_artifact": "resources/views/admin/wheel/espace.blade.php (code)",
+      "category": "perf_double_fetch",
+      "severity": "P2",
+      "evidence": "Après une remise : chargerLots(); charger(); (resources/views/admin/wheel/espace.blade.php:1127) puis charger() → montrer() → chargerLots() (:686) ⇒ GET /admin/roue/espace/lots appelé 2 fois. Sur la vue Lots, le rafraîchissement 60 s (:1187-1191) refait /donnees + /lots et remplace le tableau par « Chargement… » (:1078) : clignotement chaque minute et perte du focus clavier sur un bouton Remettre.",
+      "fix_hint": ":1127 → ne garder que charger() ; montrer() ne doit appeler chargerLots() que sur changement de vue (passer un flag depuis hashchange) ; chargerLots(silencieux) sans placeholder quand des lignes existent déjà.",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-010",
+      "state_artifact": "resources/views/admin/wheel/espace.blade.php (code)",
+      "category": "perf_full_rerender",
+      "severity": "P2",
+      "evidence": "Chaque rafraîchissement (60 s, :1190) et chaque enregistrement appelle rendreTout() (:712) : 8 vues reconstruites dont 2 graphiques SVG (:773, :1148), toutes les cartes cadeaux avec, pour CHAQUE carte, la liste complète des produits de la carte en <option> (optionsProduits :912-921 appelé par :942) — alors qu'une seule vue est visible.",
+      "fix_hint": "rendreTout(v) : ne rendre que la vue courante + en-tête/pastille ; marquer les autres 'à rendre' et les rendre dans montrer() à l'affichage ; mettre en cache le HTML d'optionsProduits.",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-011",
+      "state_artifact": "round-1/captures/mobile-tableau.png",
+      "category": "illegible_chart",
+      "severity": "P2",
+      "evidence": "À 390 px le graphique porte 7 dates et des graduations d'environ 4 px, illisibles : c'est la variante bureau (pas=5 → 7 étiquettes), alors que la variante téléphone (pas=10) n'en aurait que 4. graphique() lit window.innerWidth au rendu (:800) et rien ne le redessine au redimensionnement/rotation (aucun listener resize dans le fichier).",
+      "fix_hint": "resources/views/admin/wheel/espace.blade.php:800 : écouter resize (debounce 200 ms) → $('chart').innerHTML=graphique(D.serie) et chart2 ; ou mesurer la largeur du conteneur plutôt que la fenêtre.",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-012",
+      "state_artifact": "resources/views/admin/wheel/espace.blade.php:48",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Menu latéral fermé sur mobile = seulement transform:translateX(-100%) : ses 10 liens + 2 boutons restent dans l'ordre de tabulation et lus par le lecteur d'écran alors qu'ils sont invisibles.",
+      "fix_hint": ":48 ajouter visibility:hidden (transition visibility .2s) sur .side hors .open sous 1024 px, ou attribut inert géré dans fermerMenu()/ouverture.",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-013",
+      "state_artifact": "resources/views/admin/wheel/espace.blade.php:648-672",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Modale aria-modal sans piège de focus : Tab sort de la boîte vers la page derrière (aucune gestion de Tab, pas d'inert sur .main).",
+      "fix_hint": "Dans ouvrirModale : inert sur .main/.side, ou boucler Tab/Shift+Tab entre le premier et le dernier élément focusable de .dialog ; retirer à fermerModale.",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-014",
+      "state_artifact": "WheelMerchantController.php:98 vs WheelReportService.php:257-263",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "Frontière d'expiration différente : la pastille compte created_at >= Carbon::today()->subDays(validité) (minuit), la liste marque « Expiré » dès created_at+validité dépassé (à l'heure près). Un lot qui expire dans la journée reste compté dans la pastille « 1 » alors que le filtre « À remettre » affiche 0.",
+      "fix_hint": "Utiliser la même règle aux deux endroits : now()->subDays(validité) en :98 (ou une méthode WheelSpin::scopeEncoreValable partagée).",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-015",
+      "state_artifact": "resources/js/components/admin/pos/CaisseSecondaryNav.vue:170-174",
+      "category": "workflow",
+      "severity": "P2",
+      "evidence": "Si le navigateur bloque l'onglet, window.location.href='/admin/roue' remplace la CAISSE elle-même (panier en cours perdu), à l'opposé du commentaire :89-90 « le caissier ne doit JAMAIS perdre sa caisse de vue ».",
+      "fix_hint": ":170-174 : ne pas naviguer ; afficher un message (« Autorisez les fenêtres pour cette caisse ») ou laisser le href natif target=_blank s'exécuter (ne pas preventDefault quand open échoue).",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-016",
+      "state_artifact": "round-1/captures/desktop-tableau.png",
+      "category": "misleading_content",
+      "severity": "P2",
+      "evidence": "« Vos cadeaux en ce moment — ce qui reste à gagner » liste Terminator « 1 / 1 restants » alors que c'est un cadeau vitrine (poids 0, « jamais gagné » sur Ma roue / Mes cadeaux). Aucun marqueur vitrine dans ce bloc (resources/views/admin/wheel/espace.blade.php:777-782).",
+      "fix_hint": ":779-782 : si Number(l.weight)===0, afficher la pastille « Vitrine · jamais gagné » à la place du compteur (ou exclure du bloc).",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-017",
+      "state_artifact": "round-1/captures/desktop-roue.png ; desktop-avis.png ; desktop-comptoir.png",
+      "category": "layout_alignment",
+      "severity": "P3",
+      "evidence": "La carte de droite (Aperçu en direct / Aperçu côté client / Page du jeu) démarre ~12 px plus bas que la carte de gauche (y≈85 vs 73) : .sticky{top:84px} (resources/views/admin/wheel/espace.blade.php:85) pousse la carte dès le chargement.",
+      "fix_hint": ":85 top:72px (hauteur réelle de l'en-tête) ou align-self:start + margin compensée.",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-018",
+      "state_artifact": "round-1/captures/desktop-cadeaux.png ; desktop-tableau.png",
+      "category": "text_quality",
+      "severity": "P3",
+      "evidence": "« 1 restants » (Terminator) : pluriel figé resources/views/admin/wheel/espace.blade.php:959 et :780.",
+      "fix_hint": "Fonction pluriel(n,'restant') sur les deux lignes.",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-019",
+      "state_artifact": "round-1/captures/cadeau-ajoute-brouillon.png",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "Pastilles 36,6 + 26,8 + 12,5 + 10,7 + 5,4 + 3,6 + 4,5 = 100,1 % alors que la légende affiche en dur « Total : 100 % » (resources/views/admin/wheel/espace.blade.php:877).",
+      "fix_hint": ":877 : afficher le total calculé, ou arrondir par la méthode du plus fort reste pour sommer à 100,0.",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-020",
+      "state_artifact": "resources/views/admin/wheel/espace.blade.php:331, :492, :572",
+      "category": "aria_keyboard",
+      "severity": "P3",
+      "evidence": "En-têtes de colonne vides (<th></th>) dans les tableaux Chances et Lots gagnés ; les toasts d'erreur passent par une région aria-live=polite (pas assertive).",
+      "fix_hint": "<th><span class=\"sr\">Couleur</span></th> / <span class=\"sr\">Action</span> ; toast 'err' → role=alert.",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-021",
+      "state_artifact": "round-1/captures/mobile-lots.png",
+      "category": "truncation",
+      "severity": "P3",
+      "evidence": "Placeholder de recherche coupé : « Code, prénom, 4 derniers chiffres, cade… » (resources/views/admin/wheel/espace.blade.php:485).",
+      "fix_hint": "Placeholder plus court sous 480 px (« Code, prénom, 4 chiffres… »).",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-022",
+      "state_artifact": "round-1/captures/desktop-tableau.png",
+      "category": "text_quality",
+      "severity": "P3",
+      "evidence": "Sélecteur « 7 jours » actif mais le graphique juste dessous reste « Sur les 30 derniers jours » (resources/views/admin/wheel/espace.blade.php:291) : le sélecteur ne pilote que les 4 KPI, sans le dire.",
+      "fix_hint": "Libeller le groupe « Période des chiffres » ou faire suivre le graphique.",
+      "status": "open",
+      "first_seen_round": 1
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 4,
+    "P2": 12,
+    "P3": 6
+  },
+  "verdict": "AMBER",
+  "notes": "Les 15 PNG ont été ouverts et lus. Aucune clé i18n brute, aucun undefined/NaN, palette conforme (#F4501E/#FFB800/#1A1A1A). XSS : tout texte dynamique passe par esc() ou textContent (vérifié ligne à ligne : 761, 779, 785, 849-852, 870, 918, 930-963, 1027, 1104-1110, 1119 textContent) ; aucun constat. Minuterie : setInterval 60 s respecte visibilityState (:1188), pas de rafraîchissement au retour sur l'onglet (P3, non listé). Les fichiers .dom/.console/.network du protocole n'existent pas pour ce round (PNG seuls) : les catégories 6/9/10 n'ont pas pu être vérifiées depuis les artefacts. La barre latérale qui s'arrête à 900 px dans les captures pleine page est un effet de position:fixed, pas un défaut. Hors périmètre code mais à signaler au propriétaire : conditionner une partie gagnante à l'ouverture de la fiche d'avis Google est une incitation à l'avis, interdite par le règlement Google quel que soit le contenu de l'avis ; le bandeau « Ce que la plateforme garantit » ne couvre pas ce point. Base E2E polluée (cf. A-006) : à nettoyer avant le round 2, sinon l'avertissement augmente à chaque passage."
+}

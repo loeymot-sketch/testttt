@@ -1,0 +1,57 @@
+===== TICKET CLIENT (commande 9936, surface delivery) =====
+Le Cayenne (principal)
+437 Rue Élie Gruyelle, 62110 Hénin-Beaumont
+Tél : 03 65 67 82 91
+-mail : contact@lecayenne.fr
+Web : https://lecayenne.fr
+SIRET 10417050100019
+------------------------------------------------
+VIS1110021327
+10 novembre 2026 02:13
+------------------------------------------------
+*** LIVRAISON ***
+Client : ABUSR5E livr-f5
+Tel : 0670182060
+LIVRER A :
+20 Place de la République 62110 Hénin-Beaumont
+QT ARTICLES                              MONTANT
+------------------------------------------------
+2  Big Burger                            18,00 €
+   (2 x 9,00 €)
+   Ketchup, Poulet mariné, Salade, Tomate,
+   Oignon
+------------------------------------------------
+SOUS-TOTAL :                             18,00 €
+REDUCTION :                               0,00 €
+LIVRAISON :                               3,90 €
+------------------------------------------------
+ONTANT TOTAL                            21,90 €
+------------------------------------------------
+TVA 10% :                                 1,64 €
+A REGLER TTC :                           21,90 €
+** A REGLER A LA LIVRAISON : CARTE AU LIVREUR **
+------------------------------------------------
+BON APPÉTIT ET À BIENTÔT !
+TVA FR19104170501
+TVA intracommunautaire - Merci de votre visite
+Prix nets en euros TTC
+------------------------------------------------
+Operation : VENTE
+Ticket : VIS1110021327
+10 novembre 2026 02:13
+===== TICKET CUISINE =====
+CUISINE
+------------------------------------------------
+CUISSON
+P
+------------------------------------------------
+VIS1110021327
+*** LIVRAISON ***
+Client : ABUSR5E livr-f5
+Tel : 0670182060
+Livrer : 20 Place de la République 62110 Héni...
+02:13
+================================================
+   x IG | P | STO |
+  KTP
+

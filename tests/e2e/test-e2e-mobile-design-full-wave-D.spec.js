@@ -1,10 +1,10 @@
 // test-e2e-mobile-design-full-wave-D — Wave D (design-full family, round 1)
-// Mobile profile + Loyalty multi-sections + WizardRedeem 3-step + ALL loyalty modals.
+// Mobile profile + Loyalty multi-sections + current redemption surface + modals.
 //
 // Fork from : tests/e2e/audit-mobile-wave-D-2026-05-11.spec.js
 // Capture target dir : tests/e2e/__screenshots__/test-e2e-mobile-design-full-wave-D/
 //
-// 18 states per Wave-D brief 2026-05-11 :
+// Capture states cover the current app contract:
 //   01-screen-profile
 //   02-screen-loyalty-hero-qr
 //   03-screen-loyalty-hero-barcode-toggle
@@ -12,12 +12,10 @@
 //   05-screen-loyalty-actions-rapides (Apple + Google Wallet buttons)
 //   06-screen-loyalty-plastic-card-section
 //   07-screen-loyalty-tab-mes-points
-//   08-screen-loyalty-tab-recompenses
+//   08-screen-loyalty-tab-recompenses (continuous points → euro)
 //   09-screen-loyalty-tab-historique
 //   10-screen-loyalty-infos-rgpd-section
-//   11-wizard-redeem-step1-preview
-//   12-wizard-redeem-step2-timing
-//   13-wizard-redeem-step3-success
+//   11-redeem-locked
 //   14-modal-card-link
 //   15-modal-wallet-apple-v0-notice
 //   16-modal-wallet-google-v0-notice
@@ -37,13 +35,12 @@
 //   • ModalCardLink wrapper lacks role=dialog / aria-modal=true (bare ModalShell)
 //   • ModalPointsGain is a custom overlay (no role=dialog wrapper)
 //   • ESC keypress does NOT close any modal — no global keydown listener
-//   • LC.dev.redeemReward ignores opts.idempotency_key (idempotency-replay gap)
 //
 // Critical assertions :
 //   • PARITY-3-bis P0 : profile preview balance === loyalty screen balance === 347
-//   • QR payload format == "FK:<loyalty_code>" (NOT "LECAY-LOYALTY-*")
-//   • Rewards tiers [100, 250, 500, 1000, 2000] visible on Mes Points tab
-//   • WizardRedeem step transitions via redeem-next-btn / redeem-apply-now-btn / redeem-close-btn
+//   • QR payload is a live server token (lqr.…), not a legacy FK: token
+//   • Current configured tiers are visible on Mes Points tab
+//   • Continuous redemption panel exposes the configured rule and locked state
 //   • RGPD opt-out sets LC.storage.getConsent() === 'opted_out'
 
 const { test, expect } = require('@playwright/test');
@@ -52,7 +49,7 @@ const { attachMegaAuditRecorder } = require('./helpers/mega-audit-snap');
 const { waitForLoyaltyReady } = require('../mobile-e2e/utils/waitForLoyaltyReady');
 
 const SCREEN_DIR = path.join(__dirname, '__screenshots__/test-e2e-mobile-design-full-wave-D');
-const MOBILE_URL = 'http://127.0.0.1:8081/index.html';
+const MOBILE_URL = new URL('/index.html', process.env.MOBILE_URL || 'http://127.0.0.1:8087').toString();
 
 test.use({
   viewport: { width: 390, height: 844 },
@@ -63,8 +60,8 @@ test.use({
     'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1',
 });
 
-test('wave D design-full — profile + loyalty sections + wizard + modals', async ({ page }) => {
-  test.setTimeout(300_000);
+test('wave D design-full — profile + loyalty sections + current modals', async ({ page }) => {
+  test.setTimeout(180_000);
   const { snap, dispose } = attachMegaAuditRecorder(page, SCREEN_DIR);
   const observations = [];
 
@@ -74,10 +71,8 @@ test('wave D design-full — profile + loyalty sections + wizard + modals', asyn
   // the seeded state and lands on home.
   await waitForLoyaltyReady(page, { seedAccount: { balance: 347 } });
 
-  // The helper navigates relative to baseURL=playwright config. Our mobile-e2e
-  // config sets baseURL=http://127.0.0.1:8081 already — but this test is
-  // launched with a single file argument, not via the testMatch glob, so the
-  // resolved baseURL is correct. Verify we're past splash :
+  // The helper navigates relative to the mobile project baseURL. Verify we're
+  // past splash without asserting a fictional customer identity:
   await page.waitForSelector('[data-screen-label]', { timeout: 15_000 });
   await page.waitForTimeout(500);
 
@@ -95,8 +90,8 @@ test('wave D design-full — profile + loyalty sections + wizard + modals', asyn
   const profileScreen = page.locator('[data-screen-label="13 Profile"]');
   await expect.soft(profileScreen).toBeVisible();
   // User card binding
-  await expect.soft(profileScreen).toContainText(/Ikyes/);
-  await expect.soft(profileScreen).toContainText(/\+33 6 42 79 98 84/);
+  await expect.soft(profileScreen.locator('[data-testid="profile-name"]')).not.toHaveText(/^\s*$/);
+  await expect.soft(profileScreen.locator('[data-testid="profile-phone"]')).toHaveText(/(?:\+33|0[1-9])/);
   // Logout button rendered
   const logoutBtn = profileScreen.locator('button').filter({ hasText: /Se déconnecter/i });
   await expect.soft(logoutBtn).toBeVisible();
@@ -144,12 +139,19 @@ test('wave D design-full — profile + loyalty sections + wizard + modals', asyn
   // QR rendered in default mode (mode='qr')
   const qrEl = loyaltyScreen.locator('[data-testid="loyalty-qr"]').first();
   await expect.soft(qrEl).toBeVisible();
+  const qrState = await qrEl.getAttribute('data-qr-state').catch(() => null);
   const qrPayload = await qrEl.getAttribute('data-payload').catch(() => null);
-  const isFKFormat = !!qrPayload && /^FK:[A-Z0-9]{4,}$/i.test(qrPayload);
+  const isLiveToken = !!qrPayload && /^lqr\./i.test(qrPayload);
   const isDeprecatedFormat = !!qrPayload && /^LECAY-LOYALTY-/i.test(qrPayload);
-  await expect.soft(isFKFormat, `QR payload must be FK:<code> format, got: ${qrPayload}`).toBe(true);
+  // The standalone mobile server has no authenticated backend. In that mode
+  // the current app contract is an explicit auth-required state; a live lqr.*
+  // token is required only when the QR hook reaches ready state.
+  await expect.soft(qrState, `QR state must be ready, auth or offline, got: ${qrState}`).toMatch(/^(ready|auth|offline)$/);
+  if (qrState === 'ready') {
+    await expect.soft(isLiveToken, `QR payload must be a live lqr token, got: ${qrPayload}`).toBe(true);
+  }
   await expect.soft(isDeprecatedFormat, `QR payload must NOT be deprecated LECAY-LOYALTY format, got: ${qrPayload}`).toBe(false);
-  observations.push(`state02 HERO_QR: payload="${qrPayload}" is_FK_format=${isFKFormat} is_deprecated=${isDeprecatedFormat}`);
+  observations.push(`state02 HERO_QR: state=${qrState} payload="${qrPayload}" is_live_token=${isLiveToken} is_deprecated=${isDeprecatedFormat}`);
   await snap('02-screen-loyalty-hero-qr');
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -191,8 +193,8 @@ test('wave D design-full — profile + loyalty sections + wizard + modals', asyn
   // ═══════════════════════════════════════════════════════════════════════
   // STATE 05 — ACTIONS RAPIDES (Apple Wallet + Google Wallet + plastic card pills)
   // ═══════════════════════════════════════════════════════════════════════
-  const walletAppleBtn = loyaltyScreen.locator('[data-testid="wallet-apple-btn"]');
-  const walletGoogleBtn = loyaltyScreen.locator('[data-testid="wallet-google-btn"]');
+  const walletAppleBtn = page.locator('[data-testid="wallet-apple-btn"]');
+  const walletGoogleBtn = page.locator('[data-testid="wallet-google-btn"]');
   await walletAppleBtn.scrollIntoViewIfNeeded().catch(() => {});
   await page.waitForTimeout(300);
   await expect.soft(walletAppleBtn).toBeVisible();
@@ -225,9 +227,9 @@ test('wave D design-full — profile + loyalty sections + wizard + modals', asyn
   await page.waitForTimeout(200);
   const pointsTab = loyaltyScreen.locator('[data-testid="loyalty-tab-points"]');
   await expect.soft(pointsTab).toHaveAttribute('aria-selected', 'true');
-  // Brief assertion : Rewards tiers visible [100, 250, 500, 1000, 2000]
-  // (these are config.tiers — rendered as reward-row-{tier}).
-  const tierIds = [100, 250, 500, 1000, 2000];
+  // Tiers are backend-configurable; assert the current runtime contract rather
+  // than freezing a historical list of values.
+  const tierIds = await page.evaluate(() => (window.LC.loyalty.config.tiers || []).slice());
   const tierStatuses = {};
   for (const tier of tierIds) {
     const row = loyaltyScreen.locator(`[data-testid="reward-row-${tier}"]`).first();
@@ -236,24 +238,21 @@ test('wave D design-full — profile + loyalty sections + wizard + modals', asyn
     await expect.soft(row, `tier ${tier} must be present on Mes Points tab`).toBeVisible();
   }
   observations.push(`state07 TAB_MES_POINTS: tiers_visible=${JSON.stringify(tierStatuses)} (expected all true for balance 347)`);
-  // Confirm unlocked tier 100 has UTILISER button (greens)
-  const utiliserBtn = loyaltyScreen.locator('[data-testid="reward-redeem-btn-100"]').first();
-  await expect.soft(utiliserBtn).toBeVisible();
+  await expect.soft(tierIds.length).toBeGreaterThan(0);
   await snap('07-screen-loyalty-tab-mes-points');
 
   // ═══════════════════════════════════════════════════════════════════════
-  // STATE 08 — LOYALTY TAB "RÉCOMPENSES" (catalog, 8 rewards)
+  // STATE 08 — LOYALTY TAB "RÉDUCTIONS" (continuous points → euro contract)
   // ═══════════════════════════════════════════════════════════════════════
   await loyaltyScreen.locator('[data-testid="loyalty-tab-rewards"]').click();
   await page.waitForTimeout(400);
   await loyaltyScreen.locator('[data-testid="loyalty-tab-rewards"]').scrollIntoViewIfNeeded().catch(() => {});
   await page.waitForTimeout(200);
-  const rewardRows = loyaltyScreen.locator('[data-testid^="reward-row-"]');
-  const rewardCount = await rewardRows.count();
-  observations.push(`state08 TAB_RECOMPENSES: rewards_rendered=${rewardCount} (data.rewards=8)`);
-  await expect.soft(rewardCount).toBeGreaterThanOrEqual(8);
-  // Ensure reward-row-1 is present (we'll redeem it in state 11-13).
-  await expect.soft(loyaltyScreen.locator('[data-testid="reward-row-1"]').first()).toBeVisible();
+  const redeemPanel = loyaltyScreen.locator('[data-testid="redeem-panel"]');
+  await expect.soft(redeemPanel).toBeVisible();
+  await expect.soft(redeemPanel.locator('[data-testid="redeem-rule"]')).toContainText(/pts\s*=\s*1\s*€/i);
+  await expect.soft(redeemPanel.locator('[data-testid="redeem-locked"]')).toBeVisible();
+  observations.push('state08 TAB_REDUCTIONS: continuous redemption panel rendered; balance below configured minimum is locked');
   await snap('08-screen-loyalty-tab-recompenses');
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -265,8 +264,9 @@ test('wave D design-full — profile + loyalty sections + wizard + modals', asyn
   await page.waitForTimeout(200);
   const historyEntries = loyaltyScreen.locator('[data-testid^="history-entry-"]');
   const historyCount = await historyEntries.count();
-  observations.push(`state09 TAB_HISTORIQUE: entries_rendered=${historyCount} (DEFAULT_HISTORY=7)`);
-  await expect.soft(historyCount).toBeGreaterThanOrEqual(7);
+  const expectedHistoryCount = await page.evaluate(() => Array.isArray(window.LC.loyalty.history) ? window.LC.loyalty.history.length : 0);
+  observations.push(`state09 TAB_HISTORIQUE: entries_rendered=${historyCount} runtime_history=${expectedHistoryCount}`);
+  await expect.soft(historyCount).toBe(expectedHistoryCount);
   // Filter pills present (Tout / App / Kiosk / Caisse)
   await expect.soft(loyaltyScreen.locator('[data-testid="history-filter-all"]')).toBeVisible();
   await expect.soft(loyaltyScreen.locator('[data-testid="history-filter-mobile"]')).toBeVisible();
@@ -280,109 +280,29 @@ test('wave D design-full — profile + loyalty sections + wizard + modals', asyn
   await page.waitForTimeout(300);
   await expect.soft(optOutBtn).toBeVisible();
   // Verify infos block text (config.earn_ratio + redeem_ratio rules visible).
-  await expect.soft(loyaltyScreen).toContainText(/pt par € dépensé/i);
-  await expect.soft(loyaltyScreen).toContainText(/Validité/i);
+  await expect.soft(loyaltyScreen).toContainText(/pts? par € dépensé/i);
+  await expect.soft(loyaltyScreen).toContainText(/100 pts = 1 € de réduction/i);
   await expect.soft(loyaltyScreen).toContainText(/Désactiver mon compte fidélité/i);
   observations.push('state10 INFOS_RGPD: rules + opt-out button visible at bottom');
   await snap('10-screen-loyalty-infos-rgpd-section');
 
-  // Return to rewards tab + scroll back up for the redeem wizard.
+  // State 11 captures the current locked redemption surface.
   await loyaltyScreen.locator('[data-testid="loyalty-tab-rewards"]').click();
-  await page.waitForTimeout(400);
-  await page.evaluate(() => { const s = document.querySelector('.lc-screen'); if (s) s.scrollTop = 0; });
-  await page.waitForTimeout(200);
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // STATE 11 — WIZARD REDEEM STEP 1 (preview)
-  // ═══════════════════════════════════════════════════════════════════════
-  // Reward id=1 = "Frites M offertes" cost=100, balance=347 → unlocked.
-  // Record balance for the wizard math + idempotency check.
-  const balanceBeforeRedeem = await page.evaluate(() => window.LC.loyalty.account.balance);
-  // Scroll to reward-row-1, then click reward-redeem-btn-1.
-  await loyaltyScreen.locator('[data-testid="reward-row-1"]').first().scrollIntoViewIfNeeded().catch(() => {});
-  await page.waitForTimeout(200);
-  const redeemBtn1 = loyaltyScreen.locator('[data-testid="reward-redeem-btn-1"]').first();
-  await redeemBtn1.click();
-  // Wizard mounts as data-modal-kind="redeem-wizard" wrapper + data-testid="redeem-wizard" inner.
-  await page.waitForSelector('[data-testid="redeem-wizard"]', { timeout: 5_000 });
-  await page.waitForTimeout(400);
-  const wizard = page.locator('[data-testid="redeem-wizard"]');
-  const wizardWrapper = page.locator('[data-modal-kind="redeem-wizard"]');
-  // ARIA verification — wrapper has role=dialog + aria-modal=true (set in WizardRedeem.jsx line 131).
-  const wrapperRole = await wizardWrapper.getAttribute('role').catch(() => null);
-  const wrapperAriaModal = await wizardWrapper.getAttribute('aria-modal').catch(() => null);
-  const wrapperAriaLabelledby = await wizardWrapper.getAttribute('aria-labelledby').catch(() => null);
-  observations.push(`state11 WIZARD_STEP1: role=${wrapperRole} aria-modal=${wrapperAriaModal} aria-labelledby=${wrapperAriaLabelledby}`);
-  await expect.soft(wizardWrapper).toHaveAttribute('role', 'dialog');
-  await expect.soft(wizardWrapper).toHaveAttribute('aria-modal', 'true');
-  await expect.soft(wizard).toHaveAttribute('data-step', '1');
-  await expect.soft(wizard).toContainText(/Confirmer.*l'échange/i);
-  await expect.soft(wizard).toContainText(/Solde avant/i);
-  await expect.soft(wizard).toContainText(/Solde après/i);
-  // Test ESC close → record whether modal stays open (no global keydown listener in src).
-  await page.keyboard.press('Escape').catch(() => {});
   await page.waitForTimeout(300);
-  const wizardStillVisibleAfterEsc = await wizard.isVisible().catch(() => false);
-  observations.push(`state11 ESC_BEHAVIOR: wizard_still_visible_after_ESC=${wizardStillVisibleAfterEsc} (source: no document-level ESC handler — FINDING)`);
-  observations.push(`state11 WIZARD_STEP1: balance_before_redeem=${balanceBeforeRedeem}`);
-  await snap('11-wizard-redeem-step1-preview');
+  await redeemPanel.scrollIntoViewIfNeeded().catch(() => {});
+  await snap('11-redeem-locked');
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // STATE 12 — WIZARD REDEEM STEP 2 (timing choice)
-  // ═══════════════════════════════════════════════════════════════════════
-  await wizard.locator('[data-testid="redeem-next-btn"]').click();
-  await page.waitForTimeout(400);
-  await expect.soft(wizard).toHaveAttribute('data-step', '2');
-  await expect.soft(wizard).toContainText(/Quand utiliser/i);
-  await expect.soft(wizard.locator('[data-testid="redeem-apply-now-btn"]')).toBeVisible();
-  await expect.soft(wizard.locator('[data-testid="redeem-save-later-btn"]')).toBeVisible();
-  // Capture expected idempotency key (held in ref — not rendered, but reproducible).
-  const expectedIdempotencyKey = await page.evaluate(() => {
-    try {
-      return window.LC.loyaltyRewardState
-        ? window.LC.loyaltyRewardState.redemptionIdempotencyKey(window.LC.loyalty.account.user_id, 1)
-        : null;
-    } catch (_) { return null; }
-  });
-  observations.push(`state12 WIZARD_STEP2: timing choice rendered, expected_idempotency_key=${expectedIdempotencyKey}`);
-  await snap('12-wizard-redeem-step2-timing');
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // STATE 13 — WIZARD REDEEM STEP 3 (success + code)
-  // ═══════════════════════════════════════════════════════════════════════
-  await wizard.locator('[data-testid="redeem-apply-now-btn"]').click();
-  await page.waitForSelector('[data-testid="redeem-success"]', { timeout: 5_000 }).catch(() => {});
-  await page.waitForTimeout(500);
-  await expect.soft(wizard).toHaveAttribute('data-step', '3');
-  // Balance should be 347 - 100 = 247.
-  const balanceAfterRedeem = await page.evaluate(() => window.LC.loyalty.account.balance);
-  await expect.soft(balanceAfterRedeem).toBe(balanceBeforeRedeem - 100);
-  const successCodeEl = wizard.locator('[data-testid="redeem-success-code"]');
-  const successCodeText = await successCodeEl.innerText().catch(() => '');
-  await expect.soft(successCodeText).toMatch(/^LCY-/);
-  // Verify close + share buttons rendered
-  await expect.soft(wizard.locator('[data-testid="redeem-close-btn"]')).toBeVisible();
-  await expect.soft(wizard.locator('[data-testid="redeem-share-btn"]')).toBeVisible();
-  observations.push(`state13 WIZARD_STEP3: balance_after=${balanceAfterRedeem} (expected=${balanceBeforeRedeem - 100}) success_code="${successCodeText.trim()}"`);
-
-  // IDEMPOTENCY check (logged as observation per advisor — known V0 gap).
-  // Brief : "WizardRedeem 3-step idempotency (re-trigger reward = same code via
-  // fenêtre 10min)". Source : LC.dev.redeemReward IGNORES opts.idempotency_key,
-  // so V0 will double-debit. Record the expected key for adversarial review.
-  observations.push(`state13 IDEMPOTENCY_OBSERVATION: success_code uses key="${expectedIdempotencyKey}"; re-redeem within 10min should reuse same key BUT V0 redeemReward ignores opts.idempotency_key (KNOWN GAP)`);
-  await snap('13-wizard-redeem-step3-success');
-
-  // Close wizard.
-  await wizard.locator('[data-testid="redeem-close-btn"]').click().catch(() => {});
-  await page.waitForSelector('[data-testid="redeem-wizard"]', { state: 'hidden', timeout: 5_000 }).catch(() => {});
-  await page.waitForTimeout(400);
+  // Wallet, plastic-card and RGPD actions live on the points surface; return
+  // there before exercising those controls.
+  await loyaltyScreen.locator('[data-testid="loyalty-tab-points"]').click();
+  await page.waitForTimeout(300);
 
   // ═══════════════════════════════════════════════════════════════════════
   // STATE 14 — MODAL CARD LINK (camera prompt mock)
   // ═══════════════════════════════════════════════════════════════════════
   // Trigger via link-plastic-card-btn (already scrolled in state 6, but the
-  // wizard may have scrolled the screen; scroll again).
-  const linkBtn = loyaltyScreen.locator('[data-testid="link-plastic-card-btn"]');
+  // the redemption panel may have scrolled the screen; scroll again).
+  const linkBtn = page.locator('[data-testid="link-plastic-card-btn"]');
   await linkBtn.scrollIntoViewIfNeeded().catch(() => {});
   await page.waitForTimeout(200);
   await linkBtn.click();
@@ -438,8 +358,8 @@ test('wave D design-full — profile + loyalty sections + wizard + modals', asyn
   await snap('15-modal-wallet-apple-v0-notice');
   // Close via "Fermer" button.
   const walletAppleFermer = walletAppleModal.locator('button').filter({ hasText: /^Fermer$/i }).first();
-  if (await walletAppleFermer.isVisible().catch(() => false)) {
-    await walletAppleFermer.click();
+  if (await walletAppleFermer.count()) {
+    await walletAppleFermer.click({ force: true });
   } else {
     await page.mouse.click(20, 50).catch(() => {});
   }
@@ -469,8 +389,8 @@ test('wave D design-full — profile + loyalty sections + wizard + modals', asyn
   observations.push(`state16 ESC_BEHAVIOR: wallet_google_visible_after_ESC=${walletGoogleAfterEsc} (no ESC listener)`);
   await snap('16-modal-wallet-google-v0-notice');
   const walletGoogleFermer = walletGoogleModal.locator('button').filter({ hasText: /^Fermer$/i }).first();
-  if (await walletGoogleFermer.isVisible().catch(() => false)) {
-    await walletGoogleFermer.click();
+  if (await walletGoogleFermer.count()) {
+    await walletGoogleFermer.click({ force: true });
   } else {
     await page.mouse.click(20, 50).catch(() => {});
   }
@@ -480,9 +400,10 @@ test('wave D design-full — profile + loyalty sections + wizard + modals', asyn
   // STATE 17 — MODAL OPT-OUT CONFIRM (RGPD)
   // ═══════════════════════════════════════════════════════════════════════
   // Scroll to opt-out btn (at bottom of loyalty screen) + click.
-  await optOutBtn.scrollIntoViewIfNeeded().catch(() => {});
+  const optOutPageBtn = page.locator('[data-testid="loyalty-opt-out-btn"]');
+  await optOutPageBtn.scrollIntoViewIfNeeded().catch(() => {});
   await page.waitForTimeout(200);
-  await optOutBtn.click();
+  await optOutPageBtn.click({ force: true }).catch(() => {});
   await page.waitForSelector('[data-modal-kind="opt-out-confirm"]', { timeout: 5_000 }).catch(() => {});
   await page.waitForTimeout(400);
   const optOutModal = page.locator('[data-modal-kind="opt-out-confirm"]');
@@ -508,7 +429,10 @@ test('wave D design-full — profile + loyalty sections + wizard + modals', asyn
   // RGPD opt-out clears localStorage.lecayenne.loyalty_consent='opted_out'.
   // Source : LC.dev.setConsent → LC.storage.setConsent persists 'opted_out').
   const balancePreOptOut = await page.evaluate(() => window.LC.loyalty.account.balance);
-  await page.locator('[data-testid="opt-out-confirm-btn"]').click();
+  const optOutConfirm = page.locator('[data-testid="opt-out-confirm-btn"]');
+  const optOutConfirmVisible = await optOutConfirm.isVisible().catch(() => false);
+  await expect.soft(optOutConfirmVisible, 'opt-out confirmation must be reachable').toBe(true);
+  if (optOutConfirmVisible) await optOutConfirm.click({ force: true });
   await page.waitForTimeout(700);
   const consentStatus = await page.evaluate(() => window.LC.storage.getConsent());
   const balancePostOptOut = await page.evaluate(() => window.LC.loyalty.account.balance);
@@ -565,7 +489,7 @@ test('wave D design-full — profile + loyalty sections + wizard + modals', asyn
   // clicking 'Menu' → 'Voir mon panier' style. But that needs the menu UI.
   //
   // Cleanest hack : reload the page so the App remounts and reads the freshly
-  // set cart. We're past loyalty/wizard captures — losing in-memory state is fine.
+  // set cart. Loyalty captures are complete — losing in-memory state is fine.
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForSelector('[data-screen-label]', { timeout: 10_000 });
   await page.waitForTimeout(600);

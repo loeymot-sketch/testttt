@@ -13,6 +13,7 @@ use App\Models\ItemWizardProfile;
 use App\Models\ItemWizardStep;
 use App\Models\WizardPage;
 use App\Models\WizardPageChoice;
+use App\Support\Menu\IncludedMeatCount;
 use Illuminate\Support\Collection;
 
 /**
@@ -176,9 +177,20 @@ final class WizardPageMaterializer
     private function applySteps(Item $item, Collection $steps, MaterializationReport $report, bool $dryRun): void
     {
         $touched = false;
+        // [VG-2026-10-21 C3] Une étape viande au-delà des viandes incluses décidées (config/menu_meat_rules.php) n'est
+        // ni recréée ni réactivée sur ce produit : ses choix à 0 € offriraient la viande (PricingService facture la variation).
+        $excess = $this->excessFreeMeatStepIds($item, $steps);
         foreach ($steps as $step) {
             $page = $step->page;
             $touched = true;
+            if (isset($excess[(int) $step->id])) {
+                $report->line(sprintf(
+                    '  = produit #%d « %s » : page « %s » non appliquée (au-delà des viandes incluses ; la viande en plus est l\'extra payant)',
+                    $item->id, $item->name, $page->label,
+                ));
+
+                continue;
+            }
             match ((string) $page->source_type) {
                 'item_attribute' => $this->syncVariations($item, $page, $report, $dryRun),
                 'extra_group' => $this->syncExtras($item, $page, $report, $dryRun),
@@ -189,6 +201,63 @@ final class WizardPageMaterializer
         if ($touched) {
             $report->itemsTouched++;
         }
+    }
+
+    /**
+     * [VG-2026-10-21 C3 · OWNER 2026-10-22] Étapes ACTIVES qui seraient, pour CE produit, un emplacement de viande
+     * au-delà des viandes incluses décidées par le propriétaire (IncludedMeatCount::rule, config/menu_meat_rules.php).
+     * La i-ème étape viande (attributs distincts, par position) est le i-ème emplacement ; au-delà de la règle, elle
+     * n'est jamais rallumée — ni par la matérialisation, ni sur le profil produit recopié (ComposerProfileService).
+     * Sans règle pour le produit : aucune étape écartée (comportement inchangé).
+     *
+     * @param  iterable<int, ItemWizardStep>  $steps
+     * @return array<int, true> identifiants d'étape => true
+     */
+    public function excessFreeMeatStepIds(Item $item, iterable $steps): array
+    {
+        $rule = IncludedMeatCount::rule((string) $item->name, $item->category?->name);
+        if ($rule === null) {
+            return [];
+        }
+
+        $ordered = collect($steps)
+            ->filter(fn (ItemWizardStep $step): bool => (bool) $step->is_active && (string) $step->source_type === 'item_attribute')
+            ->sortBy(fn (ItemWizardStep $step): array => [(int) $step->position, (int) $step->id])
+            ->values();
+
+        $slots = [];
+        $excess = [];
+        foreach ($ordered as $step) {
+            [$key, $name] = $this->stepAttribute($step);
+            if (! IncludedMeatCount::isMeatSlot($name)) {
+                continue;
+            }
+            $slots[$key] ??= count($slots) + 1;
+            if ($slots[$key] > $rule) {
+                $excess[(int) $step->id] = true;
+            }
+        }
+
+        return $excess;
+    }
+
+    /** @return array{0: string, 1: ?string} clé de l'emplacement + nom de l'attribut lu par la caisse et la borne */
+    private function stepAttribute(ItemWizardStep $step): array
+    {
+        $page = $step->page;
+        $attributeId = $page?->item_attribute_id ?: $step->source_item_attribute_id;
+        if ($attributeId) {
+            $attribute = ($page && $page->relationLoaded('itemAttribute') && $page->itemAttribute)
+                ? $page->itemAttribute
+                : ItemAttribute::query()->find($attributeId);
+            if ($attribute) {
+                return ['a'.$attribute->id, (string) $attribute->name];
+            }
+        }
+        // Page sans attribut encore créé : ensureAttribute le nommera d'après le libellé de la page.
+        $label = (string) ($page?->label ?? $step->label);
+
+        return ['l'.mb_strtolower($label), $label];
     }
 
     private function ensureAttribute(WizardPage $page, MaterializationReport $report, bool $dryRun): ?ItemAttribute

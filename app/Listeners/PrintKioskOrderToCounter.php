@@ -37,6 +37,12 @@ class PrintKioskOrderToCounter
 
     public function handle(OrderCreated $event): void
     {
+        // [CAISSE-SANS-PAPIER-AUTO 2026-10-19 · owner] Copie comptoir automatique coupée : plus de
+        // papier qui sort seul à la caisse. Même interrupteur que le pont (kds.counter_auto_print).
+        if (! config('kds.counter_auto_print', false)) {
+            return;
+        }
+
         try {
             $order = $event->order;
 

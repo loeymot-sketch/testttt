@@ -111,7 +111,8 @@ class WheelAccessTest extends TestCase
 
     public function test_le_bon_code_ouvre_les_quatre_ecrans(): void
     {
-        $this->ouvrir()->assertRedirect(route('admin.wheel.home'));
+        // [2026-11-19] Le bon code mène désormais à l'espace commerçant, qui réunit tout.
+        $this->ouvrir()->assertRedirect(route('admin.wheel.espace'));
         $this->assertNotNull(session(EnsureWheelAccess::SESSION_KEY));
 
         foreach (self::ECRANS as $url) {
@@ -129,7 +130,12 @@ class WheelAccessTest extends TestCase
     {
         $this->ouvrir();
 
-        $r = $this->navigateur()->get('/admin/roue')->assertOk();
+        // [2026-11-19] Porte ouverte, l'accueil renvoie à l'espace commerçant ; l'ancien accueil
+        // (liens directs vers les écrans de comptoir) reste joignable par `?ecrans=1`.
+        $this->navigateur()->get('/admin/roue')->assertRedirect(route('admin.wheel.espace'));
+        $this->navigateur()->get('/admin/roue/espace')->assertOk()->assertSee('roue-borne', false);
+
+        $r = $this->navigateur()->get('/admin/roue?ecrans=1')->assertOk();
         foreach (['roue-validation', 'roue-lot', 'roue-borne', 'roue-reglages'] as $ecran) {
             $r->assertSee($ecran, false);
         }

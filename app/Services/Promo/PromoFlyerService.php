@@ -44,7 +44,7 @@ class PromoFlyerService
         // Vide = « prends le numéro de la branche ». On ne code JAMAIS un numéro en dur : un
         // faux numéro sur un ticket est pire que pas de numéro du tout.
         'order_phone'      => '',
-        'intro'            => 'Merci pour ta commande ! La prochaine fois, commande en direct sur notre site : c\'est le meme restaurant, mais moins cher.',
+        'intro'            => 'Merci pour ta commande ! La prochaine fois, commande en direct sur notre site : c\'est le même restaurant, mais moins cher.',
         // [CONVERSION 2026-08-08] L'ancien texte annonçait « jusqu'a -30% d'economies » —
         // en contradiction directe avec le -10% du code juste au-dessus. Le client lit -30,
         // reçoit -10, et se sent floué : deux nombres qui se contredisent sur le même bout de
@@ -57,7 +57,7 @@ class PromoFlyerService
         // (« tu paies le repas, pas la commission ») a rejoint la liste, à sa place.
         // Le réglage reste disponible pour qui veut ajouter un mot de fin propre à lui.
         'savings_note'     => '',
-        'footer_note'      => 'A emporter et en livraison. A tres vite !',
+        'footer_note'      => 'À emporter et en livraison. À très vite !',
         'discount_percent' => 10,
         'validity_days'    => 30,
         'site_url'         => 'www.lecayenne.fr',
@@ -73,13 +73,30 @@ class PromoFlyerService
         // (`pos.loyalty_enabled`), le paiement en ligne est branché (Mollie).
         // Aucune promesse inventée : un argument faux sur un ticket papier se
         // retourne contre le restaurant, et il n'est pas rattrapable.
-        'strengths'        => "Meme cuisine, meme equipe : tu paies le repas, pas la commission\n"
+        'strengths'        => "Même cuisine, même équipe : tu paies le repas, pas la commission\n"
             . "Tacos, burgers, sandwichs et bowls\n"
-            . "Des points fidelite a chaque commande\n"
-            . "Paiement en ligne securise",
+            . "Des points fidélité à chaque commande\n"
+            . "Paiement en ligne sécurisé",
         // Logo imprimé en haut du ticket. Chemin RELATIF à public/ : un chemin
         // absolu saisi depuis l'admin serait une lecture de fichier arbitraire.
         'logo_path'        => 'images/kiosk-attract/logo.png',
+
+        // [TICKET PROMO 2026-11-03 · propriétaire] Deuxième offre : « LIVRAISON OFFERTE ».
+        // Textes repris mot pour mot du modèle fourni par le propriétaire. Le ticket n’imprime
+        // AUCUNE condition (« mettre livraison offerte, c’est tout ») : le minimum et la distance
+        // sont appliqués par le serveur et expliqués par le site au moment de commander.
+        'free_delivery_intro'      => "Merci pour ta commande !\nLa prochaine fois, commande directement chez nous !",
+        'free_delivery_strengths'  => "Même cuisine, même équipe, même qualité.\n"
+            . "Livraison OFFERTE pour toi !\n"
+            . "Tacos, burgers, sandwichs et bowls.\n"
+            . "Des points fidélité à chaque commande.\n"
+            . "Paiement en ligne sécurisé.",
+        'free_delivery_footer'     => "À très vite chez Le Cayenne !\nÀ emporter et en livraison.",
+        // Propriétaire : « livraison offerte dès 10 € minimum ».
+        'free_delivery_min_order'  => 10,
+        // Propriétaire : « au-delà de 7 km, devis Uber » — au-delà, ce n’est plus NOTRE livraison,
+        // le code ne la couvre pas.
+        'free_delivery_max_km'     => 7,
     ];
 
     public function __construct(
@@ -109,10 +126,15 @@ class PromoFlyerService
         int $branchId,
         ?int $userId,
         ?string $deviceId,
-        string $civility = ''
+        string $civility = '',
+        string $offer = PromoFlyer::OFFER_PERCENT
     ): PromoFlyer {
         $settings = $this->settings();
         $name = trim($customerName);
+        // Liste fermée : une valeur inconnue retombe sur l’offre historique plutôt que d’imprimer
+        // un cadeau que personne n’a défini.
+        $offer = in_array($offer, PromoFlyer::OFFERS, true) ? $offer : PromoFlyer::OFFER_PERCENT;
+        $freeDelivery = $offer === PromoFlyer::OFFER_FREE_DELIVERY;
 
         // La collision de code est déjà quasi impossible (le générateur teste
         // avant de rendre), mais deux appareils qui créent au même instant
@@ -124,19 +146,27 @@ class PromoFlyerService
             $code = $this->codeGenerator->generate($name);
 
             try {
-                return DB::transaction(function () use ($code, $name, $branchId, $userId, $deviceId, $settings, $civility) {
+                return DB::transaction(function () use ($code, $name, $branchId, $userId, $deviceId, $settings, $civility, $offer, $freeDelivery) {
                     $validUntil = Carbon::now()->addDays((int) $settings['validity_days'])->endOfDay();
 
                     $coupon = new Coupon();
                     $coupon->forceFill([
-                        'name'             => 'Flyer ' . $name,
-                        'description'      => 'Code nominatif imprime sur ticket promotionnel (commande plateforme).',
+                        'name'             => ($freeDelivery ? 'Flyer livraison ' : 'Flyer ') . $name,
+                        'description'      => $freeDelivery
+                            ? 'Livraison offerte - code nominatif imprime sur ticket promotionnel (commande plateforme).'
+                            : 'Code nominatif imprime sur ticket promotionnel (commande plateforme).',
                         'code'             => $code,
-                        'discount'         => (float) $settings['discount_percent'],
-                        'discount_type'    => DiscountType::PERCENTAGE,
+                        // [TICKET PROMO 2026-11-03] « Livraison offerte » : remise sur les articles
+                        // NULLE (montant fixe de 0 €). Ce sont les frais de livraison qui sont
+                        // annulés, par FrontendOrderService — jamais par PricingService (gelé).
+                        'discount'         => $freeDelivery ? 0 : (float) $settings['discount_percent'],
+                        'discount_type'    => $freeDelivery ? DiscountType::FIXED : DiscountType::PERCENTAGE,
+                        'free_delivery'    => $freeDelivery,
+                        'free_delivery_max_km' => $freeDelivery ? (float) $settings['free_delivery_max_km'] : null,
                         'start_date'       => Carbon::now()->startOfDay(),
                         'end_date'         => $validUntil,
-                        'minimum_order'    => 0,
+                        // Le minimum est vérifié par le contrôle de coupon existant (site ET commande).
+                        'minimum_order'    => $freeDelivery ? (float) $settings['free_delivery_min_order'] : 0,
                         'maximum_discount' => 0,
                         'limit_per_user'   => 1,
                         'max_uses_global'  => 1,
@@ -173,6 +203,7 @@ class PromoFlyerService
                     ])->save();
 
                     $payload = [
+                        'offer'            => $offer,
                         // Nom MIS EN FORME pour l'impression ; la ligne `promo_flyers` garde
                         // la saisie brute de l'exploitant.
                         'customer_name'    => $this->displayName($name),
@@ -195,6 +226,18 @@ class PromoFlyerService
                         'footer_note'      => $settings['footer_note'],
                     ];
 
+                    if ($freeDelivery) {
+                        // Mêmes champs, textes de l’offre « livraison offerte ». Le minimum et la
+                        // distance sont figés dans le payload pour la traçabilité, PAS imprimés.
+                        $payload['intro']           = $settings['free_delivery_intro'];
+                        $payload['strengths']       = $settings['free_delivery_strengths'];
+                        $payload['footer_note']     = $settings['free_delivery_footer'];
+                        $payload['savings_note']    = '';
+                        $payload['discount_percent'] = null;
+                        $payload['min_order']       = (float) $settings['free_delivery_min_order'];
+                        $payload['max_km']          = (float) $settings['free_delivery_max_km'];
+                    }
+
                     $flyer = new PromoFlyer();
                     $flyer->forceFill([
                         'branch_id'          => $branchId,
@@ -207,6 +250,7 @@ class PromoFlyerService
                         'status'             => PromoFlyer::STATUS_PENDING,
                         'created_by_user_id' => $userId,
                         'created_by_device'  => $deviceId,
+                        'offer'              => $offer,
                         // On fige le texte MAINTENANT : si l'exploitant change
                         // son message demain, on doit toujours pouvoir dire ce
                         // qui est réellement parti chez ce client.
@@ -491,7 +535,7 @@ class PromoFlyerService
             $flyer->forceFill([
                 'status'     => PromoFlyer::STATUS_FAILED,
                 'claimed_at' => null,
-                'last_error' => 'Code annule avant impression',
+                'last_error' => 'Code annulé avant impression',
             ])->save();
         }
     }
@@ -532,6 +576,7 @@ class PromoFlyerService
                 'order_coupons.coupon_id',
                 'order_coupons.order_id',
                 'order_coupons.discount',
+                'order_coupons.delivery_waived',
                 'order_coupons.created_at',
                 'orders.total',
             ]);
@@ -544,6 +589,7 @@ class PromoFlyerService
                 'order_id'    => (int) $l->order_id,
                 'order_total' => (float) $l->total,
                 'discount'    => (float) $l->discount,
+                'delivery_waived' => $l->delivery_waived !== null ? (float) $l->delivery_waived : null,
             ];
         }
 

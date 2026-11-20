@@ -27,6 +27,22 @@
                      pour tout futur rôle qui ne l'aurait pas, avec un message clair au lieu d'un
                      bouton mort. -->
                 <form v-if="canPrintFlyer" @submit.prevent="createFlyer(false)">
+                    <!-- [TICKET PROMO 2026-11-03 · propriétaire] Deux offres au choix. -->
+                    <div class="mb-4">
+                        <label class="db-field-title">{{ $t("label.flyer_offer") }}</label>
+                        <div class="flex gap-2" role="radiogroup" :aria-label="$t('label.flyer_offer')">
+                            <button
+                                v-for="o in offers"
+                                :key="o.value"
+                                type="button"
+                                role="radio"
+                                :aria-checked="form.offer === o.value"
+                                class="db-btn py-3 flex-1 text-base font-semibold"
+                                :class="form.offer === o.value ? 'text-white bg-primary' : ''"
+                                @click="form.offer = o.value"
+                            >{{ o.label }}</button>
+                        </div>
+                    </div>
                     <div class="form-row">
                         <div class="form-col-12 sm:form-col-4">
                             <label for="customer_name" class="db-field-title required">
@@ -100,7 +116,7 @@
                         {{ lastFlyer.code }}
                     </div>
                     <div class="text-sm text-emerald-900">
-                        {{ lastFlyer.customer_name }} · −{{ lastFlyer.discount }}%
+                        {{ lastFlyer.customer_name }} · {{ offerLabel(lastFlyer) }}
                         <span v-if="lastFlyer.valid_until"> · {{ $t("label.valid_until") }} {{ lastFlyer.valid_until }}</span>
                     </div>
                 </div>
@@ -147,15 +163,34 @@
                     </div>
                 </div>
 
+                <!-- [TICKET PROMO 2026-11-03 · propriétaire « avec le nombre de clients »] Le même
+                     bilan offre par offre : c'est ce qui permet de choisir entre les deux. -->
+                <div v-if="stats.by_offer" class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div v-for="o in offers" :key="'bilan-' + o.value"
+                        class="rounded border border-slate-200 p-3 text-sm" :data-offer="o.value">
+                        <div class="font-semibold">{{ o.label }}</div>
+                        <div class="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-slate-600">
+                            <div>{{ $t("label.flyer_stat_printed") }} : <b>{{ (stats.by_offer[o.value] || {}).printed || 0 }}</b></div>
+                            <div>{{ $t("label.flyer_stat_used") }} : <b>{{ (stats.by_offer[o.value] || {}).used || 0 }}</b></div>
+                            <div>{{ $t("label.flyer_stat_rate") }} :
+                                <b v-if="(stats.by_offer[o.value] || {}).rate !== null && (stats.by_offer[o.value] || {}).rate !== undefined">{{ stats.by_offer[o.value].rate }} %</b>
+                                <b v-else>—</b>
+                            </div>
+                            <div>{{ $t("label.flyer_stat_revenue") }} : <b>{{ money((stats.by_offer[o.value] || {}).revenue) }}</b></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div v-if="flyers.length === 0" class="py-4 text-center text-slate-500">
                     {{ $t("label.flyer_history_empty") }}
                 </div>
                 <div v-else class="table-responsive">
-                    <table class="table">
+                    <table class="table flyer-table">
                         <thead>
                             <tr>
                                 <th>{{ $t("label.customer") }}</th>
                                 <th>{{ $t("label.code") }}</th>
+                                <th>{{ $t("label.flyer_offer") }}</th>
                                 <th>{{ $t("label.status") }}</th>
                                 <th>{{ $t("label.flyer_used") }}</th>
                                 <th>{{ $t("label.date") }}</th>
@@ -171,6 +206,7 @@
                                         {{ $t("label.flyer_revoked") }}
                                     </div>
                                 </td>
+                                <td class="whitespace-nowrap">{{ offerLabel(flyer) }}</td>
                                 <td>
                                     <span :class="statusClass(flyer.status)">{{ statusLabel(flyer) }}</span>
                                     <div v-if="flyer.last_error" class="text-xs text-rose-700">
@@ -240,7 +276,8 @@ export default {
             busy: false,
             loaded: false,
             couponRedemptionEnabled: true,
-            form: { customer_name: "", civility: "" },
+            form: { customer_name: "", civility: "", offer: "percent" },
+            discountPercent: null,
             civilities: [
                 { value: "", label: "—" },
                 { value: "Mme", label: "Mme" },
@@ -255,6 +292,12 @@ export default {
         };
     },
     computed: {
+        offers() {
+            return [
+                { value: "percent", label: this.discountPercent ? "−" + this.discountPercent + " %" : this.$t("label.flyer_offer_percent") },
+                { value: "free_delivery", label: this.$t("label.flyer_offer_free_delivery") },
+            ];
+        },
         // [OWNER 2026-08-13 « ameliore l'acces du caissier »] Même garde que
         // PosOrdersTrackerComponent.canPrintFlyer — voir sa note pour le contexte complet.
         canPrintFlyer() {
@@ -273,6 +316,8 @@ export default {
             this.$store.dispatch("promoFlyerSettings")
                 .then((res) => {
                     this.couponRedemptionEnabled = res.coupon_redemption_enabled !== false;
+                    const p = Number(res && res.settings && res.settings.discount_percent);
+                    if (p > 0) this.discountPercent = Number.isInteger(p) ? p : String(p).replace(".", ",");
                     this.loaded = true;
                 })
                 .catch(() => { this.loaded = true; });
@@ -299,6 +344,7 @@ export default {
             this.$store.dispatch("promoFlyerCreate", {
                 customer_name: name,
                 civility: this.form.civility,
+                offer: this.form.offer,
                 force: force === true,
             })
                 .then((res) => {
@@ -313,6 +359,7 @@ export default {
                     this.lastFlyer = res.flyer;
                     this.form.customer_name = "";
                     this.form.civility = "";
+                    // L'offre choisie est GARDÉE : une campagne se fait sur tout un service.
                     alertService.success(res.message);
                     this.fetchHistory();
                 })
@@ -321,6 +368,12 @@ export default {
                     alertService.error(err?.response?.data?.message);
                 })
                 .finally(() => { this.busy = false; });
+        },
+
+        offerLabel(flyer) {
+            if (flyer && flyer.offer === "free_delivery") return this.$t("label.flyer_offer_free_delivery");
+            const d = flyer && flyer.discount;
+            return d ? "−" + d + " %" : this.$t("label.flyer_offer_percent");
         },
 
         money(value) {
@@ -376,3 +429,24 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+/*
+ * [AUDIT-SUPERVISEUR 2026-08-25 · D-004] LE CODE PROMO TOUCHAIT LE STATUT, SANS UN PIXEL.
+ *
+ * Mesuré au pixel sur la capture : on lisait « ADMINNOTCAPP-236HÉchec »,
+ * « CAPE2E381786-68AHÉchec », et le même collage sur ~24 lignes consécutives. Le code
+ * n'était PAS tronqué — le DOM porte bien la valeur complète — c'est la cellule qui
+ * n'avait AUCUNE marge, contrairement aux tableaux du reste du produit.
+ *
+ * Le code promo est précisément la chose que le caissier peut avoir à relire ou à dicter
+ * au téléphone. Deux mots soudés y sont plus coûteux qu'ailleurs.
+ *
+ * On reprend la marge de cellule du reste du produit (12 px / 8 px), sur CE tableau
+ * uniquement — jamais sur `.table` global, qui habille tous les tableaux du produit.
+ */
+.flyer-table th,
+.flyer-table td {
+    padding: 8px 12px;
+}
+</style>

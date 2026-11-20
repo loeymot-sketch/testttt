@@ -123,6 +123,7 @@ return [
         'open_full_page' => 'In voller Seite öffnen',
     ],
     'message' => [
+        'email_send_partial' => "E-Mail an :count Abonnent(en) gesendet; :failed Adresse(n) vom Mailserver abgelehnt (Details im Protokoll).",
         'validation_error'            => 'Validierungsfehler.',
         'credentials_error'           => 'Anmeldeinformationsfehler.',
         'credentials_invalid'         => 'Ungültige Anmeldeinformationen oder Sie sind blockiert',

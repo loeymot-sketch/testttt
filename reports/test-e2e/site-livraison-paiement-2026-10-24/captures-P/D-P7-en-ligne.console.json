@@ -1,0 +1,14 @@
+[
+  {
+    "level": "error",
+    "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "location": {
+      "url": "https://js.mollie.com/v1/mollie.js",
+      "line": 0,
+      "column": 0,
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1792859233663
+  }
+]

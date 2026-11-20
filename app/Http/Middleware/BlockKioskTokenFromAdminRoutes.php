@@ -60,6 +60,20 @@ class BlockKioskTokenFromAdminRoutes
     {
         $user = $request->user();
 
+        // [Test abusif final P3 · 2026-11-06] Un compte CLIENT (rôle « Customer » ou invité fidélité, sans aucun rôle de
+        // l'équipe) n'a rien à faire sur /api/admin : un jeton client lisait en 200 24 réglages (adresses et SIRET des
+        // branches, QR des tables, réglages OTP…). Aucune écriture n'était possible, mais rien ne justifie la lecture.
+        // Le site et l'application n'appellent aucune route /api/admin (vérifié). Le personnel garde son accès.
+        if ($user) {
+            $comptes = app(\App\Services\Identity\CustomerAccount::class);
+            if ($comptes->isCustomer($user) && ! $comptes->isStaff($user)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Accès réservé à l\'équipe du restaurant.',
+                ], 403);
+            }
+        }
+
         // Session-based admin auth or unauthenticated request — out of
         // scope (the underlying route's `auth:sanctum` + `permission:*`
         // stack will decide). We only care about Sanctum-token requests.

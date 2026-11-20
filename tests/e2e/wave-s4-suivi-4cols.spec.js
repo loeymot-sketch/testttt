@@ -158,7 +158,13 @@ test.describe('Wave S-4 — Suivi commandes À ENCAISSER lane', () => {
     const subtitles = await page.$$eval('.pos-tracker-col-subtitle', (els) =>
       els.map((el) => (el.textContent || '').trim())
     );
-    expect(subtitles.some((s) => /borne.*paiement.*comptoir/i.test(s))).toBe(true);
+    // [GOAL-CAISSE-VISION 2026-08-24] Le sous-titre réel est « Paiement au comptoir
+    // (borne · caisse · tél · web) » (`fr.json` pos.tracker.col_accept_subtitle) —
+    // l'ancien motif exigeait « borne » AVANT « paiement », un ordre que le libellé
+    // n'a plus depuis que le canal téléphone y a été ajouté. Ce qui doit être prouvé,
+    // c'est que le sous-titre nomme le paiement au comptoir ET cite la borne ; on
+    // vérifie donc les deux, sans figer un ordre de mots.
+    expect(subtitles.some((s) => /paiement\s+au\s+comptoir/i.test(s) && /borne/i.test(s))).toBe(true);
 
     // ----- Assert lane membership (target our seeded orders only — other
     // dev/staging rows may coexist, so we check the SEEDED orders land in
@@ -257,9 +263,14 @@ test.describe('Wave S-4 — Suivi commandes À ENCAISSER lane', () => {
     await page.waitForSelector('.pos-tracker-grid', { timeout: 15_000 });
     await page.waitForTimeout(2500);
 
-    // The 4-column layout MUST remain visible (owner mandate: lane never hidden).
+    // [GOAL-CAISSE-VISION 2026-08-24] Le tableau compte CINQ couloirs depuis le
+    // 2026-05-20 : `131d79055` (Wave T R1 F1) a inséré « EN LIVRAISON » entre
+    // PRÊTS et LIVRÉS. Ce spec a été écrit le MÊME JOUR, juste avant, et figeait
+    // 4 : il échouait donc en permanence depuis trois mois, masquant toute vraie
+    // régression de mise en page. Le mandat propriétaire — aucun couloir masqué,
+    // l'état vide reste visible — est INCHANGÉ ; seul le compte est réaligné.
     const colCount = await page.locator('.pos-tracker-col').count();
-    expect(colCount).toBe(4);
+    expect(colCount).toBe(5);
 
     // Lane 1 (À encaisser) → 0 cards + empty-state placeholder rendered.
     const acceptCards = await page.locator('.pos-tracker-col:nth-child(1) .pos-tracker-card').count();

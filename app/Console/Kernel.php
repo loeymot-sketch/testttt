@@ -26,6 +26,9 @@ class Kernel extends ConsoleKernel
         // every 15 minutes as a safety net in addition to the opportunistic cleanup
         // in OtpManagerService::otp(). Uses DB facade directly to avoid loading the
         // full OtpManagerService for a simple DELETE query.
+        // [NFC / NOTIFICATIONS 2026-11-20] Ménage quotidien des abonnements Web Push morts.
+        $schedule->command('webpush:prune')->dailyAt('04:20')->name('webpush-prune')->withoutOverlapping();
+
         $schedule->call(function () {
             $expireMinutes = (int) \Smartisan\Settings\Facades\Settings::group('otp')->get('otp_expire_time') ?: 5;
             \Illuminate\Support\Facades\DB::table('otps')
@@ -52,6 +55,12 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('foodking:outbox:rescue')
             ->everyMinute()
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        // [LIVRAISON 2026-10-20] Filet : une commande de livraison sans tournée y est rattachée.
+        $schedule->command('delivery:assign-pending')
+            ->everyFiveMinutes()
             ->withoutOverlapping()
             ->onOneServer();
 
@@ -216,6 +225,15 @@ class Kernel extends ConsoleKernel
             ->name('foodking-storage-cleanup')
             ->description('Purge debugbar + old laravel logs + framework caches (NF525-safe)')
             ->withoutOverlapping()
+            ->onOneServer();
+
+        // [CAYENNE HYGIÈNE 2026-10-18] Alertes d'hygiène par e-mail (relevé en retard, nettoyage, huile, DLC, traçabilité). Ne fait RIEN
+        // tant que le responsable n'a pas activé les alertes (Hygiène › Alertes) ; chaque envoi est journalisé.
+        $schedule->command('hygiene:notify')
+            ->everyFiveMinutes()
+            ->name('hygiene-notify')
+            ->description('Prévient par e-mail les responsables des rappels d\'hygiène à traiter maintenant')
+            ->withoutOverlapping(10)
             ->onOneServer();
 
         // [RED-team P0 / Outbox unbounded growth — 2026-05-17]

@@ -119,6 +119,16 @@ class LoyaltyApiTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertDatabaseHas('users', ['loyalty_code' => 'ADD99', 'loyalty_points' => 30]);
+
+        // [AUDIT ABUSIF 2026-11-06 · W2-P1-2] Le JETON DE LA BORNE (aptitude kiosk:order seule) appartient à l'admin : il ne
+        // crédite plus rien ; un jeton de personnel complet, si.
+        $this->app['auth']->forgetGuards();
+        \Laravel\Sanctum\Sanctum::actingAs($admin, ['kiosk:order']);
+        $this->postJson('/api/frontend/loyalty/add-points', ['code' => 'ADD99', 'points' => 10000])->assertStatus(403);
+        $this->assertDatabaseHas('users', ['loyalty_code' => 'ADD99', 'loyalty_points' => 30]);
+        $this->app['auth']->forgetGuards();
+        \Laravel\Sanctum\Sanctum::actingAs($admin, ['*']);
+        $this->postJson('/api/frontend/loyalty/add-points', ['code' => 'ADD99', 'points' => 5])->assertStatus(200);
     }
 
     public function test_loyalty_redeem()

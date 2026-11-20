@@ -70,6 +70,8 @@ class LoyaltyDecoupledFromManualDiscountTest extends TestCase
             'loyalty_code'   => 'ACCRUE01',
             'loyalty_points' => 0,
         ]);
+        $this->seedSpatieRoles();
+        $customer->assignRole('Customer'); // [POINTS À LA VALIDATION 2026-11-06] un client inscrit porte le rôle « Customer » (CustomerAccount::isCustomer) : le repli par user_id ne crédite qu'un client
 
         // Le listener lit order_amount ?? total pour un ordre POS ; la colonne
         // order_amount est absente du schéma de test → fallback sur total (10€).

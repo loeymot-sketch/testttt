@@ -1,0 +1,319 @@
+{
+  "results": {
+    "cas-chicken-burger": {
+      "item": 38,
+      "name": "Chicken Burger",
+      "steps": [
+        "QUELLE SAUCE ?",
+        "QUELLE CRUDITÉ ?",
+        "QUEL SUPPLÉMENT ?",
+        "QUEL MENU ?",
+        "RÉCAP"
+      ],
+      "viandeStepPresent": false,
+      "walk": [
+        {
+          "i": 0,
+          "question": "QUELLE SAUCE ?",
+          "nbChoix": 14,
+          "clics": 1,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 1,
+          "question": "QUELLE CRUDITÉ ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 2,
+          "question": "QUEL SUPPLÉMENT ?",
+          "nbChoix": 9,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 3,
+          "question": "QUEL MENU ?",
+          "nbChoix": 4,
+          "clics": 1,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 4,
+          "question": "QUELLE BOISSON ?",
+          "nbChoix": 0,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": true
+        }
+      ],
+      "bloque": true,
+      "panier": null
+    },
+    "temoin1-galette-cayenne": {
+      "item": 24,
+      "name": "Galette Cayenne",
+      "steps": [
+        "QUELLE VIANDE ?",
+        "QUELLE SAUCE ?",
+        "QUELLE CRUDITÉ ?",
+        "QUEL SUPPLÉMENT ?",
+        "QUEL MENU ?",
+        "RÉCAP"
+      ],
+      "viandeStepPresent": true,
+      "walk": [
+        {
+          "i": 0,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 1,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 1,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 2,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 3,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 4,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 5,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 6,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 7,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 8,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 9,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 10,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 11,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 12,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 13,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        }
+      ],
+      "bloque": false,
+      "panier": null
+    },
+    "temoin2-bol-frites": {
+      "item": 41,
+      "name": "Bol Frites",
+      "steps": [
+        "QUELLE VIANDE ?",
+        "QUELLE SAUCE ?",
+        "QUEL SUPPLÉMENT ?",
+        "QUEL MENU ?",
+        "RÉCAP"
+      ],
+      "viandeStepPresent": true,
+      "walk": [
+        {
+          "i": 0,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 1,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 1,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 2,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 3,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 4,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 5,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 6,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 7,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 8,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 9,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 10,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 11,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 12,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        },
+        {
+          "i": 13,
+          "question": "QUELLE VIANDE ?",
+          "nbChoix": 7,
+          "clics": 0,
+          "nextLabel": "SUIVANT",
+          "disabledApresChoix": false
+        }
+      ],
+      "bloque": false,
+      "panier": null
+    }
+  },
+  "details": {},
+  "console": []
+}

@@ -432,9 +432,11 @@ class WheelDeliveryService
      *      préfère un cadeau non chiffré SIGNALÉ à un cadeau chiffré sur le mauvais produit, qui
      *      ferait dériver l'inventaire de celui-là en silence.
      */
-    public function costItemId(string $prizeKey): ?int
+    public function costItemId(string $prizeKey, ?array $catalogue = null): ?int
     {
-        foreach (app(\App\Services\Wheel\WheelService::class)->segments() as $s) {
+        // `$catalogue` : le catalogue COMPLET (archives comprises) déjà lu par l'appelant, pour ne pas
+        // relire les réglages une fois par lot. Absent → relu ici.
+        foreach ($catalogue ?? app(\App\Services\Wheel\WheelService::class)->catalogueComplet() as $s) { // lots retirés compris : un lot gagné reste dû
             if ((string) ($s['key'] ?? '') !== $prizeKey) {
                 continue;
             }
@@ -504,7 +506,7 @@ class WheelDeliveryService
     /** Le lot remis est-il un plat préparé, marqué `kitchen_prep` dans sa configuration ? */
     private function requiertPreparationCuisine(WheelSpin $spin): bool
     {
-        foreach (app(WheelService::class)->segments() as $s) {
+        foreach (app(WheelService::class)->catalogueComplet() as $s) { // lots retirés compris
             if ((string) ($s['key'] ?? '') === (string) $spin->prize_key) {
                 return (bool) ($s['kitchen_prep'] ?? false);
             }

@@ -2,7 +2,7 @@
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
-const BASE = 'http://127.0.0.1:8766';
+const BASE = (process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8766').replace(/\/$/, '');
 const OUT = path.resolve(__dirname, '../../tests/captures/audit-caisse-secondaires-2026-07-25');
 fs.mkdirSync(OUT, { recursive: true });
 

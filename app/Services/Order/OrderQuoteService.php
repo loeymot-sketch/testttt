@@ -78,7 +78,7 @@ class OrderQuoteService
         $items = $this->safeJsonDecode((string) $request->input('items', '[]'));
         $items = is_array($items) ? $items : [];
 
-        $this->assertVariationPresenceConstraints($items);
+        $this->assertVariationPresenceConstraints($items, $branchId);
 
         $pricing = $this->calculatePricing($request, $surface, $branchId, $items, $actor);
         $this->assertManualDiscountAllowed($request, $surface, $pricing, $actor);
@@ -89,9 +89,13 @@ class OrderQuoteService
         $signature = hash_hmac('sha256', $canonicalJson, $this->hmacKey());
 
         $token = (string) $request->input('quote_token', '');
+        // [VG-2026-10-21 R2-001] Sans jeton = un NOUVEAU devis, toujours : réutiliser le devis ouvert de même
+        // intention donnait le même jeton à usage unique à deux paniers identiques (deux bornes sur le compte
+        // machine, deux caisses pos@) → 2e vente en 409, ou 422/interblocage sous MySQL. Le rejeu d'un devis
+        // passe par son jeton (resolveReplay), jamais par la ressemblance du panier.
         $quote = $token !== ''
             ? $this->resolveReplay($token, $branchId, $intentHash, $signature, $request)
-            : $this->findOpenQuote($surface, $branchId, (int) $actor->id, $intentHash);
+            : null;
 
         if (! $quote) {
             $quote = OrderQuote::create([
@@ -126,13 +130,35 @@ class OrderQuoteService
         $hasClientQuote = $request->filled('quote_token') || $request->filled('quote_signature');
         if ((in_array($surface, [self::SURFACE_POS, self::SURFACE_KIOSK], true) || $hasClientQuote)
             && (! $request->filled('quote_token') || ! $request->filled('quote_signature'))) {
-            throw new HttpException(401, 'Order quote token and signature are required together.');
+            // [AUDIT CAISSE 2026-09-29 · P0] 409 et non 401 : un refus MÉTIER du devis
+            // (absent, invalide, signature ou intention divergente) n'est pas un défaut
+            // d'authentification. Or les deux intercepteurs axios (pos-app.js, app.js)
+            // traitent TOUT 401 comme « session expirée » → déconnexion et /login en
+            // pleine vente. Reproduit par l'écran le 2026-09-29 : remise appliquée →
+            // « intent mismatch » 401 → caissier éjecté, zéro commande. Le 410 de
+            // l'expiration reste distinct. `Unauthenticated` (401) plus bas est, lui,
+            // un vrai défaut d'authentification et ne change pas.
+            throw new HttpException(409, 'Order quote token and signature are required together.');
         }
 
         $quote = $this->quote($request, $surface, $orderId);
 
         if (abs($this->money($quote->total_ttc) - $this->money($expectedTotal)) > 0.000001) {
             throw new HttpException(409, 'Le total a changé depuis le devis. Relance l\'encaissement pour le recalculer.');
+        }
+
+        // [GOAL CAISSE/CUISINE #5 2026-10-02] Trace d'audit de l'« Offert » (qui/quoi/quand), écrite
+        // dans la transaction de création : elle ne peut exister que si la commande existe.
+        if ($surface === self::SURFACE_POS) {
+            $decoded = $this->safeJsonDecode((string) $request->input('items', '[]'));
+            if (is_array($decoded)) {
+                app(\App\Services\Pos\OfferedExtras::class)->audit(
+                    $decoded,
+                    $orderId,
+                    (int) $quote->branch_id,
+                    (int) $quote->actor_id
+                );
+            }
         }
 
         return $quote->refresh();
@@ -229,20 +255,40 @@ class OrderQuoteService
      *
      * @param  array<int, object>  $items  stdClass items from safeJsonDecode
      */
-    private function assertVariationPresenceConstraints(array $items): void
+    private function assertVariationPresenceConstraints(array $items, int $branchId): void
     {
         if ($items === []) {
             return;
         }
 
-        $normalized = array_map([$this, 'itemForVariationRule'], $items);
+        // A POS manual supplement deliberately has no catalogue item_id and no
+        // variations. It is priced and authorized by PricingService, not by the
+        // catalogue-composer constraint.
+        $normalized = array_filter(
+            array_map([$this, 'itemForVariationRule'], $items),
+            static fn (array $item): bool => $item !== []
+        );
+        if ($normalized === []) {
+            return;
+        }
 
         $errors = [];
         \App\Rules\MultiVariationConstraint::validateCollectionKeyedByItemIndex(
             $normalized,
             function (int $index, string $message) use (&$errors): void {
                 $errors["items.{$index}.item_variations"][] = $message;
-            }
+            },
+            $branchId,
+        );
+
+        // [VG-2026-10-21 M1-101] Boisson / accompagnement de menu (texte de l'instruction) : même règle de rupture
+        // qu'un produit seul. Lu sur les lignes BRUTES (itemForVariationRule ne garde pas l'instruction).
+        \App\Support\Menu\MenuFormulaChoiceAvailability::validateCollectionKeyedByItemIndex(
+            $items,
+            function (int $index, string $message) use (&$errors): void {
+                $errors["items.{$index}.instruction"][] = $message;
+            },
+            $branchId,
         );
 
         if ($errors !== []) {
@@ -262,6 +308,9 @@ class OrderQuoteService
             $item = (array) $item;
         }
         if (! is_array($item)) {
+            return [];
+        }
+        if (($item['line_type'] ?? 'catalog') === \App\Models\OrderItem::LINE_TYPE_MANUAL_SUPPLEMENT) {
             return [];
         }
 
@@ -297,6 +346,10 @@ class OrderQuoteService
      */
     private function calculatePricing(Request $request, string $surface, int $branchId, array $items, User $actor): PricingResult
     {
+        // [GOAL CAISSE/CUISINE #5 2026-10-02] « Offert » : validé AVANT tout calcul (forme, extra du
+        // bon produit, payant, surface POS). Le prix, lui, reste calculé par PricingService.
+        app(\App\Services\Pos\OfferedExtras::class)->assertValid($items, $surface);
+
         if ($surface === self::SURFACE_KIOSK) {
             $pricing = $this->pricingService->calculateOrder(
                 PricingRequest::forKiosk(
@@ -515,6 +568,22 @@ class OrderQuoteService
             return;
         }
 
+        // [AUDIT CAISSE 2026-09-29 · P0/P1-7] Le coupe-circuit V1 des remises manuelles
+        // (`pos.manual_discount_enabled`, défaut false — correction fiscale TVA/HT en
+        // attente dans les zones gelées) ne vivait qu'AU COMMIT (OrderService::
+        // assertDiscretionaryDiscountAllowed). Le devis acceptait donc la remise et
+        // annonçait le total remisé ; le refus tombait après l'encaissement. Pire : la
+        // commande partait SANS `discount` (PaymentComponent le retire, zone gelée),
+        // donc le commit ne voyait jamais ce coupe-circuit — il tombait sur un
+        // « intent mismatch » 401 qui DÉCONNECTAIT le caissier (reproduit par l'écran
+        // le 2026-09-29). Refuser ici, au devis, c'est refuser AVANT la modale de
+        // paiement, avec le message prévu, et avant qu'un centime ne change de main.
+        if (config('pos.manual_discount_enabled') !== true) {
+            throw ValidationException::withMessages([
+                'discount' => 'Les remises manuelles sont désactivées sur cette caisse (correction fiscale TVA/HT en attente). Retire la remise pour encaisser.',
+            ]);
+        }
+
         if ($pricing->subtotal <= 0.0 || $discount > $pricing->subtotal) {
             throw ValidationException::withMessages([
                 'discount' => 'Remise impossible : le sous-total n\'est pas encore calculé. Relance l\'encaissement.',
@@ -554,7 +623,7 @@ class OrderQuoteService
             ->first();
 
         if (! $quote || (int) $quote->branch_id !== $branchId) {
-            throw new HttpException(401, 'Invalid order quote.');
+            throw new HttpException(409, 'Invalid order quote.');
         }
 
         if ($quote->isExpired()) {
@@ -563,28 +632,14 @@ class OrderQuoteService
 
         $requestSignature = (string) $request->input('quote_signature', '');
         if ($requestSignature === '' || ! hash_equals($quote->hmac_signature, $requestSignature)) {
-            throw new HttpException(401, 'Order quote signature mismatch.');
+            throw new HttpException(409, 'Order quote signature mismatch.');
         }
 
         if (! hash_equals($quote->intent_hash, $intentHash) || ! hash_equals($quote->hmac_signature, $signature)) {
-            throw new HttpException(401, 'Order quote intent mismatch.');
+            throw new HttpException(409, 'Order quote intent mismatch.');
         }
 
         return $quote;
-    }
-
-    private function findOpenQuote(string $surface, int $branchId, int $actorId, string $intentHash): ?OrderQuote
-    {
-        return OrderQuote::query()
-            ->where('branch_id', $branchId)
-            ->where('surface', $surface)
-            ->where('actor_id', $actorId)
-            ->where('intent_hash', $intentHash)
-            ->whereNull('consumed_at')
-            ->where('expires_at', '>', now())
-            ->lockForUpdate()
-            ->latest('id')
-            ->first();
     }
 
     private function consume(OrderQuote $quote, User $actor, ?int $orderId): void
@@ -665,7 +720,12 @@ class OrderQuoteService
     {
         return array_map(function ($item): array {
             return [
+                // The manual label/amount are fiscal intent too: a signed quote
+                // must not be reusable with a different free-form supplement.
+                'line_type' => (string) ($item->line_type ?? 'catalog'),
                 'item_id' => (int) ($item->item_id ?? 0),
+                'manual_label' => trim((string) ($item->manual_label ?? '')),
+                'manual_amount' => $this->money($item->manual_amount ?? 0),
                 'variations' => $this->normalizeForCanonical($item->item_variations ?? []),
                 'extras' => $this->normalizeForCanonical($item->item_extras ?? []),
                 'addons' => $this->normalizeForCanonical($item->item_addons ?? []),

@@ -31,6 +31,8 @@ class OrderServicesContractTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // [AUDIT ABUSIF 2026-11-06] payment-confirm = PLAN A (borne avec terminal) ; refusé en Plan B (KioskPaymentConfirmAmountTest).
+        config(['kiosk.payment_route_all_to_counter' => false]);
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
 
@@ -282,6 +284,10 @@ class OrderServicesContractTest extends TestCase
     public function test_fos_deferred_payment_confirm_golden_response_is_idempotent(): void
     {
         Event::fake();
+        // [AUDIT ABUSIF 2026-11-06 · W2-P1-1] Contrat du PLAN A (borne avec terminal) : en Plan B (défaut, tout au
+        // comptoir) payment-confirm est refusé (1defc81d0, KioskPaymentConfirmPlanBTest). Même alignement que les 5 bancs
+        // payment-confirm ajustés dans ce commit.
+        config(['kiosk.payment_route_all_to_counter' => false]);
 
         $branch = Branch::factory()->create();
         $kioskUser = User::factory()->create(['branch_id' => $branch->id]);

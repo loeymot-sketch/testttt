@@ -16,6 +16,7 @@
  *
  * [PHASE-6.2] Plus d'import direct de `window.borne.*` — tout passe par `kioskHardware`.
  */
+import { extraDisplayName } from './kdsSymbolic.js';
 import { KIOSK_HARDWARE } from '../config/kioskHardware';
 import kioskHardware from '../services/kioskHardware';
 import { printEscPosViaCaisseBridge } from './posLocalPrinter';
@@ -417,7 +418,8 @@ export function kioskItemCompositionText(item) {
   // Extras : crudités gratuites + suppléments (tous décrits ; pas de prix sur le cartItem).
   const extras = (item.item_extras || [])
     .map((e) => {
-      const n = String((e && e.name) || '').trim();
+      // [GOAL #4 2026-10-02] nomme la « Sauce supplémentaire » générique (instruction de la ligne)
+      const n = extraDisplayName(String((e && e.name) || ''), item.instruction).trim();
       if (!n) return '';
       return n + (e && e.quantity > 1 ? ` x${e.quantity}` : '');
     })
@@ -476,12 +478,30 @@ export function buildReceiptData({
   const pad = n => String(n).padStart(2, '0');
   const orderDate = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
+  // [INCIDENT TICKET 2026-09-05] Le prix de ligne imprimé doit être CELUI QUI EST
+  // FACTURÉ. La somme des composants ci-dessous perd le montant de la formule menu :
+  // `pos-wizard.js:4594` écrit `item_extra_total: 0` sur la ligne d'addon. Mesuré en
+  // production — commande 953, Tacos M 7,40 € + Menu 2,50 € : la ligne s'imprimait
+  // « 7,40 € » sous un pied de ticket à « 9,90 € ». Le client lisait deux montants
+  // sur le même papier (114 lignes borne, 24 lignes web concernées).
+  // `total_price` est la valeur autoritative — même règle que
+  // `posCartLineMath.js:32-40 rowUnitBundled`, qui fait déjà autorité pour le panier
+  // de la caisse. La somme des composants ne sert plus que de repli, pour les addons
+  // hérités et les instantanés hors-ligne qui ne portent pas `total_price`.
+  const prixLigneFacture = (item) => {
+    const autoritatif = parseFloat(item.total_price);
+    if (Number.isFinite(autoritatif)) {
+      return autoritatif;
+    }
+    return (parseFloat(item.convert_price) || 0)
+      + (parseFloat(item.item_variation_total) || 0)
+      + (parseFloat(item.item_extra_total) || 0);
+  };
+
   const items = (cartItems || []).map(item => ({
     name:      item.name || 'Article',
     quantity:  item.quantity || 1,
-    unitPrice: (parseFloat(item.convert_price) || 0)
-               + (parseFloat(item.item_variation_total) || 0)
-               + (parseFloat(item.item_extra_total) || 0),
+    unitPrice: prixLigneFacture(item),
     // [BORNE-TICKET-COMPO 2026-06-28] Compo COMPLÈTE depuis les champs structurés
     // (sauce + crudités + viandes + suppléments + formule), fallback sur l'ancienne
     // instruction si l'item n'a pas de compo structurée (produit simple, snapshot F5).

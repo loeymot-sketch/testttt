@@ -31,6 +31,7 @@ class PosReceiptFiscalExposureTest extends TestCase
         $order = Order::factory()->create([
             'branch_id' => $branch->id,
             'user_id' => $user->id,
+            'creator_id' => $user->id, // [E2E 2026-10-23] le caissier = creator_id, pas le client
             'order_type' => OrderType::POS,
             'pos_payment_method' => PosPaymentMethod::CASH,
             'pos_received_amount' => 50.00,

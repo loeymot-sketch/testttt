@@ -65,6 +65,7 @@
         "otp": "ওটিপি",
         "theme": "থিম",
         "time_slots": "টাইম স্লট",
+        "horaires": "খোলার সময়",
         "app": "অ্যাপ",
         "cookies": "কুকিজ",
         "social_media": "সোশ্যাল মিডিয়া",
@@ -127,7 +128,8 @@
         "ingredients": "উপকরণ",
         "advanced_tools": "উন্নত টুল",
         "demo_wizard_advanced": "উন্নত উইজার্ড ডেমো",
-        "system_health": "System health"
+        "system_health": "System health",
+        "Assistant téléphone": "ফোন সহায়ক"
     },
     "label": {
         "pos_customer_name_placeholder": "Nom du client (optionnel)",
@@ -1455,6 +1457,7 @@
             "supplements_empty": "Aucun supplément disponible pour cet article",
             "supplements_step_title": "Quel supplément ?",
             "supplements_badge_paid": "Options payantes",
+            "supplement_recommended": "Recommandé",
             "supplement_default_desc": "Supplément",
             "instruction": {
                 "taille": "Taille : {label}",
@@ -1577,6 +1580,7 @@
                 "sauce": {
                     "title": "Quelle sauce ?",
                     "first_free": "1re sauce gratuite",
+                    "included_many": "{n} sauces offertes",
                     "extra_one": "+{n} sauce supplémentaire ({price})",
                     "extra_many": "+{n} sauces supplémentaires ({price})",
                     "hint": "Sélectionnez au moins une sauce",

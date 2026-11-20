@@ -1,0 +1,649 @@
+======================================================================
+G4 — PREUVE QUE CHAQUE BANC MORD (sortie ROUGE avant correctif)
+Date : 2026-09-03 01:57:48  HEAD : 23c2ef26c
+======================================================================
+
+### T4.1 — V-08 · tests/Feature/Observability/RestoreDrillAttesteFichierCourantTest.php
+### AVANT CORRECTIF — commande : php artisan test --filter="RestoreDrillAttesteFichierCourantTest"
+
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+   FAIL  Tests\Feature\Observability\RestoreDrillAttesteFichierCourantTest
+  ⨯ un drill vert sur un autre fichier ne peut pas afficher vert
+  ⨯ readiness degrade quand le drill porte sur un autre fichier
+  ⨯ le meme nom avec une autre empreinte ne passe pas pour une preuve
+  ⨯ un drill sans empreinte enregistree ne prouve pas le fichier
+  ✓ le drill du fichier courant reste vert
+
+  ---
+
+  • Tests\Feature\Observability\RestoreDrillAttesteFichierCourantTest > un drill vert sur un autre fichier ne peut pas afficher vert
+  le drill atteste un AUTRE fichier que daily-g4-courant-b.sql.gz : il ne peut pas rester vert
+  Failed asserting that two strings are not identical.
+
+  at tests/Feature/Observability/RestoreDrillAttesteFichierCourantTest.php:131
+    127▕         ]);
+    128▕ 
+    129▕         $r = $this->lireCockpit();
+    130▕ 
+  ➜ 131▕         $this->assertNotSame(
+    132▕             'green',
+    133▕             $r['sauvegarde']['restauration']['status'],
+    134▕             "le drill atteste un AUTRE fichier que {$nomCourant} : il ne peut pas rester vert"
+    135▕         );
+
+  • Tests\Feature\Observability\RestoreDrillAttesteFichierCourantTest > readiness degrade quand le drill porte sur un autre fichier
+  /health/ready doit dégrader comme le cockpit : une seule vérité par fait
+  Failed asserting that two strings are identical.
+
+  at tests/Feature/Observability/RestoreDrillAttesteFichierCourantTest.php:166
+    162▕         ]);
+    163▕ 
+    164▕         $r = $this->getJson('/api/health/ready')->json();
+    165▕ 
+  ➜ 166▕         $this->assertSame(
+    167▕             'degraded',
+    168▕             $r['subsystems']['restore_drill']['status'],
+    169▕             '/health/ready doit dégrader comme le cockpit : une seule vérité par fait'
+    170▕         );
+  --- Expected
+  +++ Actual
+  @@ @@
+  -'degraded'
+  +'ok'
+  • Tests\Feature\Observability\RestoreDrillAttesteFichierCourantTest > le meme nom avec une autre empreinte ne passe pas pour une preuve
+  même nom mais empreinte différente : le fichier a été réécrit depuis le drill
+  Failed asserting that two strings are not identical.
+
+  at tests/Feature/Observability/RestoreDrillAttesteFichierCourantTest.php:192
+    188▕         ]);
+    189▕ 
+    190▕         $r = $this->lireCockpit();
+    191▕ 
+  ➜ 192▕         $this->assertNotSame(
+    193▕             'green',
+    194▕             $r['sauvegarde']['restauration']['status'],
+    195▕             'même nom mais empreinte différente : le fichier a été réécrit depuis le drill'
+    196▕         );
+
+  • Tests\Feature\Observability\RestoreDrillAttesteFichierCourantTest > un drill sans empreinte enregistree ne prouve pas le fichier
+  Failed asserting that two strings are not identical.
+
+  at tests/Feature/Observability/RestoreDrillAttesteFichierCourantTest.php:221
+    217▕         ]);
+    218▕ 
+    219▕         $r = $this->lireCockpit();
+    220▕ 
+  ➜ 221▕         $this->assertNotSame('green', $r['sauvegarde']['restauration']['status']);
+    222▕     }
+    223▕ 
+    224▕     /**
+    225▕      * Le garde-fou du correctif : quand le drill atteste RÉELLEMENT le fichier courant,
+
+
+  Tests:  4 failed, 1 passed
+  Time:   1.49s
+
+
+
+
+### T4.2 — V-09 · tests/Feature/Backup/RestoreDrillPersisteTousLesEchecsTest.php
+### AVANT CORRECTIF — commande : php artisan test --filter="RestoreDrillPersisteTousLesEchecsTest"
+
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+   FAIL  Tests\Feature\Backup\RestoreDrillPersisteTousLesEchecsTest
+  ⨯ ligne 108 pilote non mysql persiste un echec
+  ⨯ ligne 116 nom de base vive absent persiste un echec
+  ⨯ ligne 126 refus base jetable egale base vive persiste un echec
+  ⨯ ligne 149 fichier illisible persiste un echec
+  ⨯ ligne 181 base vive injoignable persiste un echec
+  ⨯ ligne 207 base jetable non creee persiste un echec
+  ✓ le vert legitime survit a l absence d execution
+
+  ---
+
+  • Tests\Feature\Backup\RestoreDrillPersisteTousLesEchecsTest > ligne 108 pilote non mysql persiste un echec
+  sortie « pilote non mysql (108) » : l'échec doit effacer le vert de la veille, pas le laisser en place
+  Failed asserting that two strings are identical.
+
+  at tests/Feature/Backup/RestoreDrillPersisteTousLesEchecsTest.php:75
+     71▕     private function assertVerdictRouge(string $chemin): void
+     72▕     {
+     73▕         $etat = RestoreDrillResult::current();
+     74▕ 
+  ➜  75▕         $this->assertSame(
+     76▕             'failed',
+     77▕             $etat['status'],
+     78▕             "sortie « {$chemin} » : l'échec doit effacer le vert de la veille, pas le laisser en place"
+     79▕         );
+
+  1   tests/Feature/Backup/RestoreDrillPersisteTousLesEchecsTest.php:109
+      Tests\Feature\Backup\RestoreDrillPersisteTousLesEchecsTest::assertVerdictRouge("pilote non mysql (108)")
+  --- Expected
+  +++ Actual
+  @@ @@
+  -'failed'
+  +'green'
+  • Tests\Feature\Backup\RestoreDrillPersisteTousLesEchecsTest > ligne 116 nom de base vive absent persiste un echec
+  sortie « nom de base vive absent (116) » : l'échec doit effacer le vert de la veille, pas le laisser en place
+  Failed asserting that two strings are identical.
+
+  at tests/Feature/Backup/RestoreDrillPersisteTousLesEchecsTest.php:75
+     71▕     private function assertVerdictRouge(string $chemin): void
+     72▕     {
+     73▕         $etat = RestoreDrillResult::current();
+     74▕ 
+  ➜  75▕         $this->assertSame(
+     76▕             'failed',
+     77▕             $etat['status'],
+     78▕             "sortie « {$chemin} » : l'échec doit effacer le vert de la veille, pas le laisser en place"
+     79▕         );
+
+  1   tests/Feature/Backup/RestoreDrillPersisteTousLesEchecsTest.php:124
+      Tests\Feature\Backup\RestoreDrillPersisteTousLesEchecsTest::assertVerdictRouge("nom de base vive absent (116)")
+  --- Expected
+  +++ Actual
+  @@ @@
+  -'failed'
+  +'green'
+  • Tests\Feature\Backup\RestoreDrillPersisteTousLesEchecsTest > ligne 126 refus base jetable egale base vive persiste un echec
+  sortie « base jetable == base vive (126) » : l'échec doit effacer le vert de la veille, pas le laisser en place
+  Failed asserting that two strings are identical.
+
+  at tests/Feature/Backup/RestoreDrillPersisteTousLesEchecsTest.php:75
+     71▕     private function assertVerdictRouge(string $chemin): void
+     72▕     {
+     73▕         $etat = RestoreDrillResult::current();
+     74▕ 
+  ➜  75▕         $this->assertSame(
+     76▕             'failed',
+     77▕             $etat['status'],
+     78▕             "sortie « {$chemin} » : l'échec doit effacer le vert de la veille, pas le laisser en place"
+     79▕         );
+
+  1   tests/Feature/Backup/RestoreDrillPersisteTousLesEchecsTest.php:139
+      Tests\Feature\Backup\RestoreDrillPersisteTousLesEchecsTest::assertVerdictRouge("base jetable == base vive (126)")
+  --- Expected
+  +++ Actual
+  @@ @@
+  -'failed'
+  +'green'
+  • Tests\Feature\Backup\RestoreDrillPersisteTousLesEchecsTest > ligne 149 fichier illisible persiste un echec
+  sortie « fichier illisible (149) » : l'échec doit effacer le vert de la veille, pas le laisser en place
+  Failed asserting that two strings are identical.
+
+  at tests/Feature/Backup/RestoreDrillPersisteTousLesEchecsTest.php:75
+     71▕     private function assertVerdictRouge(string $chemin): void
+     72▕     {
+     73▕         $etat = RestoreDrillResult::current();
+     74▕ 
+  ➜  75▕         $this->assertSame(
+     76▕             'failed',
+     77▕             $etat['status'],
+     78▕             "sortie « {$chemin} » : l'échec doit effacer le vert de la veille, pas le laisser en place"
+     79▕         );
+
+  1   tests/Feature/Backup/RestoreDrillPersisteTousLesEchecsTest.php:156
+      Tests\Feature\Backup\RestoreDrillPersisteTousLesEchecsTest::assertVerdictRouge("fichier illisible (149)")
+  --- Expected
+  +++ Actual
+  @@ @@
+  -'failed'
+  +'green'
+  • Tests\Feature\Backup\RestoreDrillPersisteTousLesEchecsTest > ligne 181 base vive injoignable persiste un echec
+  sortie « base vive injoignable (181) » : l'échec doit effacer le vert de la veille, pas le laisser en place
+  Failed asserting that two strings are identical.
+
+  at tests/Feature/Backup/RestoreDrillPersisteTousLesEchecsTest.php:75
+     71▕     private function assertVerdictRouge(string $chemin): void
+     72▕     {
+     73▕         $etat = RestoreDrillResult::current();
+     74▕ 
+  ➜  75▕         $this->assertSame(
+     76▕             'failed',
+     77▕             $etat['status'],
+     78▕             "sortie « {$chemin} » : l'échec doit effacer le vert de la veille, pas le laisser en place"
+     79▕         );
+
+  1   tests/Feature/Backup/RestoreDrillPersisteTousLesEchecsTest.php:177
+      Tests\Feature\Backup\RestoreDrillPersisteTousLesEchecsTest::assertVerdictRouge("base vive injoignable (181)")
+  --- Expected
+  +++ Actual
+  @@ @@
+  -'failed'
+  +'green'
+  • Tests\Feature\Backup\RestoreDrillPersisteTousLesEchecsTest > ligne 207 base jetable non creee persiste un echec
+  sortie « base jetable non créée (207) » : l'échec doit effacer le vert de la veille, pas le laisser en place
+  Failed asserting that two strings are identical.
+
+  at tests/Feature/Backup/RestoreDrillPersisteTousLesEchecsTest.php:75
+     71▕     private function assertVerdictRouge(string $chemin): void
+     72▕     {
+     73▕         $etat = RestoreDrillResult::current();
+     74▕ 
+  ➜  75▕         $this->assertSame(
+     76▕             'failed',
+     77▕             $etat['status'],
+     78▕             "sortie « {$chemin} » : l'échec doit effacer le vert de la veille, pas le laisser en place"
+     79▕         );
+
+  1   tests/Feature/Backup/RestoreDrillPersisteTousLesEchecsTest.php:205
+      Tests\Feature\Backup\RestoreDrillPersisteTousLesEchecsTest::assertVerdictRouge("base jetable non créée (207)")
+  --- Expected
+  +++ Actual
+  @@ @@
+  -'failed'
+  +'green'
+
+  Tests:  6 failed, 1 passed
+  Time:   0.38s
+
+
+
+--- Preuve que le cas 207 emprunte BIEN la sortie ligne 207 (instrumentation temporaire,
+--- retirée aussitôt) : la sortie de la commande, capturée pendant le run rouge.
+
+=== SORTIE 207 ===
+[verify-restore] file=g4-drill-IjaFyR.sql.gz (0.0 h old, 15 bytes) scratch=foodking_factice_restore_scratch live=foodking_factice
+  live counts: orders=5 audit_logs=5 z_reports=5
+[mysql] ERROR 2003 (HY000): Can't connect to MySQL server on '127.0.0.1:1' (61)
+Failed to (re)create scratch database.     <-- message de la ligne 205, return ligne 207
+[mysql] ERROR 2003 (HY000): Can't connect to MySQL server on '127.0.0.1:1' (61)
+=== FIN ===
+
+
+### T4.3 — V-12 · tests/Feature/Observability/SystemHealthRestoreDrillTest.php (cas ajoutés)
+### AVANT CORRECTIF (MAX_AGE_HOURS = 48) — commande :
+###   php artisan test --filter="test_les_bornes_d_age_du_drill_suivent_le_seuil_de_readiness|test_le_seuil_du_drill_est_celui_du_contrat_de_readiness"
+
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+   FAIL  Tests\Feature\Observability\SystemHealthRestoreDrillTest
+  ✓ les bornes d age du drill suivent le seuil de readiness with data set "25 h 59 — sous le seuil"
+  ✓ les bornes d age du drill suivent le seuil de readiness with data set "26 h 00 — sur le seuil"
+  ⨯ les bornes d age du drill suivent le seuil de readiness with data set "26 h 01 — au-dessus"
+  ⨯ les bornes d age du drill suivent le seuil de readiness with data set "27 h 00 — au-dessus"
+  ⨯ les bornes d age du drill suivent le seuil de readiness with data set "48 h 00 — ancien seuil"
+  ⨯ le seuil du drill est celui du contrat de readiness
+
+  ---
+
+  • Tests\Feature\Observability\SystemHealthRestoreDrillTest > les bornes d age du drill suivent le seuil de readiness with data set "26 h 01 — au-dessus"
+  au-delà de 26 h, readiness dégrade déjà : la même mesure doit le dire
+  Failed asserting that two strings are identical.
+
+  at tests/Feature/Observability/SystemHealthRestoreDrillTest.php:166
+    162▕             'duration_s' => 30.0,
+    163▕             'reasons' => [],
+    164▕         ]);
+    165▕ 
+  ➜ 166▕         $this->assertSame($attendu, RestoreDrillResult::current()['status'], $pourquoi);
+    167▕     }
+    168▕ 
+    169▕     /** @return array<string, array{0:int, 1:string, 2:string}> */
+    170▕     public static function bornesDAgeDuDrill(): array
+  --- Expected
+  +++ Actual
+  @@ @@
+  -'stale'
+  +'green'
+  • Tests\Feature\Observability\SystemHealthRestoreDrillTest > les bornes d age du drill suivent le seuil de readiness with data set "27 h 00 — au-dessus"
+  le cas nommé par le GOAL : 27 h ne peut plus être vert
+  Failed asserting that two strings are identical.
+
+  at tests/Feature/Observability/SystemHealthRestoreDrillTest.php:166
+    162▕             'duration_s' => 30.0,
+    163▕             'reasons' => [],
+    164▕         ]);
+    165▕ 
+  ➜ 166▕         $this->assertSame($attendu, RestoreDrillResult::current()['status'], $pourquoi);
+    167▕     }
+    168▕ 
+    169▕     /** @return array<string, array{0:int, 1:string, 2:string}> */
+    170▕     public static function bornesDAgeDuDrill(): array
+  --- Expected
+  +++ Actual
+  @@ @@
+  -'stale'
+  +'green'
+  • Tests\Feature\Observability\SystemHealthRestoreDrillTest > les bornes d age du drill suivent le seuil de readiness with data set "48 h 00 — ancien seuil"
+  48 h était l'ancien seuil : il ne doit plus rien autoriser
+  Failed asserting that two strings are identical.
+
+  at tests/Feature/Observability/SystemHealthRestoreDrillTest.php:166
+    162▕             'duration_s' => 30.0,
+    163▕             'reasons' => [],
+    164▕         ]);
+    165▕ 
+  ➜ 166▕         $this->assertSame($attendu, RestoreDrillResult::current()['status'], $pourquoi);
+    167▕     }
+    168▕ 
+    169▕     /** @return array<string, array{0:int, 1:string, 2:string}> */
+    170▕     public static function bornesDAgeDuDrill(): array
+  --- Expected
+  +++ Actual
+  @@ @@
+  -'stale'
+  +'green'
+  • Tests\Feature\Observability\SystemHealthRestoreDrillTest > le seuil du drill est celui du contrat de readiness
+  Failed asserting that 48 is identical to 26.
+
+  at tests/Feature/Observability/SystemHealthRestoreDrillTest.php:187
+    183▕      * toute tentative de le rouvrir sans rouvrir aussi le contrat de readiness.
+    184▕      */
+    185▕     public function test_le_seuil_du_drill_est_celui_du_contrat_de_readiness(): void
+    186▕     {
+  ➜ 187▕         $this->assertSame(26, RestoreDrillResult::MAX_AGE_HOURS);
+    188▕ 
+    189▕         $r = $this->getJson('/api/health/ready')->json();
+    190▕         $this->assertSame(26, RestoreDrillResult::current()['max_age_hours']);
+    191▕         $this->assertArrayHasKey('backup_age', $r['subsystems']);
+
+
+  Tests:  4 failed, 2 passed
+  Time:   1.64s
+
+
+
+
+### T4.4 (moitié serveur) — N-01 · tests/Feature/Observability/CockpitEtReadinessMemeAgeSauvegardeTest.php
+### AVANT CORRECTIF — commande : php artisan test --filter="CockpitEtReadinessMemeAgeSauvegardeTest"
+
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+   FAIL  Tests\Feature\Observability\CockpitEtReadinessMemeAgeSauvegardeTest
+  ⨯ les deux surfaces rendent le meme verdict au dessus du seuil with data set "26 h 01"
+  ⨯ les deux surfaces rendent le meme verdict au dessus du seuil with data set "26 h 15"
+  ⨯ les deux surfaces rendent le meme verdict au dessus du seuil with data set "26 h 29"
+  ⨯ les deux surfaces rendent le meme verdict sous le seuil
+  ⨯ l age publie n est pas arrondi a l heure
+
+  ---
+
+  • Tests\Feature\Observability\CockpitEtReadinessMemeAgeSauvegardeTest > les deux surfaces rendent le meme verdict au dessus du seuil with data set "26 h 01"
+  la valeur publiée ne doit permettre aucune lecture « dans les clous » : l'écran appliquait exactement cette comparaison et concluait au vert
+  Failed asserting that true is false.
+
+  at tests/Feature/Observability/CockpitEtReadinessMemeAgeSauvegardeTest.php:117
+    113▕         $this->assertFalse(
+    114▕             (bool) ($c['sauvegarde']['fraiche'] ?? false),
+    115▕             'le cockpit doit PUBLIER son verdict de fraîcheur, et il doit être le même que celui de readiness'
+    116▕         );
+  ➜ 117▕         $this->assertFalse(
+    118▕             $c['sauvegarde']['age_heures'] <= $c['sauvegarde']['attendu_max_h'],
+    119▕             "la valeur publiée ne doit permettre aucune lecture « dans les clous » : "
+    120▕             ."l'écran appliquait exactement cette comparaison et concluait au vert"
+    121▕         );
+
+  • Tests\Feature\Observability\CockpitEtReadinessMemeAgeSauvegardeTest > les deux surfaces rendent le meme verdict au dessus du seuil with data set "26 h 15"
+  la valeur publiée ne doit permettre aucune lecture « dans les clous » : l'écran appliquait exactement cette comparaison et concluait au vert
+  Failed asserting that true is false.
+
+  at tests/Feature/Observability/CockpitEtReadinessMemeAgeSauvegardeTest.php:117
+    113▕         $this->assertFalse(
+    114▕             (bool) ($c['sauvegarde']['fraiche'] ?? false),
+    115▕             'le cockpit doit PUBLIER son verdict de fraîcheur, et il doit être le même que celui de readiness'
+    116▕         );
+  ➜ 117▕         $this->assertFalse(
+    118▕             $c['sauvegarde']['age_heures'] <= $c['sauvegarde']['attendu_max_h'],
+    119▕             "la valeur publiée ne doit permettre aucune lecture « dans les clous » : "
+    120▕             ."l'écran appliquait exactement cette comparaison et concluait au vert"
+    121▕         );
+
+  • Tests\Feature\Observability\CockpitEtReadinessMemeAgeSauvegardeTest > les deux surfaces rendent le meme verdict au dessus du seuil with data set "26 h 29"
+  la valeur publiée ne doit permettre aucune lecture « dans les clous » : l'écran appliquait exactement cette comparaison et concluait au vert
+  Failed asserting that true is false.
+
+  at tests/Feature/Observability/CockpitEtReadinessMemeAgeSauvegardeTest.php:117
+    113▕         $this->assertFalse(
+    114▕             (bool) ($c['sauvegarde']['fraiche'] ?? false),
+    115▕             'le cockpit doit PUBLIER son verdict de fraîcheur, et il doit être le même que celui de readiness'
+    116▕         );
+  ➜ 117▕         $this->assertFalse(
+    118▕             $c['sauvegarde']['age_heures'] <= $c['sauvegarde']['attendu_max_h'],
+    119▕             "la valeur publiée ne doit permettre aucune lecture « dans les clous » : "
+    120▕             ."l'écran appliquait exactement cette comparaison et concluait au vert"
+    121▕         );
+
+  • Tests\Feature\Observability\CockpitEtReadinessMemeAgeSauvegardeTest > les deux surfaces rendent le meme verdict sous le seuil
+  25 h 30 est sous le seuil : le cockpit doit le dire aussi
+  Failed asserting that false is true.
+
+  at tests/Feature/Observability/CockpitEtReadinessMemeAgeSauvegardeTest.php:151
+    147▕         $this->assertSame('ok', $readiness['subsystems']['backup_age']['status']);
+    148▕ 
+    149▕         $c = $this->cockpit();
+    150▕ 
+  ➜ 151▕         $this->assertTrue(
+    152▕             (bool) ($c['sauvegarde']['fraiche'] ?? false),
+    153▕             '25 h 30 est sous le seuil : le cockpit doit le dire aussi'
+    154▕         );
+    155▕         $this->assertTrue($c['sauvegarde']['age_heures'] <= $c['sauvegarde']['attendu_max_h']);
+
+  • Tests\Feature\Observability\CockpitEtReadinessMemeAgeSauvegardeTest > l age publie n est pas arrondi a l heure
+  26 h 20 doit se publier comme strictement supérieur à 26 — l'arrondi le rendait égal
+  Failed asserting that 26.0 is greater than 26.0.
+
+  at tests/Feature/Observability/CockpitEtReadinessMemeAgeSauvegardeTest.php:171
+    167▕         $this->sauvegardeAgeeDe(26 * 60 + 20);
+    168▕ 
+    169▕         $age = $this->cockpit()['sauvegarde']['age_heures'];
+    170▕ 
+  ➜ 171▕         $this->assertGreaterThan(
+    172▕             26.0,
+    173▕             (float) $age,
+    174▕             "26 h 20 doit se publier comme strictement supérieur à 26 — l'arrondi le rendait égal"
+    175▕         );
+
+
+  Tests:  5 failed
+  Time:   1.58s
+
+
+
+
+### T4.4 (moitié écran) — N-01 · tests/js/systemHealthAgeSauvegardeNonArrondi.spec.js
+### AVANT CORRECTIF — commande :
+###   export PATH="$HOME/.nvm/versions/node/v22.23.2/bin:$PATH"
+###   npx vitest run tests/js/systemHealthAgeSauvegardeNonArrondi.spec.js
+
+
+ RUN  v1.6.1 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt
+
+ ❯ tests/js/systemHealthAgeSauvegardeNonArrondi.spec.js  (5 tests | 3 failed) 53ms
+   ❯ tests/js/systemHealthAgeSauvegardeNonArrondi.spec.js > Cockpit — l'âge de sauvegarde n'est plus arrondi en faveur du vert > 26 h 20 publié comme « 26 » (ancienne forme, arrondie) ne doit pas faire une carte verte
+     → expected '<div class="rounded-lg border border-…' to contain 'text-red-700'
+   ❯ tests/js/systemHealthAgeSauvegardeNonArrondi.spec.js > Cockpit — l'âge de sauvegarde n'est plus arrondi en faveur du vert > l'âge décimal reste lisible : la carte affiche « il y a 26 h », pas « il y a 26.33 h »
+     → expected 'Dernière sauvegardeil y a 26.33 hdail…' to contain 'il y a 26 h'
+   ❯ tests/js/systemHealthAgeSauvegardeNonArrondi.spec.js > Cockpit — l'âge de sauvegarde n'est plus arrondi en faveur du vert > un verdict de fraîcheur absent n'est pas un verdict favorable
+     → expected '<div class="rounded-lg border border-…' to contain 'text-red-700'
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/js/systemHealthAgeSauvegardeNonArrondi.spec.js > Cockpit — l'âge de sauvegarde n'est plus arrondi en faveur du vert > 26 h 20 publié comme « 26 » (ancienne forme, arrondie) ne doit pas faire une carte verte
+AssertionError: expected '<div class="rounded-lg border border-…' to contain 'text-red-700'
+
+- Expected
++ Received
+
+- text-red-700
++ <div class="rounded-lg border border-slate-200 bg-white p-4" data-testid="system-health-sauvegarde">
++   <p class="text-xs uppercase tracking-wide text-slate-500">Dernière sauvegarde</p>
++   <p class="mt-1 text-lg font-semibold text-emerald-700">il y a 26 h</p>
++   <p class="mt-1 truncate text-xs text-slate-500">daily-2026-09-02.sql.gz</p>
++   <p class="mt-2 text-xs font-medium text-emerald-700" data-testid="system-health-restauration">Restauration de vérification réussie il y a 3 h (43 s)</p>
++   <p class="mt-2 text-xs text-slate-500"> Vert seulement si un fichier <code>.sql.gz</code> a moins de 26 h <em>et</em> si la restauration de vérification de 5 h a réellement remonté cette sauvegarde. Un fichier récent qu'on n'a jamais réussi à restaurer ne protège de rien. </p>
++ </div>
+
+ ❯ tests/js/systemHealthAgeSauvegardeNonArrondi.spec.js:85:22
+     83| 
+     84|         const html = carte(w).html();
+     85|         expect(html).toContain('text-red-700');
+       |                      ^
+     86|         expect(html).not.toContain('text-emerald-700');
+     87|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  tests/js/systemHealthAgeSauvegardeNonArrondi.spec.js > Cockpit — l'âge de sauvegarde n'est plus arrondi en faveur du vert > l'âge décimal reste lisible : la carte affiche « il y a 26 h », pas « il y a 26.33 h »
+AssertionError: expected 'Dernière sauvegardeil y a 26.33 hdail…' to contain 'il y a 26 h'
+
+- Expected
++ Received
+
+- il y a 26 h
++ Dernière sauvegardeil y a 26.33 hdaily-2026-09-02.sql.gzRestauration de vérification réussie il y a 3 h (43 s) Vert seulement si un fichier .sql.gz a moins de 26 h et si la restauration de vérification de 5 h a réellement remonté cette sauvegarde. Un fichier récent qu'on n'a jamais réussi à restaurer ne protège de rien.
+
+ ❯ tests/js/systemHealthAgeSauvegardeNonArrondi.spec.js:111:23
+    109| 
+    110|         const texte = carte(w).text();
+    111|         expect(texte).toContain('il y a 26 h');
+       |                       ^
+    112|         expect(texte).not.toContain('26.33');
+    113|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  tests/js/systemHealthAgeSauvegardeNonArrondi.spec.js > Cockpit — l'âge de sauvegarde n'est plus arrondi en faveur du vert > un verdict de fraîcheur absent n'est pas un verdict favorable
+AssertionError: expected '<div class="rounded-lg border border-…' to contain 'text-red-700'
+
+- Expected
++ Received
+
+- text-red-700
++ <div class="rounded-lg border border-slate-200 bg-white p-4" data-testid="system-health-sauvegarde">
++   <p class="text-xs uppercase tracking-wide text-slate-500">Dernière sauvegarde</p>
++   <p class="mt-1 text-lg font-semibold text-emerald-700">il y a 2 h</p>
++   <p class="mt-1 truncate text-xs text-slate-500">daily-2026-09-02.sql.gz</p>
++   <p class="mt-2 text-xs font-medium text-emerald-700" data-testid="system-health-restauration">Restauration de vérification réussie il y a 3 h (43 s)</p>
++   <p class="mt-2 text-xs text-slate-500"> Vert seulement si un fichier <code>.sql.gz</code> a moins de 26 h <em>et</em> si la restauration de vérification de 5 h a réellement remonté cette sauvegarde. Un fichier récent qu'on n'a jamais réussi à restaurer ne protège de rien. </p>
++ </div>
+
+ ❯ tests/js/systemHealthAgeSauvegardeNonArrondi.spec.js:139:33
+    137|         });
+    138| 
+    139|         expect(carte(w).html()).toContain('text-red-700');
+       |                                 ^
+    140|     });
+    141| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 2 passed (5)
+   Start at  02:02:06
+   Duration  719ms (transform 78ms, setup 8ms, collect 139ms, tests 53ms, environment 236ms, prepare 54ms)
+
+
+
+### T4.4 (moitié écran) — RE-PREUVE après resserrement des assertions
+### La 1re version du banc visait la carte ENTIÈRE, qui porte DEUX lignes colorées
+### (âge + restauration) : elle aurait pu passer sur la mauvaise ligne. Assertions
+### resserrées sur la ligne d'âge, puis DÉFAUT REMIS dans le composant (sauvegardeOk
+### recalculant `age_heures <= attendu_max_h`, sauvegardeTexte sans arrondi d'affichage)
+### pour vérifier que le banc mord toujours :
+
+ ❯ tests/js/systemHealthAgeSauvegardeNonArrondi.spec.js  (5 tests | 3 failed) 52ms
+   ❯ ... > 26 h 20 publié comme « 26 » (ancienne forme, arrondie) ne doit pas faire une carte verte
+     → expected 'text-emerald-700' to be 'text-red-700' // Object.is equality
+   ❯ ... > l'âge décimal reste lisible : la carte affiche « il y a 26 h », pas « il y a 26.33 h »
+     → expected 'Dernière sauvegardeil y a 26.33 hdail…' to contain 'il y a 26 h'
+   ❯ ... > un verdict de fraîcheur absent n'est pas un verdict favorable
+     → expected 'text-emerald-700' to be 'text-red-700' // Object.is equality
+
+### Correctif remis en place aussitôt.
+
+======================================================================
+APRÈS CORRECTIFS — TOUS LES BANCS AU VERT
+Date : 2026-09-03 02:12:27
+======================================================================
+
+### Bancs du GOAL (PHPUnit)
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+   PASS  Tests\Feature\Backup\RestoreDrillPersisteTousLesEchecsTest
+  ✓ ligne 108 pilote non mysql persiste un echec
+  ✓ ligne 116 nom de base vive absent persiste un echec
+  ✓ ligne 126 refus base jetable egale base vive persiste un echec
+  ✓ ligne 149 fichier illisible persiste un echec
+  ✓ ligne 181 base vive injoignable persiste un echec
+  ✓ ligne 207 base jetable non creee persiste un echec
+  ✓ le vert legitime survit a l absence d execution
+
+   PASS  Tests\Feature\Observability\CockpitEtReadinessMemeAgeSauvegardeTest
+  ✓ les deux surfaces rendent le meme verdict au dessus du seuil with data set "26 h 01"
+  ✓ les deux surfaces rendent le meme verdict au dessus du seuil with data set "26 h 15"
+  ✓ les deux surfaces rendent le meme verdict au dessus du seuil with data set "26 h 29"
+  ✓ les deux surfaces rendent le meme verdict sous le seuil
+  ✓ l age publie n est pas arrondi a l heure
+
+   PASS  Tests\Feature\Observability\RestoreDrillAttesteFichierCourantTest
+  ✓ un drill vert sur un autre fichier ne peut pas afficher vert
+  ✓ readiness degrade quand le drill porte sur un autre fichier
+  ✓ le meme nom avec une autre empreinte ne passe pas pour une preuve
+  ✓ un drill sans empreinte enregistree ne prouve pas le fichier
+  ✓ le drill du fichier courant reste vert
+
+  Tests:  17 passed
+  Time:   3.09s
+
+
+
+### Non-régression (PHPUnit) : SystemHealthRestoreDrillTest · SystemHealthTest · BackupVerifyRestoreLogicTest
+  ✓ queue driver failure surfaces null instead of false zero
+  ✓ fiscal cache read failure uses live probe
+  ✓ fiscal cache write failure preserves live probe result
+
+  Tests:  61 passed
+  Time:   12.20s
+
+
+
+### Non-régression élargie (surfaces santé adjacentes)
+  ✓ queue driver failure surfaces null instead of false zero
+  ✓ fiscal cache read failure uses live probe
+  ✓ fiscal cache write failure preserves live probe result
+
+  Tests:  71 passed
+  Time:   13.80s
+
+
+
+### Bancs du GOAL + non-régression (Vitest, Node 22)
+
+ RUN  v1.6.1 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt
+
+ ✓ tests/js/posSystemHealthPill.spec.js  (16 tests) 45ms
+ ✓ tests/js/systemHealthSauvegardeRestauration.spec.js  (6 tests) 51ms
+ ✓ tests/js/systemHealthAgeSauvegardeNonArrondi.spec.js  (5 tests) 35ms
+
+ Test Files  3 passed (3)
+      Tests  27 passed (27)
+   Start at  02:13:07
+   Duration  1.40s (transform 199ms, setup 11ms, collect 406ms, tests 131ms, environment 427ms, prepare 159ms)
+
+
+### RONDE 2 (condition de sortie : deux rondes identiques)
+php artisan test --filter="<les 14 classes ci-dessus>"  ->  Tests: 130 passed
+npx vitest run <les 3 specs ci-dessus>                  ->  Tests:  27 passed
+
+---------------------------------------------------------------------------
+[SUPERVISEUR · suite de T4.1] TroisSurfacesDesignentLaMemeSauvegardeTest
+Avant correctif, php artisan test --filter=TroisSurfacesDesignentLaMemeSauvegardeTest :
+
+  Tests: 2 failed, 1 skipped
+
+  • un dump manuel plus recent ne detourne pas la designation
+    -'.../db-daily/daily-9999-01-02.sql.gz'
+    +'.../db-daily/pre-migration-9999-01-03.sql.gz'
+
+  • la commande et la surface choisissent le meme fichier
+    La surface de santé doit afficher exactement le fichier que la commande restaure.
+    -'.../db-daily/daily-9999-01-02.sql.gz'
+    +'.../db-daily/pre-migration-9999-01-03.sql.gz'
+
+Le banc mord : la surface de santé et la commande de vérification désignaient
+deux fichiers différents, ce qui rendait le rapprochement de T4.1 structurellement
+impossible dès qu'un dump manuel était plus récent que la dernière quotidienne.
+---------------------------------------------------------------------------

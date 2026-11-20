@@ -39,7 +39,7 @@ describe('KioskPaymentComponent.buildPaymentNavTarget — orderId vers cash-inst
             orderId: 5312, queueNum: 'A0007', total: 12.4, isOfflineId: false,
         });
         expect(nav.name).toBe('kiosk.cash-instruction');
-        expect(nav.query).toEqual({ number: 'A0007', total: 12.4, timeout: 45, orderId: '5312' });
+        expect(nav.query).toEqual({ number: 'A0007', total: 12.4, timeout: 5, orderId: '5312' });
     });
 
     it('CASH offline (offline_…) : PAS d\'orderId (commande inexistante côté serveur → fallback legacy)', () => {

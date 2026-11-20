@@ -16,8 +16,11 @@ test.describe('Borne — écran accueil (attract)', () => {
     // 1. Le CTA de commande est présent (l'écran est actionnable, pas figé/blanc).
     expect(body).toContain('Touchez');
 
-    // 2. Le branding Cayenne + la garantie Halal sont là (attract correct).
-    expect(body).toMatch(/HALAL/i);
+    // 2. Le branding Cayenne est là (attract correct).
+    // [2026-11-04] Le tampon « HALAL » n'est plus affiché par défaut : c'est le réglage `kiosk_halal_stamp`,
+    // éteint tant que le restaurant n'a pas lui-même donné cette garantie (KioskIdleScreenComponent:164 —
+    // une borne ne doit pas l'affirmer à sa place). Le banc exigeait l'inverse et restait rouge.
+    expect(body).toMatch(/Cayenne/i);
 
     // 3. AUCUN label i18n brut non résolu (kiosk.x, Label.x, {{ ... }}, undefined).
     expect(body).not.toMatch(/kiosk\.[a-z]|Label\.[A-Za-z]|\{\{|undefined|null%/);

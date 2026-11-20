@@ -1,18 +1,17 @@
-// Standalone canon verifier for mobile/web data/menu.js.
+// Standalone canon verifier for mobile/data/menu.js (optional explicit web mirror).
 // Stubs `window` + `console.warn`, loads the IIFE, asserts the Le Cayenne canon
 // (SSOT = database/seeders/OwnerMenuUpdate20260623Seeder.php). Pure Node, no deps.
 //
 // Run:  node mobile/tests/menu.spec.js
 //   (optionally pass [mobilePath] [webPath] to override the defaults below)
-// Exit 0 = all canon checks pass on BOTH the mobile file and its web mirror.
+// Exit 0 = all canon checks pass. No external mirror is required by default.
 'use strict';
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
 
-// Default targets: mobile file (next to this test) + web standalone mirror.
+// Default target: the mobile catalog next to this test.
 const DEFAULT_MOBILE = path.resolve(__dirname, '../data/menu.js');
-const DEFAULT_WEB = '/Users/1millnonstop/Downloads/web/data/menu.js';
 
 function loadMenu(file) {
   const code = fs.readFileSync(file, 'utf8');
@@ -71,10 +70,10 @@ function verify(label, file) {
   check(!!boursin && boursin.galette_excluded === true, 'Boursin galette_excluded (pas offert sur galettes)');
   const bouleG = M.supplements.find(s => s.id === 'sup-boule-gratinee');
   check(!!bouleG && bouleG.galette_only === true, 'Boule gratinée galette_only');
-  // 4 sandwichs = choix du pain ; 16 items = viande supplémentaire possible
+  // Canon owner 2026-08-24 adds Tacos XL: 17 items with extra meat.
   const sandwichs = items.filter(i => i.category_id === 1);
   check(sandwichs.length === 4 && sandwichs.every(s => s.has_pain_choice === true), '4 sandwichs has_pain_choice');
-  check(items.filter(i => i.has_extra_meat === true).length === 16, '16 items has_extra_meat (4 sandwichs + 2 galettes + 6 burgers + 2 tacos + 2 bols)');
+  check(items.filter(i => i.has_extra_meat === true).length === 17, '17 items has_extra_meat (4 sandwichs + 2 galettes + 6 burgers + 3 tacos + 2 bols)');
   // Tacos M/L : crudités restaurées (REVERT 05e5cacd0)
   check(byName('Tacos M') && byName('Tacos M').has_crudites === true, 'Tacos M has_crudites (revert crudités)');
   check(byName('Tacos L') && byName('Tacos L').has_crudites === true, 'Tacos L has_crudites (revert crudités)');
@@ -107,7 +106,9 @@ function verify(label, file) {
 
   // --- TACOS ---
   check(byName('Tacos M') && byName('Tacos M').price === 6.90, 'Tacos M 6,90€');
-  check(byName('Tacos L') && byName('Tacos L').price === 7.90, 'Tacos L 7,90€ (PAS 8,90)');
+  // EnsureTacosXl3ViandesCommand SOURCE_NEW_PRICE / TARGET_PRICE (owner 2026-08-24).
+  check(byName('Tacos L') && byName('Tacos L').price === 8.90, 'Tacos L 8,90€ (canon owner 2026-08-24)');
+  check(byName('Tacos XL') && byName('Tacos XL').price === 10.90 && byName('Tacos XL').viandes === 3, 'Tacos XL 10,90€, 3 viandes incluses');
 
   // --- SANDWICHS ---
   check(byName('Cayenne') && byName('Cayenne').price === 7.40, 'Cayenne 7,40€');
@@ -182,16 +183,15 @@ function verify(label, file) {
   check(typeof M.findItem === 'function' && !!M.findItem('tacos-m'), 'findItem(slug) ok');
   check(typeof M.priceForDrinkAddon === 'function' && M.priceForDrinkAddon('d-coca') === 1.90, 'priceForDrinkAddon coca = 1,90€');
 
-  // [GOAL-SYNC 2026-07-08] verrou volumétrie mirror : 38 items (42 canoniques − 6 SKU frites
-  // consolidés en 2 wizards frites_style, divergence structurelle acceptée CONTRACTS.md §5).
-  check(items.length === 38, '38 items mirror (got ' + items.length + ')');
+  // 38 historical mirror items + owner-approved Tacos XL (2026-08-24).
+  check(items.length === 39, '39 items mirror (got ' + items.length + ')');
   check(M.categories.length === 9, '9 catégories (got ' + M.categories.length + ')');
 
   console.log('  -> ' + items.length + ' produits, ' + M.categories.length + ' catégories');
 }
 
 verify('MOBILE', process.argv[2] || DEFAULT_MOBILE);
-verify('WEB', process.argv[3] || DEFAULT_WEB);
+if (process.argv[3]) verify('WEB (explicit)', process.argv[3]);
 
 console.log('\n================ RESULT ================');
 if (failures === 0) { console.log('ALL CHECKS PASSED (0 failures)'); process.exit(0); }

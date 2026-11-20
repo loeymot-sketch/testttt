@@ -1,0 +1,27 @@
+{
+ "round": 12,
+ "reviewer": "adversarial",
+ "closure": {
+  "R11-01": "CLOSED: D09b.png (390x844) shows 'Envoi en cours, ne quitte pas…' inside the sticky button on 2 lines, no overflow, price pill 8,30 € intact, Retour visible and disabled-looking; DOM data-testid=lcf-submit data-slow=1.",
+  "R11-02": "CLOSED in code: funnel.jsx:2452 disabled={submitting && !threeDs}; threeDs is set at :1424 so Retour is live during redirect; method chips (:2217) unchanged; error paths still reset submitting. Delta introduces no overflow (label 29 chars wraps, flex:1 button), no change to idempotency/submit logic."
+ },
+ "p0_p1_open": 0,
+ "findings": [
+  {
+   "id": "R12-01",
+   "severity": "P2",
+   "category": "wallet-path",
+   "where": "/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne/funnel.jsx:2456-2476 (wallet button, label 'Paiement…' only)",
+   "proof": "The slow message was added only to the non-wallet button (funnel.jsx:2481-2483). Apple Pay / Google Pay customers waiting on a 429 retry (<=60 s) keep 'Paiement…' with no 'Envoi en cours, ne quitte pas'. Retour is disabled for them too (submitting && !threeDs). No P1: label is truthful, wait is bounded.",
+   "fix": "Reuse submitSlow in .lcf-walletbtn-wait."
+  },
+  {
+   "id": "R12-02",
+   "severity": "P2",
+   "category": "4-contrast",
+   "where": "round-12/waveD/D09b-message-envoi-en-cours.png ; styles-v4.css:392 (.lcf-cta-bar-next:disabled opacity .5)",
+   "proof": "White 15 px bold text on the 50 %-opacity disabled orange is ~2:1 (pre-existing look of 'Confirmation…'), now carrying the reassurance message.",
+   "fix": "Keep full opacity when aria-busy=true."
+  }
+ ]
+}

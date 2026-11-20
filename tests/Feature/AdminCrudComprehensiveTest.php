@@ -56,7 +56,7 @@ class AdminCrudComprehensiveTest extends TestCase
 
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
-            ->getJson('/api/admin/setting/item');
+            ->getJson('/api/admin/item');
 
         $response->assertStatus(200);
     }

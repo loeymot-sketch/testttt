@@ -1,0 +1,23 @@
+[
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/delivery/quote",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1792859114289
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/address",
+    "method": "POST",
+    "status": 201,
+    "duration_ms": null,
+    "ts": 1792859115958
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/order",
+    "method": "POST",
+    "status": 201,
+    "duration_ms": null,
+    "ts": 1792859116201
+  }
+]

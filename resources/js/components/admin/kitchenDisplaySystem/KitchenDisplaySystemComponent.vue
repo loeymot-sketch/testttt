@@ -20,7 +20,8 @@
 
     `id` indispensable — c'est la cible du Teleport de KdsV2Grid.
   -->
-  <div class="kds-history-trigger-row kds-toolbar" id="kds-toolbar" data-testid="kds-toolbar">
+  <!-- [KDS-TABLETTE 2026-10-19] Poste tablette : aucune barre, la place va aux commandes. -->
+  <div v-if="!modeTablette" class="kds-history-trigger-row kds-toolbar" id="kds-toolbar" data-testid="kds-toolbar">
     <!-- [GOAL RUPTURE-CARNET 2026-07-15 / W3 + W6 heal P2] Bouton « Rupture »
          cuisine — rendu au-dessus des DEUX layouts (V2 + legacy), gate miroir du
          serveur (Stuff/Waiter sans availability_toggle ne voient pas un bouton
@@ -85,7 +86,7 @@
   <!-- [F2 2026-07-24] Panneau légende repliable — RACINE (visible en V2 + legacy).
        Clé des symboles groupée par rôle (Support / Viande / Sauce / Crudités /
        Formule), miroir des tables owner de resources/js/helpers/kdsSymbolic.js. -->
-  <div v-show="showSymbolLegend" id="kds-symbol-legend" role="region"
+  <div v-show="showSymbolLegend && !modeTablette" id="kds-symbol-legend" role="region"
     aria-label="Légende des symboles cuisine" data-testid="kds-symbol-legend"
     class="db-card px-3 py-2.5 mb-3">
     <div class="text-xs font-bold uppercase tracking-wide text-paragraph mb-2">🔑 Légende des symboles cuisine</div>
@@ -103,6 +104,7 @@
     </div>
   </div>
   <KdsHistoryDrawer
+    v-if="!modeTablette"
     :open="historyDrawerOpen"
     :dir="direction"
     @close="historyDrawerOpen = false"
@@ -111,6 +113,7 @@
   <!-- [GOAL RUPTURE-CARNET 2026-07-15 / W3] Panel rupture (86) cuisine —
        propagation borne/caisse/web via ItemAvailabilityChanged + outbox. -->
   <AvailabilityTogglePanel
+    v-if="!modeTablette"
     :visible="showAvailabilityPanel"
     @close="showAvailabilityPanel = false"
   />
@@ -126,7 +129,7 @@
        layouts V2 + legacy), même alimentation par le poll existant (meta.recently_canceled),
        même repli : liste vide ou meta absente ⇒ rien ne s'affiche. -->
   <KdsCanceledBanner :entries="kdsRecentlyCanceled" />
-  <KdsScheduledBanner :entries="kdsScheduledUpcoming" />
+  <KdsScheduledBanner v-if="!modeTablette" :entries="kdsScheduledUpcoming" />
   <!--
     [kds/sprint-2 V-5] Feature-flagged V2 layout. When useV2Layout is true
     (URL ?v2=1, localStorage 'kds.v2_enabled', or future settings flag), the
@@ -140,9 +143,10 @@
     :dir="direction"
     :offline-since="v2OfflineSince"
     :list-at-cap="kdsOrderListAtCap"
-    :fallback-mode="!wsConnected && !kdsSuppressFallbackBanner"
-    :admin-polling-hint="kdsIsCentralAdmin"
-    :bump-local-only-notice="showBumpInfo && !kdsHideBumpInfo"
+    :tablette="modeTablette"
+    :fallback-mode="!modeTablette && !wsConnected && !kdsSuppressFallbackBanner"
+    :admin-polling-hint="!modeTablette && kdsIsCentralAdmin"
+    :bump-local-only-notice="!modeTablette && showBumpInfo && !kdsHideBumpInfo"
     :sync-uncertain="syncBadgeUncertain"
     :error-message="kdsErrorBanner.visible ? kdsErrorBanner.message : ''"
     :auto-transition-enabled="v2AutoTransitionEnabled"
@@ -270,7 +274,7 @@
                   </h3>
                   <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                     <span v-for="(extra, index) in orderItem.item_extras" :key="index" class="text-heading">
-                      {{ extra.name }}<span v-if="index + 1 < orderItem.item_extras.length">,&nbsp;</span>
+                      {{ kdsExtraDisplayName(extra, orderItem.instruction) }}<span v-if="Number(extra.quantity || 1) > 1"> ×{{ Number(extra.quantity || 1) }}</span><span v-if="index + 1 < orderItem.item_extras.length">,&nbsp;</span>
                     </span>
                   </p>
                 </span>
@@ -310,6 +314,12 @@
               <option value="bar">{{ $t('label.kds_bar') }}</option>
               <option value="cuisine_chaude">{{ $t('label.kds_cuisine_chaude') }}</option>
               <option value="cuisine_froide">{{ $t('label.kds_cuisine_froide') }}</option>
+              <!-- [ONB-08 2026-08-28] Option MANQUANTE. `normalizeKdsStation` declare
+                   quatre postes dont `none`, et 7 boissons vendables le portent. Sans
+                   cette entree, un cuisinier qui basculait sur « Bar » ne pouvait plus
+                   les revoir qu'en repassant sur « Toutes » — et une commande composee
+                   uniquement de ces articles disparaissait de toute vue filtree. -->
+              <option value="none">{{ $t('label.kds_sans_poste') }}</option>
             </select>
             <label class="flex items-center gap-2 text-xs font-medium text-heading cursor-pointer">
               <input type="checkbox" v-model="groupByTable" @change="persistKdsUiPrefs" class="rounded border-[#D9DBE9]" />
@@ -351,9 +361,32 @@
           <audio ref="kdsNewOrderAudio" preload="auto" class="hidden" src="/sounds/kds-new-order.mp3" />
         </div>
         <div class="db-card px-3 py-2.5 mb-4">
-          <div class="swiper kitchen-swiper !flex flex-col gap-y-2 xl:flex-row items-start justify-between">
+          <div class="swiper kitchen-swiper !flex flex-col gap-y-2 xl:flex-row xl:flex-wrap items-start justify-between">
+            <!--
+              [AUDIT-SUPERVISEUR 2026-08-26 · E-012] À 1280 px, le 4e onglet « Terminées »
+              était TRONQUÉ par le champ de recherche qui le recouvrait : mesuré au pixel,
+              les glyphes s'arrêtaient net sur la bordure du formulaire. Les deux éléments
+              réclamaient `w-full` dans la même rangée et le plus à droite gagnait.
+              `min-w-0 flex-1` sur les onglets, `shrink-0` sur le champ : le groupe d'onglets
+              a la priorité, le champ prend ce qui reste sans jamais mordre dessus.
+              Et `xl:!w-auto` — sans lui, le `lg:!w-full` marqué IMPORTANT force encore 100 %
+              de largeur et `flex-1` ne peut rien : mesuré, le premier essai laissait l'onglet
+              tronqué exactement comme avant.
+
+              Ça n'a pas suffi non plus, et la mesure dit pourquoi : à 1280 px le conteneur
+              fait 900 px, les quatre onglets en réclament 631 et le champ 305 — soit 936.
+              Ils NE TIENNENT PAS. Le groupe avait bien rétréci (595 px), mais ses boutons
+              débordaient de sa propre boîte et « Terminées » finissait à 979 px là où le
+              champ commence à 943 : 36 px de recouvrement.
+              Et le coupable final était `flex-1` lui-même : `flex: 1 1 0%` donnait au groupe
+              la place RESTANTE (900 - 305 = 595 px) au lieu de celle qu'il lui faut. Sa boîte
+              mentait donc sur sa taille, le passage à la ligne ne se déclenchait pas, et les
+              boutons débordaient dessous.
+              Sans `flex-1`, le groupe prend ses 631 px réels ; 631 + 305 dépasse les 900
+              disponibles, `flex-wrap` fait descendre le champ, et tout se lit. Une ligne de
+              plus vaut mieux qu'un onglet illisible. -->
             <Swiper :dir="direction" :speed="1000" slidesPerView="auto" :spaceBetween="12" :loop="false"
-              class="md:grid sm:grid-cols-2 lg:grid-cols-4  gap-y-2 md:w-fit lg:!w-full w-full">
+              class="md:grid sm:grid-cols-2 lg:grid-cols-4  gap-y-2 md:w-fit lg:!w-full w-full xl:!w-auto">
               <SwiperSlide class="!w-fit">
                 <button type="button" v-on:click="list()"
                   class="db-btn text-heading w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white border border-[#D9DBE9] hover:text-[#4C1A96] hover:border-[#4C1A96] hover:bg-[#F8F1FF]"
@@ -385,7 +418,7 @@
             </Swiper>
 
             <form @submit.prevent="search"
-              class="header-search-group group flex items-center justify-center border border-solid gap-2 px-3 xl:!max-w-[305px] w-full h-11 rounded-lg transition border-[#D9DBE9] focus-within:bg-white focus-within:border-primary">
+              class="header-search-group group flex items-center justify-center border border-solid gap-2 px-3 xl:!max-w-[305px] w-full h-11 rounded-lg transition border-[#D9DBE9] focus-within:bg-white focus-within:border-primary xl:shrink-0">
               <i class="lab lab-search-normal lab-font-size-16"></i>
               <input type="text" v-model="props.search.order_serial_no" :placeholder="$t('label.kds_search_orders')"
                 :aria-label="$t('button.search')"
@@ -454,10 +487,16 @@
                     {{ $t("label.table_no") }}: <span class="text-heading font-medium">{{ dineinOrder.table_name
                       }}</span>
                   </p>
+                  <!--
+                    [AUDIT-SUPERVISEUR 2026-08-26 · E-011] « N° Commande: En Ligne ».
+                    Une étiquette qui promet un NUMÉRO était suivie d'un TYPE de commande.
+                    Pire, sur la fiche « À emporter » : la carte se contredisait elle-même
+                    sur le canal, dans la colonne qui l'annonce déjà.
+                    Sans jeton, on met un tiret. Le canal a sa colonne et sa pastille ; il
+                    n'a rien à faire dans le champ du numéro.
+                  -->
                   <p class="text-sm font-normal leading-6 font-client capitalize text-[#6E7191]">
-                    {{ $t("label.token_no") }}: <span class="text-heading font-medium">{{ dineinOrder.token ?
-                      dineinOrder.token : $t("label.online")
-                      }}</span>
+                    {{ $t("label.token_no") }}: <span class="text-heading font-medium">{{ dineinOrder.token || '—' }}</span>
                   </p>
                   <!-- [Sprint H4 Z3-NEW-002/003 2026-05-17] Legacy delivery
                        block mirrored from onlineOrder lane. Helper gates on
@@ -524,7 +563,7 @@
                           <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                             <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
-                              {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                              {{ kdsExtraDisplayName(extra, item.instruction) }}<span v-if="Number(extra.quantity || 1) > 1"> ×{{ Number(extra.quantity || 1) }}</span><span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                             </span>
                           </p>
                         </div>
@@ -712,7 +751,7 @@
                           <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                             <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
-                              {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                              {{ kdsExtraDisplayName(extra, item.instruction) }}<span v-if="Number(extra.quantity || 1) > 1"> ×{{ Number(extra.quantity || 1) }}</span><span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                             </span>
                           </p>
                         </div>
@@ -822,9 +861,16 @@
                     }}</span>
                 </div>
                 <div class="w-full pt-2 pb-3 px-3">
+                  <!--
+                    [AUDIT-SUPERVISEUR 2026-08-26 · E-011] « N° Commande: En Ligne ».
+                    Une étiquette qui promet un NUMÉRO était suivie d'un TYPE de commande.
+                    Pire, sur la fiche « À emporter » : la carte se contredisait elle-même
+                    sur le canal, dans la colonne qui l'annonce déjà.
+                    Sans jeton, on met un tiret. Le canal a sa colonne et sa pastille ; il
+                    n'a rien à faire dans le champ du numéro.
+                  -->
                   <p class="text-sm font-normal leading-6 font-client capitalize text-[#6E7191]">
-                    {{ $t("label.token_no") }}: <span class="text-heading font-medium">{{ takeawayOrder.token ?
-                      takeawayOrder.token : $t("label.online") }}</span>
+                    {{ $t("label.token_no") }}: <span class="text-heading font-medium">{{ takeawayOrder.token || '—' }}</span>
                   </p>
                   <p v-if="takeawayOrder.queue_number" class="text-sm font-normal leading-6 font-client text-[#6E7191]">
                     N° file: <span class="text-heading font-medium">{{ takeawayOrder.queue_number }}</span>
@@ -888,7 +934,7 @@
                           <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                             <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
-                              {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                              {{ kdsExtraDisplayName(extra, item.instruction) }}<span v-if="Number(extra.quantity || 1) > 1"> ×{{ Number(extra.quantity || 1) }}</span><span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                             </span>
                           </p>
                         </div>
@@ -1060,7 +1106,7 @@
                           <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                             <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
-                              {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                              {{ kdsExtraDisplayName(extra, item.instruction) }}<span v-if="Number(extra.quantity || 1) > 1"> ×{{ Number(extra.quantity || 1) }}</span><span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                             </span>
                           </p>
                         </div>
@@ -1223,6 +1269,7 @@ import {
 // commandes et l'écran de statut. Une 4e copie du rythme finirait par diverger.
 import { creerSequenceurDeSonnerie } from "../../../helpers/orderArrivalChime";
 import { kdsInstructionVisualClass } from "../../../helpers/kdsLineSemantics";
+import { extraDisplayName } from "../../../helpers/kdsSymbolic";
 import { orderHasAllergens as kdsOrderHasAllergens, sortedAllergens as kdsSortedAllergens } from "../../../helpers/kdsAllergens";
 import { ORDER_STATUS } from "../../../helpers/kdsState";
 // [POS-WIZARD-COMPO-AUDIT 2026-06-23 P2-B] Shape-agnostic GROUP:VALUE render so
@@ -1243,6 +1290,8 @@ import { printEscPosViaKitchenBridge, hasKitchenPrinted, markKitchenPrinted, see
 const KITCHEN_PRINT_RETRY_MS = 20000;
 // [kds/sprint-2 V-5] V2 layout components — feature-flagged single FIFO 4×2 grid.
 import KdsV2Grid from "./KdsV2Grid.vue";
+// [KDS-TABLETTE 2026-10-19] Poste tablette (pain / sauces / crudités) : commandes seules.
+import { modeTabletteActif } from "../../../helpers/kdsTablette.js";
 // [Wave X3 2026-05-21] KDS Historique du jour — read-only day-history drawer.
 import KdsHistoryDrawer from "./KdsHistoryDrawer.vue";
 // [GOAL RUPTURE-CARNET 2026-07-15 / W3] Panel rupture (86) partagé caisse+cuisine.
@@ -1379,6 +1428,9 @@ export default {
       // l'écran (design owner) — la légende est un complément. Persistée localStorage
       // 'kds.show_symbol_legend' comme les autres prefs KDS (défaut masqué).
       showSymbolLegend: false,
+      // [KDS-TABLETTE 2026-10-19] Évalué UNE fois, à la création : `?tablette=1` mémorise le mode
+      // sur l'appareil, `?tablette=0` l'efface. Voir helpers/kdsTablette.js.
+      tablette: modeTabletteActif(),
       kdsOverflowDetected: false,
       // [Wave X3 2026-05-21] KDS Historique du jour drawer — open state.
       historyDrawerOpen: false,
@@ -1441,7 +1493,7 @@ export default {
       return [
         { group: 'Support', entries: [['G', 'Galette'], ['S', 'Sandwich (pain)']] },
         { group: 'Viande', entries: [['K', 'Steak haché'], ['P', 'Poulet'], ['Tender', 'Tenders'], ['Nug', 'Nuggets'], ['Mex', 'Mexicaine'], ['Frec', 'Fricadelle'], ['Cordon', 'Cordon bleu']] },
-        { group: 'Sauce', entries: [['MAY', 'Mayonnaise'], ['SAM', 'Samouraï'], ['HAN', 'Hannibal'], ['CURY', 'Curry'], ['AND', 'Andalouse'], ['BL', 'Blanche'], ['KTP', 'Ketchup'], ['Burg', 'Burger'], ['ALG', 'Algérienne'], ['BBQ', 'Barbecue'], ['HAR', 'Harissa'], ['FRO', 'Fromage'], ['SPI', 'Spicy']] },
+        { group: 'Sauce', entries: [['MAY', 'Mayonnaise'], ['SAM', 'Samouraï'], ['HAN', 'Hannibal'], ['CURY', 'Curry'], ['AND', 'Andalouse'], ['BL', 'Blanche'], ['KTP', 'Ketchup'], ['Burg', 'Burger'], ['ALG', 'Algérienne'], ['BBQ', 'Barbecue'], ['HH', 'Harissa'], ['X', 'Sans sauce'], ['FRO', 'Fromage'], ['SPI', 'Spicy']] },
         { group: 'Crudités', entries: [['S', 'Salade'], ['T', 'Tomate'], ['O', 'Oignon'], ['O̲', 'Oignons cuits']] },
         { group: 'Formule', entries: [['MENU', 'Menu (formule)'], ['FRITES', 'Frites (formule)'], ['BOISSON', 'Boisson (formule)'], ['F', 'Frites']] },
       ];
@@ -1498,6 +1550,11 @@ export default {
     // The legacy 4-column path remains intact in the v-else branch so
     // operators in the kitchen can revert in one URL keystroke if a
     // regression surfaces during the rollout window.
+    // [KDS-TABLETTE 2026-10-19] Le mode tablette ne s'applique qu'à la mise en page V2 (celle de
+    // production) : l'ancienne mise en page 4 colonnes n'est qu'un secours et reste intacte.
+    modeTablette() {
+      return this.tablette && this.useV2Layout;
+    },
     useV2Layout() {
       try {
         if (typeof window === 'undefined') {
@@ -1736,7 +1793,7 @@ export default {
     if (sf == null && uid > 0) {
       try {
         const leg = localStorage.getItem("kds.station_filter");
-        if (leg === "all" || leg === "bar" || leg === "cuisine_chaude" || leg === "cuisine_froide") {
+        if (leg === "all" || leg === "bar" || leg === "cuisine_chaude" || leg === "cuisine_froide" || leg === "none") {
           sf = leg;
           localStorage.setItem(sKey, leg);
         }
@@ -1751,7 +1808,7 @@ export default {
         sf = null;
       }
     }
-    if (sf === "all" || sf === "bar" || sf === "cuisine_chaude" || sf === "cuisine_froide") {
+    if (sf === "all" || sf === "bar" || sf === "cuisine_chaude" || sf === "cuisine_froide" || sf === "none") {
       this.stationFilter = sf;
     }
     const gb = localStorage.getItem("kds.group_by_table");
@@ -1785,6 +1842,12 @@ export default {
     // autres pages admin.
     if (this.useV2Layout) {
       document?.querySelector('.db-main')?.classList?.add('db-main--kds');
+    }
+    // [KDS-TABLETTE 2026-10-19] La coquille d'administration (barre du haut, menu latéral,
+    // marges) se masque par CSS, route-scopée : classes posées ici, retirées au démontage.
+    if (this.modeTablette) {
+      document?.querySelector('.db-main')?.classList?.add('db-main--kds-tablette');
+      document?.documentElement?.classList?.add('kds-tablette');
     }
     this.refreshOrderList();
     this.startAutoRefresh();
@@ -2664,6 +2727,11 @@ export default {
       return true;
     },
     _applyOrderBuckets(rows) {
+      // [KDS-ITEM-READY-SYNC 2026-09-23] Unique point d'entrée de TOUT
+      // rafraîchissement du board (poll, WS, chargement initial) — resynchronise
+      // la pastille "prêt" par article depuis le serveur ici, pour qu'un second
+      // écran/appareil converge vers le même état sans action de l'utilisateur.
+      this.$store.dispatch('kds/hydrateFromOrders', Array.isArray(rows) ? rows : []);
       const visibleRows = (Array.isArray(rows) ? rows : []).filter((item) => this._isVisibleInCurrentBoard(item));
       // [test-e2e fix E-003 round-3] V1 dine-in disabled — kiosk orders are TAKEAWAY
       // (OrderRequest:200 enforces order_type=TAKEAWAY for ALL kiosk orders since
@@ -2767,7 +2835,11 @@ export default {
       // payload — but for 5xx / network drops, the standardized banner copy
       // is far clearer to a kitchen operator than a stack trace.
       let message;
-      if (!status || status >= 500 || status === 408 || status === 425 || status === 429) {
+      // [VG-2026-10-21 M6-001] Un 5xx n'est PAS une coupure réseau : le serveur a répondu, en
+      // erreur. « Connexion cuisine indisponible » faisait attendre le cuisinier en vain.
+      if (status >= 500 && status <= 599) {
+        message = this.$t('error.kds_server_error');
+      } else if (!status || status === 408 || status === 425 || status === 429) {
         message = fallback;
       } else {
         message = err?.response?.data?.message || fallback;
@@ -2843,6 +2915,28 @@ export default {
         return '';
       }
       return addon.addon_name || addon.addon_item_name || addon.name || addon.item_name || 'Addon';
+    },
+    /**
+     * [GOAL-CAISSE-VISION 2026-08-24] Nom d'un EXTRA, quelle que soit sa forme.
+     *
+     * Les suppléments avaient déjà `kdsAddonDisplayName` ; les extras étaient
+     * restés sur une lecture brute `extra.name` — or l'instantané NF525 nomme ce
+     * champ `extra_name` (`CompositionSnapshotBuilder.php:110`), et c'est
+     * l'instantané qui est servi EN PRIORITÉ (`KDSOrderItemsResource:81-86`).
+     *
+     * Mesuré à l'exécution le 2026-08-24 sur la ligne réelle #3956 : la ressource
+     * expédie `extra_name='Salade'`, le gabarit lisait `extra.name` = null. La
+     * cuisine affichait « Extras: , , , » — quatre garnitures invisibles, donc
+     * un produit remis au client sans ce qu'il avait demandé.
+     */
+    kdsExtraDisplayName(extra, instruction = null) {
+      if (!extra || typeof extra !== 'object') {
+        return '';
+      }
+      const raw = extra.extra_name || extra.name || extra.item_name || 'Supplément';
+      // [GOAL #4 2026-10-02] Mise en page KDS « classique » (?v2=0) : elle n'a jamais nommé la
+      // sauce en plus (« Sauce supplémentaire » seul). On réutilise le résolveur commun.
+      return extraDisplayName(raw, instruction);
     },
     // [AUDIT-P2] Print a kitchen ticket for a given order using a hidden iframe.
     // Opens a minimal print window with order ref, items, variations, extras, addons, and instructions.
@@ -3109,6 +3203,8 @@ export default {
     this._kdsStatusInterceptorId = null;
     // [KDS-A-01 2026-07-06] Retire l'override flex-column route-scoped (cf. mounted).
     document?.querySelector('.db-main')?.classList?.remove('db-main--kds');
+    document?.querySelector('.db-main')?.classList?.remove('db-main--kds-tablette');
+    document?.documentElement?.classList?.remove('kds-tablette');
     this.openSidebar();
     window.removeEventListener('realtime-order-update', this.refreshOrderList);
     this.unsubscribeEcho();
@@ -3201,8 +3297,12 @@ export default {
 }
 
 .kds-instruction {
-  line-height: 1.5;
-  border-left: 3px solid #e0e0e0;
+  /* [NOTES-EN-GRAND 2026-10-19 · owner] Même règle que la disposition V2 (KdsOrderLine) : la note
+     du client est lue à un mètre, elle ne doit plus jamais être le détail le plus fin de la fiche. */
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1.3;
+  border-left: 5px solid #e0e0e0;
   padding-left: 0.4rem;
 }
 .kds-instruction--note {
@@ -3216,7 +3316,7 @@ export default {
   color: #7c2d12;
   border-left-color: #f97316;
   background: #fff7ed;
-  font-weight: 600;
+  font-weight: 900;
   border-radius: 0 4px 4px 0;
   padding: 0.2rem 0.35rem 0.2rem 0.4rem;
   box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.2);

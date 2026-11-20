@@ -1,0 +1,105 @@
+{
+  "role": "adverse-serveur-t2",
+  "constats": [
+    {
+      "id": "S2-01",
+      "severite": "P2",
+      "fichier": "app/Services/Push/OrderPushMessage.php:136-145",
+      "titre": "Urgence « normal » sur annulée/refusée : prémisse fausse, risque de retard ou de perte",
+      "reproduction": "Le commentaire l.24-25 justifie « normal » par « ne doit pas sonner ». Or Urgency (RFC 8030 §5.3) règle les conditions de livraison, pas le son ; le son dépend de sw.js (renotify:true, site-nfc-2026-11-19/sw.js:106-111) : l'annulation sonne quand même. Avec TTL 900 s (config/webpush.php:18), un téléphone en économie d'énergie peut la recevoir tard ou jamais, pendant que « prête ! Elle vous attend au comptoir » (priorité haute, même tag) reste affichée.",
+      "preuve": "build() : 'normal' pour CANCELED/REJECTED (l.139, 144), 'high' pour PREPARED (l.106). PREPARED→CANCELED est permis (OrderStateMachine.php:96-98). Effet Doze/APNs non reproduit sans appareil : à confirmer.",
+      "recommandation": "« high » pour annulée/refusée ; « normal » pour la remise seulement. Pour le bruit nocturne, traiter la purge automatique à la source."
+    },
+    {
+      "id": "S2-02",
+      "severite": "P2",
+      "fichier": "app/Services/Push/WebPushSender.php:190",
+      "titre": "Résidu de S-02 : WEBPUSH_TTL non validé, un refus du service vide le parc en 5 envois",
+      "reproduction": "Test jetable scratchpad/AdverseT2SenderTest.php : vrai WebPush, VAPID réel, service simulé répondant 400 à un TTL négatif ; webpush.ttl=-5, 2 abonnements, 5 sendToUser : restants 2,2,2,2 puis 0 ; en-tête émis « TTL: -5 ».",
+      "preuve": "`(int) config('webpush.ttl')` sans borne ; la bibliothèque ne valide rien (vendor/minishlink/web-push/src/WebPush.php:383). (int)'15m' = 15 s, (int)'abc' = 0. Le 400 simulé est une hypothèse (RFC 8030 ne l'impose que pour un TTL absent).",
+      "recommandation": "Borner le TTL (repli 900) comme urgence(). Ne pas compter un 400 reçu par tous les appareils d'un même envoi."
+    },
+    {
+      "id": "S2-03",
+      "severite": "P3",
+      "fichier": "app/Services/Push/OrderPushMessage.php:111-112",
+      "titre": "« vous serez prévenu dès qu'elle est prête / au départ du livreur » : promesse non garantie",
+      "reproduction": "ACCEPT/PREPARING→DELIVERED et PREPARED→DELIVERED sont permis à tout utilisateur « pos » (OrderStateMachine.php:39, 55, 100) : ni « prête » ni « en route ». Téléphone hors ligne plus de 15 min : « prête » abandonnée (TTL).",
+      "preuve": "Le docblock l.23 dit « Aucune promesse invérifiable ». Cas courants vérifiés : OUT_FOR_DELIVERY posé (DeliveryRunController.php:95, UberDirectDispatchService.php:490).",
+      "recommandation": "« On s'en occupe. Suivez-la dans Mes commandes. »"
+    },
+    {
+      "id": "S2-04",
+      "severite": "P3",
+      "fichier": "app/Services/Push/OrderPushMessage.php:129",
+      "titre": "« Le livreur arrive avec la commande » dit plus que « en route »",
+      "reproduction": "depart() passe toutes les commandes d'une tournée de 30 min en OUT_FOR_DELIVERY d'un coup (DeliveryRunController.php:95) ; le dernier arrêt est joint longtemps après.",
+      "preuve": "docs/LIVRAISON.md §2.",
+      "recommandation": "« Le livreur est parti avec la commande n° X. »"
+    },
+    {
+      "id": "S2-05",
+      "severite": "P3",
+      "fichier": "tests/Feature/Push/SendWebPushJobTest.php:157",
+      "titre": "Commentaire de test faux et trous de couverture sur les correctifs d'envoi",
+      "reproduction": "Le commentaire dit que 413 « compte », le code l'exclut (WebPushSender.php:149). Le faux WebPush ignore $options (l.58) : l'urgence transmise n'est testée que par le banc. Rien sur 413, la sonde, ni WEBPUSH_URGENCY invalide.",
+      "preuve": "grep 413|urgency tests/Feature/Push. 413 journalisé en warning (WebPushSender.php:165), 401/403 en error : un 413 permanent resterait discret.",
+      "recommandation": "Corriger le commentaire, ajouter les tests, Log::error sur 413."
+    },
+    {
+      "id": "S2-06",
+      "severite": "P3",
+      "fichier": "config/webpush.php:19",
+      "titre": "WEBPUSH_URGENCY devenu inerte pour les commandes",
+      "reproduction": "L'urgence explicite du message l'emporte sur la config (WebPushSender.php:58-64) : WEBPUSH_URGENCY=normal ne change rien.",
+      "preuve": "Test jetable : voulue high, config low → high.",
+      "recommandation": "Documenter le repli."
+    },
+    {
+      "id": "S2-07",
+      "severite": "P3",
+      "fichier": "app/Services/Push/WebPushSender.php:101-105",
+      "titre": "Sonde S-01 partielle ; le @ masque la cause",
+      "reproduction": "Le catch-all l.134-140 supprime toujours l'appareil pour toute autre panne serveur : openssl_pkey_derive (Encryption.php:299-301), openssl_pkey_get_details (:259-261), random_bytes (:66).",
+      "preuve": "Sonde identique à Encryption.php:251-254, 0,37 ms mesurés, une fois par sendToUser : ne bloque pas à tort. openssl_error_string() n'est pas journalisé.",
+      "recommandation": "Supprimer seulement sur erreur de clé d'appareil ; journaliser la cause."
+    },
+    {
+      "id": "S2-08",
+      "severite": "P3",
+      "fichier": "plans/GOAL_NFC_RACCOURCI_NOTIFICATIONS_2026-11-19.md:153-162",
+      "titre": "Table « figée » non mise à jour ; porte G6 sans trace de validation",
+      "reproduction": "T-1.3.2 dit « titre toujours Le Cayenne » avec les anciens textes ; G6 (l.316, validation propriétaire) sans signature ; le docblock cite encore « table figée ».",
+      "preuve": "Titres désormais variables (OrderPushMessage.php:109-143).",
+      "recommandation": "Faire valider par le propriétaire, mettre la table à jour."
+    },
+    {
+      "id": "S2-09",
+      "severite": "P3",
+      "fichier": "app/Jobs/CleanupStalePendingKioskOrders.php:401-441",
+      "titre": "« non acceptée » envoyé à un client qui a abandonné son paiement ; « le détail » n'existe pas",
+      "reproduction": "Une commande web impayée en PENDING est purgée en REJECTED jusqu'à 6 h plus tard : le client reçoit « non acceptée » comme si le restaurant avait refusé. Mes commandes n'affiche que « Annulées » (orders.jsx:15, 323).",
+      "preuve": "Texte vrai mais trompeur ; le détail promis n'existe pas.",
+      "recommandation": "« Touchez pour ouvrir Mes commandes » ; ne pas notifier une commande jamais payée."
+    },
+    {
+      "id": "S2-10",
+      "severite": "P3",
+      "fichier": "app/Services/Push/OrderPushMessage.php:110-143",
+      "titre": "Typographie et répétition",
+      "reproduction": "Espace ordinaire avant « ! » et « : » (insécable seulement pour « n° » et les points) : « ! » peut finir seul en ligne. « Bon appétit ! » dit deux fois (corps de « prête », titre de la remise). « Touchez » faux sur ordinateur.",
+      "preuve": "Test jetable : « Commande n° A0017 prête ! || Elle vous attend au comptoir. Bon appétit ! »",
+      "recommandation": "Insécable fine avant ! ? : ; retirer le doublon."
+    }
+  ],
+  "verifie_sans_defaut": [
+    "Numéro : queue_number prioritaire (A0017) = celui du site (funnel.jsx:3381, 3560).",
+    "Longueurs (4 numéros x 3 types x tous statuts, gain et solde à 7 chiffres) : titre max 38 ≤ 40, corps max 109 ≤ 140 ; seul un numéro absurde de 21 caractères dépasse. Corps JSON < 600 octets, 2 922 sur le fil.",
+    "Accords : « 1 point gagné », « 1 250 points gagnés », insécables présentes, sentinelle -1 sans phrase de points, aucun €, ledger lu avec le user_id du destinataire.",
+    "Urgence : 8 cas invalides ou en désordre (' HIGH ', 'urgent', config vide, 'bogus', tableau) → 'high' ; en-tête transmis à un vrai WebPush.",
+    "tag, /#orders, Cache::add, estPerimee inchangés ; phpunit tests/Feature/Push : 76 tests verts.",
+    "PHP 8.1 : catch (\\Throwable) sans variable, mixed, \\u{00A0} valides dès 8.0 ; aucune syntaxe 8.2.",
+    "SQL : une requête ledger indexée (order_id), seulement sur ACCEPT avec points ; DB::table hors BranchScope, filtre explicite.",
+    "« au comptoir » vrai pour TAKEAWAY ; DINING_TABLE inatteignable depuis le web (OrderRequest.php:284) ; « On s'en occupe » vrai pour PENDING_COUNTER (KitchenReleaseRule.php:130-140)."
+  ]
+}

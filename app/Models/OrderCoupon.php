@@ -10,13 +10,15 @@ class OrderCoupon extends Model
     use HasFactory;
 
     protected $table = "order_coupons";
-    protected $fillable = ['order_id', 'coupon_id', 'user_id', 'discount'];
+    protected $fillable = ['order_id', 'coupon_id', 'user_id', 'discount', 'delivery_waived'];
     protected $casts = [
         'id'        => 'integer',
         'order_id'  => 'integer',
         'coupon_id' => 'integer',
         'user_id'   => 'integer',
         'discount'  => 'decimal:6',
+        // [TICKET PROMO 2026-11-03] Frais de livraison offerts par un coupon « livraison offerte ».
+        'delivery_waived' => 'decimal:6',
     ];
 
     /**

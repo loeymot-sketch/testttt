@@ -1,0 +1,159 @@
+{
+  "wave": "C1",
+  "round": 1,
+  "reviewer": "superviseur adverse C1 (lecture seule)",
+  "states_reviewed": 10,
+  "findings": [
+    {
+      "id": "C1-001",
+      "origin": "équipe (confirmé, cause précisée)",
+      "state_artifact": "captures-C1/04-panier-cayenne-fanta.png ; captures-C1/10-mode-livraison-boutons.png",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "04 (1920×1080, 2 lignes) : le sélecteur « À emporter / Livraison » est tranché à mi-hauteur (y≈413), et Nom du client, Téléphone, Programmer sont hors de vue. Pourtant le corps du panier laisse ≈100 px VIDES sous « Fanta » (y≈600→697) : la place existe, elle est réservée au mauvais bloc. Cause mesurée : `.pos-v5-cart .pos-v5-cart__body { min-height: 28vh }` (resources/css/pos-v5.css:911-914) → 28 % de 1080 = 302 px CSS = 272 px écran sous zoom 0,9, exactement la hauteur du corps sur la capture (≈425→697), alors que deux lignes en occupent ≈180. Correction du cadrage de l'équipe : l'en-tête n'est pas « sans défilement », il défile (`overflow-y: auto`, pos-v5.css:821) ; l'unique indice est un voile de 16 px (pos-v5.css:878-887), qui se lit ici comme un défaut de rendu (bouton coupé en deux), pas comme une invitation. Régression d'un constat déjà clos (B-014, 2026-08-25, commentaire pos-v5.css:831-852). Aggravant en LIVRAISON (10) : avec un article au panier, téléphone et adresse — obligatoires — sont invisibles ; si le caissier appuie « Commande livraison » sans téléphone, le refus (PosComponent.vue:7046-7047) n'est qu'un toast, SANS focus ni défilement vers le champ caché, alors que l'erreur d'adresse, elle, focalise le champ (focusDeliveryAddressField, PosComponent.vue:~7698). Pas P0 : le champ reste atteignable par défilement et le serveur refuse une livraison sans téléphone.",
+      "fix_hint": "pos-v5.css:913 : borner le plancher au contenu réel (ex. `min-height: min(28vh, max-content)` ou plancher appliqué seulement au-delà de N lignes) pour rendre la place à l'en-tête ; PosComponent.vue:7046 : sur refus téléphone, focaliser/faire défiler le champ téléphone de livraison comme pour l'adresse.",
+      "status": "open"
+    },
+    {
+      "id": "C1-002",
+      "origin": "nouveau",
+      "state_artifact": "captures-C1/03-assistant-cayenne-sauce.png (zoom : bande y 230-500)",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "Assistant caisse, étape Viande : les tuiles sont écrasées en gélules de ≈23 px de large (pointillés) au lieu des tuiles carrées prévues ; le « +2,50 € » se peint PAR-DESSUS les noms (« Cordon Bleu », « Viande Hachée », « Poulet crispy », « curry », « tandoori », « Mixte (hachée +2,50 € poulet) ») ; et le badge rouge « ✓1 » de la viande choisie (Poulet mariné, data-viande=v_680 dans 03.dom.html) s'affiche à x≈573, soit visuellement collé à « Viande Hachée » : un caissier lit qu'il a choisi la mauvaise viande. Cause : `.pos-wizard.single-page .viande-btn { width: 26px; height: 26px }` (public/css/pos-wizard.css:1813-1817, spécificité 0-3-0, 2026-03-21) l'emporte sur `.wizard-viande-tile .viande-tile-add { width: 100% ; min-height: 132px }` (pos-wizard.css:2146-2160, 0-2-0, 2026-07-23) — le bouton-tuile porte AUSSI la classe `viande-btn` (pos-wizard.js:3313) ; DOM 03 confirme `class=\"pos-wizard single-page\"`. Le badge est positionné sur la tuile (relative, ≈94 px) et non sur le bouton écrasé, d'où le décalage. Ni l'équipe ni la mesure `assistant.prix` ne l'ont vu.",
+      "fix_hint": "public/css/pos-wizard.css (ZONE GELÉE — LOCK + porte propriétaire) : ajouter après la ligne 2160 `.pos-wizard.single-page .wizard-viande-tile .viande-tile-add { width: 100%; height: auto; border-radius: 16px; }` (spécificité 0-4-0) ; vérifier visuellement à 1280 et 1920.",
+      "status": "open"
+    },
+    {
+      "id": "C1-003",
+      "origin": "nouveau",
+      "state_artifact": "captures-C1/07-telephone-dans-a-encaisser.png ; captures-C1/09-telephone-encaissee.png",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "evidence": "Le tiroir « Contrôle des commandes » affiche « 18 À encaisser — Paiement au comptoir » quand la file de l'écran caisse dit « À ENCAISSER — COMPTOIR (16) » (07), puis 17 contre 15 (09). L'écart de 2 = N°A0288 et N°A0290 (icône 🚗, « E2E-C2 Client … »), chacune avec un bouton orange « Encaisser ». Base (tinker, lecture) : ids 8851 et 8853 = order_type 5 (livraison), source_surface 'delivery', payment_status 15, pos_payment_method 6 — des « Commande livraison » payées À LA PORTE par le livreur. Le contrat dit qu'elles « n'entrent pas dans la file À encaisser au comptoir » (docs/LIVRAISON.md:50-51) et le serveur refuse de les encaisser au comptoir : assertCounterDeferredOrder n'admet que kiosk/pos/phone/web (app/Services/PaymentService.php:1030-1036) → 422 « This order is not a pending counter payment. » (anglais, renvoyé tel quel par routes/api.php:1503). Le tiroir les y met quand même parce que `is_cash_pending` = PENDING_COUNTER ∧ COUNTER_DEFERRED sans regarder la surface (app/Http/Resources/SimpleOrderResource.php:31-32) et que fileEncaisser filtre sur ce seul drapeau (resources/js/support/filesControle.js:63) — en violation de sa propre règle « l'afficher serait promettre une action impossible » (filesControle.js:55-56). Non cliqué (lecture seule) : refus déduit du code serveur, pas observé.",
+      "fix_hint": "SimpleOrderResource.php:31 : aligner `is_cash_pending` sur PaymentService::assertCounterDeferredOrder (exclure source_surface='delivery') — ou filtrer dans filesControle.js:63 ; ajouter un test de parité tiroir/file comptoir.",
+      "status": "open"
+    },
+    {
+      "id": "C1-004",
+      "origin": "équipe (confirmé, cause trouvée, affirmation de l'équipe corrigée)",
+      "state_artifact": "captures-C1/C1-mesures.json (tel.trace, tel.delaiTiroirMs=40136) ; captures-C1/07-telephone-dans-a-encaisser.png",
+      "category": "loading_state",
+      "severity": "P2",
+      "evidence": "La commande téléphone 8866 apparaît dans la file écran en 110 ms mais n'entre dans le tiroir qu'à 40 s. Cause : après succès, phoneOrderSubmit ne recharge QUE loadKioskCashOrders (PosComponent.vue:7014 ; idem deliveryOrderSubmit :7130), alors que le tiroir lit `serviceOrders`, alimenté par loadActiveOrdersStats/loadReadyOrders (PosComponent.vue:5298-5316, 5841-5864) dont le sondage passe à 60 s quand le temps réel est connecté (PosComponent.vue:4779). Comme la file écran n'affiche que les 4 plus anciennes (« Voir plus (12) »), le tiroir est le SEUL accès à une nouvelle commande pendant ce délai. Affirmation de l'équipe à corriger : il n'y a PAS eu de « rafraîchissement manuel à mi-course » — la trace contient « refresh KO locator.click: Timeout 5000ms » : le bouton « Actualiser » n'existe que si les données sont « figées » (v-if, PosControlDrawer.vue:315), donc le caissier n'a aucun moyen de forcer la mise à jour pendant ces 40-60 s ; `rafraichissementManuel: true` est un faux positif de l'instrument (voir C1-012).",
+      "fix_hint": "PosComponent.vue:7014 et :7130 : appeler aussi `this._schedulePanelsRefresh()` (ou loadActiveOrdersStats + loadReadyOrders) après création ; envisager un « Actualiser » toujours présent dans le tiroir.",
+      "status": "open"
+    },
+    {
+      "id": "C1-005",
+      "origin": "équipe (confirmé, étendu)",
+      "state_artifact": "captures-C1/06-succes-apercu-ticket.png ; C1-mesures.json (apercuTicket vs escpos)",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "L'aperçu écran et le ticket imprimé sont deux documents différents pour la même vente 8865 : aperçu « 07:56 PM » / papier « 19:56 » ; aperçu lignes HT (Cayenne 6,73 €, Fanta 1,73 €) sous l'en-tête « Prix » sans mention HT / papier lignes TTC 7,40 € et 1,90 € avec « Prix nets en euros TTC » ; aperçu « VAT (10.00 %) » par ligne et « VAT (10%)· Base HT » / papier « TVA 10 % : 0,84 € » ; aperçu « Empreinte audit: 81a12a99e5ff » absente du papier. Arithmétique vérifiée juste des deux côtés (6,73+0,67=7,40 ; 1,73+0,17=1,90 ; 8,46+0,84=9,30 ; base : total 9.30, total_tax 0.84, lignes tax_amount 0.67/0.17). C'est l'aperçu montré sous « Imprimer le ticket client ? » : le caissier valide un document qui n'est pas celui qui sort.",
+      "fix_hint": "Faire rendre l'aperçu à partir du même modèle que OrderReceiptEscPosRenderer (ou au minimum : TIME_FORMAT H:i, « TVA », prix TTC par ligne, libellé HT explicite sur la base).",
+      "status": "open"
+    },
+    {
+      "id": "C1-006",
+      "origin": "nouveau",
+      "state_artifact": "captures-C1/08-telephone-fenetre-encaissement.png (zoom bande y 750-990)",
+      "category": "element_overlap",
+      "severity": "P2",
+      "evidence": "Fenêtre « Encaisser La Commande » à 1920×1080 : le pied collant « Annuler / Confirmer l'encaissement » recouvre la rangée 7-8-9-C du pavé, et la rangée 00-0-.-C reste VISIBLE SOUS le pied (y≈965) — des touches apparaissent au-dessus et au-dessous des boutons d'action ; la partie gauche du pied est transparente (dégradé) et laisse voir « 7 » et « 00 » sous « Annuler ». Cause : `.cc-modal { max-height: 92vh; overflow-y: auto; padding: … 24px }` (PosCounterCollectModal.vue:865-876) + `.cc-modal-footer { position: sticky; bottom: 0; background: linear-gradient(transparent→blanc 30 %) ; justify-content: flex-end }` (PosCounterCollectModal.vue:1093-1103) : le rembourrage bas de 24 px laisse défiler le contenu sous le pied. Atténué (montant pré-rempli 1,90, raccourcis 5/10/20/50 €), d'où P2 et non P1.",
+      "fix_hint": "PosCounterCollectModal.vue:1093-1103 : fond opaque sur toute la largeur et `margin-bottom: -24px; padding-bottom: 24px` (ou padding-bottom 0 sur .cc-modal) pour que rien ne défile sous le pied.",
+      "status": "open"
+    },
+    {
+      "id": "C1-007",
+      "origin": "nouveau",
+      "state_artifact": "captures-C1/04-panier-cayenne-fanta.png ; captures-C1/10-mode-livraison-boutons.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Ligne panier « Fanta Oran… » à 1920×1080 : la contenance (33cl), seul attribut qui distingue les boissons (Eau Plate 50cl, etc.), est coupée ; `<span class=\"pos-v5-cart-item__name-text\">Fanta Orange 33cl</span>` sans `title` (04.dom.html) — seul le bouton Dupliquer porte le nom en aria-label.",
+      "fix_hint": "PosComponent.vue:1656 : ajouter `:title=\"cart.name\"` ; pos-v5.css:1188 : autoriser 2 lignes (line-clamp: 2) plutôt que l'ellipse.",
+      "status": "open"
+    },
+    {
+      "id": "C1-008",
+      "origin": "nouveau",
+      "state_artifact": "captures-C1/04-panier-cayenne-fanta.png ; C1-mesures.json (panier.lignes[0].detail = \"Algérienne\")",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "La ligne « Cayenne » du panier ne résume que « Algérienne » : ni la viande (Poulet mariné), ni les crudités, alors que le ticket les porte (« Viande 1: Poulet mariné », « Salade, Tomate, Oignon ») et que le commentaire de conception promet « Poulet mariné · STO · Algérienne » (PosComponent.vue:1689-1690 et :6558-6563). Le caissier ne peut pas vérifier la viande — choix principal d'un sandwich — sans rouvrir l'assistant. Combiné à C1-002 (badge ✓1 mal placé), la viande choisie n'est lisible nulle part avant le ticket.",
+      "fix_hint": "Vérifier ce que pos-wizard.js écrit dans `cart_display` pour l'étape Viande et les crudités par défaut (compactCompositionSegments, resources/js/helpers/posCartCompactDisplay.js, ne reçoit que la sauce).",
+      "status": "open"
+    },
+    {
+      "id": "C1-009",
+      "origin": "nouveau",
+      "state_artifact": "captures-C1/01-caisse-1280x720.png",
+      "category": "element_overlap",
+      "severity": "P2",
+      "evidence": "À 1280×720, au chargement, AUCUNE tuile catégorie ni produit n'est à l'écran : la fenêtre est remplie par l'en-tête de commandes et les files Prêt à livrer / À encaisser ; vendre exige de faire défiler la zone centrale à chaque vente. La mesure `catalogue` (10 tuiles « visibles ») de l'équipe teste offsetParent, pas la présence dans la fenêtre (spec :190) — elle est vraie alors que la capture montre zéro tuile. Le panier vide, lui, tient. Non mesuré par l'équipe : 1280×720 AVEC articles (C1-001 y sera pire, l'en-tête ne disposant que de la hauteur restante).",
+      "fix_hint": "Plier les files de commandes (ou les limiter à une rangée) sous 800 px de haut ; mesurer `getBoundingClientRect().top < innerHeight` pour les tuiles, pas offsetParent.",
+      "status": "open"
+    },
+    {
+      "id": "C1-010",
+      "origin": "équipe (confirmé, précisé)",
+      "state_artifact": "captures-C1/04-panier-cayenne-fanta.network.json ; 07-telephone-dans-a-encaisser.network.json",
+      "category": "unexpected_http",
+      "severity": "P3",
+      "evidence": "GET /api/admin/item/details/1?surface=pos&branch_id=1 → 404, deux fois, juste après l'ajout de Fanta (id 54), sans message. L'article 1 est « Menu (Frites + Boisson) », rangé dans la catégorie 27 « Technique (interne — upsell) » au statut 10 (tinker) : le 404 du serveur est légitime (ItemController itemDetails, abort_unless isVisibleOn, ~ligne 385-386) ; l'anomalie est côté client qui demande un article interne invisible en caisse. Probable préchauffage best-effort qui avale l'erreur (ItemComponent.vue:629-640). Gardé P3 : aucun effet visible prouvé.",
+      "fix_hint": "Identifier l'émetteur (préchauffage ou upsell boisson→menu) et ne jamais demander un article de catégorie interne ; sinon, documenter le 404 comme attendu dans la liste blanche du banc.",
+      "status": "open"
+    },
+    {
+      "id": "C1-011",
+      "origin": "équipe (confirmé) + nouveau",
+      "state_artifact": "captures-C1/01-caisse-1280x720.png ; 02 ; 10",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "Bandeau cuisine du ticket : « la plus ancienne depuis 1193 min » (≈20 h, illisible en minutes) et « vous serez le 67° » : le code écrit bien « 67ᵉ » (U+1D49, PosComponent.vue:3434) mais à cette taille le glyphe se lit comme un degré, idem « 58° sur 68 en cuisine » dans le tiroir (07). Données de banc (66 commandes en cuisine) : le rang annoncé n'est pas un défaut ici.",
+      "fix_hint": "PosComponent.vue:3434 : écrire « 67e » ; afficher les durées > 90 min en « h min ».",
+      "status": "open"
+    },
+    {
+      "id": "C1-012",
+      "origin": "nouveau",
+      "state_artifact": "captures-C1/06-succes-apercu-ticket.png ; C1-mesures.json (escpos.lignes[0])",
+      "category": "i18n_leak",
+      "severity": "P3",
+      "evidence": "Libellés de ticket : aperçu « Suppléments: Salade,Tomate,Oignon » — des crudités INCLUSES présentées au client comme des suppléments (payants), sans espaces après les virgules ; « Sauce (1ère Gratuite): Algérienne , » et « Type de Pain: Pain , » (virgule orpheline précédée d'une espace) ; papier : en-tête « Le Cayenne (principal) » (nom interne de la filiale imprimé chez le client). Titres en casse anglaise « Paiement De Commande » (05) et « Encaisser La Commande » (08) via `text-transform: capitalize` (PosCounterCollectModal.vue:889 ; PaymentComponent.vue:15 — zone gelée). Drapeau britannique devant « Français » sur tous les écrans : BackendNavbarComponent.vue:439-440 mappe fr/french → english.png (aucun drapeau français dans public/images/language/).",
+      "fix_hint": "Renommer le groupe « Suppléments » en « Crudités » pour les crudités incluses ; joindre avec « , » ; retirer `capitalize` (PosCounterCollectModal.vue:889) ; ajouter french.png et corriger BackendNavbarComponent.vue:439-440 ; libellé public de filiale pour l'en-tête ticket.",
+      "status": "open"
+    },
+    {
+      "id": "C1-013",
+      "origin": "nouveau (intégrité de l'instrument)",
+      "state_artifact": "tests/Playwright/caisse-site-complet-2026-10-23/C1-caisse-vente.spec.js",
+      "category": "instrument_integrity",
+      "severity": "P2",
+      "evidence": "(a) spec:389-391 : `rafraichi = true` est posé AVANT le clic, et l'échec du clic est avalé par `.catch` → C1-mesures.json déclare `rafraichissementManuel: true` alors que le bouton n'existait pas (trace « refresh KO … Timeout 5000ms ») : une affirmation de rapport fabriquée par l'instrument. (b) spec:190/211 : « tuiles catégories visibles » = offsetParent, vrai à 1280×720 où la capture n'en montre aucune (C1-009). (c) Test 07 (spec:448-469) vérifie la présence des boutons mais pas que téléphone/adresse — obligatoires pour une livraison — sont visibles ; `label[for=delivery]` est cliqué alors qu'il est à moitié masqué (Playwright fait défiler, pas le caissier). (d) Aucune assertion sur la composition affichée dans l'assistant ou le panier (C1-002, C1-008 passent au vert).",
+      "fix_hint": "Poser `rafraichi = true` dans le `then` du clic ; mesurer la visibilité dans la fenêtre (rect ∩ viewport, elementFromPoint) ; ajouter au test 07 une assertion de visibilité réelle du champ téléphone de livraison avec un article au panier.",
+      "status": "open"
+    }
+  ],
+  "verified_team_claims": {
+    "commande 8865 = 9,30 partout, fiscal 3188, creator_id 3": "PROUVÉ — relu en base : total 9.30, total_tax 0.84, lignes 7.40 (tva 0.67) + 1.90 (tva 0.17), fiscal 3188, opérateur « Caissier Le Cayenne » sur papier et API.",
+    "Caissier jamais le client": "PROUVÉ pour ce cas (spec:330 égalité stricte sur la ligne ESC/POS).",
+    "téléphone 8866 différée puis encaissée, fiscal 3189 une seule fois": "PROUVÉ — avant : payment_status 15, fiscal null ; après : 5, fiscal 3189 ; max(fiscal, branche 1) = 3189, compte 1.",
+    "livraison : Commande téléphone absent, Commande livraison présent": "PROUVÉ (capture 10 + compte DOM).",
+    "rafraîchissement manuel à mi-course du tiroir": "FAUX — voir C1-004 / C1-013(a)."
+  },
+  "summary": {
+    "P0": 0, "P1": 3, "P2": 7, "P3": 3,
+    "open_P0": 0, "open_P1": 3, "open_P2": 7, "open_P3": 3
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "notes": [
+    "Comptes : P1 = C1-001, C1-002, C1-003 ; P2 = C1-004, C1-005, C1-006, C1-007, C1-008, C1-009, C1-013 (dont une d'instrument) ; P3 = C1-010, C1-011, C1-012.",
+    "C1-002 touche public/css/pos-wizard.css, ZONE GELÉE (CLAUDE.md §7) : correctif = LOCK + porte propriétaire, pas de modification directe.",
+    "Connu, non compté : TVA 10 % sur une canette Fanta 33cl vendue à emporter — la question 5,5 %/10 % selon le type de commande est ouverte depuis docs/gates/GATE_POS_V4_VAT_HT_TTC_2026-05-02.md (Q2) ; à trancher avec le comptable, pas un défaut de cette vague.",
+    "Écartés après vérification : touches ⌫ et C en double sur le pavé = voulu (PosV5Numpad.vue:44-46, 75-87) ; bandeau « Article indisponible : Coca-Cola 33cl » = bannière de rupture voulue (PosComponent.vue:3322-3345), toujours dans le DOM des captures 04-10, sorti de la vue par défilement ; erreurs console :9100/:9101 = pont d'impression absent en local (environnement) ; « MODE TEST — IMPRESSION BYPASSÉE » = environnement.",
+    "Banc partagé : la vague C2 tournait en même temps (A0288/A0290 créées à 19:39-19:40) ; elle a révélé C1-003 mais pollue les compteurs de C1. Un tour précédent de C1 a laissé une vente payée supplémentaire (8864, E2E-C1-Tel, fiscal 3187) : le nettoyage de spec:158-166 n'annule que les commandes impayées.",
+    "Graves non mesurés par l'équipe : panier PLEIN à 1280×720 (C1-001 attendu pire) ; clic réel sur « Encaisser » d'une livraison dans le tiroir (C1-003 : refus déduit du code, non observé)."
+  ]
+}

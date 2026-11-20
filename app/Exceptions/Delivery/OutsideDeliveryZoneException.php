@@ -15,10 +15,15 @@ final class OutsideDeliveryZoneException extends HttpException
 {
     public const ERROR_CODE = 'OUTSIDE_DELIVERY_ZONE';
     public const CUSTOMER_MESSAGE = 'Adresse hors de la zone de livraison.';
+    public const BEYOND_RADIUS_MESSAGE = 'Cette adresse est à plus de 10 km : commandez-nous sur Uber Eats.';
 
-    public function __construct(?\Throwable $previous = null)
+    /** Vrai quand le refus vient du rayon maximal : le client doit alors être orienté vers Uber Eats. */
+    public readonly bool $suggestUberEats;
+
+    public function __construct(?\Throwable $previous = null, bool $suggestUberEats = false)
     {
-        parent::__construct(422, self::CUSTOMER_MESSAGE, $previous);
+        $this->suggestUberEats = $suggestUberEats;
+        parent::__construct(422, $suggestUberEats ? self::BEYOND_RADIUS_MESSAGE : self::CUSTOMER_MESSAGE, $previous);
     }
 
     public function render($request): JsonResponse
@@ -26,7 +31,8 @@ final class OutsideDeliveryZoneException extends HttpException
         return response()->json([
             'status' => false,
             'code' => self::ERROR_CODE,
-            'message' => self::CUSTOMER_MESSAGE,
+            'message' => $this->getMessage(),
+            'suggest_uber_eats' => $this->suggestUberEats,
         ], 422);
     }
 }

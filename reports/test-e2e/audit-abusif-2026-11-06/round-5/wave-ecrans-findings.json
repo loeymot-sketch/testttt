@@ -1,0 +1,67 @@
+{
+  "wave": "ECRANS",
+  "round": 5,
+  "date": "2026-11-06",
+  "head": "d7cd618ab",
+  "environment": "artisan serve :8789 --no-reload (HORAIRES_REFUSER_HORS_SERVICE=false, PHP_CLI_SERVER_WORKERS=6, base foodking_e2e) ; pages servies sous l'origine :8766 et relayées vers :8789 ; soketi :6001 (node v18) ; queue:work redis --queue=high,default ; Chromium Playwright, Node v22.23.2 ; 4 navigateurs max",
+  "bundles": "pos-shell.05520dd6.js (13:40:46, après d7cd618ab) : le fichier SERVI par :8789 est identique octet pour octet à public/js (cmp) et contient cartTotalQuantity:function(e,t){…t>0&&0===Number(e)){this._cleEncaissement=null;…removeItem(\"pos.cle-encaissement\")} et `cancelled&&!e.delivered_at` + pos-delivery-stop-cancelled ; admin-shell.464236cf.js contient coupon-save-error",
+  "artefacts": "/private/tmp/claude-501/-Users-1millnonstop-Downloads-projet-foodking-web-web-testttt/ba5c0c5a-173e-4e70-9b44-6580aa4c3e65/scratchpad/r5ecrans/ (pos4.mjs + scénarios *-retire, out-*.json, png/)",
+  "fenetre_cache_flush_13h55_14h00": {
+    "mesures_dans_la_fenetre": ["livr-retire essai 1 (13:54:53-13:55:13, adresse refusée par l'instrument, séquence décalée)", "livr-retire essai 2 (13:56:01-13:56:33)", "horaires + code promo (13:57-13:58, validations sans cache)", "planche Tournées (lecture seule)"],
+    "rejouees_apres_14h00": "livr-retire rejoué à 14:00:34 → résultat identique à l'essai 2 (201 / 409 même clé / clé effacée au vide / clé neuve 201). Toutes les autres mesures de clé, rejeu, double clic, borne, hygiène, synchro ont été lancées APRÈS 14:00:30. retire et tel-retire (13:51-13:53) sont AVANT la fenêtre.",
+    "conclusion": "aucune conclusion ne repose sur une mesure prise pendant la fenêtre"
+  },
+  "points": {
+    "1_retrait_une_a_une_R4-ADV-001": {
+      "encaissement_1440": {"verdict": "FERMÉ", "preuve": "panier Perrier×2 + Sprite ; 1er POST 201 coupé (9872, fiscal 3617) ; retrait partiel de la dernière ligne + ressaisie → même clé → 409 « Commande déjà enregistrée » ; retrait une à une (Sprite, Perrier 2→1, Perrier) : clé présente tant que la quantité > 0, localStorage pos.cle-encaissement = null à 0 ; même panier ressaisi → clé neuve 1793969533217_… → 201 (9873, fiscal 3618, vente voulue). out-retire-1440.json, PNG retire-3-vide / retire-4-ressaisie lus."},
+      "telephone_1280": {"verdict": "FERMÉ", "preuve": "9874 coupée → partiel 409 → vide : clé null → ressaisie clé neuve → 201 9875. out-tel-retire-1280.json"},
+      "livraison_1920": {"verdict": "FERMÉ", "preuve": "rejoué après 14:00 : 9889 coupée → partiel 409 → vide : clé null → ressaisie clé neuve → 201 9891. out-livr-retire-1920.json"}
+    },
+    "2_F5_apres_reponse_perdue_ECR-R3-001": {
+      "encaissement_1440": {"verdict": "FERMÉ (pas de régression)", "preuve": "9892 (fiscal 3619) coupée ; F5 : clé IDENTIQUE, panier 1 ligne 1,90 € ; nouvel essai même clé → 409 ; base : une seule vente."},
+      "telephone_1280": {"verdict": "FERMÉ", "preuve": "9893 ; F5 clé identique ; 409 ; une seule commande."},
+      "livraison_1920": {"verdict": "FERMÉ", "preuve": "9894 ; F5 clé identique (empreinte client 1166) ; 409 ; une seule livraison."}
+    },
+    "3_rejeu_tour_4": {
+      "contre_epreuve_vente_suivante": {"verdict": "FERMÉ", "preuve": "9897/9900, fiscal 3620/3621, clé effacée après fermeture du reçu."},
+      "vente_ok_puis_F5_recu_ouvert": {"verdict": "P3 ECR-R4-001 identique", "preuve": "9901 (3622) ; F5 → panier payé revient, même clé ; nouvel encaissement → 409, aucune 2e vente."},
+      "triple_clic": {"verdict": "FERMÉ", "preuve": "1 POST 201 (9907, fiscal 3623)."},
+      "borne_planB": {"verdict": "FERMÉ", "preuve": "1 POST 201, 9890 status 4 / payment 15 / fiscal NULL, « Rendez-vous en caisse … 14,20 € » (PNG lu)."},
+      "synchro_KDS_OSS": {"verdict": "FERMÉ", "preuve": "2e passage : caisse 9926 KDS 4 ms / OSS 3 ms ; borne 9927 KDS 406 ms, caisse « à encaisser » 3 ms ; « Prêt » → OSS 606 ms, jumeau retiré."},
+      "deux_KDS_jumeaux": {"verdict": "FERMÉ", "preuve": "9928 : K1 202, K2 409 « updated elsewhere », une transition (PNG KDS 1280 lu)."},
+      "coupon": {"verdict": "FERMÉ, P3 ECR-R4-002 identique", "preuve": "vide → 422 + alerte (dansEcran=false, -92 px) ; réseau coupé → message visible."},
+      "planche_tournees": {"verdict": "FERMÉ, P3 ECR-R4-003 identique", "preuve": "split « Encaissé 9,60 € (plusieurs moyens) » ; 9502/9748 « Annulée · rien à encaisser » + sélecteur Uber toujours visible (PNG 1920 lu)."},
+      "horaires": {"verdict": "FERMÉ", "preuve": "2 cas 422 message FR 12 px au-dessus d'« Enregistrer » ; 200 + toast ; semaine et fermetures identiques avant/après (GET relu)."},
+      "hygiene": {"verdict": "FERMÉ", "preuve": "double clic relevé → 1 POST 201 (8001) ; fiche A 201 / B 422 « Déjà validée »."}
+    }
+  },
+  "findings_identiques_tour_4": [
+    {"id": "ECR-R4-001", "severity": "P3", "status": "open", "evidence": "png/ok-f5-2-apres-F5-1440.png + out-ok-f5-1440.json"},
+    {"id": "ECR-R4-002", "severity": "P3", "status": "open", "evidence": "png/coupon-vide-1280.png (« …signalés en » puis coupé)"},
+    {"id": "ECR-R4-003", "severity": "P3", "status": "open", "evidence": "png/board-1920.png"}
+  ],
+  "toujours_ouverts_du_tour_3": {"ECR-R3-007": "présent (png/tel-f5-3-nouvel-essai-1280.png : rangée nom/téléphone coupée en haut du ticket)", "ECR-R3-008": "présent (png/items-1280.png : « ACTIO »)", "ECR-R3-005": "non revérifié", "ECR-R3-006": "non revérifié"},
+  "findings_nouveaux": [
+    {"id": "ECR-R5-001", "severity": "P3", "category": "layout", "state_artifact": "png/hor-2-au-avant-du-1280.png", "evidence": "Paramètres › Horaires, fermeture exceptionnelle invalide : le message sous « AU » pousse la rangée et le champ « DU » descend ~60 px sous « AU » (rangée désalignée). DÉJÀ visible sur la capture du tour 4 (r4ecrans/png/hor-2-au-avant-du-1280.png), non signalé alors : pas une régression.", "fix_hint": "Aligner la grille en haut (items-start) ou réserver la hauteur du message.", "first_seen_round": 5},
+    {"id": "ECR-R5-002", "severity": "P3", "category": "stale_state", "state_artifact": "png/hyg3-4-fiche-apres-B-1920.png", "evidence": "Hygiène › Nettoyage, 2e poste après le 422 « Déjà validée. » : la fiche reste dans « À faire 2 », compteur « 0/2 faites » alors qu'elle est validée par l'autre poste. Rien n'est perdu (serveur refuse). DÉJÀ visible sur la capture du tour 4, non signalé alors.", "fix_hint": "Au 422 « déjà validée », recharger la liste du jour.", "first_seen_round": 5}
+  ],
+  "convergence": "Ensemble P0/P1/P2 identique (vide) ; ensemble P3 = tour 4 + 2 P3 anciens non signalés au tour 4 (ECR-R5-001/002) : convergence STRICTE non atteinte au sens « ensemble identique », aucune régression.",
+  "non_defauts_instrument": [
+    "1er passage synchro : KDS saturé (« +21 en attente · dont 1 non affichée ») par mes commandes téléphone/livraison pas encore annulées et celles d'autres vagues ; carte absente de l'écran mais compteur incrémenté. Rejoué après annulation de mes commandes : vert.",
+    "livr-retire essai 1 : suggestion d'adresse refusée (« Adresse invalide »), séquence décalée ; essais 2 et 3 corrects.",
+    "Borne : GET 401 /api/frontend/menu et broadcasting/auth 302 au démarrage : jeton borne de 13:47 révoqué par une connexion concurrente sur le même compte ; la borne se reconnecte toute seule (kiosk-login 201) et commande normalement.",
+    "Horaires identiqueApres=false : GET de contrôle en 401 (jeton admin révoqué par une connexion concurrente) + fermeture « ABUSR5S » posée par une autre vague ; relu ensuite : identique.",
+    "Toasts « Nouvelle commande N°… » pendant la coupure : diffusion temps réel de la commande créée (utile), et commandes d'autres vagues.",
+    "ERR_CONNECTION_REFUSED 9100/9101 : agent d'impression absent."
+  ],
+  "summary": {"P0": 0, "P1": 0, "P2": 0, "P3": 5, "P3_identiques_tour_4": ["ECR-R4-001", "ECR-R4-002", "ECR-R4-003"], "P3_nouveaux": ["ECR-R5-001", "ECR-R5-002"], "closed": ["R4-ADV-001 (3 voies)", "ECR-R3-001 (3 voies, pas de régression)"]},
+  "verdict": "GREEN (P0/P1/P2 = 0)",
+  "cleanup": {
+    "annulees": {"counter-collect cancel 200": [9874, 9875, 9893, 9890, 9911, 9927], "pos-order change-status 16 → 200": [9876, 9877, 9878, 9879, 9889, 9891, 9894]},
+    "scellees_NF525_non_annulables": {"9872": 3617, "9873": 3618, "9892": 3619, "9897": 3620, "9900": 3621, "9901": 3622, "9907": 3623, "9909": 3624, "9921": 3625, "9926": 3627, "9928": 3628},
+    "fixtures": "relevé 8001 annulé, équipement 3524 supprimé, validation 9128 annulée, fiche 2676 supprimée ; aucun code promo créé ; horaires inchangés",
+    "processus": "serveur :8789, soketi :6001, queue:work arrêtés, ports libres",
+    "fiscal_verify_chain_all": "SWEEP COMPLETE — CHAIN OK on every active branch (7 total)",
+    "fichiers_suivis": "aucun modifié par cette vague, aucun commit"
+  }
+}

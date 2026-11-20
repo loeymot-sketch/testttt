@@ -145,6 +145,11 @@ class NouvelleCategorieDepuisLaBibliothequeTest extends TestCase
                 'name' => 'Wrap Végé',
                 'price' => 7.5,
                 'item_category_id' => $category->id,
+                // [fusion 2026-09-02] `tax_id` est devenu OBLIGATOIRE à la création d'un
+                // article sur l'autre ligne (validation fiscale). Ce test lui est antérieur
+                // et postait sans taxe : il recevait 422 au lieu de 201. On complète la charge
+                // utile — c'est le chemin réel du Dashboard, qui envoie bien une taxe.
+                'tax_id' => \App\Models\Tax::factory()->create()->id,
                 'item_type' => 5,
                 'is_featured' => 10,
                 'status' => Status::ACTIVE,

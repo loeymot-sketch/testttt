@@ -59,8 +59,34 @@ class WheelService
      */
     public function segments(): array
     {
-        $segments = (array) config('wheel.segments', []);
-        $reglages = app(WheelSettingsService::class)->prizeOverrides();
+        return self::actifs($this->catalogueComplet());
+    }
+
+    /**
+     * Les lots RETIRÉS depuis l'espace commerçant ne sont ni tirés ni montrés.
+     *
+     * @param  array<int, array<string, mixed>>  $catalogue
+     * @return array<int, array<string, mixed>>
+     */
+    private static function actifs(array $catalogue): array
+    {
+        return array_values(array_filter($catalogue, static fn ($s) => ! (bool) ($s['archived'] ?? false)));
+    }
+
+    /**
+     * TOUS les lots, retirés compris — pour RETROUVER un lot déjà gagné (son produit de référence,
+     * sa préparation en cuisine). Un lot gagné hier reste dû aujourd'hui, même si le commerçant l'a
+     * retiré de la roue ce matin. Ne JAMAIS s'en servir pour tirer ou pour dessiner.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function catalogueComplet(): array
+    {
+        // [2026-11-19] Le catalogue saisi dans l'espace commerçant prime sur le fichier ; le fichier
+        // reste la valeur de départ tant que rien n'a été enregistré.
+        // Une seule lecture des réglages pour le catalogue ET ses probabilités (voir lectureCatalogue).
+        [$stocke, $reglages] = app(WheelSettingsService::class)->lectureCatalogue();
+        $segments = $stocke ?? (array) config('wheel.segments', []);
 
         if ($reglages === []) {
             return $segments;
@@ -113,12 +139,13 @@ class WheelService
      */
     public function publicSegments(?int $branchId = null): array
     {
-        $segments = $this->segments();
+        $catalogue = $this->catalogueComplet();
+        $segments = self::actifs($catalogue);
 
         if ($branchId !== null) {
             $tirables = array_values(array_filter(
                 $segments,
-                fn ($s) => $this->lotTirable($branchId, (array) $s)
+                fn ($s) => $this->lotTirable($branchId, (array) $s, $catalogue)
             ));
 
             // Si RIEN n'est tirable, on republie tout : une roue vide ferait afficher à la page sa
@@ -250,12 +277,13 @@ class WheelService
     public function spinnableKeys(int $branchId): array
     {
         $cles = [];
+        $catalogue = $this->catalogueComplet();
 
-        foreach ($this->segments() as $s) {
+        foreach (self::actifs($catalogue) as $s) {
             if ((int) ($s['weight'] ?? 0) <= 0) {
                 continue;
             }
-            if (! $this->lotTirable($branchId, (array) $s)) {
+            if (! $this->lotTirable($branchId, (array) $s, $catalogue)) {
                 continue;
             }
             $cles[] = (string) $s['key'];
@@ -284,8 +312,10 @@ class WheelService
      * AFFICHÉ (le Terminator du propriétaire). C'est `draw()` qui ne le tire jamais.
      *
      * @param  array<string, mixed>  $s
+     * @param  array<int, array<string, mixed>>|null  $catalogue  déjà lu par l'appelant (une lecture par
+     *                                                            appel, pas une par lot) ; relu sinon
      */
-    private function lotTirable(int $branchId, array $s): bool
+    private function lotTirable(int $branchId, array $s, ?array $catalogue = null): bool
     {
         $type = (string) ($s['type'] ?? '');
         $cle  = (string) ($s['key'] ?? '');
@@ -304,7 +334,7 @@ class WheelService
             return false;
         }
 
-        if ($type === 'free_item' && ! $this->produitServable($branchId, (string) ($s['key'] ?? ''))) {
+        if ($type === 'free_item' && ! $this->produitServable($branchId, (string) ($s['key'] ?? ''), $catalogue)) {
             return false;
         }
 
@@ -552,7 +582,7 @@ class WheelService
         }
 
         if ($this->alreadySpun($branchId, $tel)) {
-            throw new WheelException('Tu as déjà tourné la roue pour cette opération.', 409);
+            throw new WheelException('Vous avez déjà tourné la roue pour cette opération.', 409);
         }
 
         return DB::transaction(function () use ($branchId, $tel, $mail, $customerName, $segment, $unlock, $methode, $deviceId, $ipHash) {
@@ -584,7 +614,7 @@ class WheelService
                     // Deux contraintes peuvent avoir tranché : le téléphone ou l'adresse. On ne dit
                     // pas LAQUELLE — le message resterait le même pour le client honnête, et
                     // distinguer les deux apprendrait à un fraudeur quelle clé changer.
-                    throw new WheelException('Tu as déjà tourné la roue pour cette opération.', 409);
+                    throw new WheelException('Vous avez déjà tourné la roue pour cette opération.', 409);
                 }
                 throw $e;
             }
@@ -645,7 +675,8 @@ class WheelService
 
     private function maxDiscountFor(string $prizeKey): float
     {
-        foreach ($this->segments() as $s) {
+        // Catalogue COMPLET : un lot tiré puis retiré avant la réclamation garde son plafond.
+        foreach ($this->catalogueComplet() as $s) {
             if ((string) ($s['key'] ?? '') === $prizeKey) {
                 return (float) ($s['max_discount'] ?? 0);
             }
@@ -662,7 +693,8 @@ class WheelService
      */
     private function draw(int $branchId): array
     {
-        $segments = $this->segments();
+        $catalogue = $this->catalogueComplet();
+        $segments = self::actifs($catalogue);
         if (empty($segments)) {
             throw new WheelException('La roue n\'est pas configurée.', 503);
         }
@@ -683,7 +715,7 @@ class WheelService
              * et sur le téléphone. Le plafond journalier et la quantité de campagne y sont entrés le
              * 12 août : ils étaient restés ici, donc invisibles à l'affichage.
              */
-            if ($poids > 0 && ! $this->lotTirable($branchId, (array) $s)) {
+            if ($poids > 0 && ! $this->lotTirable($branchId, (array) $s, $catalogue)) {
                 $poids = 0;
             }
 
@@ -782,7 +814,11 @@ class WheelService
             // MINIMUM D'ACHAT — « ils peuvent récupérer ça que avec une commande », plus un
             // plancher. C'est ce qui rend le jeu rentable : une remise sur une commande de 10 €
             // reste largement bénéficiaire, et personne ne vient chercher un cadeau sans acheter.
-            'minimum_order'   => (float) config('wheel.min_order_amount', 0),
+            // [ONB-05 2026-08-28] Le principe est écrit 300 lignes plus haut, dans
+            // le docblock de `segments()` : « lire la config en direct ailleurs, ce
+            // serait ignorer les réglages du propriétaire sur une surface et pas sur
+            // l'autre ». Il valait pour les segments ; il vaut pour le minimum.
+            'minimum_order'   => app(\App\Services\Wheel\WheelSettingsService::class)->minOrder(),
             // PLAFOND EN EUROS — voir config/wheel.php. 0 = illimité côté moteur de coupons, ce
             // qui transformerait « -15 % » en cadeau à trois chiffres sur une grosse commande.
             'maximum_discount' => (float) ($segment['max_discount'] ?? 0),
@@ -820,10 +856,10 @@ class WheelService
      * Toute panne de lecture laisse passer, aussi : une roue qui s'arrête parce que la table de
      * disponibilité tousse serait un remède pire que le mal.
      */
-    private function produitServable(int $branchId, string $prizeKey): bool
+    private function produitServable(int $branchId, string $prizeKey, ?array $catalogue = null): bool
     {
         try {
-            $itemId = app(WheelDeliveryService::class)->costItemId($prizeKey);
+            $itemId = app(WheelDeliveryService::class)->costItemId($prizeKey, $catalogue);
             if ($itemId === null) {
                 return true;
             }

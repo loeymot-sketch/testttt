@@ -1,0 +1,133 @@
+{
+  "wave": "A",
+  "round": 2,
+  "states_reviewed": 15,
+  "findings": [
+    {
+      "id": "A-008",
+      "state_artifact": "resources/views/admin/wheel/espace.blade.php",
+      "category": "data_loss_silent",
+      "severity": "P2",
+      "evidence": "PARTIAL_PASS. Le réaffichage n'écrase plus la saisie (saisie.liens / saisie.jeu, resources/views/admin/wheel/espace.blade.php:1074, :1076 et :1222-1225). Il reste deux trous : beforeunload (resources/views/admin/wheel/espace.blade.php:731) ne regarde que `sale`, donc fermer l'onglet ou cliquer « Retour à la caisse » perd en silence des liens ou des réglages tapés ; et le verrou n'est jamais levé si l'on abandonne la saisie, sans bouton Annuler pour revenir aux valeurs serveur.",
+      "fix_hint": ":731 → if (sale || saisie.liens || saisie.jeu) ; ajouter un « Annuler » par formulaire qui remet saisie.x=false puis rendreLiens()/rendreReglages().",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "round-2/captures/desktop-comptoir.png",
+      "category": "truncation",
+      "severity": "P2",
+      "evidence": "PARTIAL_PASS. Le jargon a disparu (WHEEL_PUBLIC_URL et config/wheel.php), mais la nouvelle phrase est coupée en plein mot : « pas encore rég / lée ». Le conteneur garde word-break:break-all (resources/views/admin/wheel/espace.blade.php:487), ce qui était fait pour une URL.",
+      "fix_hint": ":487 → overflow-wrap:anywhere (ou word-break:break-word) : coupe une URL longue sans casser les mots français.",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-023",
+      "state_artifact": "resources/views/admin/wheel/espace.blade.php:656",
+      "category": "misleading_error",
+      "severity": "P2",
+      "evidence": "Nouveau défaut, introduit par le correctif de A-002. api() affiche le même toast pour TOUTE coupure réseau : « Connexion impossible : rien n’a été enregistré ». Or ce message part aussi pour les LECTURES : chargement initial, /lots, et le rafraîchissement automatique (charger(true), :1259). Hors ligne, la tablette du comptoir reçoit donc un toast d'erreur « rien n'a été enregistré » toutes les 60 s, alors que personne n'a rien enregistré. Dans la modale, le message apparaît en double (toast plus mErr, :704-707).",
+      "fix_hint": ":650-657 → message selon opts.method : GET → « Connexion perdue : les chiffres ne sont pas à jour. » ; POST → message actuel. Ne pas afficher de toast pour un rafraîchissement automatique (option silencieux passée par charger(true)), ou n'en afficher qu'un seul par perte de connexion.",
+      "status": "open",
+      "first_seen_round": 2
+    },
+    {
+      "id": "A-024",
+      "state_artifact": "resources/views/admin/wheel/espace.blade.php:726, :48-49 (+@media max-width:1023px)",
+      "category": "aria_keyboard",
+      "severity": "P3",
+      "evidence": "Nouveau, conséquence de la visibilité de .side. Sur mobile, ouvrir le menu (burger) ne déplace pas le focus dedans : .side est AVANT le burger dans le DOM, donc Tab part vers le contenu. Échap ne ferme pas le menu. Choisir un lien appelle fermerMenu() → le lien qui a le focus devient visibility:hidden → le focus retombe sur body.",
+      "fix_hint": "Burger : après add('open'), focus sur le premier lien du menu ; Échap → fermerMenu() puis focus sur le burger ; fermerMenu(apresNavigation) → focus sur #contenu (tabindex=-1, déjà présent :268).",
+      "status": "open",
+      "first_seen_round": 2
+    },
+    {
+      "id": "A-026",
+      "state_artifact": "round-2/captures/desktop-tableau.png",
+      "category": "legibility",
+      "severity": "P3",
+      "evidence": "Sur bureau, les graduations et les dates du graphique du Tableau de bord font environ 8-9 px à l'écran (viewBox de 720, conteneur d'environ 630 px, font-size 10, resources/views/admin/wheel/espace.blade.php:854). Elles se lisent mal ; ce n'est pas nouveau, c'était déjà le cas au round 1.",
+      "fix_hint": ":854 fs = etroit ? 13 : 12.",
+      "status": "open",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "round-2/captures/desktop-tableau.png",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "PARTIAL_PASS, accepté. Le banc ne crée plus de sortie de stock (tools/banc-espace-roue.sh : clé banc_espace hors catalogue ; le plus grand id de stock_outflows reste 132, selon le coordinateur). Le résiduel « 5 cadeaux ont été remis… » est assumé. Le fond reste vrai : l'avertissement date par la sortie de stock et les KPI datent par le tour (WheelReportService.php:421-427 vs :321-333). Laissé en P3 à la demande du coordinateur.",
+      "fix_hint": "Aucune action ce round.",
+      "status": "accepted",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-015",
+      "state_artifact": "resources/js/components/admin/pos/CaisseSecondaryNav.vue:170-174",
+      "category": "workflow",
+      "severity": "P2",
+      "evidence": "Décision documentée d'août, à ne pas rouvrir (coordinateur).",
+      "fix_hint": "—",
+      "status": "accepted",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-017",
+      "state_artifact": "round-2/captures/desktop-roue.png",
+      "category": "layout_alignment",
+      "severity": "P3",
+      "evidence": "La carte de droite reste 12 px plus bas que celle de gauche (y≈85 vs 73), choix assumé.",
+      "fix_hint": "—",
+      "status": "accepted",
+      "first_seen_round": 1
+    },
+    {
+      "id": "A-022",
+      "state_artifact": "round-2/captures/desktop-tableau.png",
+      "category": "text_quality",
+      "severity": "P3",
+      "evidence": "Le graphique dit explicitement « Sur les 30 derniers jours », choix assumé.",
+      "fix_hint": "—",
+      "status": "accepted",
+      "first_seen_round": 1
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 3,
+    "P3": 2,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 3,
+    "open_P3": 2
+  },
+  "round_to_round_closures": {
+    "A-001": "PASS",
+    "A-002": "PASS",
+    "A-003": "PASS",
+    "A-004": "PASS",
+    "A-005": "PASS",
+    "A-006": "PARTIAL_PASS",
+    "A-007": "PARTIAL_PASS",
+    "A-008": "PARTIAL_PASS",
+    "A-009": "PASS",
+    "A-010": "PASS",
+    "A-011": "PASS",
+    "A-012": "PASS",
+    "A-013": "PASS",
+    "A-014": "PASS",
+    "A-015": "ACCEPTED",
+    "A-016": "PASS",
+    "A-017": "ACCEPTED",
+    "A-018": "PASS",
+    "A-019": "PASS",
+    "A-020": "PASS",
+    "A-021": "PASS",
+    "A-022": "ACCEPTED"
+  },
+  "verdict": "GREEN",
+  "notes": "Les 15 PNG du round 2 ont été lus. Preuves des PASS : A-001 mobile-lots.png (une carte par lot, « Remettre » visible) ; A-005 desktop-tableau.png (« 5 cadeaux ont été remis ») ; A-011 mobile-tableau.png (4 dates et graduations lisibles) ; A-016 desktop-tableau.png (Terminator « Vitrine · jamais gagné ») ; A-018 desktop-cadeaux.png (« 1 restant ») ; A-019 desktop-roue.png (« Chances arrondies au dixième ») ; A-021 mobile-lots.png (texte de recherche entier). Preuves dans le code : A-002 api() :654-657 + chargerLots catch ; A-003 WheelMerchantController.php lots() max(90, validité+1) ; A-004 cadeaux_a_remettre (WheelReportService.php) + espace :817 ; A-009 :1193 un seul charger() ; A-010 charger(partiel) + RENDUS/perimees :715, :734-746 ; A-012 piège à Tab :687-697 ; A-013 visibility sous 1023 px ; A-014 endOfDay (Report:257) aligné sur WheelDeliveryService.php:164 et sur aRemettre / cadeaux_a_remettre (today()-validité ⇔ created_at+validité endOfDay ≥ now). Rafraîchissement partiel relu : la vue courante est redessinée par montrer() (:715) et RENDUS.lots no-op + chargerLots (:723) ; aucune régression trouvée. XSS : la nouvelle aria-label de « Remettre » passe par esc() (:1176). Il n'y a toujours pas de console.json ni de network.json : catégories 6/9/10 non vérifiables depuis les artefacts. Le verdict GREEN suit le protocole (0 P0 / 0 P1 ouverts) ; les P2 ouverts sont listés, sans bloquer."
+}

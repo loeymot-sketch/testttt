@@ -169,7 +169,7 @@ class WheelClaimService
      */
     private function costItemId(string $prizeKey): ?int
     {
-        foreach (app(\App\Services\Wheel\WheelService::class)->segments() as $s) {
+        foreach (app(\App\Services\Wheel\WheelService::class)->catalogueComplet() as $s) { // lots retirés compris : un lot gagné reste dû
             if ((string) ($s['key'] ?? '') !== $prizeKey) {
                 continue;
             }
